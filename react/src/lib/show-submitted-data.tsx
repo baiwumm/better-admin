@@ -2,7 +2,7 @@ import { toast } from 'sonner'
 
 export function showSubmittedData(
   data: unknown,
-  title: string = 'You submitted the following values:'
+  title: string = '你提交了以下数据：'
 ) {
   toast.message(title, {
     description: (

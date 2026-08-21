@@ -21,17 +21,13 @@ import { PasswordInput } from '@/components/password-input'
 const formSchema = z
   .object({
     email: z.email({
-      error: (iss) =>
-        iss.input === '' ? 'Please enter your email.' : undefined,
+      error: (iss) => (iss.input === '' ? '请输入邮箱。' : undefined),
     }),
-    password: z
-      .string()
-      .min(1, 'Please enter your password.')
-      .min(7, 'Password must be at least 7 characters long.'),
-    confirmPassword: z.string().min(1, 'Please confirm your password.'),
+    password: z.string().min(1, '请输入密码。').min(7, '密码长度至少为 7 位。'),
+    confirmPassword: z.string().min(1, '请再次输入密码。'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match.",
+    message: '两次输入的密码不一致。',
     path: ['confirmPassword'],
   })
 
@@ -54,12 +50,12 @@ export function SignUpForm({
     setIsLoading(true)
 
     toast.promise(sleep(2000), {
-      loading: 'Creating account...',
+      loading: '正在创建账户...',
       success: () => {
         setIsLoading(false)
-        return `Account created for ${data.email}.`
+        return `账户已创建：${data.email}。`
       },
-      error: 'Error',
+      error: '创建失败',
     })
   }
 
@@ -75,9 +71,9 @@ export function SignUpForm({
           name='email'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>邮箱</FormLabel>
               <FormControl>
-                <Input placeholder='name@example.com' {...field} />
+                <Input placeholder='请输入邮箱' {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -88,7 +84,7 @@ export function SignUpForm({
           name='password'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>密码</FormLabel>
               <FormControl>
                 <PasswordInput placeholder='********' {...field} />
               </FormControl>
@@ -101,7 +97,7 @@ export function SignUpForm({
           name='confirmPassword'
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm Password</FormLabel>
+              <FormLabel>确认密码</FormLabel>
               <FormControl>
                 <PasswordInput placeholder='********' {...field} />
               </FormControl>
@@ -111,7 +107,7 @@ export function SignUpForm({
         />
         <Button className='mt-2' disabled={isLoading}>
           {isLoading ? <Loader2 className='animate-spin' /> : <UserPlus />}
-          Create Account
+          创建账户
         </Button>
 
         <div className='relative my-2'>
@@ -120,7 +116,7 @@ export function SignUpForm({
           </div>
           <div className='relative flex justify-center text-xs uppercase'>
             <span className='bg-background px-2 text-muted-foreground'>
-              Or continue with
+              或使用以下方式登录
             </span>
           </div>
         </div>

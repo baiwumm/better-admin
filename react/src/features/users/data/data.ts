@@ -11,24 +11,31 @@ export const callTypes = new Map<UserStatus, string>([
   ],
 ])
 
+export const statusLabels = new Map<UserStatus, string>([
+  ['active', '启用'],
+  ['inactive', '停用'],
+  ['invited', '已邀请'],
+  ['suspended', '已停用'],
+])
+
 export const roles = [
   {
-    label: 'Superadmin',
+    label: '超级管理员',
     value: 'superadmin',
     icon: Shield,
   },
   {
-    label: 'Admin',
+    label: '管理员',
     value: 'admin',
     icon: UserCheck,
   },
   {
-    label: 'Manager',
+    label: '经理',
     value: 'manager',
     icon: Users,
   },
   {
-    label: 'Cashier',
+    label: '收银员',
     value: 'cashier',
     icon: CreditCard,
   },

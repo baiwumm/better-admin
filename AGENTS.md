@@ -477,4 +477,14 @@ Phase 7  统一测试 → 部署全部版本
 - UI 基础建立：Layout / Sidebar / Header / Theme / Dark Mode / shadcn/ui 组件可用。
 - `pnpm install` / `pnpm dev` / `pnpm build` / `pnpm lint` 已实测通过，项目可独立运行。
 - 未接入 NestJS、数据库、真实认证与 RBAC；当前页面为官方 Demo 与 Mock 数据。
-- 等待 **Phase 1B：Better Admin UI 定制**（品牌化、Layout/Sidebar 调整、页面规划、Demo 清理）。
+
+### Phase 1B：Better Admin UI 定制（已完成）
+
+- 品牌化：接入 Better Admin Logo（含 favicon、浅/深色两版）、站点标题与元信息、AppTitle。
+- Sidebar 调整为 Better Admin 中文菜单（概览 / 系统管理 / 系统设置），移除团队切换与 Clerk 演示导航。
+- 页面规划：新增 `/roles`、`/permissions`、`/menus`、`/logs` 占位路由（中文占位页，不实现业务逻辑）。
+- Demo 清理：移除 Tasks、Chats、Apps、Clerk、Help Center 演示页面与相关组件。
+- 界面默认中文：Dashboard / Users / Settings / Auth / Errors / DataTable / ConfigDrawer 等界面文案中文化。
+- 主色保持 Shadcn Admin 默认（slate），按约定待项目完成后再调整。
+- 验证：`pnpm install` / `pnpm dev` / `pnpm build` / `pnpm lint` / `pnpm format:check` 全部通过。
+- 等待下一阶段（Phase 2：NestJS + PostgreSQL，或用户安排的其它阶段）。

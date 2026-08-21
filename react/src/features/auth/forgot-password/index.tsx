@@ -15,12 +15,10 @@ export function ForgotPassword() {
     <AuthLayout>
       <Card className='max-w-sm gap-4 sm:min-w-sm'>
         <CardHeader>
-          <CardTitle className='text-lg tracking-tight'>
-            Forgot Password
-          </CardTitle>
+          <CardTitle className='text-lg tracking-tight'>忘记密码</CardTitle>
           <CardDescription>
-            Enter your registered email and <br /> we will send you a link to
-            reset your password.
+            输入注册邮箱，
+            <br /> 我们将发送密码重置链接。
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -28,12 +26,12 @@ export function ForgotPassword() {
         </CardContent>
         <CardFooter>
           <p className='mx-auto px-8 text-center text-sm text-balance text-muted-foreground'>
-            Don't have an account?{' '}
+            还没有账户？{' '}
             <Link
               to='/sign-up'
               className='underline underline-offset-4 hover:text-primary'
             >
-              Sign up
+              注册
             </Link>
             .
           </p>

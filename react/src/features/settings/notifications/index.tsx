@@ -3,10 +3,7 @@ import { NotificationsForm } from './notifications-form'
 
 export function SettingsNotifications() {
   return (
-    <ContentSection
-      title='Notifications'
-      desc='Configure how you receive notifications.'
-    >
+    <ContentSection title='通知' desc='配置你接收通知的方式。'>
       <NotificationsForm />
     </ContentSection>
   )

@@ -22,10 +22,7 @@ import {
 } from '@/components/ui/input-otp'
 
 const formSchema = z.object({
-  otp: z
-    .string()
-    .min(6, 'Please enter the 6-digit code.')
-    .max(6, 'Please enter the 6-digit code.'),
+  otp: z.string().min(6, '请输入 6 位验证码。').max(6, '请输入 6 位验证码。'),
 })
 
 type OtpFormProps = React.HTMLAttributes<HTMLFormElement>
@@ -64,7 +61,7 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
           name='otp'
           render={({ field }) => (
             <FormItem>
-              <FormLabel className='sr-only'>One-Time Password</FormLabel>
+              <FormLabel className='sr-only'>验证码</FormLabel>
               <FormControl>
                 <InputOTP
                   maxLength={6}
@@ -92,7 +89,7 @@ export function OtpForm({ className, ...props }: OtpFormProps) {
           )}
         />
         <Button className='mt-2' disabled={otp.length < 6 || isLoading}>
-          Verify
+          验证
         </Button>
       </form>
     </Form>

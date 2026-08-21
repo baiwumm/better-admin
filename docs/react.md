@@ -57,9 +57,8 @@ Browser → React → NestJS API → PostgreSQL
 - 文件式路由：`src/routes/`。
   - `__root.tsx`：根布局（进度条、Toaster、Devtools）。
   - `(auth)/`：演示认证页（sign-in、sign-in-2、sign-up、otp、forgot-password）。
-  - `_authenticated/`：认证态布局（Sidebar + Header 等）下的 Dashboard、Apps、Chats、Tasks、Users、Settings、Help Center、错误页。
+  - `_authenticated/`：认证态布局（Sidebar + Header 等）下的仪表盘、用户管理（列表范式）、角色/权限/菜单/日志（占位页）、系统设置、错误页。
   - `(errors)/`：401/403/404/500/503。
-  - `clerk/`：可选的 Clerk 集成（无 Key 时显示引导提示）。
 - 路由树由 `@tanstack/router-plugin` 自动生成到 `src/routeTree.gen.ts`，修改路由文件后由 Vite 插件自动重建。
 
 ### 状态管理
@@ -70,7 +69,7 @@ Browser → React → NestJS API → PostgreSQL
 ### 数据请求
 
 - TanStack Query（QueryClient 全局配置：retry、staleTime、401/403 处理）+ axios。
-- 当前业务页面使用 `src/features/*/data/` 下的静态 Mock（tasks、users、chats 等），**未请求任何真实 API**。
+- 当前保留的演示页（users 列表范式）使用 `src/features/users/data/` 下的静态 Mock，**未请求任何真实 API**。
 
 ### 主题 / Dark Mode
 
@@ -171,8 +170,12 @@ pnpm test           # Vitest 浏览器测试（需先 pnpm test:browser:install 
 
 - [x] 基于官方 Shadcn Admin `main`（v2.2.1）建立 `/react`，无嵌套 `.git`。
 - [x] 保留官方全部核心能力：Layout / Sidebar / Header / Navigation / Theme / Dark Mode / Responsive / shadcn/ui 组件 / DataTable / Form / Dialog / Drawer / Command / Chart / Hooks / Utils。
-- [x] 保留官方 Demo 页面与 Mock 数据（Dashboard、Users、Tasks、Chats、Apps、Settings、演示登录等），用于验证 UI 与组件。
-- [x] `pnpm install`、`pnpm dev`、`pnpm build`（含 `tsc -b` 类型检查）、`pnpm lint`、`pnpm format:check` 全部通过（详见验证记录）。
+- [x] **Phase 1B 品牌化**：接入 Better Admin Logo（浅/深色 + favicon）、站点标题与元信息、AppTitle。
+- [x] **Phase 1B Sidebar**：Better Admin 中文菜单（概览 / 系统管理 / 系统设置），移除团队切换与 Clerk 演示导航。
+- [x] **Phase 1B 页面规划**：新增 `/roles`、`/permissions`、`/menus`、`/logs` 中文占位页（不实现业务）。
+- [x] **Phase 1B Demo 清理**：移除 Tasks、Chats、Apps、Clerk、Help Center 演示页面与相关组件。
+- [x] **Phase 1B 中文化**：Dashboard / Users / Settings / Auth / Errors / DataTable / ConfigDrawer 界面文案默认中文。
+- [x] `pnpm install`、`pnpm dev`、`pnpm build`（含 `tsc -b` 类型检查）、`pnpm lint`、`pnpm format:check` 全部通过。
 
 ### 尚未完成
 
@@ -180,6 +183,8 @@ pnpm test           # Vitest 浏览器测试（需先 pnpm test:browser:install 
 - [ ] 接入 NestJS API（当前无任何真实 API 请求）。
 - [ ] 接入数据库（无 DATABASE_URL / SUPABASE 等后端环境变量，无 Schema / ORM 代码）。
 - [ ] 真实认证与 RBAC（当前仅有官方演示登录 Mock 与可选的 Clerk 路由）。
+- [ ] Dashboard 统计卡片、Users 列表、Settings 表单仍为官方演示 Mock 数据，接入 API 后替换。
+- [ ] `showSubmittedData` 演示提交提示暂留于保留的演示页，接入真实 API 时移除。
 
 ### 后端 / 数据库接入状态
 
