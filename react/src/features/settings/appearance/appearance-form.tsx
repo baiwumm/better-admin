@@ -24,6 +24,13 @@ const appearanceFormSchema = z.object({
   font: z.enum(fonts),
 })
 
+const fontLabels: Record<(typeof fonts)[number], string> = {
+  'maple-mono-cn': 'Maple Mono CN',
+  inter: 'Inter',
+  manrope: 'Manrope',
+  system: 'System',
+}
+
 type AppearanceFormValues = z.infer<typeof appearanceFormSchema>
 
 export function AppearanceForm() {
@@ -69,7 +76,7 @@ export function AppearanceForm() {
                   >
                     {fonts.map((font) => (
                       <option key={font} value={font}>
-                        {font}
+                        {fontLabels[font]}
                       </option>
                     ))}
                   </select>

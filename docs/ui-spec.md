@@ -258,7 +258,7 @@ Sidebar
 
 ### 6.2 Better Admin 字体规范
 
-1. 默认字体 **Inter**（正文与 UI），标题可选用 **Manrope**（如品牌化需要，在标题 class 显式使用 `font-manrope`）。
+1. 默认字体 **Maple Mono CN**（全局主字体，自托管分包，OFL-1.1）；正文与 UI 统一使用，可选 Inter / Manrope / system（`/settings/appearance` 可切换）。
 2. 字号阶梯固定：页面标题 `text-2xl font-bold tracking-tight`（可选 `md:text-3xl`）→ 区块标题 `text-lg font-medium/semibold` → 正文 `text-sm` → 辅助 `text-xs` → 表单标签 `text-sm font-medium`。
 3. 保留字体切换能力（Inter / Manrope / system），默认 Inter。
 4. 中文本地化阶段：补充中文回退字体（如 system-ui / PingFang SC / Microsoft YaHei），在 `--font-inter` 等变量中追加回退栈。

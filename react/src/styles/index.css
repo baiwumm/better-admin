@@ -17,6 +17,11 @@
     @apply min-h-svh w-full bg-background text-foreground has-[div[data-variant='inset']]:bg-sidebar;
   }
 
+  /* Maple Mono CN（全局主字体，FontProvider 在 <html> 上切换该类） */
+  .font-maple-mono-cn {
+    font-family: var(--font-maple-mono-cn);
+  }
+
   /* Override Radix scroll locking for sticky headers */
   body[data-scroll-locked] {
     overflow: unset !important;

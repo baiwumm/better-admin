@@ -28,6 +28,7 @@ Browser → React → NestJS API → PostgreSQL
 | UI 框架 | React | `19.2.5`（react / react-dom） |
 | 构建工具 | Vite（含 `@vitejs/plugin-react`） | `8.0.8` / `6.0.1` |
 | 样式 | Tailwind CSS（v4，CSS-first，`@tailwindcss/vite` 插件，无 `tailwind.config`） | `4.2.2` |
+| 字体 | 默认 **Maple Mono CN**（自托管，`public/fonts/maple-mono-cn/`，cn-font-split 分包，OFL-1.1）；可选 Inter / Manrope / system | `@chinese-fonts/maple-mono-cn 2.0.0` |
 | UI 组件库 | shadcn/ui（new-york 风格，组件已复制到 `src/components/ui/`，基于 Radix UI） | `components.json` 配置 |
 | 路由 | TanStack Router（文件式路由 `src/routes/`，自动生成 `src/routeTree.gen.ts`，路由插件 + Devtools） | `@tanstack/react-router 1.168.22` |
 | 状态管理 | Zustand（全局 store，如 `src/stores/auth-store.ts`）；主题/字体/方向/布局/搜索使用 React Context | `zustand 5.0.12` |
