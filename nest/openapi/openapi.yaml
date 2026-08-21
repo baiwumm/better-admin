@@ -1,0 +1,1739 @@
+openapi: 3.0.3
+
+info:
+  title: Better Admin API
+  description: >
+    Better Admin Phase 2 (NestJS + PostgreSQL) API Contract.
+    本文件为 API Contract 的唯一事实来源（Single Source of Truth），详见 nest/docs/openapi-design.md。
+    采用文档优先（Contract-First）；NestJS 实现须与本文一致。
+    版本注记：v1.0.0 基线；v1.1 优化批量删(DELETE /users?ids=)、logout 强制鉴权、settings 改 SETTINGS_UPDATE、新增 INVALID_OPERATION。
+  version: 1.1.0
+
+servers:
+  - url: https://api.baiwumm.com/api
+    description: Production (Render)
+  - url: http://localhost:3000/api
+    description: Local dev
+
+tags:
+  - name: Auth
+    description: 认证（登录/登出/刷新/当前用户）
+  - name: Permissions
+    description: 权限点字典
+  - name: Users
+    description: 用户管理
+  - name: Roles
+    description: 角色管理
+  - name: Menus
+    description: 菜单管理（树形 + 按钮位掩码）
+  - name: Dict
+    description: 字典管理
+  - name: Settings
+    description: 系统设置
+  - name: Logs
+    description: 日志（operation/login/api/error）
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: 大写蛇形业务错误码
+          example: USER_NOT_FOUND
+        message:
+          type: string
+          description: 中文可读错误信息
+          example: 用户不存在
+
+    Pagination:
+      type: object
+      required: [page, pageSize, total]
+      properties:
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 100
+
+    # ---------- Auth ----------
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          example: admin123
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    LoginResponse:
+      type: object
+      required: [accessToken, refreshToken, user]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            username:
+              type: string
+            displayName:
+              type: string
+            roles:
+              type: array
+              items:
+                type: string
+            permissions:
+              type: integer
+              description: 用户全部权限位聚合（超级管理员为全1掩码，普通角色为实际位聚合值）
+              example: 9223372036854775807
+
+    # ---------- Permissions ----------
+    PermissionItem:
+      type: object
+      properties:
+        value:
+          type: string
+          example: ADD
+        label:
+          type: string
+          example: add
+        bits:
+          type: integer
+          example: 2
+        icon:
+          type: string
+          example: lucide:plus
+
+    # ---------- Users ----------
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, disabled]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserCreateRequest:
+      type: object
+      required: [username, email, password, displayName]
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        displayName:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, disabled]
+          default: active
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        displayName:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, disabled]
+
+    ResetPasswordRequest:
+      type: object
+      required: [newPassword]
+      properties:
+        newPassword:
+          type: string
+
+    StatusUpdateRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [active, disabled]
+
+    # ---------- Roles ----------
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+          nullable: true
+        enabled:
+          type: boolean
+        sort:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    RoleCreateRequest:
+      type: object
+      required: [name, code]
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        description:
+          type: string
+          nullable: true
+        enabled:
+          type: boolean
+          default: true
+        sort:
+          type: integer
+          default: 0
+
+    RoleUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        enabled:
+          type: boolean
+        sort:
+          type: integer
+
+    RoleMenuPermission:
+      type: object
+      required: [menuId, permissions]
+      properties:
+        menuId:
+          type: string
+        permissions:
+          type: integer
+          description: 该角色在此菜单的授权位（role_menus.permissions 子集）
+
+    RoleMenusResponse:
+      type: object
+      properties:
+        roleId:
+          type: string
+        menus:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleMenuPermission'
+
+    RoleMenusUpdateRequest:
+      type: object
+      required: [menus]
+      properties:
+        menus:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleMenuPermission'
+
+    # ---------- Menus ----------
+    MenuNode:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        i18nKey:
+          type: string
+          nullable: true
+        icon:
+          type: string
+        to:
+          type: string
+          nullable: true
+        parentId:
+          type: string
+          nullable: true
+        sort:
+          type: integer
+        keepAlive:
+          type: boolean
+        hideInMenu:
+          type: boolean
+        enabled:
+          type: boolean
+        defaultOpen:
+          type: boolean
+        target:
+          type: string
+          enum: [_self, _blank]
+        permissions:
+          type: integer
+          description: 该菜单声明的可用按钮位（全量）
+        userPermissions:
+          type: integer
+          description: 当前登录用户在此菜单的实际授权位（登录态返回）
+          nullable: true
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuNode'
+
+    MenuCreateRequest:
+      type: object
+      required: [label, icon]
+      properties:
+        label:
+          type: string
+        i18nKey:
+          type: string
+          nullable: true
+        icon:
+          type: string
+        to:
+          type: string
+          nullable: true
+        parentId:
+          type: string
+          nullable: true
+        sort:
+          type: integer
+          default: 0
+        keepAlive:
+          type: boolean
+          default: false
+        hideInMenu:
+          type: boolean
+          default: false
+        enabled:
+          type: boolean
+          default: true
+        defaultOpen:
+          type: boolean
+          default: false
+        target:
+          type: string
+          enum: [_self, _blank]
+          default: _self
+        permissions:
+          type: integer
+          default: 0
+
+    MenuUpdateRequest:
+      type: object
+      properties:
+        label:
+          type: string
+        i18nKey:
+          type: string
+          nullable: true
+        icon:
+          type: string
+        to:
+          type: string
+          nullable: true
+        parentId:
+          type: string
+          nullable: true
+        sort:
+          type: integer
+        keepAlive:
+          type: boolean
+        hideInMenu:
+          type: boolean
+        enabled:
+          type: boolean
+        defaultOpen:
+          type: boolean
+        target:
+          type: string
+          enum: [_self, _blank]
+        permissions:
+          type: integer
+
+    AddChildRequest:
+      type: object
+      required: [label, icon]
+      properties:
+        label:
+          type: string
+        i18nKey:
+          type: string
+          nullable: true
+        icon:
+          type: string
+        to:
+          type: string
+          nullable: true
+        sort:
+          type: integer
+          default: 0
+        permissions:
+          type: integer
+          default: 0
+
+    # ---------- Dict ----------
+    DictType:
+      type: object
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DictTypeCreateRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    DictTypeUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    DictItem:
+      type: object
+      properties:
+        id:
+          type: string
+        typeCode:
+          type: string
+        value:
+          type: string
+        label:
+          type: string
+        i18nKey:
+          type: string
+          nullable: true
+        sort:
+          type: integer
+        enabled:
+          type: boolean
+
+    DictItemCreateRequest:
+      type: object
+      required: [typeCode, value, label]
+      properties:
+        typeCode:
+          type: string
+        value:
+          type: string
+        label:
+          type: string
+        i18nKey:
+          type: string
+          nullable: true
+        sort:
+          type: integer
+          default: 0
+        enabled:
+          type: boolean
+          default: true
+
+    DictItemUpdateRequest:
+      type: object
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+        i18nKey:
+          type: string
+          nullable: true
+        sort:
+          type: integer
+        enabled:
+          type: boolean
+
+    # ---------- Settings ----------
+    Setting:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          description: jsonb，可为字符串/数字/布尔/对象
+        group:
+          type: string
+          enum: [basic, user, theme, system]
+        description:
+          type: string
+          nullable: true
+
+    SettingUpdateRequest:
+      type: object
+      required: [value]
+      properties:
+        value:
+          description: jsonb，可为字符串/数字/布尔/对象
+
+    # ---------- Logs ----------
+    Log:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [operation, login, api, error]
+        userId:
+          type: string
+          nullable: true
+        action:
+          type: string
+        ip:
+          type: string
+          nullable: true
+        userAgent:
+          type: string
+          nullable: true
+        detail:
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+  responses:
+    Unauthorized:
+      description: 未登录或 token 无效
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: UNAUTHORIZED
+            message: 未登录或 token 无效
+    Forbidden:
+      description: 无权限（位掩码校验失败）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: FORBIDDEN
+            message: 无权限
+    ValidationError:
+      description: 请求参数校验失败
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: VALIDATION_ERROR
+            message: 请求参数校验失败
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: USER_NOT_FOUND
+            message: 用户不存在
+
+paths:
+  # ===================== Auth =====================
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 登录
+      security: []
+      x-permission: NONE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: 登出
+      description: >
+        登出接口强制鉴权（须携带 Token），服务端据此记录该用户的登出日志
+        （logs 表 type=login, action=logout），并返回 204 No Content 或 200 空对象。
+        前端同时清除本地 Token。
+      security:
+        - bearerAuth: []
+      x-permission: NONE
+      responses:
+        '204':
+          description: 登出成功（无内容）
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: 刷新 accessToken
+      security: []
+      x-permission: NONE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: 刷新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: 当前用户信息
+      x-permission: NONE
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===================== Permissions =====================
+  /permissions:
+    get:
+      tags: [Permissions]
+      summary: 权限点全量字典
+      x-permission: NONE
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PermissionItem'
+
+  # ===================== Users =====================
+  /users:
+    get:
+      tags: [Users]
+      summary: 用户列表
+      x-permission: SEARCH
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, disabled] }
+        - name: sort
+          in: query
+          schema: { type: string }
+        - name: order
+          in: query
+          schema: { type: string, enum: [asc, desc] }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Users]
+      summary: 创建用户
+      x-permission: ADD
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: 用户名/邮箱已存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: USERNAME_EXISTS
+                message: 用户名已存在
+    delete:
+      tags: [Users]
+      summary: 批量删除用户（逗号分隔 ID 列表）
+      description: >
+        通过 Query 参数 ids 传递逗号分隔的用户 ID 列表（如 ?ids=id1,id2,id3）进行批量软删。
+        若 ID 列表过长导致 URL 超长，允许降级为 POST /api/users/batch-delete（请求体传 ids 数组）；
+        初版统一使用 DELETE + Query。
+      x-permission: BATCH_DELETE
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 逗号分隔的用户 ID 列表
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '400':
+          description: 部分 ID 无效或越权
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: INVALID_OPERATION
+                message: 部分用户 ID 无效或无权限操作
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Users]
+      summary: 用户详情
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Users]
+      summary: 编辑用户
+      x-permission: EDIT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Users]
+      summary: 删除用户（软删）
+      x-permission: DELETE
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/{id}/reset-password:
+    post:
+      tags: [Users]
+      summary: 重置用户密码
+      x-permission: RESET
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/{id}/status:
+    put:
+      tags: [Users]
+      summary: 启用/停用用户
+      x-permission: EDIT
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusUpdateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ===================== Roles =====================
+  /roles:
+    get:
+      tags: [Roles]
+      summary: 角色列表
+      x-permission: SEARCH
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Roles]
+      summary: 创建角色
+      x-permission: ADD
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /roles/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Roles]
+      summary: 角色详情
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Roles]
+      summary: 编辑角色
+      x-permission: EDIT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleUpdateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Roles]
+      summary: 删除角色
+      x-permission: DELETE
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /roles/{id}/menus:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Roles]
+      summary: 角色菜单授权
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RoleMenusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Roles]
+      summary: 更新角色菜单授权
+      x-permission: EDIT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleMenusUpdateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/RoleMenusResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ===================== Menus =====================
+  /menus:
+    get:
+      tags: [Menus]
+      summary: 菜单树（登录态含 userPermissions）
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MenuNode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Menus]
+      summary: 创建菜单
+      x-permission: ADD
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuCreateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MenuNode'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /menus/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Menus]
+      summary: 菜单详情
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MenuNode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Menus]
+      summary: 编辑菜单
+      x-permission: EDIT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuUpdateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MenuNode'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Menus]
+      summary: 删除菜单
+      x-permission: DELETE
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /menus/{id}/add-child:
+    post:
+      tags: [Menus]
+      summary: 新增子级菜单
+      x-permission: ADD_CHILD
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddChildRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MenuNode'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ===================== Dict =====================
+  /dict/types:
+    get:
+      tags: [Dict]
+      summary: 字典类型列表
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DictType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Dict]
+      summary: 创建字典类型
+      x-permission: ADD
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DictTypeCreateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DictType'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /dict/types/{code}:
+    parameters:
+      - name: code
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Dict]
+      summary: 字典类型详情
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DictType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Dict]
+      summary: 编辑字典类型
+      x-permission: EDIT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DictTypeUpdateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DictType'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Dict]
+      summary: 删除字典类型
+      x-permission: DELETE
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /dict/types/{code}/items:
+    parameters:
+      - name: code
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Dict]
+      summary: 字典项列表
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DictItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Dict]
+      summary: 新增字典项
+      x-permission: ADD
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DictItemCreateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DictItem'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /dict/items/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    put:
+      tags: [Dict]
+      summary: 编辑字典项
+      x-permission: EDIT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DictItemUpdateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DictItem'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Dict]
+      summary: 删除字典项
+      x-permission: DELETE
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ===================== Settings =====================
+  /settings:
+    get:
+      tags: [Settings]
+      summary: 系统设置列表
+      x-permission: SEARCH
+      parameters:
+        - name: group
+          in: query
+          schema: { type: string, enum: [basic, user, theme, system] }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Setting'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /settings/{key}:
+    parameters:
+      - name: key
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Settings]
+      summary: 设置项详情
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Setting'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Settings]
+      summary: 更新设置项
+      x-permission: SETTINGS_UPDATE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingUpdateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Setting'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ===================== Logs =====================
+  /logs:
+    get:
+      tags: [Logs]
+      summary: 日志列表
+      x-permission: SEARCH
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+        - name: type
+          in: query
+          schema: { type: string, enum: [operation, login, api, error] }
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Log'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /logs/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Logs]
+      summary: 日志详情
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Log'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Logs]
+      summary: 删除日志
+      x-permission: DELETE
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
