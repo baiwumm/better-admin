@@ -501,7 +501,7 @@ Phase 7  统一测试 → 部署全部版本
 - **业务模块**（严格按 openapi.yaml）：Auth（login/refresh/me/logout）、Users、Roles、Menus（§1.5 O(1) 内存映射填充 userPermissions，禁 N+1）、Permissions（枚举下发）、Dict、Settings（SETTINGS_UPDATE 独立位 + 类型校验）、Logs（列表/详情/删除 + 4 Tab 过滤）。
 - **集成**：`loadConfig()` 启动期校验 `DATABASE_URL` / `JWT_SECRET`（缺省报错退出），`JWT_EXPIRES_IN`(7d) / `REFRESH_EXPIRES_IN`(30d) 带默认值；Swagger 挂在 `/docs`；全局前缀 `/api`。验证：`tsc --noEmit` 与 `nest build` 通过；启动后路由鉴权、Swagger、全局日志埋点均工作；真实库迁移已跑通，`db:seed` 待执行。
 - **已知问题 / 后续优化**：
-  - 权限位 `permissions` 在 JSON 中以**字符串**返回（避免 9223372036854775807 精度丢失），前端需按 BigInt 解析；openapi schema 标注为 integer，属刻意取舍，跨技术栈需保持一致。
+  - 权限位 `permissions` 在 JSON 中统一以**正数全 1 掩码 `9223372036854775807`**（字符串）表示超级管理员全量位（内部存储为 -1n，输出经 `normalizePermissionBits` 归一化）；`hasPermission` / PermissionsGuard 同时识别 `-1n` 与 `2^63-1`。前端按 BigInt 解析即可，跨技术栈保持一致。
   - 日志定期清理（pg_cron / @Cron 按 `system.logRetentionDays`）尚未实现，数据访问层已就绪。
   - 种子 `menuFullBits` 含 `ADD_CHILD`（7 位），比任务示例多 1 位，属菜单管理页完整按钮集，符合设计 §2.3。
 - 等待下一阶段（Phase 3：React + NestJS 完整全栈，或用户安排的其它阶段）。

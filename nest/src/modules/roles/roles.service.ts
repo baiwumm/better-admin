@@ -7,7 +7,12 @@ import {
 import { and, count, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { roles, roleMenus, userRoles, menus, logs } from '../../db/schema';
-import { Permissions, SUPER_ADMIN_BITS } from '../../db/schema/permissions.enum';
+import {
+  Permissions,
+  SUPER_ADMIN_BITS,
+  SUPER_ADMIN_BITS_POSITIVE,
+  normalizePermissionBits,
+} from '../../db/schema/permissions.enum';
 import { CreateRoleDto } from './dto/role-create.dto';
 import { UpdateRoleDto } from './dto/role-update.dto';
 import { RoleMenusUpdateDto } from './dto/role-menus.dto';
@@ -43,7 +48,7 @@ function toView(row: typeof roles.$inferSelect): RoleView {
   };
 }
 
-/** 校验位掩码：必须是合法权限位的组合（或全量位 -1n） */
+/** 校验位掩码：必须是合法权限位的组合（或全量位 -1n / 正数 9223372036854775807） */
 function assertValidBits(raw: string) {
   let bits: bigint;
   try {
@@ -54,7 +59,7 @@ function assertValidBits(raw: string) {
       message: 'permissions 不是合法的位掩码',
     });
   }
-  if (bits === SUPER_ADMIN_BITS) return;
+  if (bits === SUPER_ADMIN_BITS || bits === SUPER_ADMIN_BITS_POSITIVE) return;
   if (bits < 0n || (bits & ~ALL_PERMISSION_BITS) !== 0n) {
     throw new BadRequestException({
       code: 'INVALID_OPERATION',
@@ -223,7 +228,7 @@ export class RolesService {
       .where(eq(roleMenus.roleId, id));
     return {
       roleId: id,
-      menus: rows.map((r) => ({ menuId: r.menuId, permissions: r.permissions.toString() })),
+      menus: rows.map((r) => ({ menuId: r.menuId, permissions: normalizePermissionBits(r.permissions).toString() })),
     };
   }
 

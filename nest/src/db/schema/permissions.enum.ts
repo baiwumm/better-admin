@@ -48,8 +48,24 @@ export const Permissions = {
   },
 } as const satisfies Record<string, PermissionMeta>;
 
-/** 超级管理员全量位（bigint 全 1 掩码）。 */
+/** 超级管理员全量位（bigint 全 1 掩码，内部表示采用 -1n，见 database-design §1.1）。 */
 export const SUPER_ADMIN_BITS = -1n;
+
+/**
+ * 超级管理员全量位的正数表示（2^63 - 1 = 9223372036854775807）。
+ * 对外 JSON 传输统一使用该值（openapi 示例 `permissions: 9223372036854775807`），
+ * 避免有符号 -1 造成前端 BigInt/位运算歧义（database-design v0.3 §1.1）。
+ */
+export const SUPER_ADMIN_BITS_POSITIVE = 9223372036854775807n;
+
+/**
+ * 将有符号 bigint 权限位归一化为正数无符号表示：
+ * 仅对负数（全量位 -1n）映射为 2^63-1，其余值原样返回。
+ * 用于对外输出（auth/me、menus.userPermissions、roles/:id/menus）。
+ */
+export function normalizePermissionBits(bits: bigint): bigint {
+  return bits < 0n ? bits & SUPER_ADMIN_BITS_POSITIVE : bits;
+}
 
 /**
  * 判定用户是否拥有某权限位。
@@ -59,6 +75,7 @@ export const SUPER_ADMIN_BITS = -1n;
  * @returns 是否拥有该权限
  */
 export function hasPermission(userBits: bigint, requiredBit: bigint): boolean {
-  if (userBits === -1n) return true;
+  // 全量位识别：内部存储的有符号 -1n 与对外正数 2^63-1 均视为超级管理员全量
+  if (userBits === -1n || userBits === SUPER_ADMIN_BITS_POSITIVE) return true;
   return (userBits & requiredBit) !== 0n;
 }

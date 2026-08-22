@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client';
 import { users, userRoles, roleMenus, roles, logs } from '../db/schema';
+import { normalizePermissionBits } from '../db/schema/permissions.enum';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
@@ -65,7 +66,8 @@ export class AuthService {
       username: user.username,
       displayName: user.displayName,
       roles: roleRows.map((r) => r.code),
-      permissions: permissions.toString(),
+      // 对外输出正数全量位（-1n → 9223372036854775807），避免前端符号歧义
+      permissions: normalizePermissionBits(permissions).toString(),
     };
   }
 

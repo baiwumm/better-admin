@@ -6,6 +6,7 @@ import {
 import { count, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { menus, roleMenus, userRoles, logs } from '../../db/schema';
+import { normalizePermissionBits } from '../../db/schema/permissions.enum';
 import { CreateMenuDto } from './dto/menu-create.dto';
 import { UpdateMenuDto } from './dto/menu-update.dto';
 import { AddChildDto } from './dto/menu-add-child.dto';
@@ -73,7 +74,9 @@ export class MenusService {
     for (const row of rows) {
       nodes.set(row.id, {
         ...rowToBase(row),
-        userPermissions: permMap.has(row.id) ? permMap.get(row.id)!.toString() : null,
+        userPermissions: permMap.has(row.id)
+          ? normalizePermissionBits(permMap.get(row.id)!).toString()
+          : null,
         children: [],
       });
     }

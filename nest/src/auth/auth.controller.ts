@@ -26,14 +26,16 @@ export class AuthController {
     return { ip, userAgent };
   }
 
-  /** POST /api/auth/login */
+  /** POST /api/auth/login（契约 200，@HttpCode 覆盖 Nest POST 默认 201） */
   @Post('login')
+  @HttpCode(200)
   async login(@Body() dto: LoginDto, @Req() req: Request) {
     return this.authService.login(dto, this.clientMeta(req));
   }
 
   /** POST /api/auth/refresh */
   @Post('refresh')
+  @HttpCode(200)
   async refresh(@Body() dto: RefreshDto) {
     return this.authService.refresh(dto);
   }

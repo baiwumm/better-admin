@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Permissions as PermissionsEnum, hasPermission } from '../../db/schema/permissions.enum';
+import { Permissions as PermissionsEnum, SUPER_ADMIN_BITS_POSITIVE, hasPermission } from '../../db/schema/permissions.enum';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 import { AuthUser } from '../auth.service';
 
@@ -49,8 +49,8 @@ export class PermissionsGuard implements CanActivate {
 
     const userBits = BigInt(user.permissions);
 
-    // super_admin 全量位直接放行
-    if (userBits === -1n) {
+    // super_admin 全量位直接放行（内部 -1n 与对外正数 2^63-1 均识别）
+    if (userBits === -1n || userBits === SUPER_ADMIN_BITS_POSITIVE) {
       return true;
     }
 
