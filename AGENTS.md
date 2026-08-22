@@ -70,8 +70,39 @@ better-admin/
 
 - 目录：`/react`
 - 技术栈：React + Tailwind CSS + TypeScript；UI 组件库 **Hero UI 为主 + Shadcn UI 补充**（§7.2）
-- 职责：以 **Shadcn Admin 源码作为工程基础进行二次开发**，是整套产品的 **UI Source of Truth**（页面结构 / UI 设计 / 交互 / UX / Design Tokens / 组件行为）。
+- 职责：以 **Hero UI 初始化模板为基础，渐进式迁移 `/react-shadcn`（原 Shadcn Admin 源码）的功能与页面**，是整套产品的 **UI Source of Truth**（页面结构 / UI 设计 / 交互 / UX / Design Tokens / 组件行为）。
 - 数据流：`Browser → React → NestJS API → PostgreSQL`（不直接连接数据库）。
+
+### 4.6 React 迁移策略（`/react` 与 `/react-shadcn` 的关系）
+
+#### 背景说明
+
+- `/react-shadcn`：原 Shadcn Admin 实现（基于官方 Shadcn Admin v2.2.1 二次开发），是**旧实现**，沉淀了 Better Admin 已有的 Layout、页面、组件与业务能力。
+- `/react`：以 **Hero UI 初始化模板**创建的新目录，是 **UI 迁移的目标版本**，作为新的 UI 基准（UI Source of Truth）。
+- 两者关系：`/react-shadcn` 是迁移的**源**，`/react` 是迁移的**目标**；迁移过程是**渐进式**地把 `/react-shadcn` 的功能与页面搬到 `/react`，而非一次性替换。
+
+#### 迁移原则
+
+1. **渐进式**：不一次性迁移全部模块，按模块逐个推进，每完成一个模块即保持 `/react` 可运行。
+2. **功能等同**：迁移后的 `/react` 模块在功能、数据展示、交互上须与 `/react-shadcn` 对应模块保持一致，不丢失业务能力。
+3. **组件映射**：优先使用 Hero UI 组件对应 `/react-shadcn` 中的 Shadcn UI 组件（遵循 §7.2 组件优先级）；无对应 Hero UI 组件时按策略补充 Shadcn UI 或自定义组件。
+4. **保持可运行**：每次迁移提交后 `/react` 必须保持可构建、可运行，不留下半成品或破坏现有页面。
+5. **阶段性提交**：每个模块迁移以独立、清晰的提交完成，便于 review 与回滚。
+6. **参考源只读**：`/react-shadcn` 仅作为**只读参考源**，供阅读与比对，迁移过程中**不得修改** `/react-shadcn` 代码（见 §18 第 13 条）。
+
+#### 迁移进度表
+
+| 模块 | 对应 `/react-shadcn` 源 | 状态 |
+| --- | --- | --- |
+| Layout | `layout/` 相关 | 🔲 待迁移 |
+| Dashboard | `dashboard/` / 概览 | 🔲 待迁移 |
+| 用户管理 | `users/` | 🔲 待迁移 |
+| 角色管理 | `roles/` | 🔲 待迁移 |
+| 权限管理 | `permissions/` | 🔲 待迁移 |
+| 菜单管理 | `menus/` | 🔲 待迁移 |
+| 系统设置 | `settings/` | 🔲 待迁移 |
+| 日志管理 | `logs/` | 🔲 待迁移 |
+| 认证 | `auth/` / 登录登出 | 🔲 待迁移 |
 
 ### 4.2 Vue
 
@@ -399,6 +430,8 @@ https://api.baiwumm.com
 9. **不同技术栈之间的业务逻辑、数据结构和 API Contract 应尽可能保持一致**。
 10. **不要为了实现某一个版本而破坏其他版本的设计一致性**。
 11. **React / Next.js 代码生成与重构必须遵循 `vercel-react-best-practices` Skill**（详见 §20）。该 Skill 已全局安装（`~/.agents/skills/vercel-react-best-practices`），是所有 React / Next.js 代码产出（新建组件 / 页面、数据获取、重构、性能优化）的硬性性能与正确性规范；若与其冲突，以本文档的架构约束与 UI 组件库策略（§7.2）为更高优先级，但性能模式不得无故违反。
+12. **React 迁移约束**：涉及 `/react` 代码生成（新建页面 / 组件 / 功能）时，**必须先阅读 `/react-shadcn` 对应模块代码**，理解其既有实现、布局、交互与业务逻辑，再在 `/react` 中以 Hero UI 模板为基础进行等效迁移（迁移策略详见 §4.6）。
+13. **`/react-shadcn` 是只读参考源**：`/react-shadcn`（原 Shadcn Admin 源码）仅作为迁移参考与比对使用，**不得修改其代码**；任何功能迁移、修复或调整都应在 `/react` 中完成，而非改动 `/react-shadcn`。
 
 ### 需求优先级
 
@@ -565,6 +598,13 @@ Phase 7  统一测试 → 部署全部版本
 - 主色保持 Shadcn Admin 默认（slate），按约定待项目完成后再调整。
 - 验证：`pnpm install` / `pnpm dev` / `pnpm build` / `pnpm lint` / `pnpm format:check` 全部通过。
 - 等待下一阶段（Phase 2：NestJS + PostgreSQL，或用户安排的其它阶段）。
+
+### Phase 1C：React Hero UI 迁移启动（进行中）
+
+- **目录调整**：原 `/react`（Shadcn Admin）已重命名为 `/react-shadcn`；新 `/react` 以 **Hero UI 初始化模板**创建，作为 UI 迁移的目标版本与新的 UI 基准（详见 §4.1、§4.6）。
+- **迁移策略**：已制定渐进式迁移策略（§4.6），明确 `/react-shadcn` 为只读参考源、6 条迁移原则与 9 个模块的迁移进度表（状态均 🔲 待迁移）。
+- **当前状态**：`/react` Hero UI 初始化完成，项目可独立运行；尚未迁移任何业务模块（Layout / Dashboard / 用户管理 / 角色管理 / 权限管理 / 菜单管理 / 系统设置 / 日志管理 / 认证 均待迁移）。
+- 等待下一指令：按 §4.6 进度表逐个模块推进迁移，或用户安排的其它阶段。
 
 ### Phase 2：NestJS + PostgreSQL（已完成）
 
