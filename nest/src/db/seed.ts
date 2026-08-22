@@ -91,6 +91,11 @@ async function seed() {
   const mMenus = nanoid();
   const mLogs = nanoid();
   const mSettings = nanoid();
+  const mSettingsProfile = nanoid();
+  const mSettingsAccount = nanoid();
+  const mSettingsAppearance = nanoid();
+  const mSettingsNotifications = nanoid();
+  const mSettingsDisplay = nanoid();
 
   // 菜单声明可用按钮位（全量位：搜索/新增/编辑/删除/批量删/新增子级/重置）
   const menuFullBits =
@@ -187,11 +192,65 @@ async function seed() {
         label: '系统设置',
         i18nKey: 'menu.settings',
         icon: 'lucide:settings',
-        to: '/settings',
+        to: '',
         parentId: null,
         sort: 2,
         enabled: true,
-        // 系统设置页非菜单树内普通 CRUD 按钮场景，不挂按钮位
+        permissions: 0n,
+      },
+      {
+        id: mSettingsProfile,
+        label: '个人资料',
+        i18nKey: 'menu.settings.profile',
+        icon: 'lucide:user-cog',
+        to: '/settings/profile',
+        parentId: mSettings,
+        sort: 0,
+        enabled: true,
+        permissions: 0n,
+      },
+      {
+        id: mSettingsAccount,
+        label: '账户',
+        i18nKey: 'menu.settings.account',
+        icon: 'lucide:wrench',
+        to: '/settings/account',
+        parentId: mSettings,
+        sort: 1,
+        enabled: true,
+        permissions: 0n,
+      },
+      {
+        id: mSettingsAppearance,
+        label: '外观',
+        i18nKey: 'menu.settings.appearance',
+        icon: 'lucide:palette',
+        to: '/settings/appearance',
+        parentId: mSettings,
+        sort: 2,
+        enabled: true,
+        permissions: 0n,
+      },
+      {
+        id: mSettingsNotifications,
+        label: '通知',
+        i18nKey: 'menu.settings.notifications',
+        icon: 'lucide:bell',
+        to: '/settings/notifications',
+        parentId: mSettings,
+        sort: 3,
+        enabled: true,
+        permissions: 0n,
+      },
+      {
+        id: mSettingsDisplay,
+        label: '显示',
+        i18nKey: 'menu.settings.display',
+        icon: 'lucide:monitor',
+        to: '/settings/display',
+        parentId: mSettings,
+        sort: 4,
+        enabled: true,
         permissions: 0n,
       },
     ])
@@ -209,6 +268,11 @@ async function seed() {
     mMenus,
     mLogs,
     mSettings,
+    mSettingsProfile,
+    mSettingsAccount,
+    mSettingsAppearance,
+    mSettingsNotifications,
+    mSettingsDisplay,
   ];
   await db
     .insert(roleMenus)

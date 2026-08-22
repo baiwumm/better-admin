@@ -151,6 +151,18 @@ components:
         status:
           type: string
           enum: [active, disabled]
+        roles:
+          type: array
+          description: 用户关联的角色（user_roles → roles 联查）
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              code:
+                type: string
         createdAt:
           type: string
           format: date-time
@@ -177,6 +189,11 @@ components:
           type: string
           enum: [active, disabled]
           default: active
+        roleIds:
+          type: array
+          description: 关联角色 id 列表（用户 → 角色，多对多）。不传或空数组表示无角色。
+          items:
+            type: string
 
     UserUpdateRequest:
       type: object
@@ -191,6 +208,11 @@ components:
         status:
           type: string
           enum: [active, disabled]
+        roleIds:
+          type: array
+          description: 关联角色 id 列表（全量替换：传空数组或不传即清空该用户所有角色关联）。
+          items:
+            type: string
 
     ResetPasswordRequest:
       type: object
@@ -1176,8 +1198,8 @@ paths:
   /menus:
     get:
       tags: [Menus]
-      summary: 菜单树（登录态含 userPermissions）
-      x-permission: SEARCH
+      summary: 菜单树（登录态含 userPermissions；可见性按当前用户角色关联过滤）
+      x-permission: NONE
       responses:
         '200':
           description: 成功

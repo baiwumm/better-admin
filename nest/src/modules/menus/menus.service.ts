@@ -6,7 +6,10 @@ import {
 import { count, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { menus, roleMenus, userRoles, logs } from '../../db/schema';
-import { normalizePermissionBits } from '../../db/schema/permissions.enum';
+import {
+  normalizePermissionBits,
+  SUPER_ADMIN_BITS_POSITIVE,
+} from '../../db/schema/permissions.enum';
 import { CreateMenuDto } from './dto/menu-create.dto';
 import { UpdateMenuDto } from './dto/menu-update.dto';
 import { AddChildDto } from './dto/menu-add-child.dto';
@@ -52,7 +55,7 @@ function rowToBase(row: typeof menus.$inferSelect) {
 export class MenusService {
   /**
    * 一次性查询当前用户所有角色的 role_menus，聚合为 Map<menuId, permissions>。
-   * 严格遵循 database-design.md §1.5：仅 1 次查询，禁止 N+1。
+   * 仅 1 次查询，严格禁止 N+1（database-design.md §1.5）。
    */
   private async buildPermissionMap(userId: string): Promise<Map<string, bigint>> {
     const rows = await db
@@ -66,6 +69,54 @@ export class MenusService {
       map.set(r.menuId, (map.get(r.menuId) ?? 0n) | r.bits);
     }
     return map;
+  }
+
+  /**
+   * 计算当前用户可访问的菜单 id 集合（含祖先链）。
+   *
+   * - super_admin（permissions = 全量掩码 9223372036854775807）：返回 null 表示
+   *   「全量可见」，跳过过滤，直接返回完整菜单树。
+   * - 普通用户：取其在 role_menus 中「直接授权」的 menu_id 集合，
+   *   再向上追溯 parent_id 将祖先节点纳入可见范围（保证树形结构完整）。
+   *
+   * 依据 database-design.md §1.5：菜单可见性由角色关联决定，
+   * 未关联的菜单节点不应出现在返回树中。
+   *
+   * @returns 可见菜单 id 集合；null 表示不限制（全量）
+   */
+  private async buildAllowedMenuIds(user: AuthUser): Promise<Set<string> | null> {
+    // super_admin 免过滤：聚合权限位为全量掩码（对外正数表示）
+    if (BigInt(user.permissions) === SUPER_ADMIN_BITS_POSITIVE) {
+      return null;
+    }
+
+    // 直接授权集合：用户所有角色在 role_menus 中关联的 menu_id（去重）
+    const directRows = await db
+      .selectDistinct({ menuId: roleMenus.menuId })
+      .from(roleMenus)
+      .innerJoin(userRoles, eq(roleMenus.roleId, userRoles.roleId))
+      .where(eq(userRoles.userId, user.id));
+
+    const directIds = new Set(directRows.map((r) => r.menuId));
+    if (directIds.size === 0) {
+      // 未授权任何菜单 → 返回空集合（侧边栏无菜单）
+      return directIds;
+    }
+
+    // 一次性取全量菜单用于追溯祖先链（常数次查询，无 N+1）
+    const allRows = await db.select().from(menus);
+    const byId = new Map(allRows.map((m) => [m.id, m]));
+
+    const allowed = new Set(directIds);
+    for (const id of directIds) {
+      let cur = byId.get(id);
+      while (cur && cur.parentId) {
+        if (allowed.has(cur.parentId)) break;
+        allowed.add(cur.parentId);
+        cur = byId.get(cur.parentId);
+      }
+    }
+    return allowed;
   }
 
   /** 将扁平菜单列表在内存中递归组装成树（children 按 sort 排序） */
@@ -96,15 +147,31 @@ export class MenusService {
     return roots;
   }
 
-  /** GET /api/menus — 菜单树（含 userPermissions 实际授权位） */
+  /**
+   * GET /api/menus — 菜单树（含 userPermissions 实际授权位）。
+   *
+   * 可见性由角色关联决定（database-design.md §1.5）：
+   * - 未登录：返回空数组（前端路由守卫已拦截，防御性兜底）。
+   * - super_admin：返回完整菜单树。
+   * - 普通用户：仅返回其角色关联菜单（含祖先链）组成的树；
+   *   未关联的菜单节点不出现在返回树中。
+   */
   async findTree(user: AuthUser | null) {
+    if (!user) {
+      return [];
+    }
+
+    const allowedIds = await this.buildAllowedMenuIds(user);
     const rows = await db
       .select()
       .from(menus)
       .orderBy(menus.sort, menus.createdAt);
 
-    const permMap = user ? await this.buildPermissionMap(user.id) : new Map<string, bigint>();
-    return this.buildTree(rows, permMap);
+    const filteredRows =
+      allowedIds === null ? rows : rows.filter((r) => allowedIds.has(r.id));
+
+    const permMap = await this.buildPermissionMap(user.id);
+    return this.buildTree(filteredRows, permMap);
   }
 
   /** GET /api/menus/:id — 单菜单详情（含子树与 userPermissions） */

@@ -28,9 +28,13 @@ export class MenusController {
     return (req.user as AuthUser)?.id ?? null;
   }
 
-  /** GET /api/menus — 菜单树（含 userPermissions） */
+  /**
+   * GET /api/menus — 菜单树（含 userPermissions）。
+   *
+   * 仅需登录（AuthGuard），不要求 SEARCH 位：菜单树本身就是「当前用户角色关联
+   * 的可见菜单视图」，无角色用户应能拿到空数组以正确渲染空状态。
+   */
   @Get()
-  @Permissions('SEARCH')
   findTree(@Req() req: Request): Promise<MenuNode[]> {
     return this.menusService.findTree((req.user as AuthUser) ?? null);
   }

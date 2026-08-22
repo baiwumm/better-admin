@@ -134,7 +134,7 @@ RBAC 采用位掩码（见 database-design.md §1）。API Contract 层面约定
 ### 3.5 菜单 `menus`
 | 方法 | 路径 | 权限 | 说明 |
 | --- | --- | --- | --- |
-| GET | `/api/menus` | SEARCH | 菜单树（含 permissions 全量位；登录态下附 userPermissions 实际位） |
+| GET | `/api/menus` | NONE（仅登录） | 菜单树（可见性按当前用户角色关联过滤，登录态下附 userPermissions 实际位） |
 | GET | `/api/menus/:id` | SEARCH | 详情 |
 | POST | `/api/menus` | ADD | 创建（支持 parentId 子树） |
 | PUT | `/api/menus/:id` | EDIT | 编辑 |
@@ -206,10 +206,12 @@ RBAC 采用位掩码（见 database-design.md §1）。API Contract 层面约定
 {
   "id": "u_1", "username": "admin", "email": "a@b.com",
   "displayName": "管理员", "avatar": null, "status": "active",
+  "roles": [ { "id": "r_1", "name": "超级管理员", "code": "super_admin" } ],
   "createdAt": "2026-08-21T10:00:00.000Z",
   "updatedAt": "2026-08-21T10:00:00.000Z"
 }
 ```
+> `roles` = 用户关联的角色数组（`user_roles` → `roles` 联查，含 id/name/code）。创建/编辑用户时，请求体携带 `roleIds: string[]`（非必填；编辑时传空数组或不传即清空该用户角色关联）。
 
 **Menu（树节点，含权限位）**
 ```json

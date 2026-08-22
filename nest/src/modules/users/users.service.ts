@@ -4,13 +4,20 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { users, logs } from '../../db/schema';
+import { users, userRoles, roles, logs } from '../../db/schema';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/user-create.dto';
 import { UpdateUserDto } from './dto/user-update.dto';
 import { UserQueryDto } from './dto/user-query.dto';
+
+/** 用户关联的角色视图（roles 表字段子集） */
+export type UserRoleView = {
+  id: string;
+  name: string;
+  code: string;
+};
 
 /** 对外返回的用户视图（不含 passwordHash） */
 export type UserView = {
@@ -22,6 +29,8 @@ export type UserView = {
   status: string;
   createdAt: Date;
   updatedAt: Date;
+  /** 用户关联的角色（多对多，经 user_roles 联查） */
+  roles: UserRoleView[];
 };
 
 const SORTABLE = new Set([
@@ -34,9 +43,9 @@ const SORTABLE = new Set([
   'updatedAt',
 ]);
 
-function toView(row: typeof users.$inferSelect): UserView {
+function toView(row: typeof users.$inferSelect): Omit<UserView, 'roles'> {
   const { passwordHash: _omit, deletedAt: _d, ...rest } = row;
-  return rest as UserView;
+  return rest as Omit<UserView, 'roles'>;
 }
 
 @Injectable()
@@ -82,6 +91,52 @@ export class UsersService {
     return extra ? and(isNull(users.deletedAt), extra) : isNull(users.deletedAt);
   }
 
+  /**
+   * 批量查询 userIds 的角色关联（user_roles → roles），
+   * 返回 Map<userId, UserRoleView[]>。一次查询，避免 N+1。
+   */
+  private async loadRoles(
+    userIds: string[],
+  ): Promise<Map<string, UserRoleView[]>> {
+    if (userIds.length === 0) return new Map();
+    const rows = await db
+      .select({
+        userId: userRoles.userId,
+        roleId: roles.id,
+        roleName: roles.name,
+        roleCode: roles.code,
+      })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(inArray(userRoles.userId, userIds))
+      .orderBy(roles.sort, roles.name);
+
+    const map = new Map<string, UserRoleView[]>();
+    for (const r of rows) {
+      const list = map.get(r.userId) ?? [];
+      list.push({ id: r.roleId, name: r.roleName, code: r.roleCode });
+      map.set(r.userId, list);
+    }
+    return map;
+  }
+
+  /** 校验 roleIds 全部有效（存在且启用），存在无效 ID 时抛 VALIDATION_ERROR */
+  private async assertValidRoleIds(roleIds: string[]) {
+    if (roleIds.length === 0) return;
+    const rows = await db
+      .select({ id: roles.id })
+      .from(roles)
+      .where(inArray(roles.id, roleIds));
+    const validIds = new Set(rows.map((r) => r.id));
+    const invalid = roleIds.filter((id) => !validIds.has(id));
+    if (invalid.length > 0) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: `角色不存在或已停用: ${invalid.join(', ')}`,
+      });
+    }
+  }
+
   async findAll(query: UserQueryDto) {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 10;
@@ -116,8 +171,14 @@ export class UsersService {
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 
+    // 批量加载角色关联（一次查询，避免 N+1）
+    const rolesMap = await this.loadRoles(rows.map((r) => r.id));
+
     return {
-      data: rows.map(toView),
+      data: rows.map((row) => ({
+        ...toView(row),
+        roles: rolesMap.get(row.id) ?? [],
+      })),
       pagination: { page, pageSize, total },
     };
   }
@@ -132,25 +193,50 @@ export class UsersService {
         message: '用户不存在',
       });
     }
-    return toView(row);
+    const rolesMap = await this.loadRoles([id]);
+    return {
+      ...toView(row),
+      roles: rolesMap.get(id) ?? [],
+    };
   }
 
   async create(dto: CreateUserDto, operatorId: string | null) {
+    const roleIds = dto.roleIds ?? [];
+    // 外键校验：角色 id 必须全部有效，避免外键报错（VALIDATION_ERROR）
+    await this.assertValidRoleIds(roleIds);
+
     const passwordHash = await bcrypt.hash(dto.password, 10);
     try {
-      const [row] = await db
-        .insert(users)
-        .values({
-          username: dto.username,
-          email: dto.email,
-          passwordHash,
-          displayName: dto.displayName,
-          avatar: dto.avatar ?? null,
-          status: dto.status ?? 'active',
-        })
-        .returning();
-      await this.writeLog('user.create', operatorId, { id: row.id, username: row.username });
-      return toView(row);
+      // 用户创建与角色关联必须原子：db.transaction
+      const created = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(users)
+          .values({
+            username: dto.username,
+            email: dto.email,
+            passwordHash,
+            displayName: dto.displayName,
+            avatar: dto.avatar ?? null,
+            status: dto.status ?? 'active',
+          })
+          .returning();
+
+        if (roleIds.length > 0) {
+          await tx
+            .insert(userRoles)
+            .values(roleIds.map((roleId) => ({ userId: row.id, roleId })));
+        }
+        return row;
+      });
+
+      await this.writeLog('user.create', operatorId, {
+        id: created.id,
+        username: created.username,
+        roleIds,
+      });
+
+      const rolesMap = await this.loadRoles([created.id]);
+      return { ...toView(created), roles: rolesMap.get(created.id) ?? [] };
     } catch (err) {
       this.handleUniqueError(err);
     }
@@ -166,19 +252,45 @@ export class UsersService {
         message: '用户不存在',
       });
     }
+
+    // roleIds 为 undefined 表示「未修改角色」；为数组（含空数组）表示「全量替换」
+    if (dto.roleIds !== undefined) {
+      await this.assertValidRoleIds(dto.roleIds);
+    }
+
     try {
-      const [row] = await db
-        .update(users)
-        .set({
-          email: dto.email ?? existing.email,
-          displayName: dto.displayName ?? existing.displayName,
-          avatar: dto.avatar === undefined ? existing.avatar : dto.avatar,
-          status: dto.status ?? existing.status,
-        })
-        .where(eq(users.id, id))
-        .returning();
-      await this.writeLog('user.update', operatorId, { id });
-      return toView(row);
+      // 用户更新与角色关联全量替换必须原子：db.transaction
+      const row = await db.transaction(async (tx) => {
+        const [updated] = await tx
+          .update(users)
+          .set({
+            email: dto.email ?? existing.email,
+            displayName: dto.displayName ?? existing.displayName,
+            avatar: dto.avatar === undefined ? existing.avatar : dto.avatar,
+            status: dto.status ?? existing.status,
+          })
+          .where(eq(users.id, id))
+          .returning();
+
+        if (dto.roleIds !== undefined) {
+          // 全量替换：删除旧关联 → 插入新关联（空数组即清空）
+          await tx.delete(userRoles).where(eq(userRoles.userId, id));
+          if (dto.roleIds.length > 0) {
+            await tx
+              .insert(userRoles)
+              .values(dto.roleIds.map((roleId) => ({ userId: id, roleId })));
+          }
+        }
+        return updated;
+      });
+
+      await this.writeLog('user.update', operatorId, {
+        id,
+        roleIds: dto.roleIds,
+      });
+
+      const rolesMap = await this.loadRoles([id]);
+      return { ...toView(row), roles: rolesMap.get(id) ?? [] };
     } catch (err) {
       this.handleUniqueError(err);
     }
@@ -272,6 +384,7 @@ export class UsersService {
       .where(eq(users.id, id))
       .returning();
     await this.writeLog('user.status_update', operatorId, { id, status });
-    return toView(row);
+    const rolesMap = await this.loadRoles([id]);
+    return { ...toView(row), roles: rolesMap.get(id) ?? [] };
   }
 }
