@@ -95,10 +95,22 @@ export function SystemSettings() {
   const canUpdate = hasPermission(userPermissions, PERMISSIONS.SETTINGS_UPDATE)
 
   const updateRow = (key: string, patch: Partial<EditableRow>) => {
-    setRows((prev) => ({
-      ...prev,
-      [key]: { ...prev[key], ...patch },
-    }))
+    setRows((prev) => {
+      // 首次编辑时以服务端数据为基底，保留 key/originalType 等元数据
+      let base = prev[key]
+      if (!base) {
+        const setting = data?.find((s) => s.key === key)
+        base = setting
+          ? serializeValue(setting)
+          : {
+              key,
+              value: '',
+              originalType: 'string',
+              booleanValue: false,
+            }
+      }
+      return { ...prev, [key]: { ...base, ...patch } }
+    })
   }
 
   const saveRow = async (row: EditableRow) => {
