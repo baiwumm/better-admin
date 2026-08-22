@@ -1,7 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <rect fill="#0A0A0A" width="256" height="256" rx="57" ry="57"/>
-  <rect fill="#FFFFFF" x="60.5" y="60.5" width="92.5" height="135" rx="7" ry="7"/>
-  <rect fill="#FFFFFF" x="163.5" y="60.5" width="42.75" height="60.5" rx="7" ry="7"/>
-  <rect fill="#FFFFFF" x="163.5" y="131.5" width="42.75" height="64" rx="7" ry="7"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1000"><metadata><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/"><rdf:Description><dc:creator>RealFaviconGenerator</dc:creator><dc:source>https://realfavicongenerator.net</dc:source></rdf:Description></rdf:RDF></metadata><style>
+    #light-icon {
+      display: inline;
+    }
+    #dark-icon {
+      display: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      #light-icon {
+        display: none;
+      }
+      #dark-icon {
+        display: inline;
+      }
+    }
+  </style><g id="light-icon"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1000"><g><g transform="matrix(3.90625,0,0,3.90625,0,0)"><svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect fill="#0A0A0A" width="256" height="256" rx="57" ry="57"></rect><rect fill="#FFFFFF" x="60.5" y="60.5" width="92.5" height="135" rx="7" ry="7"></rect><rect fill="#FFFFFF" x="163.5" y="60.5" width="42.75" height="60.5" rx="7" ry="7"></rect><rect fill="#FFFFFF" x="163.5" y="131.5" width="42.75" height="64" rx="7" ry="7"></rect></svg></g></g></svg></g><g id="dark-icon"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="1000" height="1000"><g><g transform="matrix(3.90625,0,0,3.90625,0,0)"><svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect fill="#FFFFFF" width="256" height="256" rx="57" ry="57"></rect><rect fill="#0A0A0A" x="60.5" y="60.5" width="92.5" height="135" rx="7" ry="7"></rect><rect fill="#0A0A0A" x="163.5" y="60.5" width="42.75" height="60.5" rx="7" ry="7"></rect><rect fill="#0A0A0A" x="163.5" y="131.5" width="42.75" height="64" rx="7" ry="7"></rect></svg></g></g></svg></g></svg>

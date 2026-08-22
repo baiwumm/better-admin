@@ -1,24 +1,25 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 
+/* 项目级 Design Tokens（唯一来源；最后加载且未分层 → 级联优先于上述 Hero 变量） */
+@import './theme.css';
+
 @custom-variant dark (&:is(.dark *));
 
 :root{
+  /* Border Radius */
+  --radius: 0.5rem;
+  --field-radius: 0.75rem;
+
+  /* Font Family */
+  /* Make sure to load Inter font in your app */
   --font-sans: 'Maple Mono CN', system-ui, Avenir, Helvetica, Arial, sans-serif;
+
   view-transition-name: root;
 }
 
 @layer base {
-  html {
-    @apply overflow-x-hidden;
-    font-family: var(--font-sans);
-  }
-  body {
-    @apply min-h-svh w-full bg-background text-foreground;
-  }
-
-  /* Override Radix scroll locking for sticky headers */
-  body[data-scroll-locked] {
-    overflow: unset !important;
+  html,body {
+    @apply bg-background text-foreground;
   }
 }
