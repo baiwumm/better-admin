@@ -11,10 +11,14 @@ import {
 } from '@/components/ui/sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AppTitle } from './app-title'
-import { adaptMenuTreeToSidebar } from './data/sidebar-adapter'
+import {
+  adaptMenuTreeToNavItems,
+  adaptMenuTreeToSidebar,
+} from './data/sidebar-adapter'
 import { sidebarData } from './data/sidebar-data'
 import { useMenus } from './hooks/use-menus'
-import { NavGroup } from './nav-group'
+import { NavGroups } from './nav-groups'
+import { NavTree } from './nav-tree'
 import { NavUser } from './nav-user'
 
 /** 侧边栏菜单加载骨架屏（表示正在加载权限/菜单） */
@@ -47,17 +51,21 @@ function SidebarMenuSkeleton() {
 }
 
 export function AppSidebar() {
-  const { collapsible, variant } = useLayout()
+  const { collapsible, variant, sidebarMode } = useLayout()
   const { data: menuTree, isLoading, isError } = useMenus()
   const storeUser = useAuthStore((state) => state.user)
 
   // 加载中 / 失败 → 骨架或空态（不回退静态菜单，避免泄露未授权菜单）；
   // 加载成功有菜单 → 角色关联菜单；加载成功空树 → 无权限空态。
-  const { navGroups, noMenu } = useMemo(() => {
+  const { navItems, navGroups, noMenu } = useMemo(() => {
     if (menuTree && menuTree.length > 0) {
-      return { navGroups: adaptMenuTreeToSidebar(menuTree), noMenu: false }
+      return {
+        navItems: adaptMenuTreeToNavItems(menuTree),
+        navGroups: adaptMenuTreeToSidebar(menuTree),
+        noMenu: false,
+      }
     }
-    return { navGroups: [], noMenu: true }
+    return { navItems: [], navGroups: [], noMenu: true }
   }, [menuTree])
 
   const user = storeUser
@@ -81,7 +89,12 @@ export function AppSidebar() {
         </div>
       )
     }
-    return navGroups.map((props) => <NavGroup key={props.title} {...props} />)
+    // 标签/分组模式：分组标题 + 平铺；折叠模式：可折叠树。
+    return sidebarMode === 'grouped' ? (
+      <NavGroups groups={navGroups} />
+    ) : (
+      <NavTree items={navItems} />
+    )
   }
 
   return (

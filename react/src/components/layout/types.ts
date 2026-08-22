@@ -15,14 +15,24 @@ type BaseNavItem = {
 type NavLink = BaseNavItem & {
   url: LinkProps['to'] | (string & {})
   items?: never
+  /** 菜单树节点配置的默认展开（仅父级生效） */
+  defaultOpen?: boolean
 }
 
 type NavCollapsible = BaseNavItem & {
-  items: (BaseNavItem & { url: LinkProps['to'] | (string & {}) })[]
+  items: (BaseNavItem & {
+    url: LinkProps['to'] | (string & {})
+    defaultOpen?: boolean
+  })[]
   url?: never
+  /** 菜单树节点配置的默认展开 */
+  defaultOpen?: boolean
 }
 
 type NavItem = NavCollapsible | NavLink
+
+/** 侧边栏菜单树（与菜单管理结构一致，直接递归渲染，无分组标题） */
+type NavTree = NavItem[]
 
 type NavGroup = {
   title: string
@@ -34,4 +44,4 @@ type SidebarData = {
   navGroups: NavGroup[]
 }
 
-export type { SidebarData, NavGroup, NavItem, NavCollapsible, NavLink }
+export type { SidebarData, NavGroup, NavItem, NavCollapsible, NavLink, NavTree }

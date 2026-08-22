@@ -1,5 +1,5 @@
 import { type MenuNode } from '@/lib/api-types'
-import { type NavGroup, type NavItem } from '../types'
+import { type NavGroup, type NavItem, type NavTree } from '../types'
 import { getMenuIcon } from './menu-icon-map'
 
 /**
@@ -62,4 +62,47 @@ export function adaptMenuTreeToSidebar(nodes: MenuNode[]): NavGroup[] {
         : [nodeToNavItem(node)],
     }
   })
+}
+
+/**
+ * 将后端菜单树直接映射为侧边栏导航树（与菜单管理结构一致）。
+ * - 有子级的节点 → 可折叠父级（NavCollapsible），子级递归映射；
+ * - 叶子节点 → 链接项（NavLink）；
+ * - defaultOpen 取自菜单节点的 defaultOpen 配置（未配置则默认折叠）。
+ * 与 adaptMenuTreeToSidebar 不同：本函数保留菜单树的层级，不摊平成分组。
+ */
+function nodeToNavTreeItem(node: MenuNode): NavItem {
+  const children = (node.children ?? []).filter(
+    (c) => !c.hideInMenu && c.enabled
+  )
+  const base = {
+    title: node.label,
+    icon: getMenuIcon(node.icon),
+    defaultOpen: node.defaultOpen,
+  }
+  if (children.length > 0) {
+    return {
+      ...base,
+      items: children
+        .slice()
+        .sort((a, b) => a.sort - b.sort)
+        .map(nodeToNavTreeItem) as NavItem[],
+    }
+  }
+  return {
+    ...base,
+    url: node.to || '/',
+  }
+}
+
+export function adaptMenuTreeToNavItems(nodes: MenuNode[]): NavTree {
+  return filterTree(nodes)
+    .filter((node) => {
+      // 过滤掉「无子级且本身被隐藏/禁用」的孤立节点（filterTree 已处理大部分）
+      const children = (node.children ?? []).filter(
+        (c) => !c.hideInMenu && c.enabled
+      )
+      return children.length > 0 || (!node.hideInMenu && node.enabled)
+    })
+    .map(nodeToNavTreeItem)
 }

@@ -1,6 +1,12 @@
 import { type SVGProps } from 'react'
 import { Root as Radio, Item } from '@radix-ui/react-radio-group'
-import { CircleCheck, RotateCcw, Settings } from 'lucide-react'
+import {
+  CircleCheck,
+  LayoutList,
+  ListTree,
+  RotateCcw,
+  Settings,
+} from 'lucide-react'
 import { IconDir } from '@/assets/custom/icon-dir'
 import { IconLayoutCompact } from '@/assets/custom/icon-layout-compact'
 import { IconLayoutDefault } from '@/assets/custom/icon-layout-default'
@@ -13,7 +19,7 @@ import { IconThemeLight } from '@/assets/custom/icon-theme-light'
 import { IconThemeSystem } from '@/assets/custom/icon-theme-system'
 import { cn } from '@/lib/utils'
 import { useDirection } from '@/context/direction-provider'
-import { type Collapsible, useLayout } from '@/context/layout-provider'
+import { type Collapsible, type SidebarMode, useLayout } from '@/context/layout-provider'
 import { useTheme } from '@/context/theme-provider'
 import { Button } from '@/components/ui/button'
 import {
@@ -60,6 +66,7 @@ export function ConfigDrawer() {
         <div className='space-y-6 overflow-y-auto px-4'>
           <ThemeConfig />
           <SidebarConfig />
+          <SidebarModeConfig />
           <LayoutConfig />
           <DirConfig />
         </div>
@@ -219,7 +226,7 @@ function SidebarConfig() {
   return (
     <div className='max-md:hidden'>
       <SectionTitle
-        title='侧边栏'
+        title='侧边栏样式'
         showReset={defaultVariant !== variant}
         onReset={() => setVariant(defaultVariant)}
         resetAriaLabel='Reset sidebar style to default'
@@ -253,6 +260,45 @@ function SidebarConfig() {
       </Radio>
       <div id='sidebar-description' className='sr-only'>
         在内嵌、浮动或标准侧边栏布局之间选择
+      </div>
+    </div>
+  )
+}
+
+function SidebarModeConfig() {
+  const { defaultSidebarMode, sidebarMode, setSidebarMode } = useLayout()
+  return (
+    <div>
+      <SectionTitle
+        title='菜单展示'
+        showReset={defaultSidebarMode !== sidebarMode}
+        onReset={() => setSidebarMode(defaultSidebarMode)}
+        resetAriaLabel='Reset menu display mode to default'
+      />
+      <Radio
+        value={sidebarMode}
+        onValueChange={(v) => setSidebarMode(v as SidebarMode)}
+        className='grid w-full max-w-md grid-cols-2 gap-4'
+        aria-label='选择侧边栏菜单展示模式'
+        aria-describedby='sidebar-mode-description'
+      >
+        {[
+          {
+            value: 'grouped',
+            label: '分组标签',
+            icon: LayoutList,
+          },
+          {
+            value: 'tree',
+            label: '可折叠树',
+            icon: ListTree,
+          },
+        ].map((item) => (
+          <RadioGroupItem key={item.value} item={item} />
+        ))}
+      </Radio>
+      <div id='sidebar-mode-description' className='sr-only'>
+        在分组标签（分组标题加平铺）或可折叠树之间选择
       </div>
     </div>
   )
