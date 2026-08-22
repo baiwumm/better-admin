@@ -12,7 +12,7 @@ Better Admin 的核心目标不是做多套不同的后台，而是：
 
 ## 项目特点
 
-- **一套代码设计，多版本实现**：统一 UI（基于 Shadcn Admin）、统一业务逻辑、统一数据库，跨技术栈保持一致性。
+- **一套代码设计，多版本实现**：统一 UI（React / Next.js：Hero UI 为主 + Shadcn UI 补充；Vue / Nuxt：Shadcn UI 为主）、统一业务逻辑、统一数据库，跨技术栈保持一致性。
 - **全栈能力对比**：直接对比 React/Vue（SPA + NestJS API）与 Next.js/Nuxt（全栈 Server）两种开发范式。
 - **统一 API Contract**：RESTful API，各版本尽量遵循相同的返回结构与协议。
 - **统一数据库**：共用同一个 PostgreSQL（Supabase 托管），服务端统一使用 Drizzle ORM。
@@ -30,7 +30,7 @@ Better Admin 的核心目标不是做多套不同的后台，而是：
 | Nuxt | `nuxt/` | 全栈 | Nuxt Server / Nitro |
 | NestJS | `nest/` | 后端 API | PostgreSQL |
 
-基础能力：TypeScript · Tailwind CSS · Shadcn Admin · Drizzle ORM · PostgreSQL（Supabase 托管）
+基础能力：TypeScript · Tailwind CSS · Hero UI / Shadcn UI · Drizzle ORM · PostgreSQL（Supabase 托管）
 
 ---
 
@@ -40,8 +40,8 @@ Better Admin 的核心目标不是做多套不同的后台，而是：
 better-admin/
 ├── next/        # Next.js 全栈实现
 ├── nuxt/        # Nuxt 全栈实现
-├── react/       # React + Shadcn Admin（UI 基准）
-├── vue/         # Vue + Shadcn Admin 风格
+├── react/       # React（UI 基准；Hero UI 为主 + Shadcn UI 补充）
+├── vue/         # Vue + Shadcn UI
 ├── nest/        # NestJS 后端 API
 ├── docs/        # 项目文档（需求：docs/requirements.md）
 ├── AGENTS.md    # AI Agent 开发指南
@@ -104,7 +104,7 @@ pnpm start:dev
 ## 开发状态
 
 - [x] 项目工程规范与文档基础设施（README、AGENTS.md、需求文档）
-- [x] React 版本（基于 Shadcn Admin 的 UI 基础已建立，业务功能后续阶段开发，详见 [`docs/react.md`](docs/react.md)）
+- [x] React 版本（基于 Shadcn Admin 的 UI 基础已建立；UI 组件策略：Hero UI 为主 + Shadcn UI 补充，详见 [`docs/react.md`](docs/react.md)）
 - [ ] NestJS 后端 API
 - [ ] Vue 版本
 - [ ] Next.js 版本

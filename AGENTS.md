@@ -48,8 +48,8 @@ Better Admin 是一个基于统一设计与业务逻辑，使用 **React、Vue�
 better-admin/
 ├── next/                    # Next.js 全栈实现
 ├── nuxt/                    # Nuxt 全栈实现
-├── react/                   # React + Shadcn Admin（UI 基准）
-├── vue/                     # Vue + Shadcn Admin 风格
+├── react/                   # React（UI 基准；Hero UI 为主 + Shadcn UI 补充）
+├── vue/                     # Vue + Shadcn UI
 ├── nest/                    # NestJS 后端 API
 ├── docs/                    # 项目文档
 ├── README.md
@@ -69,28 +69,28 @@ better-admin/
 ### 4.1 React（UI 基准版本）
 
 - 目录：`/react`
-- 技术栈：React + Shadcn Admin + Tailwind CSS + TypeScript
-- 职责：以 **Shadcn Admin 源码作为主要基础进行二次开发**，是整套产品的 **UI 基准版本**。
+- 技术栈：React + Tailwind CSS + TypeScript；UI 组件库 **Hero UI 为主 + Shadcn UI 补充**（§7.2）
+- 职责：以 **Shadcn Admin 源码作为工程基础进行二次开发**，是整套产品的 **UI Source of Truth**（页面结构 / UI 设计 / 交互 / UX / Design Tokens / 组件行为）。
 - 数据流：`Browser → React → NestJS API → PostgreSQL`（不直接连接数据库）。
 
 ### 4.2 Vue
 
 - 目录：`/vue`
-- 技术栈：Vue + Shadcn Admin 风格 + TypeScript
-- 职责：尽可能还原 React 版本的页面结构、UI 设计、组件、交互、数据展示与用户体验。
+- 技术栈：Vue + **Shadcn UI**（shadcn-vue）+ TypeScript
+- 职责：尽可能还原 React 版本的页面结构、UI 设计、组件、交互、数据展示与用户体验；UI 组件库保持 **Shadcn UI 为主**，暂不切换 Hero UI（§7.2）。
 - 数据流：`Browser → Vue → NestJS API → PostgreSQL`（不直接连接数据库）。
 
 ### 4.3 Next.js（全栈）
 
 - 目录：`/next`
-- 技术栈：Next.js App Router / Server Components 等全栈能力 + TypeScript
+- 技术栈：Next.js App Router / Server Components 等全栈能力 + TypeScript；UI 组件库 **Hero UI 为主 + Shadcn UI 补充**（§7.2）
 - 职责：独立实现页面、UI、API、服务端逻辑、数据库访问、用户认证与权限控制，**不依赖 NestJS**。
 - 数据流：`Browser → Next.js → PostgreSQL`。
 
 ### 4.4 Nuxt（全栈）
 
 - 目录：`/nuxt`
-- 技术栈：Nuxt 3 + Nitro Server + TypeScript
+- 技术栈：Nuxt 3 + Nitro Server + TypeScript；UI 组件库保持 **Shadcn UI 为主**（§7.2）
 - 职责：独立实现页面、UI、API / Server API、服务端业务逻辑、数据库访问、用户认证与权限控制，**不依赖 NestJS**。
 - 数据流：`Browser → Nuxt → PostgreSQL`。
 
@@ -183,7 +183,83 @@ DELETE /api/users/:id
 
 ## 7. UI 一致性要求
 
-- **设计基准：Shadcn Admin。** React 版本直接基于 Shadcn Admin 二次开发；Vue、Next.js、Nuxt 版本按 React 版本实现。
+### 7.1 UI Source of Truth 与设计基准
+
+- **React 是 Better Admin 的 UI Source of Truth**：页面结构、UI 设计、交互、UX、Design Tokens、组件行为均以 React 版本为基准。React 保持 Source of Truth **并不意味着 React 必须全部使用 Shadcn UI**。
+- React 版本基于官方 **Shadcn Admin** v2.2.1 源码二次开发，作为产品与工程起点；**UI 组件库策略独立定义**（见 §7.2）。
+- Vue、Next.js、Nuxt 版本按 React 版本实现，保持页面、组件行为、视觉与交互一致。
+
+### 7.2 UI 组件库策略（核心规则）
+
+```text
+Better Admin UI Strategy
+
+React:
+Hero UI 为主要 UI 组件库
+Shadcn UI 为补充
+
+Next.js:
+Hero UI 为主要 UI 组件库
+Shadcn UI 为补充
+
+Vue:
+Shadcn UI 为主要 UI 组件库
+
+Nuxt.js:
+Shadcn UI 为主要 UI 组件库
+
+React / Next.js 组件优先级：
+
+Hero UI
+  >
+Shadcn UI
+  >
+Custom Component
+
+React / Next.js 样式变量：
+
+Hero UI Design System
+  ↓
+Project Design Tokens
+  ↓
+Hero UI + Shadcn UI + Custom Components
+
+Vue / Nuxt：
+当前保持 Shadcn UI
+未来是否切换 Hero UI，另行评估。
+
+整个项目：
+React 仍然是 UI / UX Source of Truth。
+不同技术栈可以使用不同 UI 组件库，但最终页面必须保持统一的视觉、交互、结构和用户体验。
+```
+
+**组件选择规则（React / Next.js）**：
+
+1. 先检查项目现有组件（`components/`、`components/ui/`、`features/`），不重复创建已存在组件。
+2. Hero UI 已提供满足需求的组件 → **优先使用**（Button / Input / Textarea / Select / Autocomplete / Dropdown / Modal / Drawer / Tabs / Card / Tooltip / Popover / Avatar / Badge / Chip / Switch / Checkbox / Radio / Progress / Spinner / Pagination / Navbar / DatePicker / DateRangePicker / Table 等）。
+3. Hero UI 没有对应组件、或无法满足/不适合当前场景 → 使用 **Shadcn UI**（Command、复杂 Form 组合、Sidebar、DataTable 相关、特殊 Sheet / Drawer、或项目已高度定制并稳定使用的组件）。不要为了使用 Shadcn UI 而主动寻找 Shadcn 方案。
+4. 两者都无法满足 → **项目级自定义组件**（遵循现有 Design Tokens，禁止随意新增颜色 / 圆角 / 阴影 / 字体 / 间距）。
+
+**禁止事项**：
+
+- 禁止同一种基础组件在不同页面随意混用不同组件库（如 A 页 Shadcn Button、B 页 Hero Button、C 页自定义 Button），除非存在被项目规范认可的明确技术原因。
+- 禁止因为熟悉 Shadcn UI 就默认所有组件使用 Shadcn UI；禁止为了「全部 Hero UI 化」强行重写存量 Shadcn UI。
+- 禁止未经确认进行大规模 UI 重构 / 一次性迁移。
+
+**渐进式调整（不是一次性重构）**：
+
+- 现有成熟能力（Layout / Sidebar / Header / Navigation / Theme / Dark Mode / Responsive / DataTable / Form / Dialog / Drawer / Command / Chart / Hooks / Utils / 页面结构 / 交互逻辑）**继续保留**，不机械迁移。
+- 新增功能优先使用 Hero UI；修改已有组件时按实际收益决定是否迁移。
+- 不破坏现有页面结构、交互逻辑与业务逻辑；不破坏 DataTable、Form 等成熟基础设施；**业务能力优先于组件库替换**。
+
+### 7.3 样式变量 / Design Tokens 规则
+
+- React / Next.js 的样式变量、设计 Token、主题变量以 **Hero UI 设计体系为主要参考**，形成**一套项目级 Design Tokens**；**禁止并行维护两套互相独立的设计变量**。
+- 需重点统一：主色、次要颜色、Background / Foreground、Content、Border / Divider、Focus / Hover / Active / Disabled、Radius、Typography（Font Size / Font Weight）、Spacing、Shadow、Transition、Dark Mode / Light Mode。
+- Shadcn UI 复用这套项目级变量进行适配，与 Hero UI 共用同一视觉体系（圆角、边框、颜色、字体、阴影、间距、Focus / Hover / Disabled、Dark Mode、动画），最终产品不允许出现两套截然不同的组件视觉。
+
+### 7.4 UI 一致性要求
+
 - 四个前端版本需尽可能保持一致的：
   - **页面**：Dashboard、用户管理、角色管理、权限管理、菜单管理、系统设置、日志、其他业务页面。
   - **UI 组件**：Sidebar、Header、Breadcrumb、Table、Form、Dialog、Drawer、Dropdown、Command、Tabs、Card、Button、Input、Select、Date Picker、Toast、Pagination、Empty / Loading / Error State。
@@ -312,7 +388,7 @@ https://api.baiwumm.com
 
 以下为所有 AI Agent 在开发 Better Admin 时必须遵守的**硬性规则**：
 
-1. **React 是 UI 基准版本**，基于 Shadcn Admin 进行二次开发。
+1. **React 是 UI 基准版本（UI Source of Truth）**，基于 Shadcn Admin 二次开发；UI 组件库策略遵循 §7.2：React / Next.js 以 **Hero UI 为主、Shadcn UI 为补充**，Vue / Nuxt 以 **Shadcn UI 为主**。
 2. **Vue、Next.js、Nuxt 的 UI 应尽可能与 React 版本保持一致**（包括组件、视觉与交互）。
 3. **React 和 Vue 使用 NestJS API**；不得绕过 NestJS 直接访问数据库。
 4. **Next.js 和 Nuxt 采用各自的全栈能力，不依赖 NestJS**。
@@ -443,7 +519,7 @@ React 版本不仅是视觉参考，也是：
 
 Vue、Next.js、Nuxt 后续实现时，应优先参考已经完成的 React 版本。
 
-如果 React 版本尚未实现某个页面：**不要自行在其他技术栈创造一套新的 UI 方案**，应优先保持设计语言与 Shadcn Admin 基准一致。
+如果 React 版本尚未实现某个页面：**不要自行在其他技术栈创造一套新的 UI 方案**，应优先保持设计语言与 React 基准一致（遵循 §7.2 组件库策略与 §7.3 项目级 Design Tokens）。
 
 ### 开发顺序建议
 
@@ -505,3 +581,10 @@ Phase 7  统一测试 → 部署全部版本
   - 日志定期清理（pg_cron / @Cron 按 `system.logRetentionDays`）尚未实现，数据访问层已就绪。
   - 种子 `menuFullBits` 含 `ADD_CHILD`（7 位），比任务示例多 1 位，属菜单管理页完整按钮集，符合设计 §2.3。
 - 等待下一阶段（Phase 3：React + NestJS 完整全栈，或用户安排的其它阶段）。
+
+### UI 组件库策略调整（2026-08-22）
+
+- 明确 React / Next.js：**Hero UI 为主 + Shadcn UI 为补充**；Vue / Nuxt：**Shadcn UI 为主，暂不调整**。
+- React / Next.js 组件优先级：Hero UI > Shadcn UI > Custom；样式变量以 **Hero UI 设计体系为主要参考**，统一维护一套项目级 Design Tokens（§7.2 / §7.3）。
+- 存量 Shadcn Admin / Shadcn UI 能力（Layout、Sidebar、DataTable、Form 等）**渐进式保留**，不做一次性大规模迁移；新增功能优先 Hero UI。
+- 本次仅同步项目规范与文档（`AGENTS.md`、`docs/requirements.md`、`docs/ui-spec.md`、`docs/react.md`、`README.md`），**未进行任何 UI 代码迁移**。

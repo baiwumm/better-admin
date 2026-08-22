@@ -9,7 +9,8 @@
 **React 是 Better Admin 的 UI Source of Truth（UI 基准版本）。**
 
 - 后续 Vue、Next.js、Nuxt 版本以 React 版本的页面结构、UI 组件、视觉、交互、响应式与 Dark Mode 行为作为参考基准。
-- React 版本直接基于官方 **Shadcn Admin** 源码进行二次开发，当前阶段以「建立基础、稳定运行」为目标，不做大规模产品定制。
+- React 版本直接基于官方 **Shadcn Admin** 源码进行二次开发（产品与工程起点），当前阶段以「建立基础、稳定运行」为目标。
+- **UI 组件库策略**：React（含 Next.js）以 **Hero UI 为主、Shadcn UI 为补充**（优先级：Hero UI > Shadcn UI > 项目级自定义）；存量 Shadcn UI 渐进式保留，不做一次性大规模重构；样式变量以 Hero UI 设计体系为主要参考（详见 `AGENTS.md` §7.2 / `ui-spec.md` §18.3）。
 - React 是纯前端实现，**不直接连接数据库**；后续接入 NestJS API：
 
 ```text
@@ -29,7 +30,7 @@ Browser → React → NestJS API → PostgreSQL
 | 构建工具 | Vite（含 `@vitejs/plugin-react`） | `8.0.8` / `6.0.1` |
 | 样式 | Tailwind CSS（v4，CSS-first，`@tailwindcss/vite` 插件，无 `tailwind.config`） | `4.2.2` |
 | 字体 | 默认 **Maple Mono CN**（自托管，`public/fonts/maple-mono-cn/`，cn-font-split 分包，OFL-1.1）；可选 Inter / Manrope / system | `@chinese-fonts/maple-mono-cn 2.0.0` |
-| UI 组件库 | shadcn/ui（new-york 风格，组件已复制到 `src/components/ui/`，基于 Radix UI） | `components.json` 配置 |
+| UI 组件库 | **Hero UI（规划引入，为主，`@heroui/react`）** + **shadcn/ui（补充，new-york 风格，组件已复制到 `src/components/ui/`，基于 Radix UI，存量保留）** | `@heroui/react`（规划）/ `components.json` 配置 |
 | 路由 | TanStack Router（文件式路由 `src/routes/`，自动生成 `src/routeTree.gen.ts`，路由插件 + Devtools） | `@tanstack/react-router 1.168.22` |
 | 状态管理 | Zustand（全局 store，如 `src/stores/auth-store.ts`）；主题/字体/方向/布局/搜索使用 React Context | `zustand 5.0.12` |
 | 数据请求 | TanStack Query + axios（当前仅演示 Mock 数据，未接真实后端） | `@tanstack/react-query 5.99.0` / `axios 1.15.0` |
@@ -92,7 +93,8 @@ Browser → React → NestJS API → PostgreSQL
 
 ### 二次开发原则
 
-- **React 是 UI Source of Truth**：保持官方 Layout / Sidebar / Header / Navigation / Theme / Dark Mode / Responsive / shadcn/ui 组件 / Table / Form / Dialog / Drawer / Command / Chart / Hooks / Utils / 页面结构 / 交互逻辑。
+- **React 是 UI Source of Truth**（页面结构 / UI 设计 / 交互 / UX / Design Tokens / 组件行为）。
+- **UI 组件库策略**：React / Next.js 以 **Hero UI 为主、Shadcn UI 为补充**；现有 Layout / Sidebar / Header / Navigation / Theme / Dark Mode / Responsive / shadcn/ui 组件 / DataTable / Form / Dialog / Drawer / Command / Chart / Hooks / Utils / 页面结构 / 交互逻辑 **继续保留**（渐进式调整，非一次性重构）。
 - 不随意更换官方已选定的技术方案（路由、状态管理、表单、请求、图表等）。
 - 逐步在现有架构上扩展，禁止凭记忆重建「类似 Shadcn Admin」的项目。
 
@@ -181,6 +183,7 @@ pnpm test           # Vitest 浏览器测试（需先 pnpm test:browser:install 
 ### 尚未完成
 
 - [ ] 业务页面（用户/角色/权限/菜单/系统设置/日志等真实业务模块）。
+- [ ] 引入 Hero UI（`@heroui/react` + framer-motion + `@internationalized/date`）并按 `ui-spec.md` §18.3 策略渐进接入；当前存量 UI 均为 shadcn/ui。
 - [ ] 接入 NestJS API（当前无任何真实 API 请求）。
 - [ ] 接入数据库（无 DATABASE_URL / SUPABASE 等后端环境变量，无 Schema / ORM 代码）。
 - [ ] 真实认证与 RBAC（当前仅有官方演示登录 Mock 与可选的 Clerk 路由）。

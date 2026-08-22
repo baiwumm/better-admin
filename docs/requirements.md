@@ -18,7 +18,7 @@ better-admin
 
 Better Admin 是一个基于现代 Web 技术栈构建的全栈 Admin 系统。
 
-项目以 **Shadcn Admin** 作为前端 UI 与交互设计基础，在保持整体视觉风格、页面结构和交互体验一致的前提下，分别使用不同的前端及全栈技术进行实现。
+项目以 **React 版本（基于 Shadcn Admin 源码二次开发）** 作为前端 UI / UX 的基准（UI Source of Truth）；不同技术栈采用各自的 UI 组件库（React / Next.js：**Hero UI 为主 + Shadcn UI 补充**；Vue / Nuxt：**Shadcn UI 为主**），在保持整体视觉风格、页面结构和交互体验一致的前提下，分别使用不同的前端及全栈技术进行实现。
 
 项目的核心目标不是开发多套不同的后台系统，而是：
 
@@ -70,8 +70,8 @@ Better Admin 是一个基于现代 Web 技术栈构建的全栈 Admin 系统。
 better-admin/
 ├── next/                    # Next.js 全栈实现
 ├── nuxt/                    # Nuxt 全栈实现
-├── react/                   # React + Shadcn Admin
-├── vue/                     # Vue + Shadcn Admin 风格
+├── react/                   # React（UI 基准；Hero UI 为主 + Shadcn UI 补充）
+├── vue/                     # Vue + Shadcn UI（shadcn-vue）
 ├── nest/                    # NestJS 后端 API
 ├── docs/                    # 项目文档
 ├── README.md
@@ -98,11 +98,11 @@ better-admin/
 基础：
 
 - React
-- Shadcn Admin
 - Tailwind CSS
 - TypeScript
+- UI 组件库：**Hero UI（为主）+ Shadcn UI（补充）**（见 §7.3）
 
-React 版本以 Shadcn Admin 源码作为主要基础进行二次开发。
+React 版本以 Shadcn Admin 源码作为工程基础进行二次开发；UI 组件库策略遵循「渐进式调整」：存量 Shadcn UI 保留，新增功能优先 Hero UI，不做一次性大规模重构。
 
 React 不直接连接数据库。
 
@@ -374,11 +374,13 @@ NestJS ── Drizzle ──┤
 
 ## 7.1 设计基准
 
-项目以 **Shadcn Admin** 作为 UI 设计基准。
+**React 是 Better Admin 的 UI Source of Truth**（页面结构、UI 设计、交互、UX、Design Tokens、组件行为）。
 
-React 版本直接基于 Shadcn Admin 进行二次开发。
+React 版本基于官方 **Shadcn Admin** 源码二次开发（产品与工程起点）。
 
-Vue、Next.js、Nuxt.js 版本按照 React 版本进行实现。
+Vue、Next.js、Nuxt.js 版本按照 React 版本实现页面结构与交互。
+
+UI 组件库策略（§7.3）：React / Next.js 以 **Hero UI 为主 + Shadcn UI 为补充**；Vue / Nuxt 以 **Shadcn UI 为主**，暂不切换 Hero UI。
 
 ---
 
@@ -432,6 +434,70 @@ Vue、Next.js、Nuxt.js 版本按照 React 版本进行实现。
 - 图标风格一致
 - Dark Mode 一致
 - Responsive 行为一致
+
+---
+
+## 7.3 UI 组件库策略与样式变量
+
+### 组件库定位
+
+```text
+React       → Hero UI 为主 + Shadcn UI 补充
+Next.js     → Hero UI 为主 + Shadcn UI 补充
+Vue         → Shadcn UI 为主（暂不调整）
+Nuxt.js     → Shadcn UI 为主（暂不调整）
+```
+
+### 组件选择优先级（React / Next.js）
+
+```text
+Hero UI
+  ↓
+Hero UI 没有对应组件 / 不适合当前场景
+  ↓
+Shadcn UI
+  ↓
+两者都无法满足需求
+  ↓
+项目级自定义组件
+```
+
+即：**Hero UI > Shadcn UI > 自定义实现**。
+
+- Hero UI 已提供满足需求的组件（Button / Input / Textarea / Select / Autocomplete / Dropdown / Modal / Drawer / Tabs / Card / Tooltip / Popover / Avatar / Badge / Chip / Switch / Checkbox / Radio / Progress / Spinner / Pagination / Navbar / DatePicker / DateRangePicker / Table 等）必须优先使用。
+- Shadcn UI 用于 Hero UI 未覆盖的场景（Command、复杂 Form 组合、Sidebar、DataTable 相关、特殊 Sheet / Drawer、已高度定制并稳定使用的组件）。
+- 禁止同类组件无规则混用；禁止因开发者个人偏好随意选择组件库。
+
+### 渐进式调整（React / Next.js）
+
+- 存量 Shadcn Admin / Shadcn UI 成熟能力（Layout、Sidebar、Header、Theme、Dark Mode、Responsive、DataTable、Form、Dialog、Drawer、Command、Chart、Hooks、Utils）**继续保留**，不一次性重构。
+- 新增功能优先使用 Hero UI；修改已有组件时按实际收益决定是否迁移。
+- 不破坏现有页面结构与业务逻辑；DataTable 等复杂组件不因组件库统一而强行重写，**业务能力优先于组件库替换**。
+
+### 样式变量（React / Next.js）
+
+React / Next.js 的样式变量、设计 Token、主题变量以 **Hero UI 设计体系为主要参考**，形成一套项目级 Design Tokens：
+
+```text
+Hero UI Design System
+        ↓
+项目 CSS Variables / Design Tokens
+        ↓
+Hero UI + Shadcn UI + 项目自定义组件
+```
+
+需要统一：主色、次要颜色、Background / Foreground、Content、Border / Divider、Focus / Hover / Active / Disabled、Radius、Typography、Font Size、Font Weight、Spacing、Shadow、Transition、Dark Mode / Light Mode。
+
+Shadcn UI 复用项目级变量进行适配，最终产品必须看起来像同一个设计系统，不允许 Hero UI 与 Shadcn UI 各自保持完全不同的默认视觉。
+
+### Form 技术方案
+
+React / Next.js 表单保持 **React Hook Form + Zod**，不因 UI 组件库改变表单校验方案与业务逻辑；UI 控件选择遵循「Hero UI 优先，Shadcn UI 补充」。
+
+### Vue / Nuxt
+
+- Vue / Nuxt 当前保持 **Shadcn UI 为主要 UI 体系**，不主动切换到 Hero UI。
+- 未来若实际开发发现 Hero UI 更适合 Vue / Nuxt，再单独进行技术评估，不因 React / Next.js 使用 Hero UI 而自动同步修改。
 
 ---
 
@@ -786,9 +852,9 @@ pnpm start:dev
 
 ```text
 Phase 1
-React + Shadcn Admin
+React + Shadcn Admin（工程基础）
         ↓
-完成 UI 基础
+完成 UI 基础（UI 组件策略按 §7.3 渐进演进）
 
 Phase 2
 NestJS + PostgreSQL
@@ -831,16 +897,16 @@ Phase 7
 Better Admin
 
 ├── React
-│   └── Shadcn Admin
+│   └── Hero UI（主）+ Shadcn UI（补充）
 │
 ├── Vue
-│   └── Shadcn Admin Style
+│   └── Shadcn UI
 │
 ├── Next.js
-│   └── Full-stack
+│   └── Hero UI（主）+ Shadcn UI（补充）· Full-stack
 │
 ├── Nuxt
-│   └── Full-stack
+│   └── Shadcn UI · Full-stack
 │
 └── NestJS
     └── API Backend
@@ -885,7 +951,7 @@ Better Admin 不仅是一个 Admin 模板，也不是简单的 Shadcn Admin 二�
 - React / Vue 技术对比
 - Next.js / Nuxt 全栈开发
 - NestJS 后端开发
-- Shadcn UI Design
+- Hero UI Design / Shadcn UI Design
 - PostgreSQL
 - TypeScript
 - API Design

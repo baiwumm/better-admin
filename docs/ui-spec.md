@@ -2,6 +2,8 @@
 
 > 本文档基于对现有 React 版本（`/react`，Shadcn Admin v2.2.1）的源码分析，定义 Better Admin 的页面结构与 UI 规范。
 > 本文档**只做分析与规划，不涉及代码修改**；落地实施在 Phase 1B 及后续阶段进行。
+>
+> **UI 组件库策略更新（2026-08-22）**：React / Next.js 采用 **Hero UI 为主 + Shadcn UI 为补充**，Vue / Nuxt 保持 **Shadcn UI 为主**（详见 §18.3）；本文档记录的 Token / 视觉数值来自 Shadcn Admin 现状，后续样式变量以 **Hero UI 设计体系为主要参考**对齐（§18.3）。
 
 ---
 
@@ -237,6 +239,7 @@ Sidebar
 ### 5.2 Better Admin 颜色规范
 
 1. 保留 slate 中性色体系与 oklch 变量结构；品牌化阶段只调整 `--primary`、`--ring`、`--chart-*` 与 sidebar 语义色。
+   - 策略更新（§18.3）：样式变量 / Design Tokens 以 **Hero UI 设计体系为主要参考**，Shadcn UI 复用同一套项目级变量，不再单独维护一套独立视觉体系；上表数值为现状记录，按 Hero UI 对齐的调整在后续阶段实施评估。
 2. 主色需满足对比度：浅色模式下主按钮文字对比度 ≥ 4.5:1；Dark 模式沿用「主色反转」策略。
 3. 状态色映射（业务统一）：
    - 正常/启用/成功 → `primary` 或 `chart-2`（绿）Badge
@@ -525,7 +528,7 @@ Sidebar
 | 类别 | 选型 |
 | --- | --- |
 | UI | React 19 + TypeScript（strict）+ Vite + Tailwind CSS v4 |
-| 组件 | shadcn/ui（new-york，源码在 `src/components/ui/`）+ Radix UI 原语 |
+| 组件 | **Hero UI（为主，规划引入 `@heroui/react`）** + **shadcn/ui（补充，new-york，源码在 `src/components/ui/`，存量保留）** + Radix UI 原语 |
 | 路由 | TanStack Router（文件式 `src/routes/`） |
 | 数据请求 | TanStack Query + axios |
 | 表格 | TanStack Table + 自研 DataTable 封装 |
@@ -538,7 +541,7 @@ Sidebar
 
 ### 18.2 Better Admin 组件使用原则
 
-1. **单一来源**：组件只从 `@/components/ui/*`、`@/components/*`、`@/features/*/components/*` 引入，不直接使用 Radix 原语。
+1. **组件优先级**：Hero UI 为主 → Shadcn UI 补充 → 项目级自定义组件（见 §18.3）；组件只从声明库（Hero UI 包 / `@/components/ui/*` / `@/components/*` / `@/features/*/components/*`）引入，不直接使用 Radix 原语。
 2. **不重复造轮子**：已有 DataTable、ConfirmDialog、ConfigDrawer、Header/Main 等组合组件，业务页面优先组合复用。
 3. **图标统一 lucide-react**；不引入其他图标库。
 4. **样式统一 Tailwind + 语义 token**：不用内联 style 表达布局/颜色；`cn()` 用于条件合并。
@@ -548,6 +551,58 @@ Sidebar
 8. **目录纪律**：业务模块按 `features/<module>/` 组织（index / components / data / hooks），路由保持文件式。
 9. **无障碍**：交互元素带 `aria-label`/`sr-only` 文本；弹层标题/描述齐全；键盘可操作。
 10. **Demo 清理原则**：移除官方演示数据/页面（Clerk 路由、Tasks/Chats/Apps 演示），替换为 Better Admin 业务占位或真实模块，不影响整体骨架。
+
+---
+
+## 18.3 UI 组件库策略（Hero UI 为主 + Shadcn UI 补充）
+
+> 本小节为项目级 UI 组件库核心规则（与 `AGENTS.md` §7.2 / `requirements.md` §7.3 一致），React / Next.js 必须遵循；Vue / Nuxt 保持 Shadcn UI 为主。
+
+**组件优先级（React / Next.js）**：
+
+```text
+Hero UI
+  ↓
+Hero UI 没有对应组件 / 不适合当前场景
+  ↓
+Shadcn UI
+  ↓
+两者都无法满足需求
+  ↓
+项目级自定义组件
+```
+
+**选型对照（基准）**：
+
+| 能力 | 首选（Hero UI） | 补充（Shadcn UI，存量保留） |
+| --- | --- | --- |
+| Button / Input / Textarea | ✅ Hero UI | 存量页面保留 Shadcn 实现，渐进迁移 |
+| Select / Autocomplete / Dropdown | ✅ Hero UI | — |
+| Modal / Drawer | ✅ Hero UI（新需求） | 存量 Dialog / Sheet 保留 |
+| Tabs / Card / Tooltip / Popover | ✅ Hero UI | — |
+| Avatar / Badge / Chip / Switch / Checkbox / Radio | ✅ Hero UI | — |
+| Progress / Spinner / Pagination | ✅ Hero UI | — |
+| DatePicker / DateRangePicker | ✅ Hero UI | 存量 Calendar + Popover 组合保留 |
+| Table（简单场景） | ✅ Hero UI | 复杂场景走 DataTable |
+| Navbar | ✅ Hero UI | — |
+| Command（命令面板） | — | ✅ Shadcn（cmdk），Hero UI 无对应 |
+| Sidebar | — | ✅ Shadcn（深度定制：inset/icon/offcanvas、Cookie 持久化、Cmd+B、移动端 Sheet），不建议迁移 |
+| DataTable（TanStack Table） | — | ✅ 项目级能力（搜索/筛选/排序/分页/行选择/批量/列显隐/URL 同步），不重写 |
+| Form（RHF + Zod 适配层） | — | ✅ Shadcn Form 保留，表单技术方案不变 |
+| Dialog / AlertDialog（ConfirmDialog） | — | ✅ 存量保留；新需求可用 Hero UI Modal / Drawer |
+| Toast（sonner）/ 进度条 | — | ✅ 基础设施保留 |
+
+**样式变量统一（React / Next.js）**：
+
+- React / Next.js 维护**一套项目级 Design Tokens**（以 `src/styles/theme.css` 语义变量为基座），Token 数值以 **Hero UI 设计体系为主要参考**。
+- Shadcn UI 与 Hero UI 均消费同一套 Token；禁止各自维护独立视觉（圆角、边框、颜色、字体、阴影、间距、Focus / Hover / Disabled、Dark Mode、动画必须一致）。
+- 新增组件禁止随意新增颜色 / 圆角 / 阴影 / 字体 / 间距，除非有明确设计需求（与 §5/§6/§7/§8 规则一致）。
+
+**渐进式调整**：
+
+- 存量 Shadcn Admin / Shadcn UI 组件**保留**，不一次性重构；新增功能优先 Hero UI；修改已有组件时按实际收益决定是否迁移。
+- 业务能力优先于组件库替换：不为了组件库统一破坏页面结构、交互、业务逻辑与 DataTable / Form 等基础设施。
+- Vue / Nuxt（shadcn-vue / shadcn-nuxt）保持 **Shadcn UI 为主**，暂不引入 Hero UI（Hero UI 官方暂无 Vue 实现，社区方案非官方，切换需单独评估）。
 
 ---
 
@@ -574,3 +629,4 @@ Sidebar
 | --- | --- | --- |
 | 2026-08-21 | v0.1 | 基于 Shadcn Admin v2.2.1 源码分析产出初版 UI Spec |
 | 2026-08-21 | v0.2 | Phase 1B 落地记录：品牌化、Sidebar 调整、页面占位、Demo 清理、中文化 |
+| 2026-08-22 | v0.3 | UI 组件库策略更新：React / Next.js 以 Hero UI 为主 + Shadcn UI 补充（§18.3）；样式变量以 Hero UI 设计体系为主要参考；Vue / Nuxt 保持 Shadcn UI |
