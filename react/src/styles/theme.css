@@ -1,103 +1,167 @@
-:root {
-  --radius: 0.625rem;
-  --font-maple-mono-cn: 'Maple Mono CN', 'Inter', system-ui, sans-serif;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+/*
+ * HeroUI Theme Customization
+ * Add this to your global.css after importing @heroui/styles
+ * Only includes variables users need to customize
+ * @see https://heroui.com/docs/react/getting-started/theming
+ */
 
-  --sidebar: var(--background);
-  --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--accent);
-  --sidebar-accent-foreground: var(--accent-foreground);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--ring);
+:root,
+.light,
+.default,
+[data-theme="light"],
+[data-theme="default"] {
+  /* Theme Colors (Light Mode) */
+  --accent: oklch(62.04% 0.1950 253.83);
+  --accent-foreground: oklch(99.11% 0 0);
+  --background: oklch(97.02% 0.0015 253.83);
+  --border: oklch(90.00% 0.0015 253.83);
+  --danger: oklch(65.32% 0.2335 25.74);
+  --danger-foreground: oklch(99.11% 0 0);
+  --default: oklch(94.00% 0.0015 253.83);
+  --default-foreground: oklch(21.03% 0.0059 253.83);
+  --field-background: oklch(100.00% 0.0008 253.83);
+  --field-border: transparent;
+  --field-foreground: oklch(21.03% 0.0015 253.83);
+  --field-placeholder: oklch(55.17% 0.0030 253.83);
+  --focus: oklch(62.04% 0.1950 253.83);
+  --foreground: oklch(21.03% 0.0015 253.83);
+  --muted: oklch(55.17% 0.0030 253.83);
+  --overlay: oklch(100.00% 0.0004 253.83);
+  --overlay-foreground: oklch(21.03% 0.0015 253.83);
+  --scrollbar: oklch(87.10% 0.0015 253.83);
+  --segment: oklch(100.00% 0.0015 253.83);
+  --segment-foreground: oklch(21.03% 0.0015 253.83);
+  --separator: oklch(92.00% 0.0015 253.83);
+  --success: oklch(73.29% 0.1941 150.81);
+  --success-foreground: oklch(21.03% 0.0059 150.81);
+  --surface: oklch(100.00% 0.0008 253.83);
+  --surface-foreground: oklch(21.03% 0.0015 253.83);
+  --surface-secondary: oklch(95.24% 0.0012 253.83);
+  --surface-secondary-foreground: oklch(21.03% 0.0015 253.83);
+  --surface-tertiary: oklch(93.73% 0.0012 253.83);
+  --surface-tertiary-foreground: oklch(21.03% 0.0015 253.83);
+  --warning: oklch(78.19% 0.1590 72.33);
+  --warning-foreground: oklch(21.03% 0.0059 72.33);
+
+  /* Border Radius */
+  --radius: 0.5rem;
+  --field-radius: 0.75rem;
+
+  /* Font Family */
+  /* Make sure to load Inter font in your app */
+  --font-sans: 'Maple Mono CN', 'Inter', system-ui, sans-serif;
 }
 
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.14 0.04 259.21);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+  /* Theme Colors (Dark Mode) */
+  --accent: oklch(62.04% 0.1950 253.83);
+  --accent-foreground: oklch(99.11% 0 0);
+  --background: oklch(12.00% 0.0015 253.83);
+  --border: oklch(28.00% 0.0015 253.83);
+  --danger: oklch(59.40% 0.1973 24.63);
+  --danger-foreground: oklch(99.11% 0 0);
+  --default: oklch(27.40% 0.0015 253.83);
+  --default-foreground: oklch(99.11% 0 0);
+  --field-background: oklch(21.03% 0.0030 253.83);
+  --field-border: transparent;
+  --field-foreground: oklch(99.11% 0.0015 253.83);
+  --field-placeholder: oklch(70.50% 0.0030 253.83);
+  --focus: oklch(62.04% 0.1950 253.83);
+  --foreground: oklch(99.11% 0.0015 253.83);
+  --muted: oklch(70.50% 0.0030 253.83);
+  --overlay: oklch(21.03% 0.0030 253.83);
+  --overlay-foreground: oklch(99.11% 0.0015 253.83);
+  --scrollbar: oklch(70.50% 0.0015 253.83);
+  --segment: oklch(39.64% 0.0015 253.83);
+  --segment-foreground: oklch(99.11% 0.0015 253.83);
+  --separator: oklch(25.00% 0.0015 253.83);
+  --success: oklch(73.29% 0.1941 150.81);
+  --success-foreground: oklch(21.03% 0.0059 150.81);
+  --surface: oklch(21.03% 0.0030 253.83);
+  --surface-foreground: oklch(99.11% 0.0015 253.83);
+  --surface-secondary: oklch(25.70% 0.0023 253.83);
+  --surface-secondary-foreground: oklch(99.11% 0.0015 253.83);
+  --surface-tertiary: oklch(27.21% 0.0023 253.83);
+  --surface-tertiary-foreground: oklch(99.11% 0.0015 253.83);
+  --warning: oklch(82.03% 0.1392 76.34);
+  --warning-foreground: oklch(21.03% 0.0059 76.34);
 }
 
+/* ==========================================================================
+ * Tailwind 工具类桥接层（@theme inline）
+ * --------------------------------------------------------------------------
+ * HeroUI 体系只提供裸语义变量（--background / --surface / --accent / ...），
+ * 而 shadcn/ui 组件与现有业务页面大量使用 Tailwind 工具类
+ * （bg-background / text-foreground / border-border / bg-card / text-muted-foreground /
+ *  ring-ring / bg-popover / rounded-md ...）。这些工具类依赖 @theme 里的 --color-* 槽位。
+ *
+ * 本块把 shadcn 语义桥接到 Hero 变量，使 250+ 处现有代码无需改动即可正常工作。
+ * 所有 --color-* 均以 var() 引用 Hero 根变量，因此后续做多套主题色切换时，
+ * 只需覆盖 --accent / --background 等 Hero 根变量，工具类会随之变化。
+ *
+ * 语义对应说明（Hero 与 shadcn 命名差异）：
+ *  - --primary   → --accent   （Hero --accent 为品牌主色，对应 shadcn 的 primary）
+ *  - --muted      → --muted    （Hero --muted 为「弱化文字色」，对应 shadcn 的 muted-foreground）
+ *  - --accent(底色)→ --default （shadcn 的 --accent 是 hover 底色，对应 Hero 中性灰 --default）
+ *  - --secondary  → --default
+ *  - --card       → --surface
+ *  - --popover    → --overlay
+ *  - --destructive→ --danger
+ *  - --border/--input/--ring → --border/--field-border/--focus
+ *  - --radius-sm/md/lg/xl     → 从 Hero 单一 --radius 派生（Hero 无圆角阶梯）
+ *  - --sidebar-*              → Hero 无对应，自行补齐为项目语义变量
+ * ========================================================================== */
 @theme inline {
-  --font-inter: 'Inter', 'sans-serif';
-  --font-manrope: 'Manrope', 'sans-serif';
+  /* 基础色 */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
 
+  /* 表面 / 浮层 */
+  --color-card: var(--surface);
+  --color-card-foreground: var(--surface-foreground);
+  --color-popover: var(--overlay);
+  --color-popover-foreground: var(--overlay-foreground);
+
+  /* 品牌主色（Hero --accent） */
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-foreground);
+
+  /* 次要（Hero --default） */
+  --color-secondary: var(--default);
+  --color-secondary-foreground: var(--default-foreground);
+
+  /* 弱化：shadcn --muted 为「底色」，--muted-foreground 为「弱化文字色」 */
+  --color-muted: var(--surface-secondary);
+  --color-muted-foreground: var(--muted);
+
+  /* hover 强调底色（shadcn --accent → Hero --default 中性灰） */
+  --color-accent: var(--default);
+  --color-accent-foreground: var(--default-foreground);
+
+  /* 状态色 */
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--danger-foreground);
+
+  /* 边框 / 输入 / 焦点环 */
+  --color-border: var(--border);
+  --color-input: var(--field-border);
+  --color-ring: var(--focus);
+
+  /* 圆角阶梯（Hero 仅提供 --radius，此处派生） */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Sidebar（Hero 体系无对应，自行补齐为项目语义变量） */
+  --color-sidebar: var(--background);
+  --color-sidebar-foreground: var(--foreground);
+  --color-sidebar-primary: var(--accent);
+  --color-sidebar-primary-foreground: var(--accent-foreground);
+  --color-sidebar-accent: var(--default);
+  --color-sidebar-accent-foreground: var(--default-foreground);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-ring: var(--focus);
 }

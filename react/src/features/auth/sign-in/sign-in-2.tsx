@@ -52,7 +52,7 @@ export function SignIn2() {
 
       <div
         className={cn(
-          'relative h-full overflow-hidden bg-muted max-lg:hidden',
+          'relative h-full overflow-hidden bg-secondary max-lg:hidden',
           '[&>img]:absolute [&>img]:top-[15%] [&>img]:left-20 [&>img]:h-full [&>img]:w-full [&>img]:object-cover [&>img]:object-top-left [&>img]:select-none'
         )}
       >

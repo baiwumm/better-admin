@@ -1,25 +1,24 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@layer theme, base, components, utilities;
+
+/* HeroUI v3 —— 官方入口（已内含 tailwindcss / tw-animate-css / base / components / themes / utilities / variants，含 scrollbar） */
+@import '@heroui/styles';
+
+/* 项目级 Design Tokens（唯一来源；最后加载且未分层 → 级联优先于上述 Hero 变量） */
 @import './theme.css';
 
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
   }
   html {
-    @apply overflow-x-hidden;
+    @apply overflow-x-hidden bg-background text-foreground;
+    font-family: var(--font-sans);
   }
   body {
     @apply min-h-svh w-full bg-background text-foreground has-[div[data-variant='inset']]:bg-sidebar;
-  }
-
-  /* Maple Mono CN（全局主字体，FontProvider 在 <html> 上切换该类） */
-  .font-maple-mono-cn {
-    font-family: var(--font-maple-mono-cn);
   }
 
   /* Override Radix scroll locking for sticky headers */
