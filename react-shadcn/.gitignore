@@ -12,8 +12,12 @@ dist
 dist-ssr
 *.local
 
+.env
+
 # Editor directories and files
+.vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea
 .DS_Store
 *.suo
@@ -22,8 +26,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# Test coverage
+/coverage
 
-pnpm-lock.yaml
-yarn.lock
-package-lock.json
-bun.lockb
+# Vitest artifacts (browser screenshots/attachments)
+**/__screenshots__/
+.vitest-attachments/

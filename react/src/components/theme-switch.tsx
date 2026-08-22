@@ -1,58 +1,38 @@
-import { useEffect } from 'react'
-import { Check, Moon, Sun } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useTheme } from '@/context/theme-provider'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { FC, useCallback } from "react";
+import { useTheme } from "@heroui/react";
+import clsx from "clsx";
 
-export function ThemeSwitch() {
-  const { theme, setTheme } = useTheme()
+import { SunFilledIcon, MoonFilledIcon } from "@/components/icons";
 
-  /* Update theme-color meta tag
-   * when theme is updated */
-  useEffect(() => {
-    const themeColor = theme === 'dark' ? '#020817' : '#fff'
-    const metaThemeColor = document.querySelector("meta[name='theme-color']")
-    if (metaThemeColor) metaThemeColor.setAttribute('content', themeColor)
-  }, [theme])
+export interface ThemeSwitchProps {
+  className?: string;
+}
+
+export const ThemeSwitch: FC<ThemeSwitchProps> = ({ className }) => {
+  const { resolvedTheme, setTheme } = useTheme("light");
+
+  const isLight = resolvedTheme === "light";
+
+  const toggleTheme = useCallback(() => {
+    setTheme(isLight ? "dark" : "light");
+  }, [isLight, setTheme]);
+
+  if (!resolvedTheme) {
+    return <div aria-hidden className="h-6 w-6" />;
+  }
 
   return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger asChild>
-        <Button variant='ghost' size='icon' className='scale-95 rounded-full'>
-          <Sun className='size-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90' />
-          <Moon className='absolute size-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0' />
-          <span className='sr-only'>Toggle theme</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align='end'>
-        <DropdownMenuItem onClick={() => setTheme('light')}>
-          浅色{' '}
-          <Check
-            size={14}
-            className={cn('ms-auto', theme !== 'light' && 'hidden')}
-          />
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>
-          深色
-          <Check
-            size={14}
-            className={cn('ms-auto', theme !== 'dark' && 'hidden')}
-          />
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>
-          跟随系统
-          <Check
-            size={14}
-            className={cn('ms-auto', theme !== 'system' && 'hidden')}
-          />
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
+    <button
+      aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
+      className={clsx(
+        "px-px transition-opacity hover:opacity-80 cursor-pointer",
+        "inline-flex items-center justify-center",
+        "w-auto h-auto bg-transparent border-none rounded-lg",
+        className,
+      )}
+      onClick={toggleTheme}
+    >
+      {isLight ? <MoonFilledIcon size={22} /> : <SunFilledIcon size={22} />}
+    </button>
+  );
+};

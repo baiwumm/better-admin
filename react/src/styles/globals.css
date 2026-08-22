@@ -1,0 +1,24 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+@custom-variant dark (&:is(.dark *));
+
+:root{
+  --font-sans: 'Maple Mono CN', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  view-transition-name: root;
+}
+
+@layer base {
+  html {
+    @apply overflow-x-hidden;
+    font-family: var(--font-sans);
+  }
+  body {
+    @apply min-h-svh w-full bg-background text-foreground;
+  }
+
+  /* Override Radix scroll locking for sticky headers */
+  body[data-scroll-locked] {
+    overflow: unset !important;
+  }
+}
