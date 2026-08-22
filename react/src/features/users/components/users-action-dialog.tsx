@@ -1,9 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { showSubmittedData } from '@/lib/show-submitted-data'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -24,73 +24,21 @@ import {
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
 import { SelectDropdown } from '@/components/select-dropdown'
-import { roles } from '../data/data'
-import { type User } from '../data/schema'
+import { statusOptions } from '../data/data'
+import { userStatusSchema, type User } from '../data/schema'
+import { useCreateUser, useUpdateUser } from '../hooks/use-users'
 
-const formSchema = z
-  .object({
-    firstName: z.string().min(1, '请输入名字。'),
-    lastName: z.string().min(1, '请输入姓氏。'),
-    username: z.string().min(1, '请输入用户名。'),
-    phoneNumber: z.string().min(1, '请输入手机号。'),
-    email: z.email({
-      error: (iss) => (iss.input === '' ? '请输入邮箱。' : undefined),
-    }),
-    password: z.string().transform((pwd) => pwd.trim()),
-    role: z.string().min(1, '请选择角色。'),
-    confirmPassword: z.string().transform((pwd) => pwd.trim()),
-    isEdit: z.boolean(),
-  })
-  .refine(
-    (data) => {
-      if (data.isEdit && !data.password) return true
-      return data.password.length > 0
-    },
-    {
-      message: '请输入密码。',
-      path: ['password'],
-    }
-  )
-  .refine(
-    ({ isEdit, password }) => {
-      if (isEdit && !password) return true
-      return password.length >= 8
-    },
-    {
-      message: '密码长度至少为 8 位。',
-      path: ['password'],
-    }
-  )
-  .refine(
-    ({ isEdit, password }) => {
-      if (isEdit && !password) return true
-      return /[a-z]/.test(password)
-    },
-    {
-      message: '密码必须包含至少一个小写字母。',
-      path: ['password'],
-    }
-  )
-  .refine(
-    ({ isEdit, password }) => {
-      if (isEdit && !password) return true
-      return /\d/.test(password)
-    },
-    {
-      message: '密码必须包含至少一个数字。',
-      path: ['password'],
-    }
-  )
-  .refine(
-    ({ isEdit, password, confirmPassword }) => {
-      if (isEdit && !password) return true
-      return password === confirmPassword
-    },
-    {
-      message: '两次输入的密码不一致。',
-      path: ['confirmPassword'],
-    }
-  )
+const formSchema = z.object({
+  // 编辑模式下 username 输入框 disabled，不参与表单提交，故改为可选（创建时手动校验）
+  username: z.string().optional(),
+  displayName: z.string().min(1, '请输入姓名。'),
+  email: z.email({
+    error: (iss) => (iss.input === '' ? '请输入邮箱。' : undefined),
+  }),
+  status: userStatusSchema,
+  password: z.string().optional(),
+  confirmPassword: z.string().optional(),
+})
 type UserForm = z.infer<typeof formSchema>
 
 type UserActionDialogProps = {
@@ -105,43 +53,86 @@ export function UsersActionDialog({
   onOpenChange,
 }: UserActionDialogProps) {
   const isEdit = !!currentRow
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const createUser = useCreateUser()
+  const updateUser = useUpdateUser()
+
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
     defaultValues: isEdit
       ? {
-          ...currentRow,
+          username: currentRow.username,
+          displayName: currentRow.displayName,
+          email: currentRow.email,
+          status: currentRow.status,
           password: '',
           confirmPassword: '',
-          isEdit,
         }
       : {
-          firstName: '',
-          lastName: '',
           username: '',
+          displayName: '',
           email: '',
-          role: '',
-          phoneNumber: '',
+          status: 'active',
           password: '',
           confirmPassword: '',
-          isEdit,
         },
   })
 
-  const onSubmit = (values: UserForm) => {
-    form.reset()
-    showSubmittedData(values)
-    onOpenChange(false)
+  const onSubmit = async (values: UserForm) => {
+    if (!isEdit) {
+      if (!values.username || !values.username.trim()) {
+        form.setError('username', { message: '请输入用户名。' })
+        return
+      }
+      const { password, confirmPassword } = values
+      if (!password || password.length < 6) {
+        form.setError('password', { message: '密码长度至少为 6 位。' })
+        return
+      }
+      if (password !== confirmPassword) {
+        form.setError('confirmPassword', { message: '两次输入的密码不一致。' })
+        return
+      }
+    }
+
+    setIsSubmitting(true)
+    try {
+      if (isEdit) {
+        await updateUser.mutateAsync({
+          id: currentRow.id,
+          input: {
+            displayName: values.displayName,
+            email: values.email,
+            status: values.status,
+          },
+        })
+      } else {
+        await createUser.mutateAsync({
+          username: values.username ?? '',
+          displayName: values.displayName,
+          email: values.email,
+          password: values.password ?? '',
+          confirmPassword: values.confirmPassword ?? '',
+          status: values.status,
+        })
+      }
+      close()
+    } catch {
+      // 错误已由 useMutation onError 提示
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const isPasswordTouched = !!form.formState.dirtyFields.password
+  const close = () => {
+    form.reset()
+    onOpenChange(false)
+  }
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(state) => {
-        form.reset()
-        onOpenChange(state)
-      }}
+      onOpenChange={(state) => (!state ? close() : undefined)}
     >
       <DialogContent className='sm:max-w-lg'>
         <DialogHeader className='text-start'>
@@ -160,42 +151,6 @@ export function UsersActionDialog({
             >
               <FormField
                 control={form.control}
-                name='firstName'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>名字</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='张三'
-                        className='col-span-4'
-                        autoComplete='off'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='lastName'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>姓氏</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='李四'
-                        className='col-span-4'
-                        autoComplete='off'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name='username'
                 render={({ field }) => (
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
@@ -204,8 +159,28 @@ export function UsersActionDialog({
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder='zhangsan'
+                        placeholder='请输入用户名'
                         className='col-span-4'
+                        autoComplete='off'
+                        disabled={isEdit}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className='col-span-4 col-start-3' />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='displayName'
+                render={({ field }) => (
+                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                    <FormLabel className='col-span-2 text-end'>姓名</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder='请输入姓名'
+                        className='col-span-4'
+                        autoComplete='off'
                         {...field}
                       />
                     </FormControl>
@@ -221,8 +196,9 @@ export function UsersActionDialog({
                     <FormLabel className='col-span-2 text-end'>邮箱</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder='zhangsan@example.com'
+                        placeholder='user@example.com'
                         className='col-span-4'
+                        autoComplete='off'
                         {...field}
                       />
                     </FormControl>
@@ -232,35 +208,16 @@ export function UsersActionDialog({
               />
               <FormField
                 control={form.control}
-                name='phoneNumber'
+                name='status'
                 render={({ field }) => (
                   <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>
-                      手机号
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='+8613800000000'
-                        className='col-span-4'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='role'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>角色</FormLabel>
+                    <FormLabel className='col-span-2 text-end'>状态</FormLabel>
                     <SelectDropdown
                       defaultValue={field.value}
                       onValueChange={field.onChange}
-                      placeholder='请选择角色'
+                      placeholder='请选择状态'
                       className='col-span-4'
-                      items={roles.map(({ label, value }) => ({
+                      items={statusOptions.map(({ label, value }) => ({
                         label,
                         value,
                       }))}
@@ -269,48 +226,55 @@ export function UsersActionDialog({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name='password'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>密码</FormLabel>
-                    <FormControl>
-                      <PasswordInput
-                        placeholder='请输入密码'
-                        className='col-span-4'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='confirmPassword'
-                render={({ field }) => (
-                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
-                    <FormLabel className='col-span-2 text-end'>
-                      确认密码
-                    </FormLabel>
-                    <FormControl>
-                      <PasswordInput
-                        disabled={!isPasswordTouched}
-                        placeholder='请再次输入密码'
-                        className='col-span-4'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage className='col-span-4 col-start-3' />
-                  </FormItem>
-                )}
-              />
+              {!isEdit && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name='password'
+                    render={({ field }) => (
+                      <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                        <FormLabel className='col-span-2 text-end'>
+                          密码
+                        </FormLabel>
+                        <FormControl>
+                          <PasswordInput
+                            placeholder='请输入密码'
+                            className='col-span-4'
+                            autoComplete='new-password'
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className='col-span-4 col-start-3' />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='confirmPassword'
+                    render={({ field }) => (
+                      <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                        <FormLabel className='col-span-2 text-end'>
+                          确认密码
+                        </FormLabel>
+                        <FormControl>
+                          <PasswordInput
+                            placeholder='请再次输入密码'
+                            className='col-span-4'
+                            autoComplete='new-password'
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage className='col-span-4 col-start-3' />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
             </form>
           </Form>
         </div>
         <DialogFooter>
-          <Button type='submit' form='user-form'>
+          <Button type='submit' form='user-form' disabled={isSubmitting}>
             保存
           </Button>
         </DialogFooter>

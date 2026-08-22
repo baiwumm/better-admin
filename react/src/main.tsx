@@ -53,7 +53,7 @@ const queryClient = new QueryClient({
       if (error instanceof AxiosError) {
         if (error.response?.status === 401) {
           toast.error('会话已过期，请重新登录')
-          useAuthStore.getState().auth.reset()
+          useAuthStore.getState().resetAuth()
           const redirect = `${router.history.location.href}`
           router.navigate({ to: '/sign-in', search: { redirect } })
         }

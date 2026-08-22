@@ -7,7 +7,6 @@ import {
   getFacetedRowModel,
   getFacetedUniqueValues,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
@@ -22,26 +21,37 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
-import { roles } from '../data/data'
+import { statusOptions } from '../data/data'
 import { type User } from '../data/schema'
 import { DataTableBulkActions } from './data-table-bulk-actions'
 import { usersColumns as columns } from './users-columns'
 
 type DataTableProps = {
   data: User[]
+  total: number
+  isLoading?: boolean
   search: Record<string, unknown>
   navigate: NavigateFn
 }
 
-export function UsersTable({ data, search, navigate }: DataTableProps) {
+export function UsersTable({
+  data,
+  total,
+  isLoading,
+  search,
+  navigate,
+}: DataTableProps) {
   // Local UI-only states
   const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [sorting, setSorting] = useState<SortingState>([])
-
-  // Local state management for table (uncomment to use local-only state, not synced with URL)
-  // const [columnFilters, onColumnFiltersChange] = useState<ColumnFiltersState>([])
-  // const [pagination, onPaginationChange] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
+  const [sorting, setSorting] = useState<SortingState>(() => {
+    const sort = search.sort
+    const order = search.order
+    if (typeof sort === 'string' && sort) {
+      return [{ id: sort, desc: order === 'desc' }]
+    }
+    return []
+  })
 
   // Synced with URL states (keys/defaults mirror users route search schema)
   const {
@@ -56,12 +66,29 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
     pagination: { defaultPage: 1, defaultPageSize: 10 },
     globalFilter: { enabled: false },
     columnFilters: [
-      // username per-column text filter
-      { columnId: 'username', searchKey: 'username', type: 'string' },
+      // username 关键字搜索 → 后端统一 search 参数
+      { columnId: 'username', searchKey: 'search', type: 'string' },
       { columnId: 'status', searchKey: 'status', type: 'array' },
-      { columnId: 'role', searchKey: 'role', type: 'array' },
     ],
   })
+
+  const onSortingChange = (
+    updater: SortingState | ((old: SortingState) => SortingState)
+  ) => {
+    const next = typeof updater === 'function' ? updater(sorting) : updater
+    setSorting(next)
+    const column = next[0]
+    navigate({
+      search: (prev) => ({
+        ...(prev as Record<string, unknown>),
+        sort: column?.id || undefined,
+        order: column?.desc ? 'desc' : column ? 'asc' : undefined,
+      }),
+    })
+  }
+
+  const pageSize = pagination.pageSize
+  const pageCount = pageSize > 0 ? Math.max(1, Math.ceil(total / pageSize)) : 1
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -75,17 +102,20 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
       columnVisibility,
     },
     enableRowSelection: true,
+    manualPagination: true,
+    pageCount,
+    autoResetPageIndex: false,
     onPaginationChange,
     onColumnFiltersChange,
     onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
+    onSortingChange,
     onColumnVisibilityChange: setColumnVisibility,
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: undefined,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
+    getSortedRowModel: getSortedRowModel(),
   })
 
   useEffect(() => {
@@ -101,23 +131,16 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
     >
       <DataTableToolbar
         table={table}
-        searchPlaceholder='筛选用户...'
+        searchPlaceholder='搜索用户名 / 邮箱 / 姓名...'
         searchKey='username'
         filters={[
           {
             columnId: 'status',
             title: '状态',
-            options: [
-              { label: '启用', value: 'active' },
-              { label: '停用', value: 'inactive' },
-              { label: '已邀请', value: 'invited' },
-              { label: '已停用', value: 'suspended' },
-            ],
-          },
-          {
-            columnId: 'role',
-            title: '角色',
-            options: roles.map((role) => ({ ...role })),
+            options: statusOptions.map(({ label, value }) => ({
+              label,
+              value,
+            })),
           },
         ]}
       />
@@ -150,7 +173,16 @@ export function UsersTable({ data, search, navigate }: DataTableProps) {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className='h-24 text-center'
+                >
+                  加载中...
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}

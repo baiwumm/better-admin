@@ -6,13 +6,22 @@ import { UsersDialogs } from './components/users-dialogs'
 import { UsersPrimaryButtons } from './components/users-primary-buttons'
 import { UsersProvider } from './components/users-provider'
 import { UsersTable } from './components/users-table'
-import { users } from './data/users'
+import { useUsers } from './hooks/use-users'
 
 const route = getRouteApi('/_authenticated/users/')
 
 export function Users() {
   const search = route.useSearch()
   const navigate = route.useNavigate()
+
+  const { data, isLoading } = useUsers({
+    page: search.page ?? 1,
+    pageSize: search.pageSize ?? 10,
+    search: search.search || undefined,
+    status: search.status?.[0],
+    sort: search.sort,
+    order: search.order,
+  })
 
   return (
     <UsersProvider>
@@ -24,11 +33,17 @@ export function Users() {
         <div className='flex flex-wrap items-end justify-between gap-2'>
           <div>
             <h2 className='text-2xl font-bold tracking-tight'>用户管理</h2>
-            <p className='text-muted-foreground'>管理系统用户及其角色。</p>
+            <p className='text-muted-foreground'>管理系统用户及其状态。</p>
           </div>
           <UsersPrimaryButtons />
         </div>
-        <UsersTable data={users} search={search} navigate={navigate} />
+        <UsersTable
+          data={data?.data ?? []}
+          total={data?.pagination.total ?? 0}
+          isLoading={isLoading}
+          search={search as unknown as Record<string, unknown>}
+          navigate={navigate}
+        />
       </Main>
 
       <UsersDialogs />

@@ -1,6 +1,8 @@
 import { DotsHorizontalIcon } from '@radix-ui/react-icons'
 import { type Row } from '@tanstack/react-table'
-import { Trash2, UserPen } from 'lucide-react'
+import { Ban, KeyRound, Trash2, UserCheck, UserPen } from 'lucide-react'
+import { useAuthStore } from '@/stores/auth-store'
+import { hasPermission, PERMISSIONS } from '@/lib/permissions'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -19,22 +21,25 @@ type DataTableRowActionsProps = {
 
 export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const { setOpen, setCurrentRow } = useUsers()
+  const userPermissions = useAuthStore((state) => state.user?.permissions)
+  const user = row.original
+
   return (
-    <>
-      <DropdownMenu modal={false}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant='ghost'
-            className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'
-          >
-            <DotsHorizontalIcon className='h-4 w-4' />
-            <span className='sr-only'>打开菜单</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align='end' className='w-40'>
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant='ghost'
+          className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'
+        >
+          <DotsHorizontalIcon className='h-4 w-4' />
+          <span className='sr-only'>打开菜单</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end' className='w-48'>
+        {hasPermission(userPermissions, PERMISSIONS.EDIT) && (
           <DropdownMenuItem
             onClick={() => {
-              setCurrentRow(row.original)
+              setCurrentRow(user)
               setOpen('edit')
             }}
           >
@@ -43,21 +48,55 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               <UserPen size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
+        )}
+        {hasPermission(userPermissions, PERMISSIONS.RESET) && (
           <DropdownMenuItem
             onClick={() => {
-              setCurrentRow(row.original)
-              setOpen('delete')
+              setCurrentRow(user)
+              setOpen('reset-password')
             }}
-            className='text-red-500!'
           >
-            删除
+            重置密码
             <DropdownMenuShortcut>
-              <Trash2 size={16} />
+              <KeyRound size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
+        )}
+        {hasPermission(userPermissions, PERMISSIONS.EDIT) && (
+          <DropdownMenuItem
+            onClick={() => {
+              setCurrentRow(user)
+              setOpen('toggle-status')
+            }}
+          >
+            {user.status === 'active' ? '停用用户' : '启用用户'}
+            <DropdownMenuShortcut>
+              {user.status === 'active' ? (
+                <Ban size={16} />
+              ) : (
+                <UserCheck size={16} />
+              )}
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+        )}
+        {hasPermission(userPermissions, PERMISSIONS.DELETE) && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => {
+                setCurrentRow(user)
+                setOpen('delete')
+              }}
+              className='text-red-500!'
+            >
+              删除
+              <DropdownMenuShortcut>
+                <Trash2 size={16} />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

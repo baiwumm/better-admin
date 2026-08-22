@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { Outlet } from '@tanstack/react-router'
+import { useAuthStore } from '@/stores/auth-store'
 import { getCookie } from '@/lib/cookies'
 import { cn } from '@/lib/utils'
 import { LayoutProvider } from '@/context/layout-provider'
@@ -13,6 +15,18 @@ type AuthenticatedLayoutProps = {
 
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   const defaultOpen = getCookie('sidebar_state') !== 'false'
+  const user = useAuthStore((state) => state.user)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const getMe = useAuthStore((state) => state.getMe)
+
+  // 刷新页面后：本地有 Token 但内存无用户信息时，通过 /auth/me 恢复会话
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken')
+    if (token && !user && !isAuthenticated) {
+      void getMe()
+    }
+  }, [user, isAuthenticated, getMe])
+
   return (
     <SearchProvider>
       <LayoutProvider>

@@ -17,6 +17,21 @@ async function bootstrap() {
   // 全局前缀 /api（与 openapi.yaml servers 路径前缀一致）
   app.setGlobalPrefix('api');
 
+  // CORS：允许本地开发前端与生产前端域名（可通过 CORS_ORIGINS 环境变量覆盖）
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
+    : [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'https://react.baiwumm.com',
+        'https://vue.baiwumm.com',
+      ];
+  app.enableCors({
+    origin: corsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

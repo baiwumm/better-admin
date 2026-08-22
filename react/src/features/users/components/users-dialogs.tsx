@@ -1,22 +1,23 @@
 import { UsersActionDialog } from './users-action-dialog'
 import { UsersDeleteDialog } from './users-delete-dialog'
-import { UsersInviteDialog } from './users-invite-dialog'
 import { useUsers } from './users-provider'
+import { UsersResetPasswordDialog } from './users-reset-password-dialog'
+import { UsersToggleStatusDialog } from './users-toggle-status-dialog'
 
 export function UsersDialogs() {
   const { open, setOpen, currentRow, setCurrentRow } = useUsers()
+
+  const closeRowDialog = () => {
+    setOpen(null)
+    setCurrentRow(null)
+  }
+
   return (
     <>
       <UsersActionDialog
         key='user-add'
         open={open === 'add'}
-        onOpenChange={() => setOpen('add')}
-      />
-
-      <UsersInviteDialog
-        key='user-invite'
-        open={open === 'invite'}
-        onOpenChange={() => setOpen('invite')}
+        onOpenChange={(nextOpen) => setOpen(nextOpen ? 'add' : null)}
       />
 
       {currentRow && (
@@ -24,11 +25,8 @@ export function UsersDialogs() {
           <UsersActionDialog
             key={`user-edit-${currentRow.id}`}
             open={open === 'edit'}
-            onOpenChange={() => {
-              setOpen('edit')
-              setTimeout(() => {
-                setCurrentRow(null)
-              }, 500)
+            onOpenChange={(nextOpen) => {
+              if (!nextOpen) closeRowDialog()
             }}
             currentRow={currentRow}
           />
@@ -36,11 +34,26 @@ export function UsersDialogs() {
           <UsersDeleteDialog
             key={`user-delete-${currentRow.id}`}
             open={open === 'delete'}
-            onOpenChange={() => {
-              setOpen('delete')
-              setTimeout(() => {
-                setCurrentRow(null)
-              }, 500)
+            onOpenChange={(nextOpen) => {
+              if (!nextOpen) closeRowDialog()
+            }}
+            currentRow={currentRow}
+          />
+
+          <UsersResetPasswordDialog
+            key={`user-reset-${currentRow.id}`}
+            open={open === 'reset-password'}
+            onOpenChange={(nextOpen) => {
+              if (!nextOpen) closeRowDialog()
+            }}
+            currentRow={currentRow}
+          />
+
+          <UsersToggleStatusDialog
+            key={`user-toggle-${currentRow.id}`}
+            open={open === 'toggle-status'}
+            onOpenChange={(nextOpen) => {
+              if (!nextOpen) closeRowDialog()
             }}
             currentRow={currentRow}
           />
