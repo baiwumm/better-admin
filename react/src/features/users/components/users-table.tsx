@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import {
   type SortingState,
   type VisibilityState,
@@ -149,7 +149,7 @@ export function UsersTable({
         ]}
       />
       <div className='relative overflow-hidden rounded-md border'>
-        <TableLoadingOverlay show={isFetching && !isLoading} />
+        <TableLoadingOverlay show={!!(isFetching && !isLoading)} />
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

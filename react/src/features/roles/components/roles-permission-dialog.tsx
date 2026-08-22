@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useMemo, useState } from 'react'
 import { KeyRound, Loader2 } from 'lucide-react'
@@ -181,8 +181,8 @@ export function RolesPermissionDialog({
             style={{ paddingLeft: `${depth * 24}px` }}
           >
             <Checkbox
-              checked={state === 'checked'}
-              indeterminate={state === 'indeterminate'}
+              checked={state === 'checked' ? true : state === 'indeterminate' ? 'indeterminate' : false}
+
               onCheckedChange={() => toggleMaster(node)}
               aria-label={`${node.label} 可见`}
             />

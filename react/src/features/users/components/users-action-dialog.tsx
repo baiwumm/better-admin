@@ -40,7 +40,7 @@ const formSchema = z.object({
     error: (iss) => (iss.input === '' ? '请输入邮箱。' : undefined),
   }),
   status: userStatusSchema,
-  roleIds: z.array(z.string()).default([]),
+  roleIds: z.array(z.string()),
   password: z.string().optional(),
   confirmPassword: z.string().optional(),
 })

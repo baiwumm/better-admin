@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+﻿import { useEffect } from 'react'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { type MenuNode } from '@/lib/api-types'
 import { useMenus } from './use-menus'
@@ -35,7 +35,7 @@ export function useMenuRouteGuard() {
 
     const allowedPaths = collectPaths(menuTree)
     if (!allowedPaths.has(pathname)) {
-      void navigate({ to: '/errors/unauthorized' })
+      void navigate({ to: '/errors/$error', params: { error: 'unauthorized' } })
     }
   }, [menuTree, isLoading, isError, pathname, navigate])
 }
