@@ -17,3 +17,7 @@
 
 # Ignore auto generated routeTree.gen.ts
 /src/routeTree.gen.ts
+
+# index.css 通过 @import 引入 @heroui/styles 的包内 CSS（bare specifier），
+# prettier-plugin-tailwindcss 无法解析该导入，格式化时跳过该入口文件。
+/src/styles/index.css
