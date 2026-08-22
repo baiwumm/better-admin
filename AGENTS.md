@@ -397,7 +397,8 @@ https://api.baiwumm.com
 7. **浏览器端禁止直接连接数据库**；数据库连接信息只存在于服务端环境变量。
 8. **不允许为了方便而修改既定的项目架构**（架构约束见本文档与 requirements.md）。
 9. **不同技术栈之间的业务逻辑、数据结构和 API Contract 应尽可能保持一致**。
-10. **不要为了实现某一个版本而破坏其他版本的设计一致性。**
+10. **不要为了实现某一个版本而破坏其他版本的设计一致性**。
+11. **React / Next.js 代码生成与重构必须遵循 `vercel-react-best-practices` Skill**（详见 §20）。该 Skill 已全局安装（`~/.agents/skills/vercel-react-best-practices`），是所有 React / Next.js 代码产出（新建组件 / 页面、数据获取、重构、性能优化）的硬性性能与正确性规范；若与其冲突，以本文档的架构约束与 UI 组件库策略（§7.2）为更高优先级，但性能模式不得无故违反。
 
 ### 需求优先级
 
@@ -588,3 +589,52 @@ Phase 7  统一测试 → 部署全部版本
 - React / Next.js 组件优先级：Hero UI > Shadcn UI > Custom；样式变量以 **Hero UI 设计体系为主要参考**，统一维护一套项目级 Design Tokens（§7.2 / §7.3）。
 - 存量 Shadcn Admin / Shadcn UI 能力（Layout、Sidebar、DataTable、Form 等）**渐进式保留**，不做一次性大规模迁移；新增功能优先 Hero UI。
 - 本次仅同步项目规范与文档（`AGENTS.md`、`docs/requirements.md`、`docs/ui-spec.md`、`docs/react.md`、`README.md`），**未进行任何 UI 代码迁移**。
+
+---
+
+## 20. React / Next.js 全局性能规范（vercel-react-best-practices）
+
+> 本节是对 §18 第 11 条的展开与强制化。所有 React / Next.js 代码生成与重构都必须遵循此规范。
+
+### 20.1 背景
+
+`vercel-react-best-practices` 是 Vercel 工程团队维护的 React / Next.js 性能优化指南 Skill，包含 **70 条规则、8 大类**（按影响力排序）：
+
+| 优先级 | 类别 | 影响 | 规则前缀 |
+| --- | --- | --- | --- |
+| 1 | 消除瀑布流（Waterfalls） | 关键 | `async-` |
+| 2 | 包体积优化（Bundle） | 关键 | `bundle-` |
+| 3 | 服务端性能（Server） | 高 | `server-` |
+| 4 | 客户端数据获取（Client） | 中-高 | `client-` |
+| 5 | 重渲染优化（Re-render） | 中 | `rerender-` |
+| 6 | 渲染性能（Rendering） | 中 | `rendering-` |
+| 7 | JavaScript 性能 | 低-中 | `js-` |
+| 8 | 进阶模式（Advanced） | 低 | `advanced-` |
+
+该 Skill 已**全局安装**到用户级目录：`~/.agents/skills/vercel-react-best-practices`（内含 `SKILL.md` 与 `rules/` 下 70 个规则文件）。在支持 universal skill 的 Agent（Claude Code、Cursor、Codex、Gemini CLI、Cline 等绝大多数）中，它会随仓库自动加载。
+
+### 20.2 硬性规则（所有 AI Agent 必须遵守）
+
+1. **触发范围**：只要任务涉及 **React 或 Next.js 的代码生成、页面 / 组件新建、数据获取、重构、性能优化**，在动手前必须先加载并遵循 `vercel-react-best-practices` Skill 的全部相关规则。
+2. **Skill 优先加载**：当任务明确匹配该 Skill 的触发条件（React 组件、Next.js 页面、数据获取、包体积优化、性能改进）时，应主动 `skill` 调用 / 读取 `~/.agents/skills/vercel-react-best-practices/SKILL.md` 及其 `rules/` 下对应规则，再产出代码。
+3. **代码产出即合规**：生成的 React / Next.js 代码默认应符合该 Skill 的关键规则，至少包括：
+   - **消除瀑布流**：在 `await` 远程值 / flag 前先做廉价的同步判断；并行获取数据（`Promise.all`）；避免嵌套串行 fetch。
+   - **包体积**：避免 barrel import 引发的打包膨胀；对第三方重依赖使用动态 `import()` / `next/dynamic`；可分析路径优先。
+   - **服务端**：并行 server-side fetching；不在 module 级共享可变状态；使用 React 缓存 / LRU 缓存去重。
+   - **客户端数据获取**：SWR / React Query 去重请求；被动事件监听器；localStorage 访问带 schema 校验。
+   - **重渲染**：`useMemo` / `useCallback` 合理使用；不在渲染中内联定义组件；派生状态优先用 `useMemo` 而非 `useEffect`；`useState` 初始化用惰性函数。
+   - **渲染**：`useTransition` 处理加载态；Suspense 边界合理拆分；`content-visibility` / `useDeferredValue` 等。
+4. **冲突裁决**：若 Vercel Skill 的某条性能建议与本文档的**架构约束**（§5/§6 数据库与 API Contract）、**UI 组件库策略**（§7.2 Hero UI 优先）或**阶段性开发约束**（§18）冲突，**以本文档为高优先级**；但性能模式（如消除瀑布、并行 fetch、`useMemo` 等）**不得无故违反**。
+5. **适用范围限定**：该 Skill 面向 **React / Next.js**。Vue / Nuxt 代码不强制套用其 React 专属规则，但「消除瀑布、并行请求、避免无谓重渲染」等通用性能原则仍应参考。
+
+### 20.3 安装与维护
+
+- 安装命令（已执行）：
+
+```text
+npx skills add https://github.com/vercel-labs/agent-skills --skill vercel-react-best-practices -g -y -a "*"
+```
+
+- 该命令将 Skill 安装到 `~/.agents/skills/vercel-react-best-practices`（用户级、跨项目生效），并对 77 个 Agent 建立 universal / symlink 关联。
+- 升级：`npx skills update -g vercel-react-best-practices`（或在任意位置 `npx skills update`）。
+- 验证安装：`npx skills ls -g` 应列出 `vercel-react-best-practices`。
