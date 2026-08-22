@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# runtime / env — 真实密钥严禁提交
+.env
+.env.local
+.env.*.local
+
+# drizzle local
+.drizzle/
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# os
+.DS_Store

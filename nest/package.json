@@ -1,0 +1,53 @@
+{
+  "name": "better-admin-nest",
+  "version": "0.1.0",
+  "description": "Better Admin Phase 2 — NestJS + PostgreSQL (Drizzle ORM) API",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main.js",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "ts-node scripts/migrate.ts",
+    "db:seed": "ts-node src/db/seed.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "11.2.1",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "11.2.1",
+    "@nestjs/jwt": "11.0.2",
+    "@nestjs/passport": "11.0.5",
+    "@nestjs/platform-express": "11.2.1",
+    "@nestjs/swagger": "^11.4.7",
+    "bcrypt": "6.0.0",
+    "class-transformer": "0.5.1",
+    "class-validator": "0.15.1",
+    "dotenv": "17.4.2",
+    "drizzle-orm": "0.45.2",
+    "nanoid": "6.0.1",
+    "passport": "0.7.0",
+    "passport-jwt": "4.0.1",
+    "pg": "8.23.0",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@nestjs/cli": "11.0.24",
+    "@nestjs/schematics": "11.0.8",
+    "@types/bcrypt": "6.0.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "22.18.1",
+    "@types/passport-jwt": "4.0.1",
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "0.31.10",
+    "eslint": "9.18.0",
+    "ts-node": "10.9.2",
+    "tsconfig-paths": "4.2.0",
+    "typescript": "5.8.3",
+    "typescript-eslint": "^8.67.0"
+  }
+}
