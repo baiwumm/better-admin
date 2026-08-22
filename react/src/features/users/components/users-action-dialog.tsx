@@ -1,10 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { z } from 'zod'
+import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import {
   Dialog,
   DialogContent,
@@ -23,10 +26,11 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { SelectDropdown } from '@/components/select-dropdown'
 import { statusOptions } from '../data/data'
 import { userStatusSchema, type User } from '../data/schema'
-import { useCreateUser, useUpdateUser } from '../hooks/use-users'
+import { useCreateUser, useRoleOptions, useUpdateUser } from '../hooks/use-users'
 
 const formSchema = z.object({
   // 编辑模式下 username 输入框 disabled，不参与表单提交，故改为可选（创建时手动校验）
@@ -36,6 +40,7 @@ const formSchema = z.object({
     error: (iss) => (iss.input === '' ? '请输入邮箱。' : undefined),
   }),
   status: userStatusSchema,
+  roleIds: z.array(z.string()).default([]),
   password: z.string().optional(),
   confirmPassword: z.string().optional(),
 })
@@ -54,8 +59,16 @@ export function UsersActionDialog({
 }: UserActionDialogProps) {
   const isEdit = !!currentRow
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [rolePopoverOpen, setRolePopoverOpen] = useState(false)
   const createUser = useCreateUser()
   const updateUser = useUpdateUser()
+  const { data: roleOptions = [], isLoading: rolesLoading } = useRoleOptions()
+
+  // 编辑回显：从 currentRow.roles 提取 id 列表
+  const defaultRoleIds = useMemo(
+    () => (isEdit ? (currentRow?.roles ?? []).map((r) => r.id) : []),
+    [isEdit, currentRow]
+  )
 
   const form = useForm<UserForm>({
     resolver: zodResolver(formSchema),
@@ -65,6 +78,7 @@ export function UsersActionDialog({
           displayName: currentRow.displayName,
           email: currentRow.email,
           status: currentRow.status,
+          roleIds: defaultRoleIds,
           password: '',
           confirmPassword: '',
         }
@@ -73,6 +87,7 @@ export function UsersActionDialog({
           displayName: '',
           email: '',
           status: 'active',
+          roleIds: [],
           password: '',
           confirmPassword: '',
         },
@@ -104,6 +119,7 @@ export function UsersActionDialog({
             displayName: values.displayName,
             email: values.email,
             status: values.status,
+            roleIds: values.roleIds,
           },
         })
       } else {
@@ -114,6 +130,7 @@ export function UsersActionDialog({
           password: values.password ?? '',
           confirmPassword: values.confirmPassword ?? '',
           status: values.status,
+          roleIds: values.roleIds,
         })
       }
       close()
@@ -226,6 +243,111 @@ export function UsersActionDialog({
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name='roleIds'
+                render={({ field }) => (
+                  <FormItem className='grid grid-cols-6 items-center space-y-0 gap-x-4 gap-y-1'>
+                    <FormLabel className='col-span-2 text-end'>角色</FormLabel>
+                    <Popover
+                      open={rolePopoverOpen}
+                      onOpenChange={setRolePopoverOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            type='button'
+                            variant='outline'
+                            role='combobox'
+                            aria-expanded={rolePopoverOpen}
+                            className='col-span-4 justify-between font-normal'
+                            disabled={rolesLoading}
+                          >
+                            {rolesLoading ? (
+                              <span className='flex items-center gap-2 text-muted-foreground'>
+                                <Loader2 className='size-4 animate-spin' />
+                                加载角色...
+                              </span>
+                            ) : field.value.length > 0 ? (
+                              <span className='flex flex-wrap gap-1'>
+                                {roleOptions
+                                  .filter((r) => field.value.includes(r.id))
+                                  .map((r) => (
+                                    <span
+                                      key={r.id}
+                                      className='rounded-full bg-secondary px-2 py-0.5 text-xs'
+                                    >
+                                      {r.name}
+                                    </span>
+                                  ))}
+                              </span>
+                            ) : (
+                              <span className='text-muted-foreground'>
+                                请选择角色（可不选）
+                              </span>
+                            )}
+                            <ChevronsUpDown className='size-4 shrink-0 opacity-50' />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className='w-64 p-0' align='start'>
+                        <Command>
+                          <CommandInput placeholder='搜索角色...' />
+                          <CommandList>
+                            <CommandEmpty>未找到角色</CommandEmpty>
+                            <CommandGroup>
+                              {roleOptions.map((role) => {
+                                const checked = field.value.includes(role.id)
+                                return (
+                                  <CommandItem
+                                    key={role.id}
+                                    value={role.name}
+                                    className='flex items-center gap-2'
+                                    onSelect={() => {
+                                      if (checked) {
+                                        field.onChange(
+                                          field.value.filter(
+                                            (id) => id !== role.id
+                                          )
+                                        )
+                                      } else {
+                                        field.onChange([...field.value, role.id])
+                                      }
+                                    }}
+                                  >
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={() => {
+                                        if (checked) {
+                                          field.onChange(
+                                            field.value.filter(
+                                              (id) => id !== role.id
+                                            )
+                                          )
+                                        } else {
+                                          field.onChange([
+                                            ...field.value,
+                                            role.id,
+                                          ])
+                                        }
+                                      }}
+                                    />
+                                    <span className='flex-1'>{role.name}</span>
+                                    {checked && (
+                                      <Check className='size-4 shrink-0' />
+                                    )}
+                                  </CommandItem>
+                                )
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage className='col-span-4 col-start-3' />
+                  </FormItem>
+                )}
+              />
               {!isEdit && (
                 <>
                   <FormField
@@ -275,6 +397,7 @@ export function UsersActionDialog({
         </div>
         <DialogFooter>
           <Button type='submit' form='user-form' disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className='animate-spin' />}
             保存
           </Button>
         </DialogFooter>

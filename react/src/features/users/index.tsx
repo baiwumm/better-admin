@@ -14,7 +14,7 @@ export function Users() {
   const search = route.useSearch()
   const navigate = route.useNavigate()
 
-  const { data, isLoading } = useUsers({
+  const { data, isLoading, isFetching } = useUsers({
     page: search.page ?? 1,
     pageSize: search.pageSize ?? 10,
     search: search.search || undefined,
@@ -41,6 +41,7 @@ export function Users() {
           data={data?.data ?? []}
           total={data?.pagination.total ?? 0}
           isLoading={isLoading}
+          isFetching={isFetching}
           search={search as unknown as Record<string, unknown>}
           navigate={navigate}
         />

@@ -23,6 +23,7 @@ import { getMenuIcon } from '@/components/layout/data/menu-icon-map'
 import { Header } from '@/components/layout/header'
 import { HeaderActions } from '@/components/layout/header-actions'
 import { Main } from '@/components/layout/main'
+import { TableLoadingOverlay } from '@/components/table-loading-overlay'
 import { MenusActionDialog } from './components/menus-action-dialog'
 import { MenusAddChildDialog } from './components/menus-add-child-dialog'
 import { MenusDeleteDialog } from './components/menus-delete-dialog'
@@ -42,7 +43,7 @@ function flattenTree(nodes: MenuNode[], depth = 0): RowNode[] {
 }
 
 export function MenusPage() {
-  const { data: menuTree, isLoading } = useMenus()
+  const { data: menuTree, isLoading, isFetching } = useMenus()
   const [dialog, setDialog] = useState<DialogType>(null)
   const [currentRow, setCurrentRow] = useState<MenuNode | null>(null)
   const userPermissions = useAuthStore((state) => state.user?.permissions)
@@ -78,7 +79,8 @@ export function MenusPage() {
           )}
         </div>
 
-        <div className='overflow-hidden rounded-md border'>
+        <div className='relative overflow-hidden rounded-md border'>
+          <TableLoadingOverlay show={isFetching && !isLoading} />
           <Table>
             <TableHeader>
               <TableRow className='group/row'>

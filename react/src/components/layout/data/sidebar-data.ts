@@ -1,11 +1,15 @@
 import {
+  Bell,
   LayoutDashboard,
   KeyRound,
   Menu,
+  Monitor,
+  Palette,
   ScrollText,
-  Settings,
   ShieldCheck,
   Users,
+  UserCog,
+  Wrench,
 } from 'lucide-react'
 import { type SidebarData } from '../types'
 
@@ -60,9 +64,29 @@ export const sidebarData: SidebarData = {
       title: '系统设置',
       items: [
         {
-          title: '系统设置',
-          url: '/settings',
-          icon: Settings,
+          title: '个人资料',
+          url: '/settings/profile',
+          icon: UserCog,
+        },
+        {
+          title: '账户',
+          url: '/settings/account',
+          icon: Wrench,
+        },
+        {
+          title: '外观',
+          url: '/settings/appearance',
+          icon: Palette,
+        },
+        {
+          title: '通知',
+          url: '/settings/notifications',
+          icon: Bell,
+        },
+        {
+          title: '显示',
+          url: '/settings/display',
+          icon: Monitor,
         },
       ],
     },

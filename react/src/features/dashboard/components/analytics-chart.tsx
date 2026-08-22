@@ -1,77 +1,12 @@
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
-
-const data = [
-  {
-    name: 'Mon',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-  {
-    name: 'Tue',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-  {
-    name: 'Wed',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-  {
-    name: 'Thu',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-  {
-    name: 'Fri',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-  {
-    name: 'Sat',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-  {
-    name: 'Sun',
-    clicks: Math.floor(Math.random() * 900) + 100,
-    uniques: Math.floor(Math.random() * 700) + 80,
-  },
-]
-
+/**
+ * 流量概览图表占位。
+ * 原组件使用 Math.random() 生成硬编码演示数据，已按要求移除 Mock。
+ * 真实数据需由后端提供统计接口后接入。
+ */
 export function AnalyticsChart() {
   return (
-    <ResponsiveContainer width='100%' height={300}>
-      <AreaChart data={data}>
-        <XAxis
-          dataKey='name'
-          stroke='#888888'
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-        />
-        <YAxis
-          stroke='#888888'
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-        />
-        <Area
-          type='monotone'
-          dataKey='clicks'
-          stroke='currentColor'
-          className='text-primary'
-          fill='currentColor'
-          fillOpacity={0.15}
-        />
-        <Area
-          type='monotone'
-          dataKey='uniques'
-          stroke='currentColor'
-          className='text-muted-foreground'
-          fill='currentColor'
-          fillOpacity={0.1}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+    <div className='flex h-[300px] items-center justify-center text-sm text-muted-foreground'>
+      图表数据接入中
+    </div>
   )
 }

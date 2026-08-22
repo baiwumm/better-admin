@@ -17,6 +17,7 @@ import {
 import { Header } from '@/components/layout/header'
 import { HeaderActions } from '@/components/layout/header-actions'
 import { Main } from '@/components/layout/main'
+import { TableLoadingOverlay } from '@/components/table-loading-overlay'
 import { RolesActionDialog } from './components/roles-action-dialog'
 import { RolesDeleteDialog } from './components/roles-delete-dialog'
 import { RolesPermissionDialog } from './components/roles-permission-dialog'
@@ -37,7 +38,7 @@ export function RolesPage() {
   const canEdit = hasPermission(userPermissions, PERMISSIONS.EDIT)
   const canDelete = hasPermission(userPermissions, PERMISSIONS.DELETE)
 
-  const { data, isLoading } = useRoles({
+  const { data, isLoading, isFetching } = useRoles({
     page,
     pageSize,
     search: search || undefined,
@@ -89,7 +90,8 @@ export function RolesPage() {
           </Button>
         </div>
 
-        <div className='overflow-hidden rounded-md border'>
+        <div className='relative overflow-hidden rounded-md border'>
+          <TableLoadingOverlay show={isFetching && !isLoading} />
           <Table>
             <TableHeader>
               <TableRow className='group/row'>

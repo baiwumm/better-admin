@@ -1,9 +1,12 @@
 import {
+  Bell,
   GitBranchPlus,
   KeyRound,
   LayoutDashboard,
   ListX,
   Menu,
+  Monitor,
+  Palette,
   PencilLine,
   Plus,
   RotateCcw,
@@ -14,6 +17,7 @@ import {
   Shield,
   Trash2,
   Users,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -39,6 +43,10 @@ const iconMap: Record<string, LucideIcon> = {
   'rotate-ccw': RotateCcw,
   user: Users,
   'user-cog': Users,
+  wrench: Wrench,
+  palette: Palette,
+  bell: Bell,
+  monitor: Monitor,
 }
 
 export function getMenuIcon(icon: string | null | undefined): LucideIcon {

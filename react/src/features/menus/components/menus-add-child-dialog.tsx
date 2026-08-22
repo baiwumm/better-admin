@@ -27,6 +27,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { getMenuIcon } from '@/components/layout/data/menu-icon-map'
 import { useAddChildMenu } from '../hooks/use-menu-mutations'
+import { PermissionBitsSelect } from './permission-bits-select'
 
 const formSchema = z.object({
   label: z.string().min(1, '请输入菜单名称。'),
@@ -94,7 +95,7 @@ export function MenusAddChildDialog({
         onOpenChange(state)
       }}
     >
-      <DialogContent className='sm:max-w-md'>
+      <DialogContent className='sm:max-w-xl'>
         <DialogHeader className='text-start'>
           <DialogTitle>
             <GitBranchPlus className='me-1 inline-block size-5 align-text-top' />
@@ -114,7 +115,7 @@ export function MenusAddChildDialog({
                 name='label'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>菜单名称</FormLabel>
+                    <FormLabel required>菜单名称</FormLabel>
                     <FormControl>
                       <Input placeholder='如：用户列表' {...field} />
                     </FormControl>
@@ -127,7 +128,7 @@ export function MenusAddChildDialog({
                 name='icon'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>图标</FormLabel>
+                    <FormLabel required>图标</FormLabel>
                     <FormControl>
                       <div className='flex items-center gap-2'>
                         <span className='inline-flex size-9 items-center justify-center rounded-md border bg-background'>
@@ -165,7 +166,7 @@ export function MenusAddChildDialog({
                 name='sort'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>排序</FormLabel>
+                    <FormLabel required>排序</FormLabel>
                     <FormControl>
                       <Input type='number' min={0} {...field} />
                     </FormControl>
@@ -178,13 +179,15 @@ export function MenusAddChildDialog({
                 name='permissions'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>按钮权限位</FormLabel>
+                    <FormLabel required>按钮权限位</FormLabel>
                     <FormControl>
-                      <Input type='number' min={0} {...field} />
+                      <PermissionBitsSelect
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                     </FormControl>
-                    <FormDescription>
-                      SEARCH=1 ADD=2 EDIT=4 DELETE=8 BATCH_DELETE=16
-                      ADD_CHILD=32 RESET=64 SETTINGS_UPDATE=128，可组合累加。
+                    <FormDescription className='text-xs'>
+                      不勾选则保存为 0，该菜单将无可操作按钮。
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

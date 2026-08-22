@@ -4,8 +4,9 @@ import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
 import {
   type ApiError,
-  type ApiListEnvelope,
   type ApiEnvelope,
+  type ApiListEnvelope,
+  type Role,
 } from '@/lib/api-types'
 import {
   type User,
@@ -43,6 +44,23 @@ export const useUsers = (params: UserListParams) => {
   })
 }
 
+/**
+ * 可用角色选项（用于用户表单「角色分配」多选下拉）。
+ * GET /api/roles 不支持 enabled 过滤，故请求较大 pageSize 后在前端过滤启用角色。
+ */
+export const useRoleOptions = () => {
+  return useQuery({
+    queryKey: ['roles', 'options'],
+    queryFn: async () => {
+      const response = (await apiClient.get('/roles', {
+        params: { page: 1, pageSize: 50 },
+      })) as ApiListEnvelope<Role>
+      return response.data.filter((role) => role.enabled)
+    },
+    staleTime: 60_000,
+  })
+}
+
 /** 创建用户 */
 export const useCreateUser = () => {
   const queryClient = useQueryClient()
@@ -54,6 +72,7 @@ export const useCreateUser = () => {
         email: input.email,
         password: input.password,
         status: input.status,
+        roleIds: input.roleIds,
       }
       return apiClient.post('/users', payload) as Promise<ApiEnvelope<User>>
     },

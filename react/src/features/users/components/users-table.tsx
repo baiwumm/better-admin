@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DataTablePagination, DataTableToolbar } from '@/components/data-table'
+import { TableLoadingOverlay } from '@/components/table-loading-overlay'
 import { statusOptions } from '../data/data'
 import { type User } from '../data/schema'
 import { DataTableBulkActions } from './data-table-bulk-actions'
@@ -30,6 +31,8 @@ type DataTableProps = {
   data: User[]
   total: number
   isLoading?: boolean
+  /** 刷新中（保存/搜索后 invalidate）——保留旧数据 + 表格中心遮罩 */
+  isFetching?: boolean
   search: Record<string, unknown>
   navigate: NavigateFn
 }
@@ -38,6 +41,7 @@ export function UsersTable({
   data,
   total,
   isLoading,
+  isFetching,
   search,
   navigate,
 }: DataTableProps) {
@@ -144,7 +148,8 @@ export function UsersTable({
           },
         ]}
       />
-      <div className='overflow-hidden rounded-md border'>
+      <div className='relative overflow-hidden rounded-md border'>
+        <TableLoadingOverlay show={isFetching && !isLoading} />
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

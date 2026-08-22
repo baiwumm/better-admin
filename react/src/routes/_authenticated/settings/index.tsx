@@ -1,6 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { SystemSettings } from '@/features/settings/system/system-settings'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_authenticated/settings/')({
-  component: SystemSettings,
+  beforeLoad: () => {
+    throw redirect({ to: '/settings/profile' })
+  },
 })

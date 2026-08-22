@@ -95,6 +95,27 @@ export const usersColumns: ColumnDef<User>[] = [
     enableSorting: false,
   },
   {
+    id: 'roles',
+    header: '角色',
+    cell: ({ row }) => {
+      const { roles } = row.original
+      if (!roles || roles.length === 0) {
+        return <span className='text-muted-foreground'>—</span>
+      }
+      return (
+        <div className='flex flex-wrap gap-1'>
+          {roles.map((role) => (
+            <Badge key={role.id} variant='secondary' className='text-xs'>
+              {role.name}
+            </Badge>
+          ))}
+        </div>
+      )
+    },
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
     accessorKey: 'createdAt',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='创建时间' />

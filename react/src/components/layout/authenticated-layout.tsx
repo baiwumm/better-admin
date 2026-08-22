@@ -8,6 +8,7 @@ import { SearchProvider } from '@/context/search-provider'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { SkipToMain } from '@/components/skip-to-main'
+import { useMenuRouteGuard } from './hooks/use-menu-route-guard'
 
 type AuthenticatedLayoutProps = {
   children?: React.ReactNode
@@ -18,6 +19,9 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   const user = useAuthStore((state) => state.user)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const getMe = useAuthStore((state) => state.getMe)
+
+  // 菜单路由守卫：URL 不在用户可见菜单树内 → 401
+  useMenuRouteGuard()
 
   // 刷新页面后：本地有 Token 但内存无用户信息时，通过 /auth/me 恢复会话
   useEffect(() => {

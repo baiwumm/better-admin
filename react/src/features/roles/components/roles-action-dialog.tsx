@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { z } from 'zod'
+import { Loader2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { type Role } from '@/lib/api-types'
@@ -222,6 +223,7 @@ export function RolesActionDialog({
         </Form>
         <DialogFooter>
           <Button type='submit' form='role-form' disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className='animate-spin' />}
             保存
           </Button>
         </DialogFooter>

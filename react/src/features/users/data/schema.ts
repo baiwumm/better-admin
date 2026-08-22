@@ -7,6 +7,15 @@ const userStatusSchema = z.enum(['active', 'disabled'])
 export type UserStatus = z.infer<typeof userStatusSchema>
 export { userStatusSchema }
 
+/** 用户关联的角色（user_roles → roles 联查） */
+const userRoleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  code: z.string(),
+})
+export type UserRole = z.infer<typeof userRoleSchema>
+export { userRoleSchema }
+
 /** 用户列表项（GET /api/users），与后端 User 对齐 */
 const _userSchema = z.object({
   id: z.string(),
@@ -15,6 +24,7 @@ const _userSchema = z.object({
   displayName: z.string(),
   avatar: z.string().nullable().optional(),
   status: userStatusSchema,
+  roles: z.array(userRoleSchema).optional().default([]),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -35,6 +45,7 @@ export const userCreateSchema = z
       .transform((pwd) => pwd.trim()),
     confirmPassword: z.string().transform((pwd) => pwd.trim()),
     status: userStatusSchema.default('active'),
+    roleIds: z.array(z.string()).default([]),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: '两次输入的密码不一致。',
@@ -52,5 +63,6 @@ export const userUpdateSchema = z.object({
     error: (iss) => (iss.input === '' ? '请输入邮箱。' : undefined),
   }),
   status: userStatusSchema,
+  roleIds: z.array(z.string()).default([]),
 })
 export type UserUpdateInput = z.infer<typeof userUpdateSchema>

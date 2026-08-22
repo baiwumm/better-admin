@@ -86,8 +86,13 @@ function FormItem({ className, ...props }: React.ComponentProps<'div'>) {
 
 function FormLabel({
   className,
+  required,
+  children,
   ...props
-}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+}: React.ComponentProps<typeof LabelPrimitive.Root> & {
+  /** 必填标记：在标签后追加红色 * 号 */
+  required?: boolean
+}) {
   const { error, formItemId } = useFormField()
 
   return (
@@ -97,7 +102,14 @@ function FormLabel({
       className={cn('data-[error=true]:text-destructive', className)}
       htmlFor={formItemId}
       {...props}
-    />
+    >
+      {children}
+      {required && (
+        <span aria-hidden='true' className='text-destructive'>
+          *
+        </span>
+      )}
+    </Label>
   )
 }
 

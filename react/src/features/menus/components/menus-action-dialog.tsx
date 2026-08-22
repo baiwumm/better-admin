@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Loader2 } from 'lucide-react'
 import { type MenuNode } from '@/lib/api-types'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,6 +28,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { getMenuIcon } from '@/components/layout/data/menu-icon-map'
 import { useCreateMenu, useUpdateMenu } from '../hooks/use-menu-mutations'
+import { PermissionBitsSelect } from './permission-bits-select'
 
 const formSchema = z.object({
   label: z.string().min(1, '请输入菜单名称。'),
@@ -139,7 +141,7 @@ export function MenusActionDialog({
         onOpenChange(state)
       }}
     >
-      <DialogContent className='sm:max-w-md'>
+      <DialogContent className='sm:max-w-xl'>
         <DialogHeader className='text-start'>
           <DialogTitle>{isEdit ? '编辑菜单' : '新增菜单'}</DialogTitle>
           <DialogDescription>
@@ -158,7 +160,7 @@ export function MenusActionDialog({
                 name='label'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>菜单名称</FormLabel>
+                    <FormLabel required>菜单名称</FormLabel>
                     <FormControl>
                       <Input placeholder='如：数据大屏' {...field} />
                     </FormControl>
@@ -171,7 +173,7 @@ export function MenusActionDialog({
                 name='icon'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>图标</FormLabel>
+                    <FormLabel required>图标</FormLabel>
                     <FormControl>
                       <div className='flex items-center gap-2'>
                         <span className='inline-flex size-9 items-center justify-center rounded-md border bg-background'>
@@ -215,7 +217,7 @@ export function MenusActionDialog({
                 name='sort'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>排序</FormLabel>
+                    <FormLabel required>排序</FormLabel>
                     <FormControl>
                       <Input type='number' min={0} {...field} />
                     </FormControl>
@@ -228,13 +230,15 @@ export function MenusActionDialog({
                 name='permissions'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>按钮权限位</FormLabel>
+                    <FormLabel required>按钮权限位</FormLabel>
                     <FormControl>
-                      <Input type='number' min={0} {...field} />
+                      <PermissionBitsSelect
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                     </FormControl>
-                    <FormDescription>
-                      位掩码：SEARCH=1 ADD=2 EDIT=4 DELETE=8 BATCH_DELETE=16
-                      ADD_CHILD=32 RESET=64 SETTINGS_UPDATE=128，可组合累加。
+                    <FormDescription className='text-xs'>
+                      不勾选则保存为 0，该菜单将无可操作按钮。
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -335,6 +339,7 @@ export function MenusActionDialog({
         </div>
         <DialogFooter>
           <Button type='submit' form='menu-form' disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className='animate-spin' />}
             保存
           </Button>
         </DialogFooter>
