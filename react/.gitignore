@@ -26,3 +26,5 @@ dist-ssr
 yarn.lock
 package-lock.json
 bun.lockb
+# heroui-agents-md
+.heroui-docs/
