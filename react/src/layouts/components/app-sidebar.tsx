@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { cn, useTheme } from "@heroui/react";
+import { cn, Typography, useTheme } from "@heroui/react";
 
 import { CollapsedMenu } from "./collapsed-menu";
 import { SidebarMenu } from "./sidebar-menu";
@@ -41,14 +41,21 @@ export function AppSidebar({ collapsed, onNavigate }: AppSidebarProps) {
             src={theme === "dark" ? logoDark : logo}
           />
           {!collapsed && (
-            <span className="grid leading-tight">
-              <span className="truncate text-sm font-bold text-foreground">
+            <div className="grid leading-tight">
+              <Typography
+                className="truncate leading-tight font-bold"
+                type="body-sm"
+              >
                 Better Admin
-              </span>
-              <span className="truncate text-xs text-muted">
+              </Typography>
+              <Typography
+                className="truncate leading-tight"
+                color="muted"
+                type="body-xs"
+              >
                 全栈 Admin 系统
-              </span>
-            </span>
+              </Typography>
+            </div>
           )}
         </Link>
       </div>

@@ -1,3 +1,4 @@
+import { Typography } from "@heroui/react";
 import { Construction } from "lucide-react";
 
 type PlaceholderPageProps = {
@@ -14,10 +15,21 @@ export function PlaceholderPage({ title, description }: PlaceholderPageProps) {
       <div className="flex size-14 items-center justify-center rounded-2xl bg-surface-secondary text-muted">
         <Construction className="size-7" />
       </div>
-      <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-      <p className="max-w-md text-sm text-muted">
+      <Typography
+        align="center"
+        className="text-xl font-semibold tracking-normal"
+        type="h1"
+      >
+        {title}
+      </Typography>
+      <Typography
+        align="center"
+        className="max-w-md leading-normal"
+        color="muted"
+        type="body-sm"
+      >
         {description ?? "该模块正在开发中（UI 基准迁移渐进式推进），敬请期待。"}
-      </p>
+      </Typography>
     </div>
   );
 }

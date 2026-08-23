@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Accordion,
@@ -41,25 +41,31 @@ export function SidebarMenu({ items, onNavigate }: SidebarMenuProps) {
     return init;
   });
 
-  // 路由变化时自动展开激活路径上的所有祖先
-  useEffect(() => {
+  // 路由变化时自动展开激活路径上的所有祖先。
+  // 按 rerender-derived-state-no-effect：派生状态应在渲染期调整，
+  // 而非用 useEffect 同步（避免额外渲染周期与状态漂移）。
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
     const activeIds = findActivePath(items, pathname);
 
-    if (activeIds.length === 0) return;
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      let changed = false;
+    if (activeIds.length > 0) {
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        let changed = false;
 
-      activeIds.forEach((id) => {
-        if (!next.has(id)) {
-          next.add(id);
-          changed = true;
-        }
+        activeIds.forEach((id) => {
+          if (!next.has(id)) {
+            next.add(id);
+            changed = true;
+          }
+        });
+
+        return changed ? next : prev;
       });
-
-      return changed ? next : prev;
-    });
-  }, [items, pathname]);
+    }
+  }
 
   const handleNavigate = useCallback(
     (to?: string | null) => {

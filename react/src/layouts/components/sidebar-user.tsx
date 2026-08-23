@@ -1,4 +1,11 @@
-import { Avatar, cn, Dropdown, Label, Separator } from "@heroui/react";
+import {
+  Avatar,
+  cn,
+  Dropdown,
+  Label,
+  Separator,
+  Typography,
+} from "@heroui/react";
 import { Bell, ChevronsUpDown, LogOut, Settings, UserCog } from "lucide-react";
 
 type SidebarUserProps = {
@@ -41,10 +48,19 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
           {!collapsed && (
             <>
               <div className="min-w-0 flex-1 leading-tight">
-                <p className="truncate text-sm font-semibold text-foreground">
+                <Typography
+                  className="truncate leading-tight font-semibold"
+                  type="body-sm"
+                >
                   {mockUser.name}
-                </p>
-                <p className="truncate text-xs text-muted">{mockUser.email}</p>
+                </Typography>
+                <Typography
+                  className="truncate leading-tight"
+                  color="muted"
+                  type="body-xs"
+                >
+                  {mockUser.email}
+                </Typography>
               </div>
               <ChevronsUpDown className="size-4 shrink-0 text-muted" />
             </>
@@ -62,10 +78,19 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
                 </Avatar.Fallback>
               </Avatar>
               <div className="min-w-0 flex-1 leading-snug">
-                <p className="truncate text-sm font-medium text-foreground">
+                <Typography
+                  className="truncate leading-snug font-medium"
+                  type="body-sm"
+                >
                   {mockUser.name}
-                </p>
-                <p className="truncate text-xs text-muted">{mockUser.email}</p>
+                </Typography>
+                <Typography
+                  className="truncate leading-snug"
+                  color="muted"
+                  type="body-xs"
+                >
+                  {mockUser.email}
+                </Typography>
               </div>
             </div>
           </div>
