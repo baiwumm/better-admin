@@ -36,44 +36,40 @@
 
 ```text
 src/routes/
-├── __root.tsx                 # 根布局：Outlet + Devtools + notFound/errorComponent
-├── (auth)/                    # 路由组：不影响 URL，仅组织（/sign-in）
-├── (errors)/                  # 路由组：全屏错误页（/401、/403、/404）
+├── __root.tsx                 # 根布局：Outlet + Toast.Provider + Devtools + notFound/errorComponent
+├── (auth)/                    # 路由组：不影响 URL，仅组织（/sign-in 登录页）
+├── 403.tsx                    # /403（禁止访问，全屏）
+├── 404.tsx                    # /404（页面不存在，全屏）
+├── 500.tsx                    # /500（服务器错误，全屏）
 └── _authenticated/            # pathless 布局：URL 不含该段，包住所有需登录页面
     ├── route.tsx              # 布局路由：beforeLoad 登录鉴权 + AdminLayout（Hero UI 双栏）
     ├── index.tsx              # /    （仪表盘）
-    ├── users/index.tsx        # /users
-    ├── roles/index.tsx        # /roles
-    ├── permissions/index.tsx  # /permissions
-    ├── menus/index.tsx        # /menus
-    ├── logs/index.tsx         # /logs
-    ├── multi-level.tsx        # /multi-level（三级菜单演示页）
-    └── settings/
-        ├── route.tsx          # 子布局路由：二级导航（左侧 sticky 导航 + Outlet）
+    └── settings/                # 业务模块直接平铺在 AdminLayout 下（无二级导航）
         ├── index.tsx          # /settings（系统设置）
-        ├── profile.tsx        # /settings/profile
-        ├── account.tsx        # /settings/account
-        ├── appearance.tsx     # /settings/appearance
-        ├── notifications.tsx  # /settings/notifications
-        └── display.tsx        # /settings/display
+        ├── users.tsx          # /settings/users（用户管理）
+        ├── roles.tsx          # /settings/roles（角色管理）
+        ├── permissions.tsx    # /settings/permissions（权限管理）
+        ├── menus.tsx          # /settings/menus（菜单管理）
+        ├── dicts.tsx          # /settings/dicts（字典管理）
+        └── logs.tsx           # /settings/logs（日志管理）
 ```
 
 约定语法（TanStack Router / 类 Next.js）：
 
 | 语法 | 含义 | 本项目的用法 |
 | --- | --- | --- |
-| 目录 = 路径段 | `users/index.tsx` → `/users` | 业务页面按模块分组 |
-| `route.tsx` | 布局路由（自身无 URL，渲染 `<Outlet/>`） | `_authenticated/route.tsx`、`settings/route.tsx` |
-| `index.tsx` | 目录的索引页 | 各模块首页 |
-| `(group)` | 路由组，**不进入 URL** | `(auth)`、`(errors)` |
+| 目录 = 路径段 | `settings/users.tsx` → `/settings/users` | 业务页面按域组织 |
+| `route.tsx` | 布局路由（自身无 URL，渲染 `<Outlet/>`） | `_authenticated/route.tsx` |
+| `index.tsx` | 目录的索引页 | 仪表盘 `/`、系统设置 `/settings` |
+| `(group)` | 路由组，**不进入 URL** | `(auth)` |
 | `_layout` | pathless 布局，**不进入 URL** | `_authenticated` |
 | `$param` | 动态段（预留） | 当前业务无详情路由（详情走 Drawer，见 ui-spec） |
 
 每个路由文件必须用与文件路径一致的字符串创建路由：
 
 ```tsx
-// src/routes/_authenticated/users/index.tsx
-export const Route = createFileRoute("/_authenticated/users/")({
+// src/routes/_authenticated/settings/users.tsx
+export const Route = createFileRoute("/_authenticated/settings/users")({
   component: () => <UsersPage />,
 });
 ```
@@ -88,21 +84,16 @@ export const Route = createFileRoute("/_authenticated/users/")({
 | --- | --- | --- | --- | --- | --- |
 | `/` | `_authenticated/index.tsx` | 仪表盘（占位） | AdminLayout | 必须 | 菜单树含 `/` |
 | `/sign-in` | `(auth)/sign-in.tsx` | 登录 | 无（全屏） | 已登录自动回首页 | — |
-| `/401` | `(errors)/401.tsx` | 未授权 | 无（全屏） | 否 | — |
-| `/403` | `(errors)/403.tsx` | 禁止访问 | 无（全屏） | 否 | — |
-| `/404` | `(errors)/404.tsx` | 页面不存在 | 无（全屏） | 否 | — |
-| `/users` | `_authenticated/users/index.tsx` | 用户管理（占位） | AdminLayout | 必须 | 菜单树含 `/users` |
-| `/roles` | `_authenticated/roles/index.tsx` | 角色管理（占位） | AdminLayout | 必须 | 菜单树含 `/roles` |
-| `/permissions` | `_authenticated/permissions/index.tsx` | 权限管理（占位） | AdminLayout | 必须 | 菜单树含 `/permissions` |
-| `/menus` | `_authenticated/menus/index.tsx` | 菜单管理（占位） | AdminLayout | 必须 | 菜单树含 `/menus` |
-| `/logs` | `_authenticated/logs/index.tsx` | 日志管理（占位） | AdminLayout | 必须 | 菜单树含 `/logs` |
-| `/multi-level` | `_authenticated/multi-level.tsx` | 三级菜单（占位） | AdminLayout | 必须 | 菜单树含 `/multi-level` |
-| `/settings` | `_authenticated/settings/index.tsx` | 系统设置（占位） | AdminLayout + SettingsLayout | 必须 | 菜单树含 `/settings` |
-| `/settings/profile` | `_authenticated/settings/profile.tsx` | 个人资料（占位） | 同上 | 必须 | 菜单树含该路径 |
-| `/settings/account` | `_authenticated/settings/account.tsx` | 账户（占位） | 同上 | 必须 | 菜单树含该路径 |
-| `/settings/appearance` | `_authenticated/settings/appearance.tsx` | 外观（占位） | 同上 | 必须 | 菜单树含该路径 |
-| `/settings/notifications` | `_authenticated/settings/notifications.tsx` | 通知（占位） | 同上 | 必须 | 菜单树含该路径 |
-| `/settings/display` | `_authenticated/settings/display.tsx` | 显示（占位） | 同上 | 必须 | 菜单树含该路径 |
+| `/403` | `403.tsx` | 禁止访问（全屏） | 无 | 否 | — |
+| `/404` | `404.tsx` | 页面不存在（全屏） | 无 | 否 | — |
+| `/500` | `500.tsx` | 服务器错误（全屏） | 无 | 否 | — |
+| `/settings` | `_authenticated/settings/index.tsx` | 系统设置（占位） | AdminLayout | 必须 | 菜单树含 `/settings` |
+| `/settings/users` | `_authenticated/settings/users.tsx` | 用户管理（占位） | AdminLayout | 必须 | 菜单树含该路径 |
+| `/settings/roles` | `_authenticated/settings/roles.tsx` | 角色管理（占位） | AdminLayout | 必须 | 菜单树含该路径 |
+| `/settings/permissions` | `_authenticated/settings/permissions.tsx` | 权限管理（占位） | AdminLayout | 必须 | 菜单树含该路径 |
+| `/settings/menus` | `_authenticated/settings/menus.tsx` | 菜单管理（占位） | AdminLayout | 必须 | 菜单树含该路径 |
+| `/settings/dicts` | `_authenticated/settings/dicts.tsx` | 字典管理（占位） | AdminLayout | 必须 | 菜单树含该路径 |
+| `/settings/logs` | `_authenticated/settings/logs.tsx` | 日志管理（占位） | AdminLayout | 必须 | 菜单树含该路径 |
 | `*`（未匹配） | — | 404 全屏页 | 根 `notFoundComponent` | 取决于布局匹配 | — |
 
 ---
@@ -119,7 +110,12 @@ export const Route = createFileRoute("/_authenticated/users/")({
 export const ROUTE_PATHS = {
   dashboard: "/",
   signIn: "/sign-in",
-  users: "/users",
+  error403: "/403",
+  error404: "/404",
+  error500: "/500",
+  settings: "/settings",
+  settingsUsers: "/settings/users",
+  settingsDicts: "/settings/dicts",
   // …完整见 src/lib/route-paths.ts
 } as const;
 ```
@@ -176,8 +172,8 @@ beforeLoad: async ({ location, context }) => {
 | --- | --- | --- |
 | 任意未匹配路径 | 根 `__root.tsx` `notFoundComponent` | 全屏 404（`components/error-pages/not-found-error.tsx`） |
 | 页面渲染抛错 | 根 `__root.tsx` `errorComponent` | 全屏错误兜底（`general-error.tsx`） |
-| 无权访问（菜单守卫） | `useMenuRouteGuard` 跳 `/401` | 全屏 401（`unauthorized-error.tsx`） |
-| 强制错误页 | 直接访问 `/401` `/403` `/404` | 各全屏页 |
+| 无权访问（菜单守卫） | `useMenuRouteGuard` 跳 `/403` | 全屏 403（`forbidden-error.tsx`） |
+| 强制异常页 | 直接访问 `/403` `/404` `/500` | 各全屏页 |
 
 错误页组件统一在 `src/components/error-pages/`（Hero UI 风格，复用 `ErrorPageShell`），路由文件仅做一行挂载。
 
@@ -194,7 +190,7 @@ useMenus()（react-query，缓存 60s）
   → data/menus.ts 的 mockMenus（结构 = 后端 MenuNode）
   → filterAccessibleMenus() 按 userPermissions 位掩码过滤
   → 侧边栏渲染（不可见 = 无权限）
-  → useMenuRouteGuard()：URL 不在可见菜单树路径集 → 跳 /401
+  → useMenuRouteGuard()：URL 不在可见菜单树路径集 → 跳 /403
 ```
 
 ### 7.2 关键实现
@@ -211,7 +207,7 @@ useMenus()（react-query，缓存 60s）
 把 `src/data/menus.ts` 中某个节点的 `userPermissions` 改为 `"0"`（`enabled` 保持 `true`）：
 
 - 该菜单从侧边栏消失；
-- 直接访问其路径（如 `/menus`）→ 被守卫重定向到 `/401` 全屏页。
+- 直接访问其路径（如 `/settings/menus`）→ 被守卫重定向到 `/403` 全屏页。
 
 > 位掩码约定与后端一致：`9223372036854775807` = 全量权限（super_admin），`"0"` = 无权限。
 
@@ -230,9 +226,9 @@ useMenus()（react-query，缓存 60s）
 
 ### 新增一个页面
 
-1. `lib/route-paths.ts` 登记路径（如 `foo: "/foo"`）；
-2. 新建 `src/routes/_authenticated/foo.tsx`（或 `foo/index.tsx`），`createFileRoute("/_authenticated/foo")`；
-3. （可选）`data/menus.ts` 添加菜单节点，`to: ROUTE_PATHS.foo`；
+1. `lib/route-paths.ts` 登记路径（如 `settingsFoo: "/settings/foo"`）；
+2. 新建 `src/routes/_authenticated/settings/foo.tsx`，`createFileRoute("/_authenticated/settings/foo")`；
+3. （可选）`data/menus.ts` 添加菜单节点，`to: ROUTE_PATHS.settingsFoo`；
 4. dev/build 自动重建 `routeTree.gen.ts`，运行 `pnpm lint && pnpm build` 验证。
 
 ### 演示无权限场景
