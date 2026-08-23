@@ -151,12 +151,22 @@ function CollapsedSubLevel({
   return (
     <div className="flex flex-col gap-1">
       {leaves.length > 0 && (
+        // 与 sidebar-menu.tsx 同一修复：选中态由路由驱动，导航必须每次点击都触发。
+        // RAC 默认 toggle 行为下，已有选中项时单击只改选中、不触发 onAction（表现为
+        // “同组某个子菜单激活后其它子菜单点击无反应”），故用 replace + onSelectionChange 兜底。
         <ListBox
+          disallowEmptySelection
           aria-label="子菜单"
           className="gap-0.5 bg-transparent p-0"
           selectedKeys={selectedKeys}
+          selectionBehavior="replace"
           selectionMode="single"
           onAction={(key) => onNavigate(String(key))}
+          onSelectionChange={(keys) => {
+            const key = Array.from(keys)[0];
+
+            if (key) onNavigate(String(key));
+          }}
         >
           {leaves.map((child) => (
             <ListBox.Item

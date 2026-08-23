@@ -150,12 +150,24 @@ function MenuLevel({
   return (
     <div className={cn("flex flex-col gap-1", depth > 1 && "ps-3")}>
       {leaves.length > 0 && (
+        // 注意：子菜单“选中态”由路由驱动（selectedKeys 受控），导航必须保证每次点击都触发。
+        // React Aria 在默认 toggle 行为下，一旦列表已有选中项，单击只会“改选中”而不会触发
+        // onAction，表现为“同组某个子菜单激活后，点击其它子菜单无反应”。
+        // 因此改用 selectionBehavior="replace"（保留单击选中 → onSelectionChange 兜底导航，
+        // 键盘 Enter 仍走 onAction），disallowEmptySelection 避免点击当前项时出现取消选中抖动。
         <ListBox
+          disallowEmptySelection
           aria-label="子菜单"
           className="gap-0.5 bg-transparent p-0"
           selectedKeys={selectedKeys}
+          selectionBehavior="replace"
           selectionMode="single"
           onAction={(key) => onNavigate(String(key))}
+          onSelectionChange={(keys) => {
+            const key = Array.from(keys)[0];
+
+            if (key) onNavigate(String(key));
+          }}
         >
           {leaves.map((child) => (
             <ListBox.Item
