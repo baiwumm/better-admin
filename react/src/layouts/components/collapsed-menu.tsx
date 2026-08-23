@@ -2,11 +2,12 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Accordion,
+  Button,
   ListBox,
   Popover,
+  Tooltip,
   cn,
   type Selection,
-  Button,
 } from "@heroui/react";
 import { ChevronDown } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
@@ -20,8 +21,8 @@ type CollapsedMenuProps = {
 
 /**
  * 侧边栏折叠态菜单：仅显示一级菜单图标。
- * hover 一级菜单图标时，用 Popover 浮出包含该一级菜单标题与子菜单的面板；
- * 子菜单支持多级（分组用 Accordion 递归，叶子用 ListBox）。
+ * - 叶子一级菜单：hover 用 Tooltip 显示名称，点击图标直接跳转
+ * - 多级（分组）菜单：hover 用 Popover 浮出子菜单面板（支持多级嵌套）
  */
 export function CollapsedMenu({ items, onNavigate }: CollapsedMenuProps) {
   const { pathname } = useLocation();
@@ -73,6 +74,28 @@ function CollapsedMenuItem({
     closeTimer.current = window.setTimeout(() => setIsOpen(false), 120);
   }, [closeTimer]);
 
+  // 叶子一级菜单：Tooltip 显示名称，点击直接跳转
+  if (!hasChildren) {
+    return (
+      <Tooltip delay={0}>
+        <Button
+          isIconOnly
+          aria-label={item.label}
+          className={cn(isActive && "bg-default")}
+          variant="ghost"
+          onPress={() => onNavigate(item.to)}
+        >
+          <DynamicIcon name={item.icon} size={20} />
+        </Button>
+        <Tooltip.Content placement="right">
+          <Tooltip.Arrow />
+          {item.label}
+        </Tooltip.Content>
+      </Tooltip>
+    );
+  }
+
+  // 多级（分组）菜单：保留 Popover 浮出子菜单
   return (
     <Popover isOpen={isOpen} onOpenChange={setIsOpen}>
       <Button isIconOnly variant="ghost">
@@ -85,26 +108,16 @@ function CollapsedMenuItem({
         onMouseEnter={open}
         onMouseLeave={scheduleClose}
       >
-        <Popover.Dialog aria-label={item.label} className="w-64 p-2">
+        <Popover.Dialog aria-label={item.label} className="w-64">
           <Popover.Arrow />
-          {hasChildren ? (
-            <>
-              <p className="px-3 pb-1 pt-2 text-xs font-semibold text-muted">
-                {item.label}
-              </p>
-              <CollapsedSubLevel
-                items={item.children ?? []}
-                pathname={pathname}
-                onNavigate={onNavigate}
-              />
-            </>
-          ) : (
-            <LeafPopoverItem
-              isActive={isActive}
-              item={item}
-              onNavigate={onNavigate}
-            />
-          )}
+          <Popover.Heading className="text-muted text-xs mb-2">
+            {item.label}
+          </Popover.Heading>
+          <CollapsedSubLevel
+            items={item.children ?? []}
+            pathname={pathname}
+            onNavigate={onNavigate}
+          />
         </Popover.Dialog>
       </Popover.Content>
     </Popover>
@@ -148,22 +161,14 @@ function CollapsedSubLevel({
           {leaves.map((child) => (
             <ListBox.Item
               key={child.to ?? child.id}
-              className="rounded-lg px-3 py-2 text-sm text-muted data-[selected=true]:text-foreground data-[hovered=true]:text-foreground"
+              className="px-3 py-2 text-sm text-muted data-[selected=true]:text-foreground data-[hovered=true]:text-foreground"
               id={child.to ?? child.id}
               textValue={child.label}
             >
-              {({ isSelected }) => (
-                <span className="flex min-w-0 items-center gap-2">
-                  <DynamicIcon
-                    className={cn(
-                      "size-4 shrink-0",
-                      isSelected ? "text-accent" : "text-muted",
-                    )}
-                    name={child.icon}
-                  />
-                  <span className="truncate">{child.label}</span>
-                </span>
-              )}
+              <div className="flex min-w-0 items-center gap-2">
+                <DynamicIcon className="shrink-0" name={child.icon} size={16} />
+                <span className="truncate">{child.label}</span>
+              </div>
             </ListBox.Item>
           ))}
         </ListBox>
@@ -196,7 +201,7 @@ function CollapsedGroup({
     <Accordion allowsMultipleExpanded hideSeparator className="w-full">
       <Accordion.Item defaultExpanded={isActive} id={item.id}>
         <Accordion.Heading>
-          <Accordion.Trigger className="rounded-lg px-3 py-2 text-sm">
+          <Accordion.Trigger className="rounded-3xl px-3 py-2 text-sm">
             <DynamicIcon className="me-2 size-4 shrink-0" name={item.icon} />
             <span className="flex-1 truncate">{item.label}</span>
             <Accordion.Indicator>
@@ -215,36 +220,5 @@ function CollapsedGroup({
         </Accordion.Panel>
       </Accordion.Item>
     </Accordion>
-  );
-}
-
-/** 叶子一级菜单：Popover 内展示该项（点击导航）。 */
-function LeafPopoverItem({
-  item,
-  isActive,
-  onNavigate,
-}: {
-  item: MenuNode;
-  isActive: boolean;
-  onNavigate: (to?: string | null) => void;
-}) {
-  return (
-    <button
-      className={cn(
-        "sidebar-nav-item flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-        isActive ? "is-active text-foreground" : "text-muted",
-      )}
-      type="button"
-      onClick={() => onNavigate(item.to)}
-    >
-      <DynamicIcon
-        className={cn(
-          "size-4 shrink-0",
-          isActive ? "text-accent" : "text-muted",
-        )}
-        name={item.icon}
-      />
-      <span className="truncate">{item.label}</span>
-    </button>
   );
 }
