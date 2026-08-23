@@ -53,6 +53,29 @@ export function filterAccessibleMenus(nodes: MenuNode[]): MenuNode[] {
 }
 
 /**
+ * 递归过滤不应在侧边栏展示的菜单节点（hideInMenu）。
+ * 注意：仅用于侧边栏渲染；路由守卫仍使用完整树（含 hideInMenu 节点），
+ * 使隐藏页保持「菜单不显示但直接访问可通行」。
+ */
+export function filterHiddenMenus(nodes: MenuNode[]): MenuNode[] {
+  const result: MenuNode[] = [];
+
+  for (const node of nodes) {
+    if (node.hideInMenu) continue;
+    if (node.children?.length) {
+      const children = filterHiddenMenus(node.children);
+
+      if (children.length === 0) continue;
+      result.push({ ...node, children });
+    } else {
+      result.push(node);
+    }
+  }
+
+  return result;
+}
+
+/**
  * 操作级权限判断（业务页按钮显隐用）：
  * hasPermission(userBits, requiredBits)，例如 hasPermission(bits, 1n << 4n)。
  */

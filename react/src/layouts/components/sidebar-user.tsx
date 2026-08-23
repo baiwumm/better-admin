@@ -9,7 +9,7 @@ import {
   Typography,
 } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
-import { Bell, ChevronsUpDown, LogOut, Settings, UserCog } from "lucide-react";
+import { ChevronsUpDown, LogOut, IdCard } from "lucide-react";
 
 import { ROUTE_PATHS } from "@/lib/route-paths";
 import { useAuthStore } from "@/stores/auth-store";
@@ -28,7 +28,7 @@ const fallbackUser = {
 /**
  * 侧边栏底部用户区：头像 + 名称/邮箱（折叠态仅显示头像）。
  * 使用 Hero UI Dropdown 实现用户菜单：
- * - 个人资料 / 账户 / 通知 → 跳转系统设置对应子页
+ * - 系统设置 → 跳转 /settings
  * - 退出登录 → 清理会话并跳转登录页
  */
 export function SidebarUser({ collapsed }: SidebarUserProps) {
@@ -42,14 +42,8 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
 
   const handleAction = (key: Key) => {
     switch (key) {
-      case "profile":
-        void navigate({ to: ROUTE_PATHS.settingsProfile });
-        break;
       case "account":
-        void navigate({ to: ROUTE_PATHS.settingsAccount });
-        break;
-      case "notifications":
-        void navigate({ to: ROUTE_PATHS.settingsNotifications });
+        void navigate({ to: ROUTE_PATHS.account });
         break;
       case "logout":
         logout();
@@ -129,18 +123,12 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
             </div>
           </div>
 
+          <Separator />
+
           <Dropdown.Menu onAction={handleAction}>
-            <Dropdown.Item id="profile" textValue="个人资料">
-              <UserCog className="size-4 shrink-0 text-muted" />
-              <Label>个人资料</Label>
-            </Dropdown.Item>
-            <Dropdown.Item id="account" textValue="账户">
-              <Settings className="size-4 shrink-0 text-muted" />
-              <Label>账户</Label>
-            </Dropdown.Item>
-            <Dropdown.Item id="notifications" textValue="通知">
-              <Bell className="size-4 shrink-0 text-muted" />
-              <Label>通知</Label>
+            <Dropdown.Item id="account" textValue="我的账户">
+              <IdCard className="size-4 shrink-0 text-muted" />
+              <Label>我的账户</Label>
             </Dropdown.Item>
 
             <Separator />

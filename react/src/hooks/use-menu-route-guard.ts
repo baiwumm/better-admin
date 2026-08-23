@@ -39,7 +39,7 @@ export function useMenuRouteGuard() {
     const allowedPaths = collectPaths(menuTree);
 
     if (!allowedPaths.has(pathname)) {
-      void navigate({ to: ROUTE_PATHS.unauthorized });
+      void navigate({ to: ROUTE_PATHS.error403 });
     }
   }, [isLoading, isError, menuTree, pathname, navigate]);
 }

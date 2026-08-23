@@ -13,7 +13,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     <>
       <Outlet />
       {/* 全局 Toast 队列（命令式 toast.success / toast.danger 等） */}
-      <Toast.Provider />
+      <Toast.Provider placement="top" />
       {import.meta.env.DEV && (
         <>
           <ReactQueryDevtools buttonPosition="bottom-left" />

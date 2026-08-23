@@ -6,6 +6,7 @@ import { SidebarMenu } from "./sidebar-menu";
 import { SidebarUser } from "./sidebar-user";
 
 import { useMenus } from "@/hooks/use-menus";
+import { filterHiddenMenus } from "@/lib/permission";
 
 import logo from "/logo.svg";
 import logoDark from "/logo-dark.svg";
@@ -25,9 +26,9 @@ type AppSidebarProps = {
 export function AppSidebar({ collapsed, onNavigate }: AppSidebarProps) {
   const { theme } = useTheme("system");
 
-  // 当前用户可见菜单树（Mock 数据，权限过滤后）；加载中显示空菜单
+  // 当前用户可见菜单树（权限过滤后）；侧边栏再剔除 hideInMenu 隐藏节点
   const { data: menuTree } = useMenus();
-  const items = menuTree ?? [];
+  const items = filterHiddenMenus(menuTree ?? []);
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-surface border border-r">
