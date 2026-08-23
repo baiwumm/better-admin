@@ -67,7 +67,7 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
           )}
         </Dropdown.Trigger>
 
-        <Dropdown.Popover className="min-w-56" placement="end bottom">
+        <Dropdown.Popover className="min-w-56">
           {/* 弹层头部：用户信息 */}
           <div className="px-3 pt-3 pb-1">
             <div className="flex items-center gap-2">
