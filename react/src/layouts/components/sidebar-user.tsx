@@ -1,3 +1,5 @@
+import type { Key } from "react";
+
 import {
   Avatar,
   cn,
@@ -6,25 +8,57 @@ import {
   Separator,
   Typography,
 } from "@heroui/react";
+import { useNavigate } from "@tanstack/react-router";
 import { Bell, ChevronsUpDown, LogOut, Settings, UserCog } from "lucide-react";
+
+import { ROUTE_PATHS } from "@/lib/route-paths";
+import { useAuthStore } from "@/stores/auth-store";
 
 type SidebarUserProps = {
   collapsed?: boolean;
 };
 
-const mockUser = {
-  name: "管理员",
-  email: "admin@better-admin.local",
+/** 未登录兜底展示（正常流程下登录后才进入 AdminLayout）。 */
+const fallbackUser = {
+  name: "未登录",
+  email: "",
   avatar: "",
 };
 
 /**
  * 侧边栏底部用户区：头像 + 名称/邮箱（折叠态仅显示头像）。
- * 使用 Hero UI Dropdown 实现用户菜单（对齐 react-shadcn 的 NavUser 交互）。
- * 菜单项的跳转 / 退出登录等动作逻辑暂未接入，后续在 Navigation 模块补齐。
+ * 使用 Hero UI Dropdown 实现用户菜单：
+ * - 个人资料 / 账户 / 通知 → 跳转系统设置对应子页
+ * - 退出登录 → 清理会话并跳转登录页
  */
 export function SidebarUser({ collapsed }: SidebarUserProps) {
-  const initials = mockUser.name.slice(0, 1);
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+
+  const displayName = user?.displayName ?? fallbackUser.name;
+  const email = user?.username ?? fallbackUser.email;
+  const initials = displayName.slice(0, 1);
+
+  const handleAction = (key: Key) => {
+    switch (key) {
+      case "profile":
+        void navigate({ to: ROUTE_PATHS.settingsProfile });
+        break;
+      case "account":
+        void navigate({ to: ROUTE_PATHS.settingsAccount });
+        break;
+      case "notifications":
+        void navigate({ to: ROUTE_PATHS.settingsNotifications });
+        break;
+      case "logout":
+        logout();
+        void navigate({ to: ROUTE_PATHS.signIn });
+        break;
+      default:
+        break;
+    }
+  };
 
   return (
     <div
@@ -42,7 +76,7 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
           )}
         >
           <Avatar className="shrink-0" color="accent" size="sm" variant="soft">
-            <Avatar.Image alt={mockUser.name} src={mockUser.avatar} />
+            <Avatar.Image alt={displayName} src={fallbackUser.avatar} />
             <Avatar.Fallback>{initials}</Avatar.Fallback>
           </Avatar>
           {!collapsed && (
@@ -52,14 +86,14 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
                   className="truncate leading-tight font-semibold"
                   type="body-sm"
                 >
-                  {mockUser.name}
+                  {displayName}
                 </Typography>
                 <Typography
                   className="truncate leading-tight"
                   color="muted"
                   type="body-xs"
                 >
-                  {mockUser.email}
+                  {email}
                 </Typography>
               </div>
               <ChevronsUpDown className="size-4 shrink-0 text-muted" />
@@ -72,7 +106,7 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
           <div className="px-3 pt-3 pb-1">
             <div className="flex items-center gap-2">
               <Avatar size="sm">
-                <Avatar.Image alt={mockUser.name} src={mockUser.avatar} />
+                <Avatar.Image alt={displayName} src={fallbackUser.avatar} />
                 <Avatar.Fallback className="bg-default text-foreground">
                   {initials}
                 </Avatar.Fallback>
@@ -82,20 +116,20 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
                   className="truncate leading-snug font-medium"
                   type="body-sm"
                 >
-                  {mockUser.name}
+                  {displayName}
                 </Typography>
                 <Typography
                   className="truncate leading-snug"
                   color="muted"
                   type="body-xs"
                 >
-                  {mockUser.email}
+                  {email}
                 </Typography>
               </div>
             </div>
           </div>
 
-          <Dropdown.Menu>
+          <Dropdown.Menu onAction={handleAction}>
             <Dropdown.Item id="profile" textValue="个人资料">
               <UserCog className="size-4 shrink-0 text-muted" />
               <Label>个人资料</Label>

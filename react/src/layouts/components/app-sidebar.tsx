@@ -1,14 +1,14 @@
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 import { cn, Typography, useTheme } from "@heroui/react";
 
 import { CollapsedMenu } from "./collapsed-menu";
 import { SidebarMenu } from "./sidebar-menu";
 import { SidebarUser } from "./sidebar-user";
 
+import { useMenus } from "@/hooks/use-menus";
+
 import logo from "/logo.svg";
 import logoDark from "/logo-dark.svg";
-
-import { mockMenus } from "@/data/menus";
 
 type AppSidebarProps = {
   /** 桌面端折叠态：仅显示一级图标，hover 弹出子菜单 */
@@ -24,6 +24,10 @@ type AppSidebarProps = {
  */
 export function AppSidebar({ collapsed, onNavigate }: AppSidebarProps) {
   const { theme } = useTheme("system");
+
+  // 当前用户可见菜单树（Mock 数据，权限过滤后）；加载中显示空菜单
+  const { data: menuTree } = useMenus();
+  const items = menuTree ?? [];
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-surface border border-r">
@@ -63,9 +67,9 @@ export function AppSidebar({ collapsed, onNavigate }: AppSidebarProps) {
       {/* 中间菜单区域 */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3">
         {collapsed ? (
-          <CollapsedMenu items={mockMenus} onNavigate={onNavigate} />
+          <CollapsedMenu items={items} onNavigate={onNavigate} />
         ) : (
-          <SidebarMenu items={mockMenus} onNavigate={onNavigate} />
+          <SidebarMenu items={items} onNavigate={onNavigate} />
         )}
       </nav>
 

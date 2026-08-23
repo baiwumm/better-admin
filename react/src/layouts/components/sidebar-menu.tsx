@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
   Accordion,
   Button,
@@ -11,7 +11,9 @@ import {
 import { ChevronDown } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 
-import { type MenuNode, findActivePath } from "@/data/menus";
+import { type MenuNode } from "@/lib/api-types";
+import { findActivePath } from "@/data/menus";
+import { menuIcon } from "@/lib/menu-icon";
 
 type SidebarMenuProps = {
   items: MenuNode[];
@@ -70,7 +72,7 @@ export function SidebarMenu({ items, onNavigate }: SidebarMenuProps) {
   const handleNavigate = useCallback(
     (to?: string | null) => {
       if (to) {
-        navigate(to);
+        navigate({ href: to });
         onNavigate?.();
       }
     },
@@ -183,7 +185,11 @@ function MenuLevel({
               textValue={child.label}
             >
               <div className="flex min-w-0 items-center gap-2">
-                <DynamicIcon className="shrink-0" name={child.icon} size={16} />
+                <DynamicIcon
+                  className="shrink-0"
+                  name={menuIcon(child.icon)}
+                  size={16}
+                />
                 <span className="truncate">{child.label}</span>
               </div>
             </ListBox.Item>
@@ -222,7 +228,7 @@ function SidebarLeaf({
       variant="ghost"
       onPress={() => onNavigate(item.to)}
     >
-      <DynamicIcon className="shrink-0" name={item.icon} size={16} />
+      <DynamicIcon className="shrink-0" name={menuIcon(item.icon)} size={16} />
       <Label className="flex-1 truncate text-left">{item.label}</Label>
     </Button>
   );
@@ -267,7 +273,11 @@ function SidebarGroup({
               isActive ? "is-active" : "",
             )}
           >
-            <DynamicIcon className="me-3 shrink-0" name={item.icon} size={16} />
+            <DynamicIcon
+              className="me-3 shrink-0"
+              name={menuIcon(item.icon)}
+              size={16}
+            />
             <span className="flex-1 truncate">{item.label}</span>
             <Accordion.Indicator>
               <ChevronDown />

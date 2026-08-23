@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
   Accordion,
   Button,
@@ -12,7 +12,9 @@ import {
 import { ChevronDown } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 
-import { type MenuNode, findActivePath } from "@/data/menus";
+import { type MenuNode } from "@/lib/api-types";
+import { findActivePath } from "@/data/menus";
+import { menuIcon } from "@/lib/menu-icon";
 
 type CollapsedMenuProps = {
   items: MenuNode[];
@@ -39,7 +41,7 @@ export function CollapsedMenu({ items, onNavigate }: CollapsedMenuProps) {
           pathname={pathname}
           onNavigate={(to) => {
             if (to) {
-              navigate(to);
+              navigate({ href: to });
               onNavigate?.();
             }
           }}
@@ -85,7 +87,7 @@ function CollapsedMenuItem({
           variant="ghost"
           onPress={() => onNavigate(item.to)}
         >
-          <DynamicIcon name={item.icon} size={20} />
+          <DynamicIcon name={menuIcon(item.icon)} size={20} />
         </Button>
         <Tooltip.Content placement="right">
           <Tooltip.Arrow />
@@ -99,7 +101,7 @@ function CollapsedMenuItem({
   return (
     <Popover isOpen={isOpen} onOpenChange={setIsOpen}>
       <Button isIconOnly variant="ghost">
-        <DynamicIcon name={item.icon} size={20} />
+        <DynamicIcon name={menuIcon(item.icon)} size={20} />
       </Button>
       <Popover.Content
         className="p-0"
@@ -176,7 +178,11 @@ function CollapsedSubLevel({
               textValue={child.label}
             >
               <div className="flex min-w-0 items-center gap-2">
-                <DynamicIcon className="shrink-0" name={child.icon} size={16} />
+                <DynamicIcon
+                  className="shrink-0"
+                  name={menuIcon(child.icon)}
+                  size={16}
+                />
                 <span className="truncate">{child.label}</span>
               </div>
             </ListBox.Item>
@@ -212,7 +218,10 @@ function CollapsedGroup({
       <Accordion.Item defaultExpanded={isActive} id={item.id}>
         <Accordion.Heading>
           <Accordion.Trigger className="rounded-3xl px-3 py-2 text-sm">
-            <DynamicIcon className="me-2 size-4 shrink-0" name={item.icon} />
+            <DynamicIcon
+              className="me-2 size-4 shrink-0"
+              name={menuIcon(item.icon)}
+            />
             <span className="flex-1 truncate">{item.label}</span>
             <Accordion.Indicator>
               <ChevronDown />
