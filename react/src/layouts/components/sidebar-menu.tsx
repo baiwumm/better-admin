@@ -1,91 +1,65 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Accordion,
-  ListBox,
-  type Selection,
   Button,
   Label,
+  ListBox,
   cn,
+  type Selection,
 } from "@heroui/react";
 import { ChevronDown } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 
-import { type MenuNode } from "@/data/menus";
+import { type MenuNode, findActivePath } from "@/data/menus";
 
 type SidebarMenuProps = {
   items: MenuNode[];
   onNavigate?: () => void;
 };
 
-/** 根据当前路径返回激活的叶子菜单项（用于 ListBox 高亮）。 */
-function findActiveLeaf(
-  items: MenuNode[],
-  pathname: string,
-): MenuNode | undefined {
-  for (const item of items) {
-    if (item.to && item.to === pathname) return item;
-    if (item.children?.length) {
-      const found = findActiveLeaf(item.children, pathname);
-
-      if (found) return found;
-    }
-  }
-
-  return undefined;
-}
-
-/** 找出分组菜单（有子级）中当前路径所属的那一项。 */
-function findActiveGroup(
-  items: MenuNode[],
-  pathname: string,
-): MenuNode | undefined {
-  return items.find(
-    (item) =>
-      item.children?.length &&
-      item.children.some((child) => child.to && child.to === pathname),
-  );
-}
-
 /**
- * 侧边栏菜单（展开态）：
- * - 一级叶子（无子级，如仪表盘）→ 渲染为普通导航行（图标 + 名称），不包 Accordion
- * - 一级分组（有子级）→ Accordion.Item 折叠展开，Panel 内 ListBox 渲染子菜单
+ * 侧边栏菜单（展开态，支持任意层级）：
+ * - 叶子节点（无子级）→ 普通可点击行（图标 + 名称）
+ * - 分组节点（有子级）→ Accordion.Item 折叠展开，Panel 内递归下一层；
+ *   同一层级的叶子集合用 ListBox 渲染子菜单
+ * - 多级展开状态全局共享：路由变化时自动展开激活路径上的所有祖先分组
  */
 export function SidebarMenu({ items, onNavigate }: SidebarMenuProps) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
-  const groups = useMemo(
-    () => items.filter((i) => i.children?.length),
-    [items],
-  );
-  const leaves = useMemo(
-    () => items.filter((i) => !i.children?.length),
-    [items],
-  );
+  // 全局受控展开：记录所有层级展开的分组 id
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
+    const init = new Set<string>();
 
-  const activeGroup = useMemo(
-    () => findActiveGroup(items, pathname),
-    [items, pathname],
-  );
-  const activeLeaf = useMemo(
-    () => findActiveLeaf(items, pathname),
-    [items, pathname],
-  );
+    items
+      .filter((item) => item.defaultOpen || isGroupActive(item, pathname))
+      .forEach((item) => init.add(item.id));
+    findActivePath(items, pathname).forEach((id) => init.add(id));
 
-  // Accordion 受控展开：默认展开包含当前路径的分组 / defaultOpen 项，允许同时展开多个
-  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
-    () =>
-      new Set(
-        groups
-          .filter(
-            (item) =>
-              item.defaultOpen || (activeGroup && activeGroup.id === item.id),
-          )
-          .map((item) => item.id),
-      ),
-  );
+    return init;
+  });
+
+  // 路由变化时自动展开激活路径上的所有祖先
+  useEffect(() => {
+    const activeIds = findActivePath(items, pathname);
+
+    if (activeIds.length === 0) return;
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+
+      activeIds.forEach((id) => {
+        if (!next.has(id)) {
+          next.add(id);
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [items, pathname]);
 
   const handleNavigate = useCallback(
     (to?: string | null) => {
@@ -100,60 +74,115 @@ export function SidebarMenu({ items, onNavigate }: SidebarMenuProps) {
   if (items.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-1">
-      {/* 一级叶子：普通导航行 */}
-      {leaves.map((item) => (
-        <SidebarLeaf
+    <MenuLevel
+      depth={0}
+      expandedIds={expandedIds}
+      items={items}
+      pathname={pathname}
+      onExpandedChange={setExpandedIds}
+      onNavigate={handleNavigate}
+    />
+  );
+}
+
+/** 判断分组内是否包含当前激活路径（用于父级高亮）。 */
+function isGroupActive(item: MenuNode, pathname: string): boolean {
+  return findActivePath(item.children ?? [], pathname).length > 0;
+}
+
+/** 递归渲染一层菜单：叶子 → 可点击行，分组 → Accordion；子层级叶子集合用 ListBox。 */
+function MenuLevel({
+  items,
+  depth,
+  pathname,
+  expandedIds,
+  onExpandedChange,
+  onNavigate,
+}: {
+  items: MenuNode[];
+  depth: number;
+  pathname: string;
+  expandedIds: Set<string>;
+  onExpandedChange: (next: Set<string>) => void;
+  onNavigate: (to?: string | null) => void;
+}) {
+  const groups = useMemo(
+    () => items.filter((i) => i.children?.length),
+    [items],
+  );
+  const leaves = useMemo(
+    () => items.filter((i) => !i.children?.length),
+    [items],
+  );
+
+  // 叶子集合的选中项：当前路径匹配的叶子
+  const selectedKeys: Selection = useMemo(
+    () => new Set(leaves.filter((l) => l.to === pathname).map((l) => l.to!)),
+    [leaves, pathname],
+  );
+
+  if (depth === 0) {
+    return (
+      <div className="flex flex-col gap-1">
+        {leaves.map((item) => (
+          <SidebarLeaf
+            key={item.id}
+            isActive={item.to === pathname}
+            item={item}
+            onNavigate={onNavigate}
+          />
+        ))}
+        {groups.map((item) => (
+          <SidebarGroup
+            key={item.id}
+            depth={depth}
+            expandedIds={expandedIds}
+            item={item}
+            pathname={pathname}
+            onExpandedChange={onExpandedChange}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("flex flex-col gap-1", depth > 1 && "ps-3")}>
+      {leaves.length > 0 && (
+        <ListBox
+          aria-label="子菜单"
+          className="gap-0.5 bg-transparent p-0"
+          selectedKeys={selectedKeys}
+          selectionMode="single"
+          onAction={(key) => onNavigate(String(key))}
+        >
+          {leaves.map((child) => (
+            <ListBox.Item
+              key={child.to ?? child.id}
+              className="rounded-3xl px-3 py-2 text-sm text-muted hover:text-foreground data-[selected=true]:text-foreground data-[selected=true]:bg-default"
+              id={child.to ?? child.id}
+              textValue={child.label}
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <DynamicIcon className="shrink-0" name={child.icon} size={16} />
+                <span className="truncate">{child.label}</span>
+              </div>
+            </ListBox.Item>
+          ))}
+        </ListBox>
+      )}
+      {groups.map((item) => (
+        <SidebarGroup
           key={item.id}
-          isActive={item.to === pathname}
+          depth={depth}
+          expandedIds={expandedIds}
           item={item}
-          onNavigate={handleNavigate}
+          pathname={pathname}
+          onExpandedChange={onExpandedChange}
+          onNavigate={onNavigate}
         />
       ))}
-
-      {/* 一级分组：Accordion 折叠展开 */}
-      {groups.length > 0 && (
-        <Accordion
-          allowsMultipleExpanded
-          hideSeparator
-          expandedKeys={expandedKeys}
-          onExpandedChange={(keys) =>
-            setExpandedKeys(new Set(Array.from(keys, (k) => String(k))))
-          }
-        >
-          {groups.map((item) => (
-            <Accordion.Item key={item.id} id={item.id}>
-              <Accordion.Heading>
-                <Accordion.Trigger
-                  className={cn(
-                    "rounded-3xl px-3 py-2 hover:bg-default",
-                    activeGroup?.id === item.id ? "is-active" : "",
-                  )}
-                >
-                  <DynamicIcon
-                    className="me-3 shrink-0"
-                    name={item.icon}
-                    size={16}
-                  />
-                  <span className="flex-1 truncate">{item.label}</span>
-                  <Accordion.Indicator>
-                    <ChevronDown />
-                  </Accordion.Indicator>
-                </Accordion.Trigger>
-              </Accordion.Heading>
-              <Accordion.Panel>
-                <Accordion.Body className="px-2 pb-2 pt-1">
-                  <SidebarSubMenu
-                    items={item.children!}
-                    selectedTo={activeLeaf?.to}
-                    onNavigate={handleNavigate}
-                  />
-                </Accordion.Body>
-              </Accordion.Panel>
-            </Accordion.Item>
-          ))}
-        </Accordion>
-      )}
     </div>
   );
 }
@@ -170,52 +199,76 @@ function SidebarLeaf({
 }) {
   return (
     <Button
-      className={cn("w-full", isActive ? "bg-default" : "")}
+      fullWidth
+      className={isActive ? "bg-default" : ""}
       variant="ghost"
       onPress={() => onNavigate(item.to)}
     >
-      <DynamicIcon className="shrink-0" name={item.icon} />
+      <DynamicIcon className="shrink-0" name={item.icon} size={16} />
       <Label className="flex-1 truncate text-left">{item.label}</Label>
     </Button>
   );
 }
 
-/** 子菜单：ListBox 渲染，选中高亮当前路由，点击导航。 */
-function SidebarSubMenu({
-  items,
-  selectedTo,
+/** 分组节点：Accordion.Item 折叠展开，Panel 内递归下一层。 */
+function SidebarGroup({
+  item,
+  depth,
+  pathname,
+  expandedIds,
+  onExpandedChange,
   onNavigate,
 }: {
-  items: MenuNode[];
-  selectedTo?: string | null;
+  item: MenuNode;
+  depth: number;
+  pathname: string;
+  expandedIds: Set<string>;
+  onExpandedChange: (next: Set<string>) => void;
   onNavigate: (to?: string | null) => void;
 }) {
-  const selectedKeys: Selection = useMemo(
-    () => (selectedTo ? new Set([selectedTo]) : new Set()),
-    [selectedTo],
-  );
+  const isActive = isGroupActive(item, pathname);
 
   return (
-    <ListBox
-      aria-label="子菜单"
-      className="gap-0.5 bg-transparent p-0"
-      selectedKeys={selectedKeys}
-      selectionMode="single"
-      onAction={(key) => onNavigate(String(key))}
+    <Accordion
+      allowsMultipleExpanded
+      hideSeparator
+      expandedKeys={new Set(expandedIds.has(item.id) ? [item.id] : [])}
+      onExpandedChange={(keys) => {
+        const next = new Set(expandedIds);
+        const expanded = Array.from(keys).some((k) => String(k) === item.id);
+
+        expanded ? next.add(item.id) : next.delete(item.id);
+        onExpandedChange(next);
+      }}
     >
-      {items.map((child) => (
-        <ListBox.Item
-          key={child.to ?? child.id}
-          className="rounded-3xl px-3 py-2 text-sm text-muted hover:text-foreground data-[selected=true]:text-foreground data-[selected=true]:bg-default"
-          id={child.to ?? child.id}
-          textValue={child.label}
-        >
-          <div className="flex min-w-0 items-center gap-2">
-            <DynamicIcon className="shrink-0" name={child.icon} size={16} />
-            <span className="truncate">{child.label}</span>
-          </div>
-        </ListBox.Item>
-      ))}
-    </ListBox>
+      <Accordion.Item id={item.id}>
+        <Accordion.Heading>
+          <Accordion.Trigger
+            className={cn(
+              "rounded-3xl px-3 py-2 hover:bg-default",
+              isActive ? "is-active" : "",
+            )}
+          >
+            <DynamicIcon className="me-3 shrink-0" name={item.icon} size={16} />
+            <span className="flex-1 truncate">{item.label}</span>
+            <Accordion.Indicator>
+              <ChevronDown />
+            </Accordion.Indicator>
+          </Accordion.Trigger>
+        </Accordion.Heading>
+        <Accordion.Panel>
+          <Accordion.Body className="px-2 pb-2 pt-1">
+            <MenuLevel
+              depth={depth + 1}
+              expandedIds={expandedIds}
+              items={item.children ?? []}
+              pathname={pathname}
+              onExpandedChange={onExpandedChange}
+              onNavigate={onNavigate}
+            />
+          </Accordion.Body>
+        </Accordion.Panel>
+      </Accordion.Item>
+    </Accordion>
   );
 }

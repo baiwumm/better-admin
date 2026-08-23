@@ -11,6 +11,10 @@ function App() {
     <Routes>
       <Route element={<AdminLayout />}>
         <Route index element={<PlaceholderPage title="仪表盘" />} />
+        <Route
+          element={<PlaceholderPage title="三级菜单" />}
+          path="multi-level"
+        />
         <Route element={<PlaceholderPage title="用户管理" />} path="users" />
         <Route element={<PlaceholderPage title="角色管理" />} path="roles" />
         <Route

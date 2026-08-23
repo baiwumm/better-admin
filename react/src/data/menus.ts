@@ -1,19 +1,3 @@
-import {
-  Bell,
-  KeyRound,
-  LayoutDashboard,
-  Menu,
-  Monitor,
-  Palette,
-  ScrollText,
-  Settings,
-  Settings2,
-  ShieldCheck,
-  UserCog,
-  Users,
-  Wrench,
-  type LucideIcon,
-} from "lucide-react";
 import { type IconName } from "lucide-react/dynamic";
 
 /**
@@ -31,30 +15,6 @@ export interface MenuNode {
   enabled: boolean;
   defaultOpen: boolean;
   children?: MenuNode[];
-}
-
-/** 后端菜单 icon 字段为字符串（如 "lucide:users"），映射为 lucide-react 组件；未匹配回退 Menu 图标。 */
-const iconMap: Record<string, LucideIcon> = {
-  "layout-dashboard": LayoutDashboard,
-  "settings-2": Settings2,
-  settings: Settings,
-  users: Users,
-  "shield-check": ShieldCheck,
-  "key-round": KeyRound,
-  menu: Menu,
-  "scroll-text": ScrollText,
-  "user-cog": UserCog,
-  wrench: Wrench,
-  palette: Palette,
-  bell: Bell,
-  monitor: Monitor,
-};
-
-export function getMenuIcon(icon: string | null | undefined): LucideIcon {
-  if (!icon) return Menu;
-  const name = icon.replace(/^lucide:/, "").replace(/^i-lucide-/, "");
-
-  return iconMap[name] ?? Menu;
 }
 
 /**
@@ -94,6 +54,7 @@ export const mockMenus: MenuNode[] = [
             id: "third-menu",
             label: "三级菜单",
             icon: "menu",
+            to: "/multi-level",
             sort: 1,
             hideInMenu: false,
             enabled: true,
@@ -242,4 +203,21 @@ export function flattenLeafMenus(nodes: MenuNode[]): MenuNode[] {
   return nodes.flatMap((node) =>
     node.children?.length ? flattenLeafMenus(node.children) : [node],
   );
+}
+
+/**
+ * 返回从根到「当前路径匹配叶子」的整条节点 id 链（含叶子自身），
+ * 用于多级菜单自动展开全部祖先分组。未匹配返回空数组。
+ */
+export function findActivePath(nodes: MenuNode[], pathname: string): string[] {
+  for (const node of nodes) {
+    if (node.to && node.to === pathname) return [node.id];
+    if (node.children?.length) {
+      const childPath = findActivePath(node.children, pathname);
+
+      if (childPath.length > 0) return [node.id, ...childPath];
+    }
+  }
+
+  return [];
 }
