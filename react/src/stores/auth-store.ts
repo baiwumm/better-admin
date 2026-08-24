@@ -76,7 +76,10 @@ export const useAuthStore = create<AuthState>()(
           // 与整页跳登录（否则 accessToken 过期时会被动跳走，表现为异常跳转）。
           // 后端注销失败（401/过期）视为会话已失效，本地照常清理。
           if (token) {
-            await fetchApi("/auth/logout", { method: "POST", allowRetry: false });
+            await fetchApi("/auth/logout", {
+              method: "POST",
+              allowRetry: false,
+            });
           }
         } catch {
           // 忽略后端错误（含 401/网络），本地清理照常进行。

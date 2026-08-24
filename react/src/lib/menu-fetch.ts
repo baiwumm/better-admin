@@ -30,5 +30,6 @@ export const CONSOLE_MENU_NODE: MenuNode = {
 export async function fetchMenus(): Promise<MenuNode[]> {
   const backendMenus = await fetchApi<MenuNode[]>("/menus");
   const accessible = filterAccessibleMenus(backendMenus);
+
   return [CONSOLE_MENU_NODE, ...accessible];
 }

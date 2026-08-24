@@ -1,5 +1,6 @@
-import { useState } from "react";
 import type { ReactNode } from "react";
+
+import { useState } from "react";
 import { Outlet, useLocation } from "@tanstack/react-router";
 import { Drawer, Spinner, Typography } from "@heroui/react";
 
@@ -45,6 +46,7 @@ export function AdminLayout() {
   // 主体区内容（loading / 失败提示 / 业务页）：
   // 菜单未就绪（首次请求中，且无旧数据）→ loading
   let body: ReactNode;
+
   if (isLoading || (menuTree === undefined && !isError)) {
     body = (
       <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-3 text-muted">
