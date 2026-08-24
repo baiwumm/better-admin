@@ -143,8 +143,8 @@ Sidebar
 └── SidebarRail
 ```
 
-- 导航数据集中定义在 `src/components/layout/data/sidebar-data.ts`（`SidebarData` 类型：user / teams / navGroups）。
-- 高亮规则（`checkIsActive`）：精确 URL、去掉 query 后的 URL、子项命中、以及父级前缀命中。
+- 导航数据来源：后端 `GET /api/menus`（MenuNode[]），前端 `useMenus` hook 拉取 + 权限过滤 + 合并硬编码「控制台」节点。
+- 高亮规则（`findActivePath`）：递归匹配当前路径对应叶子节点及其祖先链。
 - 折叠态下的分组项自动切换为 Dropdown 弹出子菜单。
 
 ### 3.2 Better Admin Sidebar 规范
@@ -541,14 +541,14 @@ Sidebar
 
 ### 18.2 Better Admin 组件使用原则
 
-1. **组件优先级**：Hero UI 为主 → Shadcn UI 补充 → 项目级自定义组件（见 §18.3）；组件只从声明库（Hero UI 包 / `@/components/ui/*` / `@/components/*` / `@/features/*/components/*`）引入，不直接使用 Radix 原语。
+1. **组件优先级**：Hero UI 为主 → Shadcn UI 补充 → 项目级自定义组件（见 §18.3）；组件只从声明库（Hero UI 包 / `@/components/ui/*` / `@/components/common/*` / `@/components/business/*`）引入。
 2. **不重复造轮子**：已有 DataTable、ConfirmDialog、ConfigDrawer、Header/Main 等组合组件，业务页面优先组合复用。
 3. **图标统一 lucide-react**；不引入其他图标库。
 4. **样式统一 Tailwind + 语义 token**：不用内联 style 表达布局/颜色；`cn()` 用于条件合并。
 5. **状态分层**：服务端数据 → TanStack Query；全局 UI 状态 → Zustand；页面内弹层 → Provider + useDialogState；路由态 → URL search params。
 6. **类型纪律**：业务模型定义 TS interface/type（`features/*/data/schema.ts`），严格模式，禁 `any`；API 响应类型与 Contract 对齐。
 7. **依赖纪律**：不因简单功能新增依赖；优先现有能力（AGENTS.md 第 18 节）。
-8. **目录纪律**：业务模块按 `features/<module>/` 组织（index / components / data / hooks），路由保持文件式。
+8. **目录纪律**：组件按 `components/ui/`（基础）、`components/common/`（通用）、`components/business/`（业务）三层组织；路由保持 TanStack Router 文件式；布局组件保留在 `layouts/components/`。
 9. **无障碍**：交互元素带 `aria-label`/`sr-only` 文本；弹层标题/描述齐全；键盘可操作。
 10. **Demo 清理原则**：移除官方演示数据/页面（Clerk 路由、Tasks/Chats/Apps 演示），替换为 Better Admin 业务占位或真实模块，不影响整体骨架。
 

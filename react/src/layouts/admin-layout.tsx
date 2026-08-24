@@ -6,7 +6,7 @@ import { Drawer, Spinner, Typography } from "@heroui/react";
 import { AppHeader } from "./components/app-header";
 import { AppSidebar } from "./components/app-sidebar";
 
-import { ForbiddenErrorPage } from "@/components/error-pages/forbidden-error";
+import { ForbiddenErrorPage } from "@/components/common/error-pages/forbidden-error";
 import { useMenus } from "@/hooks/use-menus";
 import { type MenuNode } from "@/lib/api-types";
 import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";

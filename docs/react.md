@@ -30,7 +30,7 @@ Browser → React → NestJS API → PostgreSQL
 | 构建工具 | Vite（含 `@vitejs/plugin-react`） | `8.0.8` / `6.0.1` |
 | 样式 | Tailwind CSS（v4，CSS-first，`@tailwindcss/vite` 插件，无 `tailwind.config`） | `4.2.2` |
 | 字体 | 默认 **Maple Mono CN**（自托管，`public/fonts/maple-mono-cn/`，cn-font-split 分包，OFL-1.1）；可选 Inter / Manrope / system | `@chinese-fonts/maple-mono-cn 2.0.0` |
-| UI 组件库 | **Hero UI（规划引入，为主，`@heroui/react`）** + **shadcn/ui（补充，new-york 风格，组件已复制到 `src/components/ui/`，基于 Radix UI，存量保留）** | `@heroui/react`（规划）/ `components.json` 配置 |
+| UI 组件库 | **Hero UI 为主（`@heroui/react`）** + **Shadcn UI 为补充（按需引入，`src/components/ui/`）** | `@heroui/react`（已引入） |
 | 路由 | TanStack Router（文件式路由 `src/routes/`，自动生成 `src/routeTree.gen.ts`，路由插件 + Devtools） | `@tanstack/react-router 1.168.22` |
 | 状态管理 | Zustand（全局 store，如 `src/stores/auth-store.ts`）；主题/字体/方向/布局/搜索使用 React Context | `zustand 5.0.12` |
 | 数据请求 | TanStack Query + axios（当前仅演示 Mock 数据，未接真实后端） | `@tanstack/react-query 5.99.0` / `axios 1.15.0` |
@@ -101,9 +101,8 @@ Browser → React → NestJS API → PostgreSQL
 ### 关于 pnpm 构建脚本（pnpm-workspace.yaml）
 
 - pnpm 10+ 出于安全默认不执行依赖的构建脚本（`ERR_PNPM_IGNORED_BUILDS`）。
-- 本仓库通过 `react/pnpm-workspace.yaml` 的 `allowBuilds` 显式声明 `esbuild`、`@clerk/shared` **不执行**脚本：
+- 本仓库通过 `react/pnpm-workspace.yaml` 的 `allowBuilds` 显式声明 `esbuild` **不执行**脚本：
   - `esbuild` 的平台二进制已随 `@esbuild/win32-x64` 包提供，无需 postinstall（已实测 dev/build 正常）。
-  - `@clerk/shared` 仅服务于可选的 Clerk 路由。
 - 如需在本地运行这些脚本，可将对应值改为 `true` 或执行 `pnpm approve-builds`。
 
 ---
@@ -112,37 +111,49 @@ Browser → React → NestJS API → PostgreSQL
 
 ```text
 react/
-├── public/                    # 静态资源（favicon、图片）
+├── public/                    # 静态资源（favicon、图片、字体）
 ├── src/
-│   ├── assets/                # 品牌/自定义 SVG 图标、Logo
-│   ├── components/
-│   │   ├── ui/                # shadcn/ui 组件（Radix + tailwind）
-│   │   ├── layout/            # 应用布局：AppSidebar、Header、Main、Nav 等
-│   │   ├── data-table/        # 可复用 DataTable（列、过滤、分页、批量操作）
-│   │   └── ...                # CommandMenu、Search、ThemeSwitch、Dialog 等通用组件
-│   ├── config/                # 字体等配置
-│   ├── context/               # Theme / Font / Direction / Layout / Search Provider
-│   ├── features/              # 业务模块（apps/auth/chats/dashboard/errors/settings/tasks/users）
-│   ├── hooks/                 # 自定义 Hooks（use-mobile、use-dialog-state、use-table-url-state）
-│   ├── lib/                   # 工具（cn、cookies、handle-server-error、utils）
+│   ├── components/            # 项目级可复用组件
+│   │   ├── ui/                # shadcn/ui 基础组件（按需创建，当前无 Shadcn 组件）
+│   │   ├── common/            # 项目通用组件（按需创建，跨业务复用）
+│   │   │   └── error-pages/   # 全屏错误页（ErrorPageShell + 403/404/500）
+│   │   └── business/          # 业务组件（按需创建，特定业务域专用）
+│   ├── layouts/               # 应用布局（AdminLayout + 布局子组件）
+│   │   ├── components/        # 布局专属子组件（app-sidebar、sidebar-menu 等）
+│   │   └── admin-layout.tsx   # 双栏布局 + 权限门卫
+│   ├── hooks/                 # 自定义 Hooks（use-menus）
+│   ├── lib/                   # 工具（api-client、menu-utils、menu-fetch、permission 等）
 │   ├── routes/                # TanStack Router 文件式路由 + 页面
 │   ├── stores/                # Zustand store（auth-store）
-│   ├── styles/                # Tailwind v4 CSS（index.css、theme.css）
-│   ├── test-utils/            # 测试工具
-│   ├── main.tsx               # 应用入口（QueryClient + Providers + Router）
+│   ├── styles/                # Tailwind v4 CSS（globals.css、theme.css）
+│   ├── provider.tsx           # Provider 壳
+│   ├── main.tsx               # 应用入口
 │   └── routeTree.gen.ts       # 自动生成的路由树（勿手改）
-├── components.json            # shadcn/ui 配置
-├── eslint.config.js
 ├── index.html
-├── knip.config.ts
-├── netlify.toml               # SPA 重定向配置（保留官方文件）
 ├── package.json
 ├── pnpm-lock.yaml
-├── pnpm-workspace.yaml        # pnpm 10+ 设置（allowBuilds）
-├── tsconfig*.json
-├── vite.config.ts             # TanStack Router 插件 + Tailwind v4 插件 + 别名 + Vitest
-└── README.md / LICENSE / CHANGELOG.md  # 官方文件（保留）
+├── tsconfig.json
+├── vite.config.ts
+└── README.md / LICENSE
 ```
+
+### 组件分层规范
+
+`src/components/` 按职责分为三层，**按需创建，不提前建立空目录**：
+
+| 层级 | 目录 | 职责 | 示例 |
+|---|---|---|---|
+| **UI 层** | `components/ui/` | 纯 UI 基础组件（shadcn/ui 源码组件，如 button、dialog、input、select） | `button.tsx`、`dialog.tsx` |
+| **通用层** | `components/common/` | 项目级可复用组件，跨业务模块共享（Shell、Loading、EmptyState、ConfirmDialog 等） | `error-pages/`、`PageHeader/` |
+| **业务层** | `components/business/` | 特定业务域专用组件，仅在某模块内复用（UserTable、UserForm、DashboardCard 等） | `UserTable/`、`UserForm/` |
+
+**命名规则（遵循 AGENTS.md §14）**：
+- 目录：kebab-case（`error-pages/`、`page-header/`）
+- 组件文件：kebab-case（`error-page-shell.tsx`）
+- 组件导出：PascalCase（`ErrorPageShell`）
+- barrel export：`components/common/index.ts`（按需添加，避免 barrel import 影响 tree-shaking）
+
+**布局组件**保留在 `layouts/components/`（`app-header`、`app-sidebar`、`sidebar-menu` 等），不归入 `components/` 三层体系——它们是布局专属，不是跨模块通用组件。
 
 ---
 
@@ -171,22 +182,19 @@ pnpm test           # Vitest 浏览器测试（需先 pnpm test:browser:install 
 
 ### 已完成
 
-- [x] 基于官方 Shadcn Admin `main`（v2.2.1）建立 `/react`，无嵌套 `.git`。
-- [x] 保留官方全部核心能力：Layout / Sidebar / Header / Navigation / Theme / Dark Mode / Responsive / shadcn/ui 组件 / DataTable / Form / Dialog / Drawer / Command / Chart / Hooks / Utils。
-- [x] **Phase 1B 品牌化**：接入 Better Admin Logo（浅/深色 + favicon）、站点标题与元信息、AppTitle。
-- [x] **Phase 1B Sidebar**：Better Admin 中文菜单（概览 / 系统管理 / 系统设置），移除团队切换与 Clerk 演示导航。
-- [x] **Phase 1B 页面规划**：新增 `/roles`、`/permissions`、`/menus`、`/logs` 中文占位页（不实现业务）。
-- [x] **Phase 1B Demo 清理**：移除 Tasks、Chats、Apps、Clerk、Help Center 演示页面与相关组件。
-- [x] **Phase 1B 中文化**：Dashboard / Users / Settings / Auth / Errors / DataTable / ConfigDrawer 界面文案默认中文。
-- [x] `pnpm install`、`pnpm dev`、`pnpm build`（含 `tsc -b` 类型检查）、`pnpm lint`、`pnpm format:check` 全部通过。
+- [x] 基于 Hero UI 初始化模板建立 `/react`，作为 UI 迁移目标版本（UI Source of Truth）。
+- [x] Hero UI 为主组件库，布局（双栏 Sidebar + Header）、主题（Dark Mode / Light Mode）、响应式已就绪。
+- [x] Phase 3 联调：真实登录/退出（AlertDialog + useOverlayState）、后端菜单联调、双 Token 刷新、菜单路由权限门卫。
+- [x] 布局级权限门卫：未登录拦截、白名单放行、菜单未就绪全屏 Spinner、无权限渲染 403。
+- [x] TanStack Router 文件式路由 + QueryClient + Zustand auth-store（含 persist）。
+- [x] 组件分层：`components/common/`（错误页等通用组件）、`layouts/components/`（布局子组件），按需扩展 `ui/`、`business/`。
+- [x] `pnpm install`、`pnpm dev`、`pnpm build`（含 `tsc`）、`pnpm lint` 全部通过。
 
 ### 尚未完成
 
 - [ ] 业务页面（用户/角色/权限/菜单/系统设置/日志等真实业务模块）。
-- [ ] 引入 Hero UI（`@heroui/react` + framer-motion + `@internationalized/date`）并按 `ui-spec.md` §18.3 策略渐进接入；当前存量 UI 均为 shadcn/ui。
-- [ ] 接入 NestJS API（当前无任何真实 API 请求）。
-- [ ] 接入数据库（无 DATABASE_URL / SUPABASE 等后端环境变量，无 Schema / ORM 代码）。
-- [ ] 真实认证与 RBAC（当前仅有官方演示登录 Mock 与可选的 Clerk 路由）。
+- [ ] 接入 Vue 版本（Vue + NestJS API）。
+- [ ] 渐进迁移 `/react-shadcn` 中尚未搬入的功能与页面。
 - [ ] Dashboard 统计卡片、Users 列表、Settings 表单仍为官方演示 Mock 数据，接入 API 后替换。
 - [ ] `showSubmittedData` 演示提交提示暂留于保留的演示页，接入真实 API 时移除。
 

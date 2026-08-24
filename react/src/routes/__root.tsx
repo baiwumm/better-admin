@@ -3,8 +3,8 @@ import type { RouterContext } from "@/router";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { Toast } from "@heroui/react";
 
-import { GeneralErrorPage } from "@/components/error-pages/general-error";
-import { NotFoundErrorPage } from "@/components/error-pages/not-found-error";
+import { GeneralErrorPage } from "@/components/common/error-pages/general-error";
+import { NotFoundErrorPage } from "@/components/common/error-pages/not-found-error";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   component: () => (
