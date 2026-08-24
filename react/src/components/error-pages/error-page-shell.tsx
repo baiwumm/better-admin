@@ -3,8 +3,6 @@ import type { ReactNode } from "react";
 import { Button, Typography } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 
-import { ROUTE_PATHS } from "@/lib/route-paths";
-
 type ErrorPageShellProps = {
   /** 状态码，如 "404" */
   status: string;
@@ -51,7 +49,7 @@ export function ErrorPageShell({
       </Typography>
       <div className="mt-4">
         {actions ?? (
-          <Link to={ROUTE_PATHS.dashboard}>
+          <Link to="/">
             <Button variant="primary">返回首页</Button>
           </Link>
         )}

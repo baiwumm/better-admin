@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 
 <head>
@@ -23,7 +23,76 @@
 </head>
 
 <body>
-  <div id="root"></div>
+  <!-- 首屏/刷新全屏 Loading 占位：纯 HTML/CSS，不依赖 React/JS。
+       浏览器解析到此即显示，避免资源加载期间的白屏；React 挂载后会被 #root 内容整体替换。
+       spinner 为 Hero UI Spinner 的真实 SVG（含渐变描边 + 0.75s 线性旋转），视觉一致。 -->
+  <div id="root">
+    <div id="app-boot-loading" aria-busy="true" aria-live="polite">
+      <style>
+        #app-boot-loading {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+          background: #ffffff;
+          color: #11181c;
+          font-family: 'Maple Mono CN', system-ui, Avenir, Helvetica, Arial, sans-serif;
+        }
+        @media (prefers-color-scheme: dark) {
+          #app-boot-loading {
+            background: #0a0a0a;
+            color: #ecedee;
+          }
+        }
+        #app-boot-loading .boot-spinner {
+          display: inline-flex;
+          width: 24px;
+          height: 24px;
+          color: currentColor;
+          animation: boot-spin 0.75s linear infinite;
+        }
+        #app-boot-loading .boot-spinner svg {
+          width: 100%;
+          height: 100%;
+          display: block;
+        }
+        #app-boot-loading .boot-text {
+          font-size: 13px;
+          opacity: 0.65;
+        }
+        @keyframes boot-spin {
+          to { transform: rotate(360deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          #app-boot-loading .boot-spinner { animation: none; }
+        }
+      </style>
+      <span class="boot-spinner" role="status" aria-label="加载中">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="boot-spin-grad-1" x1="50%" x2="50%" y1="5.271%" y2="91.793%">
+              <stop offset="0%" stop-color="currentColor" />
+              <stop offset="100%" stop-color="currentColor" stop-opacity="0.55" />
+            </linearGradient>
+            <linearGradient id="boot-spin-grad-2" x1="50%" x2="50%" y1="15.24%" y2="87.15%">
+              <stop offset="0%" stop-color="currentColor" stop-opacity="0" />
+              <stop offset="100%" stop-color="currentColor" stop-opacity="0.55" />
+            </linearGradient>
+          </defs>
+          <g fill="none">
+            <path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z" />
+            <path d="M8.749.021a1.5 1.5 0 0 1 .497 2.958A7.5 7.5 0 0 0 3 10.375a7.5 7.5 0 0 0 7.5 7.5v3c-5.799 0-10.5-4.7-10.5-10.5C0 5.23 3.726.865 8.749.021" fill="url(#boot-spin-grad-1)" transform="translate(1.5 1.625)" />
+            <path d="M15.392 2.673a1.5 1.5 0 0 1 2.119-.115A10.48 10.48 0 0 1 21 10.375c0 5.8-4.701 10.5-10.5 10.5v-3a7.5 7.5 0 0 0 5.007-13.084a1.5 1.5 0 0 1-.115-2.118" fill="url(#boot-spin-grad-2)" transform="translate(1.5 1.625)" />
+          </g>
+        </svg>
+      </span>
+      <div class="boot-text">正在加载…</div>
+    </div>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

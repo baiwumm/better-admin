@@ -31,8 +31,12 @@ export interface AuthUser {
   username: string;
   displayName: string;
   roles: string[];
-  /** bigint 位掩码字符串（超级管理员全量为 9223372036854775807） */
-  permissions: string;
+  /**
+   * bigint 位掩码（超级管理员全量为 9223372036854775807）。
+   * 契约定义为 integer，但实际传输中常以字符串形式下发（避免精度丢失）；
+   * 故前端兼容 string | number，解析时统一归一化为 string（见 permission.ts）。
+   */
+  permissions: string | number;
 }
 
 export interface LoginResponse {

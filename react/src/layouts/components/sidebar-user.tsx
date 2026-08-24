@@ -1,17 +1,22 @@
 import type { Key } from "react";
 
+import { useState } from "react";
 import {
+  AlertDialog,
   Avatar,
+  Button,
   cn,
   Dropdown,
   Label,
   Separator,
+  Spinner,
   Typography,
+  toast,
+  useOverlayState,
 } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDown, LogOut, IdCard } from "lucide-react";
 
-import { ROUTE_PATHS } from "@/lib/route-paths";
 import { useAuthStore } from "@/stores/auth-store";
 
 type SidebarUserProps = {
@@ -28,13 +33,18 @@ const fallbackUser = {
 /**
  * 侧边栏底部用户区：头像 + 名称/邮箱（折叠态仅显示头像）。
  * 使用 Hero UI Dropdown 实现用户菜单：
- * - 系统设置 → 跳转 /settings
- * - 退出登录 → 清理会话并跳转登录页
+ * - 我的账户 → 跳转 /account
+ * - 退出登录 → 弹 AlertDialog 二次确认，确认后调用后端 /auth/logout，
+ *   成功才清本地会话并跳登录页；失败则 toast 错误提示、不退出。
  */
 export function SidebarUser({ collapsed }: SidebarUserProps) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+
+  // 退出二次确认弹窗状态（Hero UI 官方用法：useOverlayState + 状态挂 Backdrop）
+  const exitDialog = useOverlayState();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const displayName = user?.displayName ?? fallbackUser.name;
   const email = user?.username ?? fallbackUser.email;
@@ -43,14 +53,35 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
   const handleAction = (key: Key) => {
     switch (key) {
       case "account":
-        void navigate({ to: ROUTE_PATHS.account });
+        void navigate({ to: "/account" });
         break;
       case "logout":
-        logout();
-        void navigate({ to: ROUTE_PATHS.signIn });
+        // 先弹出二次确认对话框，不直接退出
+        exitDialog.open();
         break;
       default:
         break;
+    }
+  };
+
+  /** 确认退出：调后端 logout，成功后清会话并跳登录页；失败仅提示、保持登录。 */
+  const handleConfirmLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      // 本地会话已清（无论后端成败），提示成功并跳登录页。
+      toast.success("已退出登录");
+      exitDialog.close();
+      void navigate({ to: "/sign-in" });
+    } catch (error) {
+      // 仅网络层等真实异常才会到这（后端 401/过期已在 logout 内按失效处理）；
+      // 提示用户但不退出、保持登录态。
+      toast.danger(
+        error instanceof Error ? error.message : "退出失败，请稍后重试",
+      );
+      exitDialog.close();
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -140,6 +171,49 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
           </Dropdown.Menu>
         </Dropdown.Popover>
       </Dropdown>
+
+      {/* 退出二次确认对话框（Hero UI 官方用法：open 状态挂 Backdrop） */}
+      <AlertDialog.Backdrop
+        isOpen={exitDialog.isOpen}
+        onOpenChange={exitDialog.setOpen}
+      >
+        <AlertDialog.Container placement="center">
+          <AlertDialog.Dialog className="sm:max-w-[400px]">
+            <AlertDialog.Header>
+              <AlertDialog.Icon status="danger" />
+              <AlertDialog.Heading>确认退出登录？</AlertDialog.Heading>
+            </AlertDialog.Header>
+            <AlertDialog.Body>
+              退出后需要重新登录才能访问控制台。确定要退出当前账号吗？
+            </AlertDialog.Body>
+            <AlertDialog.Footer>
+              <Button
+                isDisabled={isLoggingOut}
+                variant="ghost"
+                onPress={exitDialog.close}
+              >
+                取消
+              </Button>
+              <Button
+                isPending={isLoggingOut}
+                variant="danger"
+                onPress={handleConfirmLogout}
+              >
+                {({ isPending }) =>
+                  isPending ? (
+                    <>
+                      <Spinner color="current" size="sm" />
+                      退出中…
+                    </>
+                  ) : (
+                    "确认退出"
+                  )
+                }
+              </Button>
+            </AlertDialog.Footer>
+          </AlertDialog.Dialog>
+        </AlertDialog.Container>
+      </AlertDialog.Backdrop>
     </div>
   );
 }

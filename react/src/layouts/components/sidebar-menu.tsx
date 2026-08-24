@@ -9,11 +9,10 @@ import {
   type Selection,
 } from "@heroui/react";
 import { ChevronDown } from "lucide-react";
-import { DynamicIcon } from "lucide-react/dynamic";
+import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 
 import { type MenuNode } from "@/lib/api-types";
-import { findActivePath } from "@/data/menus";
-import { menuIcon } from "@/lib/menu-icon";
+import { findActivePath } from "@/lib/menu-utils";
 
 type SidebarMenuProps = {
   items: MenuNode[];
@@ -187,7 +186,7 @@ function MenuLevel({
               <div className="flex min-w-0 items-center gap-2">
                 <DynamicIcon
                   className="shrink-0"
-                  name={menuIcon(child.icon)}
+                  name={child.icon as IconName}
                   size={16}
                 />
                 <span className="truncate">{child.label}</span>
@@ -228,7 +227,11 @@ function SidebarLeaf({
       variant="ghost"
       onPress={() => onNavigate(item.to)}
     >
-      <DynamicIcon className="shrink-0" name={menuIcon(item.icon)} size={16} />
+      <DynamicIcon
+        className="shrink-0"
+        name={item.icon as IconName}
+        size={16}
+      />
       <Label className="flex-1 truncate text-left">{item.label}</Label>
     </Button>
   );
@@ -275,7 +278,7 @@ function SidebarGroup({
           >
             <DynamicIcon
               className="me-3 shrink-0"
-              name={menuIcon(item.icon)}
+              name={item.icon as IconName}
               size={16}
             />
             <span className="flex-1 truncate">{item.label}</span>

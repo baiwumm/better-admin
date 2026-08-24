@@ -7,4 +7,6 @@ export const ENV = {
   appName: import.meta.env.VITE_APP_NAME ?? "Better Admin",
   appDesc:
     import.meta.env.VITE_APP_DESC ?? "一个探索多技术栈全栈开发的 Admin 项目。",
+  /** 后端 API Base URL（含全局前缀 /api），如 http://localhost:3000/api */
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api",
 } as const;

@@ -276,6 +276,7 @@ React 仍然是 UI / UX Source of Truth。
 - 禁止同一种基础组件在不同页面随意混用不同组件库（如 A 页 Shadcn Button、B 页 Hero Button、C 页自定义 Button），除非存在被项目规范认可的明确技术原因。
 - 禁止因为熟悉 Shadcn UI 就默认所有组件使用 Shadcn UI；禁止为了「全部 Hero UI 化」强行重写存量 Shadcn UI。
 - 禁止未经确认进行大规模 UI 重构 / 一次性迁移。
+- **浮层开合状态必须用 `useOverlayState`（禁止裸 `useState` 布尔量控制）**：React / Next.js 中所有由布尔值控制的浮层（Modal / AlertDialog / Drawer / Popover / 任意 Overlay 等），其 open 状态**统一使用 Hero UI 导出的 `useOverlayState()` hook 管理**，并严格遵循官方受控写法——`isOpen` / `onOpenChange` 挂在浮层的最外层 Overlay 组件（如 `<AlertDialog.Backdrop isOpen={state.isOpen} onOpenChange={state.setOpen}>`）上，触发用 `state.open()` / `state.close()` / `state.toggle()`。禁止自行用 `useState(true/false)` 把 `isOpen` 挂在 Root/Trigger 上（会导致 react-aria 受控流不匹配、弹窗不显示或控制台报错）。开放状态即「with useOverlayState」，关闭即「禁止裸 useState 布尔量」。
 
 **渐进式调整（不是一次性重构）**：
 

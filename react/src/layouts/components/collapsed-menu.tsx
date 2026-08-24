@@ -10,11 +10,10 @@ import {
   type Selection,
 } from "@heroui/react";
 import { ChevronDown } from "lucide-react";
-import { DynamicIcon } from "lucide-react/dynamic";
+import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 
 import { type MenuNode } from "@/lib/api-types";
-import { findActivePath } from "@/data/menus";
-import { menuIcon } from "@/lib/menu-icon";
+import { findActivePath } from "@/lib/menu-utils";
 
 type CollapsedMenuProps = {
   items: MenuNode[];
@@ -87,7 +86,7 @@ function CollapsedMenuItem({
           variant="ghost"
           onPress={() => onNavigate(item.to)}
         >
-          <DynamicIcon name={menuIcon(item.icon)} size={20} />
+          <DynamicIcon name={item.icon as IconName} size={20} />
         </Button>
         <Tooltip.Content placement="right">
           <Tooltip.Arrow />
@@ -101,7 +100,7 @@ function CollapsedMenuItem({
   return (
     <Popover isOpen={isOpen} onOpenChange={setIsOpen}>
       <Button isIconOnly variant="ghost">
-        <DynamicIcon name={menuIcon(item.icon)} size={20} />
+        <DynamicIcon name={item.icon as IconName} size={20} />
       </Button>
       <Popover.Content
         className="p-0"
@@ -180,7 +179,7 @@ function CollapsedSubLevel({
               <div className="flex min-w-0 items-center gap-2">
                 <DynamicIcon
                   className="shrink-0"
-                  name={menuIcon(child.icon)}
+                  name={child.icon as IconName}
                   size={16}
                 />
                 <span className="truncate">{child.label}</span>
@@ -220,7 +219,7 @@ function CollapsedGroup({
           <Accordion.Trigger className="rounded-3xl px-3 py-2 text-sm">
             <DynamicIcon
               className="me-2 size-4 shrink-0"
-              name={menuIcon(item.icon)}
+              name={item.icon as IconName}
             />
             <span className="flex-1 truncate">{item.label}</span>
             <Accordion.Indicator>

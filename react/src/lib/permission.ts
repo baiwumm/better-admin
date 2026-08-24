@@ -1,16 +1,21 @@
 import { type MenuNode } from "@/lib/api-types";
 
 /**
- * 解析 bigint 位掩码字符串（超级管理员内部为 -1n，输出统一归一化为
- * 9223372036854775807 的正数全 1 掩码，见 nest normalizePermissionBits）。
- * 解析失败返回 null。
+ * 解析 bigint 位掩码（兼容 string | number，方案 A）。
+ * 后端契约 permissions 为 integer，但实际以字符串形式下发以避免精度丢失；
+ * 前端统一归一化：number 先 String() 再 BigInt，解析失败返回 null。
+ * 超级管理员内部为 -1n，输出统一归一化为 9223372036854775807 的正数全 1 掩码，
+ * 见 nest normalizePermissionBits。
  */
 export function parsePermissionBits(
-  bits: string | null | undefined,
+  bits: string | number | null | undefined,
 ): bigint | null {
   if (bits === null || bits === undefined || bits === "") return null;
+  // number 归一化为 string（避免 BigInt(number) 在超大整数下的精度问题）
+  const normalized = typeof bits === "number" ? String(bits) : bits;
+
   try {
-    return BigInt(bits);
+    return BigInt(normalized);
   } catch {
     return null;
   }

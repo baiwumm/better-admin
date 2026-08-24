@@ -14,7 +14,6 @@ import {
   Description,
 } from "@heroui/react";
 
-import { ROUTE_PATHS } from "@/lib/route-paths";
 import { useAuthStore } from "@/stores/auth-store";
 import { ENV } from "@/lib/env";
 
@@ -32,7 +31,7 @@ export const Route = createFileRoute("/(auth)/sign-in")({
   beforeLoad: ({ context }) => {
     // 已登录用户再访问登录页 → 直接回首页
     if (context.auth.getState().isAuthenticated) {
-      throw redirect({ to: ROUTE_PATHS.dashboard });
+      throw redirect({ to: "/" });
     }
   },
   component: SignInPage,
@@ -61,7 +60,7 @@ function SignInPage() {
         // 鉴权重定向目标可能是任意路径，整页跳转即可
         window.location.assign(redirectTo);
       } else {
-        await navigate({ to: ROUTE_PATHS.dashboard });
+        await navigate({ to: "/" });
       }
     } catch (error) {
       toast.danger(error instanceof Error ? error.message : "登录失败，请重试");
