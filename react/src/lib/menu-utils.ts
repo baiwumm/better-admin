@@ -44,3 +44,26 @@ export function findActivePath(nodes: MenuNode[], pathname: string): string[] {
 
   return [];
 }
+
+/**
+ * 根据激活路径 id 链（见 findActivePath），从菜单树中提取对应的节点对象数组
+ * （含 icon / label / to 等），顺序为「从根分组 → 当前页叶子」。
+ * 用于顶栏面包屑渲染。任一 id 缺失即停止（保证链完整），返回已匹配的前缀。
+ */
+export function getBreadcrumbNodes(
+  nodes: MenuNode[],
+  activePath: string[],
+): MenuNode[] {
+  const result: MenuNode[] = [];
+  let level = nodes;
+
+  for (const id of activePath) {
+    const found = level.find((n) => n.id === id);
+
+    if (!found) break;
+    result.push(found);
+    level = found.children ?? [];
+  }
+
+  return result;
+}
