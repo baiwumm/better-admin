@@ -7,6 +7,7 @@ import { SidebarUser } from "./sidebar-user";
 
 import { useMenus } from "@/hooks/use-menus";
 import { filterHiddenMenus } from "@/lib/permission";
+import { ENV } from "@/lib/env";
 
 import logo from "/logo.svg";
 import logoDark from "/logo-dark.svg";
@@ -51,7 +52,7 @@ export function AppSidebar({ collapsed, onNavigate }: AppSidebarProps) {
                 className="truncate leading-tight font-bold"
                 type="body-sm"
               >
-                Better Admin
+                {ENV.appName}
               </Typography>
               <Typography
                 className="truncate leading-tight"

@@ -11,10 +11,12 @@ import {
   Typography,
   toast,
   useTheme,
+  Description,
 } from "@heroui/react";
 
 import { ROUTE_PATHS } from "@/lib/route-paths";
 import { useAuthStore } from "@/stores/auth-store";
+import { ENV } from "@/lib/env";
 
 import logo from "/logo.svg";
 import logoDark from "/logo-dark.svg";
@@ -72,19 +74,17 @@ function SignInPage() {
       <Surface className="w-full max-w-sm rounded-3xl border border-separator p-8 shadow-sm">
         {/* 品牌区 */}
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <img
-            alt="Better Admin"
-            className="size-12 rounded-xl"
-            src={theme === "dark" ? logoDark : logo}
-          />
-          <div className="grid gap-1">
+          <div className="flex gap-3 items-center">
+            <img
+              alt={ENV.appName}
+              className="size-10 rounded-xl"
+              src={theme === "dark" ? logoDark : logo}
+            />
             <Typography className="text-2xl font-bold tracking-tight" type="h1">
-              欢迎回来
-            </Typography>
-            <Typography color="muted" type="body-sm">
-              登录以继续访问 Better Admin 管理系统
+              {ENV.appName}
             </Typography>
           </div>
+          <Description>{ENV.appDesc}</Description>
         </div>
 
         {/* 登录表单 */}
@@ -131,7 +131,7 @@ function SignInPage() {
         </Form>
 
         <p className="mt-8 text-center text-xs text-muted">
-          © 2026 Better Admin
+          © {new Date().getFullYear()} {ENV.appName}
         </p>
       </Surface>
     </div>
