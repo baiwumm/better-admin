@@ -1,11 +1,15 @@
 import type { ReactNode } from "react";
 
-import { useState } from "react";
-import { Outlet, useLocation } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { useLocation } from "@tanstack/react-router";
 import { Drawer, Spinner, Typography } from "@heroui/react";
 
 import { AppHeader } from "./components/app-header";
 import { AppSidebar } from "./components/app-sidebar";
+import {
+  KeepAliveOutlet,
+  clearKeepAliveCache,
+} from "./components/keep-alive-outlet";
 
 import { ForbiddenErrorPage } from "@/components/common/error-pages/forbidden-error";
 import { useMenus } from "@/hooks/use-menus";
@@ -34,6 +38,11 @@ export function AdminLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data: menuTree, isLoading, isError } = useMenus();
   const { pathname } = useLocation();
+
+  // 会话失效 / 登出时清空路由保活缓存，避免陈旧实例残留旧账号页面与数据。
+  useEffect(() => {
+    if (!isAuthenticated) clearKeepAliveCache();
+  }, [isAuthenticated]);
 
   // 未登录双保险（beforeLoad 已保证，正常不会到这）
   if (!isAuthenticated) return null;
@@ -75,7 +84,9 @@ export function AdminLayout() {
     // 无权限：整页替换为 403（URL 不变，避免闪跳）
     if (forbidden) return <ForbiddenErrorPage />;
 
-    body = <Outlet />;
+    // 业务页：用 KeepAliveOutlet 适配菜单 keepAlive（命中缓存的路由页面实例保留，
+    // 未命中则等价于裸 Outlet 的挂载/卸载）。
+    body = <KeepAliveOutlet menuTree={menuTree as MenuNode[]} />;
   }
 
   return (

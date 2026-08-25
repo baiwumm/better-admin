@@ -29,6 +29,26 @@ export function collectMenuPaths(
   return acc;
 }
 
+/**
+ * 收集「需要路由缓存（keepAlive）」的叶子路径集合：
+ * 仅取启用的、且 keepAlive === true 的叶子节点 to。
+ * 供 KeepAliveOutlet 判定当前页是否应保活（实例缓存 + 隐藏，而非卸载）。
+ */
+export function collectKeepAlivePaths(
+  nodes: MenuNode[],
+  acc: Set<string> = new Set(),
+): Set<string> {
+  for (const node of nodes) {
+    if (node.enabled && node.keepAlive && node.to) {
+      acc.add(node.to);
+    }
+
+    if (node.children?.length) collectKeepAlivePaths(node.children, acc);
+  }
+
+  return acc;
+}
+
 /** 返回从根到「当前路径匹配叶子」的整条节点 id 链（含叶子自身），
  * 用于多级菜单自动展开全部祖先分组。未匹配返回空数组。
  */
