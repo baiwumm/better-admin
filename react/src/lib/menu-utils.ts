@@ -14,6 +14,22 @@ export function flattenLeafMenus(nodes: MenuNode[]): MenuNode[] {
 }
 
 /**
+ * 收集菜单树中所有需要路由保活的路径（keepAlive === true 且有 to 的节点）。
+ * 供 KeepAliveOutlet 判定「当前路径是否参与组件状态保活」。
+ */
+export function collectKeepAlivePaths(
+  nodes: MenuNode[],
+  acc: Set<string> = new Set(),
+): Set<string> {
+  for (const node of nodes) {
+    if (node.keepAlive && node.to) acc.add(node.to);
+    if (node.children?.length) collectKeepAlivePaths(node.children, acc);
+  }
+
+  return acc;
+}
+
+/**
  * 收集菜单树中所有可达路径（每个节点的 to，过滤空值）。
  * 供路由守卫判断「当前路径是否在用户可见菜单内」。
  */

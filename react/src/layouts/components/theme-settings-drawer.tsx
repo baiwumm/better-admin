@@ -5,6 +5,7 @@ import { ThemeColorPicker } from "./theme-color-picker";
 import { ThemeModePicker } from "./theme-mode-picker";
 import { TransitionDirectionPicker } from "./transition-direction-picker";
 import { RouteTransitionPicker } from "./route-transition-picker";
+import { RouteTransitionSpeedPicker } from "./route-transition-speed-picker";
 
 /**
  * 主题设置抽屉：右上角 paint-bucket 图标按钮（Drawer.Trigger）触发，
@@ -41,6 +42,7 @@ export function ThemeSettingsDrawer() {
               <ThemeModePicker />
               <TransitionDirectionPicker />
               <RouteTransitionPicker />
+              <RouteTransitionSpeedPicker />
             </Drawer.Body>
           </Drawer.Dialog>
         </Drawer.Content>

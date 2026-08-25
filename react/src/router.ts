@@ -20,10 +20,11 @@ export const router = createRouter({
   defaultPreloadStaleTime: 0,
   // 注意：不使用 TanStack 的 defaultViewTransition（其内部 startViewTransition 未
   // 捕获快速连续导航时的 AbortError，会导致未处理异常）。页面过渡动画由
-  // layouts/components/route-transition.tsx 自行控制（双缓冲 + flushSync + VT）。
+  // layouts/components/keep-alive-outlet.tsx 自行编排
+  // （displayedPath 呈现管理 + VT + flushSync，旧快照为真实旧帧）。
   //
   // TanStack 默认 resetScroll: true（导航后 scroll 回顶部），
-  // 由 KeepAliveOutlet 的 layout effect 显式恢复 keepAlive 路径的滚动位置，
+  // 由 KeepAlivePane 的 layout effect 显式恢复 keepAlive 路径的滚动位置，
   // 与 resetScroll 机制不冲突（resetScroll 先跑，之后我们恢复到缓存位置）。
 });
 

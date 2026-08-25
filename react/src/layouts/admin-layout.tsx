@@ -6,8 +6,7 @@ import { Drawer, Spinner, Typography } from "@heroui/react";
 
 import { AppHeader } from "./components/app-header";
 import { AppSidebar } from "./components/app-sidebar";
-import { MainOutlet } from "./components/main-outlet";
-import { RouteTransition } from "./components/route-transition";
+import { KeepAliveOutlet } from "./components/keep-alive-outlet";
 
 import { ForbiddenErrorPage } from "@/components/common/error-pages/forbidden-error";
 import { useMenus } from "@/hooks/use-menus";
@@ -24,9 +23,11 @@ import { useAuthStore } from "@/stores/auth-store";
  * 菜单权限门卫（布局级，替代原路由跳转方案）：
  * - 未登录：beforeLoad 已拦截，此处双保险返回空。
  * - 白名单（/ 与 /account）：登录即可访问，直接渲染内容。
- * - 菜单未就绪/加载中：布局照常（侧边栏 Skeleton），主体区显示全屏「正在校验权限…」。
+ * - 菜单未就绪/加载中：主体区显示「正在校验权限…」覆盖层（侧边栏照常）。
  * - 菜单加载失败：主体区提示失败，不误跳 403。
- * - 菜单就绪 + 路径不在用户可见菜单树：渲染 403 无权限页（方案 X：URL 不变）。
+ * - 菜单就绪 + 路径不在用户可见菜单树：主体区渲染 403 无权限页
+ *   （方案 X：URL 不变；侧边栏保留，可直接切换其它菜单离开）。
+ * - 异常态统一以 overlay 传入 KeepAliveOutlet：实例池保持挂载不销毁保活。
  * - 菜单就绪 + 路径在菜单树：渲染内容。
  */
 export function AdminLayout() {
@@ -45,12 +46,14 @@ export function AdminLayout() {
     pathname,
   );
 
-  // 主体区内容（loading / 失败提示 / 业务页）：
-  // 菜单未就绪（首次请求中，且无旧数据）→ loading
-  let body: ReactNode;
+  // 主体区异常态覆盖层（loading / 校验失败 / 403）：
+  // overlay 非空时 KeepAliveOutlet 实例池保持挂载（全部转 hidden 保活），
+  // 异常内容渲染于其上——恢复后原页面状态无损，不再销毁保活。
+  let overlay: ReactNode = null;
 
   if (isLoading || (menuTree === undefined && !isError)) {
-    body = (
+    // 菜单未就绪（首次请求中，且无旧数据）→ loading
+    overlay = (
       <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-3 text-muted">
         <Spinner color="current" />
         <Typography className="text-sm" color="muted" type="body-sm">
@@ -60,7 +63,7 @@ export function AdminLayout() {
     );
   } else if (isError) {
     // 加载失败：提示失败，不误跳 403
-    body = (
+    overlay = (
       <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-3 text-muted">
         <Typography className="text-sm" color="muted" type="body-sm">
           权限校验失败，请刷新重试
@@ -74,16 +77,14 @@ export function AdminLayout() {
       : new Set<string>();
     const forbidden = !isWhitelisted && !allowed.has(pathname);
 
-    // 无权限：整页替换为 403（URL 不变，避免闪跳）
-    if (forbidden) return <ForbiddenErrorPage />;
-
-    // 业务页：RouteTransition 负责路由级过渡动画（双缓冲 + VT，只作用 main-content）。
-    body = (
-      <RouteTransition path={pathname}>
-        <MainOutlet />
-      </RouteTransition>
-    );
+    // 无权限：主体区替换为 403（URL 不变，避免闪跳；侧边栏保留，
+    // 用户可直接切换其它菜单离开）
+    if (forbidden) overlay = <ForbiddenErrorPage />;
   }
+
+  // 业务页：KeepAliveOutlet 统一承担路由呈现（实例池保活）、路由过渡
+  // 动画编排（VT + flushSync，只作用 main-content 区域）与异常覆盖层。
+  const body = <KeepAliveOutlet overlay={overlay} />;
 
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
@@ -104,8 +105,10 @@ export function AdminLayout() {
           onToggle={() => setCollapsed((v) => !v)}
         />
         {/* 主体内容：指定 view-transition-name 使路由过渡动画只作用于该区域
-            （布局/侧边栏/顶栏不参与过渡，见 styles/route-transitions.css） */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 [view-transition-name:main-content]">
+            （布局/侧边栏/顶栏不参与过渡，见 styles/route-transitions.css）。
+            滚动统一由本容器承担（滚动条贴合主体区边缘）；KeepAliveOutlet
+            在每次页面切换完成后会将滚动位置重置到顶部。 */}
+        <main className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6 [view-transition-name:main-content]">
           {body}
         </main>
       </div>

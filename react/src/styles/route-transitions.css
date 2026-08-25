@@ -1,78 +1,108 @@
 /* 路由过渡动画（页面切换）
  *
- * 通过 `html[data-route-transition="<id>"]` 激活对应预设。
+ * 通过 `html[data-route-transition="<id>"]` 激活对应预设（预设表见
+ * themes/route-transitions.ts，编排见 layouts/components/keep-alive-outlet.tsx）。
  *
- * 作用范围：AdminLayout 的 <main> 主体区域（view-transition-name: main-content，
- * 见 admin-layout.tsx）。浏览器会为命名元素单独生成 ViewTransition 快照组，
- * 因此路由过渡动画只作用于主体内容——侧边栏 / 顶栏等布局区域不参与过渡
- * （root 组保持 globals.css 的 animation: none，瞬间切换）。
+ * 作用范围：AdminLayout 的 <main> 主体区域（view-transition-name: main-content）。
+ * 浏览器为命名元素单独生成 ViewTransition 快照组，路由过渡只作用于主体
+ * 内容——侧边栏 / 顶栏等布局区域不参与（root 组保持 globals.css 的
+ * animation: none，瞬间切换）。
  *
- * 所有动画均挂在 `html[data-route-transition="..."]` 下，未激活时不施加任何
- * 动画，从而与主题切换的 clip-path 揭示动画（作用于 ::view-transition-new(root)）
- * 互不干扰。
- *
- * 旧视图 ::view-transition-old(main-content) 统一淡出，避免两页同时位移造成跳变。
+ * 设计原则（与旧版单侧入场不同）：
+ * - 新旧双侧协同运动：旧页「离场」+ 新页「进场」各有关键帧，动效完整；
+ * - 幅度足够可感知（位移 / 缩放比例加大），曲线统一 easeOut 减速，收尾自然；
+ * - reveal 为「新页覆盖揭示」，新页全程不透明，避免叠层穿帮。
  */
 
-/* 长度类位移用 CSS 变量统一管控，便于统一调时长 */
 :root {
-  --route-transition-duration: 300ms;
-  --route-transition-slide: 24px;
-  --route-transition-flip: 90deg;
-  --route-transition-scale: 0.97;
+  /* 基准时长 × 速度倍率（html[data-rt-speed] 由偏好设置驱动） */
+  --rt-speed: 1;
+  --rt-duration: calc(340ms * var(--rt-speed));
+  --rt-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* 导航方向系数：前进 1 / 后退 -1（html[data-rt-direction="back"]，由
+     KeepAliveOutlet 按菜单层级深度判定），用于反转位移类动画方向。 */
+  --rt-dir-x: 1;
 }
 
-/* 默认：无 data-route-transition 或为 none → 不施加动画（与主题切换同根互不影响）。 */
-
-/* 淡入淡出 */
-html[data-route-transition="fade"]::view-transition-new(main-content) {
-  animation: route-fade-in var(--route-transition-duration) ease-in-out both;
+html[data-rt-speed="slow"] {
+  --rt-speed: 1.45;
 }
+
+html[data-rt-speed="fast"] {
+  --rt-speed: 0.65;
+}
+
+html[data-rt-direction="back"] {
+  --rt-dir-x: -1;
+}
+
+/* ── fade：柔和淡化（交叉淡化，最克制） ── */
 html[data-route-transition="fade"]::view-transition-old(main-content) {
-  animation: route-fade-out var(--route-transition-duration) ease-in-out both;
+  animation: rt-fade-out var(--rt-duration) var(--rt-ease) both;
+}
+html[data-route-transition="fade"]::view-transition-new(main-content) {
+  animation: rt-fade-in var(--rt-duration) var(--rt-ease) both;
 }
 
-/* 上滑淡入 */
-html[data-route-transition="fade-up"]::view-transition-new(main-content) {
-  animation:
-    route-fade-in var(--route-transition-duration) ease-out both,
-    route-slide-up var(--route-transition-duration) ease-out both;
+/* ── glide：视差推滑（旧页浅移淡出，新页深位跟进，Material shared-axis 风格） ── */
+html[data-route-transition="glide"]::view-transition-old(main-content) {
+  animation: rt-glide-out var(--rt-duration) var(--rt-ease) both;
 }
-html[data-route-transition="fade-up"]::view-transition-old(main-content) {
-  animation: route-fade-out var(--route-transition-duration) ease-out both;
+html[data-route-transition="glide"]::view-transition-new(main-content) {
+  animation: rt-glide-in var(--rt-duration) var(--rt-ease) both;
 }
 
-/* 右滑淡入 */
-html[data-route-transition="fade-slide"]::view-transition-new(main-content) {
-  animation:
-    route-fade-in var(--route-transition-duration) ease-out both,
-    route-slide-right var(--route-transition-duration) ease-out both;
+/* ── rise：浮现上升（旧页上飘离场，新页自下方浮升进入） ── */
+html[data-route-transition="rise"]::view-transition-old(main-content) {
+  animation: rt-rise-out var(--rt-duration) var(--rt-ease) both;
 }
-html[data-route-transition="fade-slide"]::view-transition-old(main-content) {
-  animation: route-fade-out var(--route-transition-duration) ease-out both;
+html[data-route-transition="rise"]::view-transition-new(main-content) {
+  animation: rt-rise-in var(--rt-duration) var(--rt-ease) both;
 }
 
-/* 缩放淡入 */
-html[data-route-transition="zoom"]::view-transition-new(main-content) {
-  animation:
-    route-fade-in var(--route-transition-duration) ease-out both,
-    route-scale-in var(--route-transition-duration) ease-out both;
-}
+/* ── zoom：纵深缩放（旧页向镜头推进消失，新页自深处放大浮出，iOS push 风） ── */
 html[data-route-transition="zoom"]::view-transition-old(main-content) {
-  animation: route-fade-out var(--route-transition-duration) ease-out both;
+  animation: rt-zoom-out var(--rt-duration) var(--rt-ease) both;
+}
+html[data-route-transition="zoom"]::view-transition-new(main-content) {
+  animation: rt-zoom-in var(--rt-duration) var(--rt-ease) both;
 }
 
-/* 翻转（x 轴旋转揭示） */
-html[data-route-transition="flip"]::view-transition-new(main-content) {
-  animation:
-    route-fade-in var(--route-transition-duration) ease-out both,
-    route-flip-in var(--route-transition-duration) ease-out both;
+/* ── reveal：揭示展开（新页自左向右扫入覆盖；全程不透明，旧页静止被遮盖） ── */
+html[data-route-transition="reveal"]::view-transition-old(main-content) {
+  animation: rt-reveal-dim calc(var(--rt-duration) + 60ms) var(--rt-ease) both;
 }
-html[data-route-transition="flip"]::view-transition-old(main-content) {
-  animation: route-fade-out var(--route-transition-duration) ease-out both;
+html[data-route-transition="reveal"]::view-transition-new(main-content) {
+  animation: rt-reveal-in calc(var(--rt-duration) + 60ms) var(--rt-ease) both;
 }
 
-@keyframes route-fade-in {
+/* ── cover：覆盖推入（iOS push 风：新页整屏自右滑入覆盖，旧页静止微缩退让） ── */
+html[data-route-transition="cover"]::view-transition-old(main-content) {
+  animation: rt-cover-out var(--rt-duration) var(--rt-ease) both;
+}
+html[data-route-transition="cover"]::view-transition-new(main-content) {
+  animation: rt-cover-in var(--rt-duration) var(--rt-ease) both;
+}
+
+/* ── circle：圆形揭示（新页以光圈自中心展开覆盖；全程不透明避免穿帮） ── */
+html[data-route-transition="circle"]::view-transition-old(main-content) {
+  animation: rt-reveal-dim calc(var(--rt-duration) + 60ms) var(--rt-ease) both;
+}
+html[data-route-transition="circle"]::view-transition-new(main-content) {
+  animation: rt-circle-in calc(var(--rt-duration) + 60ms) var(--rt-ease) both;
+}
+
+/* ── blur：景深聚焦（旧页虚化退场，新页由虚到实对焦进入） ── */
+html[data-route-transition="blur"]::view-transition-old(main-content) {
+  animation: rt-blur-out var(--rt-duration) var(--rt-ease) both;
+}
+html[data-route-transition="blur"]::view-transition-new(main-content) {
+  animation: rt-blur-in var(--rt-duration) var(--rt-ease) both;
+}
+
+/* ══ 关键帧 ══ */
+
+@keyframes rt-fade-in {
   from {
     opacity: 0;
   }
@@ -81,7 +111,7 @@ html[data-route-transition="flip"]::view-transition-old(main-content) {
   }
 }
 
-@keyframes route-fade-out {
+@keyframes rt-fade-out {
   from {
     opacity: 1;
   }
@@ -90,46 +120,155 @@ html[data-route-transition="flip"]::view-transition-old(main-content) {
   }
 }
 
-@keyframes route-slide-up {
+@keyframes rt-glide-out {
   from {
-    transform: translateY(var(--route-transition-slide));
+    opacity: 1;
+    transform: translateX(0);
   }
   to {
-    transform: translateY(0);
+    opacity: 0;
+    transform: translateX(calc(-14% * var(--rt-dir-x)));
   }
 }
 
-@keyframes route-slide-right {
+@keyframes rt-glide-in {
   from {
-    transform: translateX(var(--route-transition-slide));
+    opacity: 0.4;
+    transform: translateX(calc(22% * var(--rt-dir-x)));
   }
   to {
+    opacity: 1;
     transform: translateX(0);
   }
 }
 
-@keyframes route-scale-in {
+@keyframes rt-rise-out {
   from {
-    transform: scale(var(--route-transition-scale));
+    opacity: 1;
+    transform: translateY(0);
   }
   to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes rt-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rt-zoom-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes rt-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
     transform: scale(1);
   }
 }
 
-@keyframes route-flip-in {
+@keyframes rt-reveal-dim {
   from {
-    transform: perspective(1000px) rotateX(var(--route-transition-flip));
+    opacity: 1;
   }
   to {
-    transform: perspective(1000px) rotateX(0deg);
+    opacity: 0.85;
   }
 }
 
-/* 尊重系统「减弱动态效果」：关闭所有路由过渡 */
+@keyframes rt-reveal-in {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes rt-cover-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0.55;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes rt-cover-in {
+  from {
+    opacity: 1;
+    transform: translateX(calc(100% * var(--rt-dir-x)));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes rt-circle-in {
+  from {
+    opacity: 1;
+    clip-path: circle(0% at 50% 46%);
+  }
+  to {
+    opacity: 1;
+    clip-path: circle(142% at 50% 46%);
+  }
+}
+
+@keyframes rt-blur-out {
+  from {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    filter: blur(10px);
+    transform: scale(1.02);
+  }
+}
+
+@keyframes rt-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* 尊重系统「减弱动态效果」：关闭所有路由过渡（选择器带属性形式，
+   优先级不低于上方 html[data-rt-speed] 的时长倍率覆盖）。 */
 @media (prefers-reduced-motion: reduce) {
-  :root {
-    --route-transition-duration: 0.01ms;
+  :root,
+  html[data-rt-speed],
+  html[data-rt-speed="slow"],
+  html[data-rt-speed="fast"] {
+    --rt-duration: 0.01ms;
   }
   ::view-transition-old(main-content),
   ::view-transition-new(main-content) {

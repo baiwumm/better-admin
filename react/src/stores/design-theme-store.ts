@@ -9,10 +9,15 @@ import {
   isRouteTransition,
   type RouteTransitionId,
 } from "@/themes/route-transitions";
+import {
+  isRouteTransitionSpeed,
+  type RouteTransitionSpeedId,
+} from "@/themes/route-transitions";
 
 const STORAGE_KEY = "better-admin-design-theme";
 const DIRECTION_KEY = "better-admin-transition-direction";
 const ROUTE_TRANSITION_KEY = "better-admin-route-transition";
+const ROUTE_TRANSITION_SPEED_KEY = "better-admin-route-transition-speed";
 
 // ── DOM 操作（纯函数，不依赖 React） ──
 
@@ -77,6 +82,33 @@ function writeRouteTransitionToStorage(id: RouteTransitionId): void {
   localStorage.setItem(ROUTE_TRANSITION_KEY, id);
 }
 
+function readSpeedFromStorage(): RouteTransitionSpeedId {
+  if (typeof window === "undefined") return "normal";
+
+  const stored = localStorage.getItem(ROUTE_TRANSITION_SPEED_KEY);
+
+  if (stored && isRouteTransitionSpeed(stored)) return stored;
+
+  return "normal";
+}
+
+function writeSpeedToStorage(speed: RouteTransitionSpeedId): void {
+  localStorage.setItem(ROUTE_TRANSITION_SPEED_KEY, speed);
+}
+
+/** 把路由过渡速度档位应用到 <html> 的 data-rt-speed 属性（供 CSS 倍率生效）。 */
+export function applyRouteTransitionSpeedToDOM(
+  speed: RouteTransitionSpeedId,
+): void {
+  const root = document.documentElement;
+
+  if (speed === "normal") {
+    root.removeAttribute("data-rt-speed");
+  } else {
+    root.setAttribute("data-rt-speed", speed);
+  }
+}
+
 /** 把路由过渡动画 id 应用到 <html> 的 data-route-transition 属性（供 CSS 选择器启用动画）。 */
 export function applyRouteTransitionToDOM(id: RouteTransitionId): void {
   const root = document.documentElement;
@@ -97,18 +129,23 @@ interface DesignThemeState {
   transitionDirection: TransitionDirection;
   /** 路由过渡动画（页面切换；'none' 表示关闭） */
   routeTransition: RouteTransitionId;
+  /** 路由过渡播放速度档位 */
+  routeTransitionSpeed: RouteTransitionSpeedId;
   /** 切换主题色（带 ViewTransition 动画 + DOM + localStorage） */
   setDesignTheme: (id: string) => void;
   /** 设置动画方向 */
   setTransitionDirection: (direction: TransitionDirection) => void;
   /** 设置路由过渡动画（写 store + DOM + localStorage） */
   setRouteTransition: (id: RouteTransitionId) => void;
+  /** 设置路由过渡速度（写 store + DOM + localStorage） */
+  setRouteTransitionSpeed: (speed: RouteTransitionSpeedId) => void;
 }
 
 export const useDesignThemeStore = create<DesignThemeState>((set) => ({
   designThemeId: "default",
   transitionDirection: "ltr",
   routeTransition: "none",
+  routeTransitionSpeed: "normal",
 
   setDesignTheme: (id) => {
     const validId =
@@ -138,6 +175,14 @@ export const useDesignThemeStore = create<DesignThemeState>((set) => ({
     applyRouteTransitionToDOM(validId);
     writeRouteTransitionToStorage(validId);
   },
+
+  setRouteTransitionSpeed: (speed) => {
+    const validSpeed = isRouteTransitionSpeed(speed) ? speed : "normal";
+
+    set({ routeTransitionSpeed: validSpeed });
+    applyRouteTransitionSpeedToDOM(validSpeed);
+    writeSpeedToStorage(validSpeed);
+  },
 }));
 
 /**
@@ -148,13 +193,16 @@ export function initDesignTheme(): void {
   const stored = readThemeFromStorage();
   const direction = readDirectionFromStorage();
   const routeTransition = readRouteTransitionFromStorage();
+  const routeTransitionSpeed = readSpeedFromStorage();
 
   applyThemeToDOM(stored);
   applyRouteTransitionToDOM(routeTransition);
+  applyRouteTransitionSpeedToDOM(routeTransitionSpeed);
 
   useDesignThemeStore.setState({
     designThemeId: stored,
     transitionDirection: direction,
     routeTransition,
+    routeTransitionSpeed,
   });
 }

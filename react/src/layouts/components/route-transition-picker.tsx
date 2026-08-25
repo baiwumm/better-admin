@@ -1,10 +1,13 @@
 import { Description, Label, Radio, RadioGroup, cn } from "@heroui/react";
 import {
+  Aperture,
   Ban,
+  ChevronsRight,
   Contrast,
-  FlipVertical2,
-  MoveRight,
+  Focus,
+  MoveHorizontal,
   MoveUp,
+  Scan,
   ZoomIn,
 } from "lucide-react";
 
@@ -17,10 +20,13 @@ import {
 const ROUTE_ICONS: Record<RouteTransitionId, typeof Ban> = {
   none: Ban,
   fade: Contrast,
-  "fade-up": MoveUp,
-  "fade-slide": MoveRight,
+  glide: MoveHorizontal,
+  rise: MoveUp,
   zoom: ZoomIn,
-  flip: FlipVertical2,
+  reveal: Scan,
+  cover: ChevronsRight,
+  circle: Aperture,
+  blur: Focus,
 };
 
 /**

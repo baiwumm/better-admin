@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { UsersPage } from "@/features/users/users-page";
+
 export const Route = createFileRoute("/_authenticated/settings/users")({
-  component: () => (
-    <div className="flex h-full min-h-[50vh] items-center justify-center text-sm text-muted">
-      用户管理
-    </div>
-  ),
+  component: UsersPage,
 });
