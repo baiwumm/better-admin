@@ -6,7 +6,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-:root{
+:root {
   /* Border Radius */
   --radius: 0.5rem;
   --field-radius: 0.75rem;
@@ -15,11 +15,27 @@
   /* Make sure to load Inter font in your app */
   --font-sans: 'Maple Mono CN', system-ui, Avenir, Helvetica, Arial, sans-serif;
 
+  --chart-1: oklch(from var(--accent) calc(l - 0.24) c h);
+  --chart-2: oklch(from var(--accent) calc(l - 0.12) c h);
+  --chart-3: var(--accent);
+  --chart-4: oklch(from var(--accent) calc(l + 0.12) c h);
+  --chart-5: oklch(from var(--accent) calc(l + 0.24) c h);
+
   view-transition-name: root;
 }
 
 @layer base {
-  html,body {
+
+  html,
+  body {
     @apply bg-background text-foreground;
   }
+}
+
+/* 禁用 ViewTransition 默认 cross-fade，改用 clip-path 揭示动画
+   （详见 src/themes/transition-direction.ts 的 runViewTransition） */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
