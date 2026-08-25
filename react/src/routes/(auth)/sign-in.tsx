@@ -1,4 +1,9 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import {
   Button,
   FieldError,
@@ -24,6 +29,14 @@ type SignInSearch = {
   redirect?: string;
 };
 
+/**
+ * 登录回跳地址校验：仅允许站内绝对路径（以 / 开头且非协议相对 //），
+ * 防止通过 ?redirect=https://evil.com 构造开放重定向。
+ */
+function isSafeRedirect(target: string): boolean {
+  return target.startsWith("/") && !target.startsWith("//");
+}
+
 export const Route = createFileRoute("/(auth)/sign-in")({
   validateSearch: (search: Record<string, unknown>): SignInSearch => ({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
@@ -39,6 +52,7 @@ export const Route = createFileRoute("/(auth)/sign-in")({
 
 function SignInPage() {
   const navigate = useNavigate();
+  const router = useRouter();
   const { theme } = useTheme("system");
   const { redirect: redirectTo } = Route.useSearch();
   const login = useAuthStore((s) => s.login);
@@ -56,9 +70,9 @@ function SignInPage() {
     try {
       await login(username, password);
       toast.success("登录成功，欢迎回来");
-      if (redirectTo) {
-        // 鉴权重定向目标可能是任意路径，整页跳转即可
-        window.location.assign(redirectTo);
+      if (redirectTo && isSafeRedirect(redirectTo)) {
+        // 站内回跳（href 不受 to 的路由类型约束，SPA 内部导航）
+        await router.navigate({ href: redirectTo });
       } else {
         await navigate({ to: "/" });
       }
