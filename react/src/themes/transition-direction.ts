@@ -59,20 +59,23 @@ export async function runViewTransition(
 
   // 主题切换期间临时移除路由过渡标记（data-route-transition），
   // 避免 route-transitions.css 的 main-content 动画被主题 VT 误触发。
-  const routeAttr = document.documentElement.getAttribute(
-    "data-route-transition",
-  );
+  // 必须在 startViewTransition 之前移除（否则旧帧快照捕获时属性仍在→CSS 命中）。
+  const routeAttr = document.documentElement.getAttribute("data-route-transition");
 
   if (routeAttr) {
     document.documentElement.removeAttribute("data-route-transition");
   }
 
   try {
-    await document.startViewTransition(() => {
+    const transition = document.startViewTransition(() => {
       mutate();
-    }).ready;
+    });
 
-    document.documentElement
+    await transition.ready;
+
+    // clip-path 动画结束后还原路由过渡标记（之前是 VT 动画期间）。
+    // 用 finished 事件确保不干扰 VT 的 CSS 动画阶段。
+    await document.documentElement
       .animate(
         { clipPath: [fromClip, toClip] },
         {
@@ -81,12 +84,10 @@ export async function runViewTransition(
           pseudoElement: "::view-transition-new(root)",
         },
       )
-      .finished.finally(() => {
-        // 动画结束无需额外清理
-      });
+      .finished;
   } finally {
-    // 还原路由过渡标记，供后续路由切换使用
-    if (routeAttr) {
+    // 确保标记已还原（覆盖 finally 与 finished 竞争的边界）
+    if (routeAttr && !document.documentElement.hasAttribute("data-route-transition")) {
       document.documentElement.setAttribute("data-route-transition", routeAttr);
     }
   }
