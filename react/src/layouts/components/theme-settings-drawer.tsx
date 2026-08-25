@@ -13,10 +13,11 @@ import { RouteTransitionSpeedPicker } from "./route-transition-speed-picker";
  * 浮层开合状态使用 useOverlayState（Hero UI 官方用法：状态挂 Backdrop）。
  *
  * 抽屉内的各配置项均抽为独立组件，后续新增配置项在此处追加即可：
- * - ThemeColorPicker  主题色
- * - ThemeModePicker   主题模式
- * - TransitionDirectionPicker  动画方向（主题切换的揭示方向）
- * - RouteTransitionPicker      路由过渡动画（页面切换）
+ * - ThemeColorPicker           主题色
+ * - ThemeModePicker            主题模式
+ * - TransitionDirectionPicker  主题动画方向（主题色 / 模式切换的揭示方向）
+ * - RouteTransitionPicker      页面切换动画（页面切换的过渡效果预设）
+ * - RouteTransitionSpeedPicker 页面切换速度（仅作用于页面切换动画）
  */
 export function ThemeSettingsDrawer() {
   // 主题设置抽屉状态（Hero UI 官方用法：useOverlayState + 状态挂 Backdrop）

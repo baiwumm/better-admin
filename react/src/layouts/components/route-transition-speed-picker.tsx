@@ -14,9 +14,9 @@ const SPEED_ICONS: Record<RouteTransitionSpeedId, LucideIcon> = {
 };
 
 /**
- * 路由过渡速度选择器：三档单选（慢速 / 标准 / 快速）。
+ * 页面切换速度选择器：三档单选（慢速 / 标准 / 快速）。
  * 通过 html[data-rt-speed] 属性驱动 CSS 变量倍率（--rt-speed），
- * 缩放全部路由过渡动画时长；选择结果持久化到 localStorage。
+ * 缩放全部页面切换动画时长（不影响主题动画）；选择结果持久化到 localStorage。
  */
 export function RouteTransitionSpeedPicker() {
   const routeTransitionSpeed = useDesignThemeStore(
@@ -34,7 +34,8 @@ export function RouteTransitionSpeedPicker() {
         setRouteTransitionSpeed(value as RouteTransitionSpeedId)
       }
     >
-      <Label>动画速度</Label>
+      <Label>页面切换速度</Label>
+      <Description>仅作用于页面切换动画</Description>
       <div className="mt-2 grid grid-cols-3 gap-2">
         {ROUTE_TRANSITION_SPEEDS.map(({ id, label }) => {
           const Icon = SPEED_ICONS[id];

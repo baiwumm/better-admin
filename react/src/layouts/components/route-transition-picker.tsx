@@ -30,8 +30,8 @@ const ROUTE_ICONS: Record<RouteTransitionId, typeof Ban> = {
 };
 
 /**
- * 路由过渡动画选择器：Radio 单选（与「动画方向」选择器同形态）。
- * 预设见 src/themes/route-transitions.ts（6 种动画）。
+ * 页面切换动画选择器：Radio 单选（与「主题动画方向」选择器同形态）。
+ * 预设见 src/themes/route-transitions.ts（9 种动画）。
  * 选择结果持久化到 localStorage（design-theme-store），
  * 并同步写入 <html data-route-transition> 供 CSS 生效。
  */
@@ -45,7 +45,8 @@ export function RouteTransitionPicker() {
       variant="secondary"
       onChange={(value) => setRouteTransition(value as RouteTransitionId)}
     >
-      <Label>路由过渡动画</Label>
+      <Label>页面切换动画</Label>
+      <Description>切换菜单 / 页面时的过渡效果</Description>
       <div className="grid gap-2 grid-cols-3 mt-2">
         {ROUTE_TRANSITIONS.map(({ id, label }) => {
           const Icon = ROUTE_ICONS[id];

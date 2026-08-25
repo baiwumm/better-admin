@@ -21,7 +21,7 @@ const DIRECTION_OPTIONS: {
 ];
 
 /**
- * 动画方向选择器：ltr / rtl / ttb / btt。
+ * 主题动画方向选择器：ltr / rtl / ttb / btt。
  * 切换主题色或主题模式时，ViewTransition 的 clip-path 揭示方向。
  */
 export function TransitionDirectionPicker() {
@@ -36,7 +36,8 @@ export function TransitionDirectionPicker() {
       variant="secondary"
       onChange={(value) => setTransitionDirection(value as TransitionDirection)}
     >
-      <Label>动画方向</Label>
+      <Label>主题动画方向</Label>
+      <Description>切换主题色 / 模式时新画面的展开方向</Description>
       <div className="grid gap-2 grid-cols-2 lg:grid-cols-4 mt-2">
         {DIRECTION_OPTIONS.map(({ value, label, icon: Icon }) => (
           <Radio key={value} className="mt-0" value={value}>
