@@ -1,15 +1,13 @@
 import type { ReactNode } from "react";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { Drawer, Spinner, Typography } from "@heroui/react";
 
 import { AppHeader } from "./components/app-header";
 import { AppSidebar } from "./components/app-sidebar";
-import {
-  KeepAliveOutlet,
-  clearKeepAliveCache,
-} from "./components/keep-alive-outlet";
+import { MainOutlet } from "./components/main-outlet";
+import { RouteTransition } from "./components/route-transition";
 
 import { ForbiddenErrorPage } from "@/components/common/error-pages/forbidden-error";
 import { useMenus } from "@/hooks/use-menus";
@@ -38,11 +36,6 @@ export function AdminLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data: menuTree, isLoading, isError } = useMenus();
   const { pathname } = useLocation();
-
-  // 会话失效 / 登出时清空路由保活缓存，避免陈旧实例残留旧账号页面与数据。
-  useEffect(() => {
-    if (!isAuthenticated) clearKeepAliveCache();
-  }, [isAuthenticated]);
 
   // 未登录双保险（beforeLoad 已保证，正常不会到这）
   if (!isAuthenticated) return null;
@@ -84,9 +77,12 @@ export function AdminLayout() {
     // 无权限：整页替换为 403（URL 不变，避免闪跳）
     if (forbidden) return <ForbiddenErrorPage />;
 
-    // 业务页：用 KeepAliveOutlet 适配菜单 keepAlive（命中缓存的路由页面实例保留，
-    // 未命中则等价于裸 Outlet 的挂载/卸载）。
-    body = <KeepAliveOutlet menuTree={menuTree as MenuNode[]} />;
+    // 业务页：RouteTransition 负责路由级过渡动画（双缓冲 + VT，只作用 main-content）。
+    body = (
+      <RouteTransition path={pathname}>
+        <MainOutlet />
+      </RouteTransition>
+    );
   }
 
   return (
@@ -107,7 +103,11 @@ export function AdminLayout() {
           onOpenDrawer={() => setDrawerOpen(true)}
           onToggle={() => setCollapsed((v) => !v)}
         />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">{body}</main>
+        {/* 主体内容：指定 view-transition-name 使路由过渡动画只作用于该区域
+            （布局/侧边栏/顶栏不参与过渡，见 styles/route-transitions.css） */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 [view-transition-name:main-content]">
+          {body}
+        </main>
       </div>
 
       {/* 移动端 Drawer 侧边栏 */}
