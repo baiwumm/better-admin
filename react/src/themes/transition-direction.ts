@@ -38,7 +38,7 @@ export function getClipKeyframes(
 }
 
 /**
- * 执行 ViewTransition 动画。
+ * 执行 ViewTransition 动画（主题切换用）。
  *
  * @param mutate 在 transition 快照回调中同步执行的 DOM 变更
  * @param direction 动画方向（决定 clip-path 揭示方向）
@@ -50,27 +50,44 @@ export async function runViewTransition(
 ): Promise<void> {
   const [fromClip, toClip] = getClipKeyframes(direction);
 
-  // 不支持 ViewTransition 的浏览器（Firefox 等）直接执行变更，无动画
+  // 不支持 ViewTransition 的浏览器（Firefox 旧版等）直接执行变更，无动画
   if (typeof document === "undefined" || !document.startViewTransition) {
     mutate();
 
     return;
   }
 
-  await document.startViewTransition(() => {
-    mutate();
-  }).ready;
+  // 主题切换期间临时移除路由过渡标记（data-route-transition），
+  // 避免 route-transitions.css 的 main-content 动画被主题 VT 误触发。
+  const routeAttr = document.documentElement.getAttribute(
+    "data-route-transition",
+  );
 
-  document.documentElement
-    .animate(
-      { clipPath: [fromClip, toClip] },
-      {
-        duration: 700,
-        easing: "ease-in-out",
-        pseudoElement: "::view-transition-new(root)",
-      },
-    )
-    .finished.finally(() => {
-      // 动画结束无需额外清理；clip-path 不影响最终样式
-    });
+  if (routeAttr) {
+    document.documentElement.removeAttribute("data-route-transition");
+  }
+
+  try {
+    await document.startViewTransition(() => {
+      mutate();
+    }).ready;
+
+    document.documentElement
+      .animate(
+        { clipPath: [fromClip, toClip] },
+        {
+          duration: 700,
+          easing: "ease-in-out",
+          pseudoElement: "::view-transition-new(root)",
+        },
+      )
+      .finished.finally(() => {
+        // 动画结束无需额外清理
+      });
+  } finally {
+    // 还原路由过渡标记，供后续路由切换使用
+    if (routeAttr) {
+      document.documentElement.setAttribute("data-route-transition", routeAttr);
+    }
+  }
 }
