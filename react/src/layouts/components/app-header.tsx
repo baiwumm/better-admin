@@ -3,6 +3,8 @@ import { Breadcrumbs, Button } from "@heroui/react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
+import { ThemeSettingsDrawer } from "./theme-settings-drawer";
+
 import { useMenus } from "@/hooks/use-menus";
 import { filterHiddenMenus } from "@/lib/permission";
 import { findActivePath, getBreadcrumbNodes } from "@/lib/menu-utils";
@@ -83,8 +85,10 @@ export function AppHeader({
         </Breadcrumbs>
       )}
 
-      {/* 预留：右侧区域可放用户操作等 */}
-      <div aria-hidden="true" className="flex-1" />
+      {/* 右侧区域：主题设置入口 */}
+      <div className="flex flex-1 items-center justify-end gap-2">
+        <ThemeSettingsDrawer />
+      </div>
     </header>
   );
 }
