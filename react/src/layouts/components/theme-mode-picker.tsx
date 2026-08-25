@@ -47,7 +47,7 @@ export function ThemeModePicker() {
           <div key={value} className="flex flex-col gap-2">
             <Radio
               className={cn(
-                "relative p-0 rounded-lg mt-2",
+                "relative p-0 rounded-lg mt-2 hover:scale-105 transition-all",
                 "border border-default data-[selected=true]:border-accent data-[selected=true]:bg-accent/10",
                 "data-[focus-visible=true]:border-accent data-[focus-visible=true]:bg-accent/10",
               )}

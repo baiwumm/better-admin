@@ -43,7 +43,7 @@ export function TransitionDirectionPicker() {
             <Radio.Content
               className={cn(
                 "group w-full rounded-lg border border-default px-1 py-2 transition-all",
-                "data-[selected=true]:border-accent data-[selected=true]:bg-accent/10",
+                "data-[selected=true]:border-accent data-[selected=true]:bg-accent/10 hover:scale-105",
               )}
             >
               <div className="min-w-0 flex items-center justify-center w-full gap-1">
