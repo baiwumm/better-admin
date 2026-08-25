@@ -37,9 +37,9 @@ export function TransitionDirectionPicker() {
       onChange={(value) => setTransitionDirection(value as TransitionDirection)}
     >
       <Label>动画方向</Label>
-      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4 mt-2">
         {DIRECTION_OPTIONS.map(({ value, label, icon: Icon }) => (
-          <Radio key={value} className="mt-2" value={value}>
+          <Radio key={value} className="mt-0" value={value}>
             <Radio.Content
               className={cn(
                 "group w-full rounded-lg border border-default px-1 py-2 transition-all",

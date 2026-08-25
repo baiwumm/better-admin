@@ -1,11 +1,17 @@
 /* 路由过渡动画（页面切换）
  *
  * 通过 `html[data-route-transition="<id>"]` 激活对应预设。
- * 所有动画均挂在 `html[data-route-transition="..."]` 下，未激活时不施加任何
- * 动画，从而与主题切换的 clip-path 揭示动画（globals.css 里对
- * ::view-transition-new(root) 的 animation:none）相安无事。
  *
- * 旧视图 ::view-transition-old(root) 统一淡出，避免两页同时位移造成跳变。
+ * 作用范围：AdminLayout 的 <main> 主体区域（view-transition-name: main-content，
+ * 见 admin-layout.tsx）。浏览器会为命名元素单独生成 ViewTransition 快照组，
+ * 因此路由过渡动画只作用于主体内容——侧边栏 / 顶栏等布局区域不参与过渡
+ * （root 组保持 globals.css 的 animation: none，瞬间切换）。
+ *
+ * 所有动画均挂在 `html[data-route-transition="..."]` 下，未激活时不施加任何
+ * 动画，从而与主题切换的 clip-path 揭示动画（作用于 ::view-transition-new(root)）
+ * 互不干扰。
+ *
+ * 旧视图 ::view-transition-old(main-content) 统一淡出，避免两页同时位移造成跳变。
  */
 
 /* 长度类位移用 CSS 变量统一管控，便于统一调时长 */
@@ -16,53 +22,53 @@
   --route-transition-scale: 0.97;
 }
 
-/* 默认：无 data-route-transition 或为 none → 主题切换 clip-path 动画照常，此处不施加动画。 */
+/* 默认：无 data-route-transition 或为 none → 不施加动画（与主题切换同根互不影响）。 */
 
 /* 淡入淡出 */
-html[data-route-transition="fade"]::view-transition-new(root) {
+html[data-route-transition="fade"]::view-transition-new(main-content) {
   animation: route-fade-in var(--route-transition-duration) ease-in-out both;
 }
-html[data-route-transition="fade"]::view-transition-old(root) {
+html[data-route-transition="fade"]::view-transition-old(main-content) {
   animation: route-fade-out var(--route-transition-duration) ease-in-out both;
 }
 
 /* 上滑淡入 */
-html[data-route-transition="fade-up"]::view-transition-new(root) {
+html[data-route-transition="fade-up"]::view-transition-new(main-content) {
   animation:
     route-fade-in var(--route-transition-duration) ease-out both,
     route-slide-up var(--route-transition-duration) ease-out both;
 }
-html[data-route-transition="fade-up"]::view-transition-old(root) {
+html[data-route-transition="fade-up"]::view-transition-old(main-content) {
   animation: route-fade-out var(--route-transition-duration) ease-out both;
 }
 
 /* 右滑淡入 */
-html[data-route-transition="fade-slide"]::view-transition-new(root) {
+html[data-route-transition="fade-slide"]::view-transition-new(main-content) {
   animation:
     route-fade-in var(--route-transition-duration) ease-out both,
     route-slide-right var(--route-transition-duration) ease-out both;
 }
-html[data-route-transition="fade-slide"]::view-transition-old(root) {
+html[data-route-transition="fade-slide"]::view-transition-old(main-content) {
   animation: route-fade-out var(--route-transition-duration) ease-out both;
 }
 
 /* 缩放淡入 */
-html[data-route-transition="zoom"]::view-transition-new(root) {
+html[data-route-transition="zoom"]::view-transition-new(main-content) {
   animation:
     route-fade-in var(--route-transition-duration) ease-out both,
     route-scale-in var(--route-transition-duration) ease-out both;
 }
-html[data-route-transition="zoom"]::view-transition-old(root) {
+html[data-route-transition="zoom"]::view-transition-old(main-content) {
   animation: route-fade-out var(--route-transition-duration) ease-out both;
 }
 
 /* 翻转（x 轴旋转揭示） */
-html[data-route-transition="flip"]::view-transition-new(root) {
+html[data-route-transition="flip"]::view-transition-new(main-content) {
   animation:
     route-fade-in var(--route-transition-duration) ease-out both,
     route-flip-in var(--route-transition-duration) ease-out both;
 }
-html[data-route-transition="flip"]::view-transition-old(root) {
+html[data-route-transition="flip"]::view-transition-old(main-content) {
   animation: route-fade-out var(--route-transition-duration) ease-out both;
 }
 
@@ -125,8 +131,8 @@ html[data-route-transition="flip"]::view-transition-old(root) {
   :root {
     --route-transition-duration: 0.01ms;
   }
-  ::view-transition-old(root),
-  ::view-transition-new(root) {
+  ::view-transition-old(main-content),
+  ::view-transition-new(main-content) {
     animation: none !important;
   }
 }

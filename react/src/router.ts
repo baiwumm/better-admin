@@ -18,12 +18,13 @@ export const router = createRouter({
   context: { queryClient, auth: useAuthStore },
   defaultPreload: "intent",
   defaultPreloadStaleTime: 0,
-  // 开启 View Transitions：TanStack Router 会在每次路由提交（navigate / 前进后退）
-  // 时用 document.startViewTransition 包裹 DOM 更新，配合
-  // `html[data-route-transition="<id>"]`（见 styles/route-transitions.css）实现页面切换动画。
-  // 具体动画预设由偏好设置「路由过渡动画」控制（routeTransition === 'none' 时
-  // 移除 data-route-transition 属性 → 无动画，等同直切）。
-  defaultViewTransition: true,
+  // 注意：不使用 TanStack 的 defaultViewTransition（其内部 startViewTransition 未
+  // 捕获快速连续导航时的 AbortError，会导致未处理异常）。页面过渡动画由
+  // layouts/components/route-transition.tsx 自行控制（双缓冲 + flushSync + VT）。
+  //
+  // TanStack 默认 resetScroll: true（导航后 scroll 回顶部），
+  // 由 KeepAliveOutlet 的 layout effect 显式恢复 keepAlive 路径的滚动位置，
+  // 与 resetScroll 机制不冲突（resetScroll 先跑，之后我们恢复到缓存位置）。
 });
 
 // Register the router instance for type safety

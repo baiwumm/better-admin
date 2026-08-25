@@ -36,9 +36,13 @@
 }
 
 /* 禁用 ViewTransition 默认 cross-fade，改用 clip-path 揭示动画
-   （详见 src/themes/transition-direction.ts 的 runViewTransition） */
+   （详见 src/themes/transition-direction.ts 的 runViewTransition）
+   路由过渡动画（route-transitions.css）只在 html[data-route-transition] 激活时
+   对 main-content 组声明动画，未激活时保持直切。 */
 ::view-transition-old(root),
-::view-transition-new(root) {
+::view-transition-new(root),
+::view-transition-old(main-content),
+::view-transition-new(main-content) {
   animation: none;
   mix-blend-mode: normal;
 }
