@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { Drawer, Spinner, Typography } from "@heroui/react";
 
@@ -14,6 +14,27 @@ import { type MenuNode } from "@/lib/api-types";
 import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
 import { collectMenuPaths } from "@/lib/menu-utils";
 import { useAuthStore } from "@/stores/auth-store";
+
+/** 登录即可访问的白名单路径集合（Set 查找 O(1)，模块级只建一次）。 */
+const LOGIN_REQUIRED_SET = new Set<string>(LOGIN_REQUIRED_PATHS);
+
+/* 异常态覆盖层为静态内容：提升到模块级，避免每次渲染重建 JSX（hoist-jsx） */
+const LOADING_OVERLAY = (
+  <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-3 text-muted">
+    <Spinner color="current" />
+    <Typography className="text-sm" color="muted" type="body-sm">
+      正在校验权限…
+    </Typography>
+  </div>
+);
+
+const ERROR_OVERLAY = (
+  <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-3 text-muted">
+    <Typography className="text-sm" color="muted" type="body-sm">
+      权限校验失败，请刷新重试
+    </Typography>
+  </div>
+);
 
 /**
  * Admin 双栏布局：
@@ -38,13 +59,18 @@ export function AdminLayout() {
   const { data: menuTree, isLoading, isError } = useMenus();
   const { pathname } = useLocation();
 
+  // 可达路径集合：由菜单树派生，仅菜单变化时重算
+  const allowedPaths = useMemo(
+    () =>
+      menuTree ? collectMenuPaths(menuTree as MenuNode[]) : new Set<string>(),
+    [menuTree],
+  );
+
   // 未登录双保险（beforeLoad 已保证，正常不会到这）
   if (!isAuthenticated) return null;
 
   // 白名单：登录即可访问，不参与菜单权限校验
-  const isWhitelisted = (LOGIN_REQUIRED_PATHS as readonly string[]).includes(
-    pathname,
-  );
+  const isWhitelisted = LOGIN_REQUIRED_SET.has(pathname);
 
   // 主体区异常态覆盖层（loading / 校验失败 / 403）：
   // overlay 非空时 KeepAliveOutlet 实例池保持挂载（全部转 hidden 保活），
@@ -53,29 +79,13 @@ export function AdminLayout() {
 
   if (isLoading || (menuTree === undefined && !isError)) {
     // 菜单未就绪（首次请求中，且无旧数据）→ loading
-    overlay = (
-      <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-3 text-muted">
-        <Spinner color="current" />
-        <Typography className="text-sm" color="muted" type="body-sm">
-          正在校验权限…
-        </Typography>
-      </div>
-    );
+    overlay = LOADING_OVERLAY;
   } else if (isError) {
     // 加载失败：提示失败，不误跳 403
-    overlay = (
-      <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-3 text-muted">
-        <Typography className="text-sm" color="muted" type="body-sm">
-          权限校验失败，请刷新重试
-        </Typography>
-      </div>
-    );
+    overlay = ERROR_OVERLAY;
   } else {
     // 菜单已就绪：非白名单路径做权限校验
-    const allowed = menuTree
-      ? collectMenuPaths(menuTree as MenuNode[])
-      : new Set<string>();
-    const forbidden = !isWhitelisted && !allowed.has(pathname);
+    const forbidden = !isWhitelisted && !allowedPaths.has(pathname);
 
     // 无权限：主体区替换为 403（URL 不变，避免闪跳；侧边栏保留，
     // 用户可直接切换其它菜单离开）
