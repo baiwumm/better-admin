@@ -1,3 +1,5 @@
+import { flushSync } from "react-dom";
+
 /**
  * 主题切换动画方向
  *
@@ -14,42 +16,43 @@ export const TRANSITION_DIRECTIONS: TransitionDirection[] = [
   "btt",
 ];
 
-/**
- * 根据方向返回 clip-path 关键帧 [from, to]。
- * from 为「旧快照被新快照覆盖」的起始裁切区域，to 为完全展开。
- *
- * 与 better-next getClipKeyframes 完全一致。
- */
-export function getClipKeyframes(
-  direction: TransitionDirection,
-): [string, string] {
+/** 根据方向返回 clip-path 起始裁切（to 恒为完全展开），供 CSS 变量消费。 */
+function clipFrom(direction: TransitionDirection): string {
   switch (direction) {
-    case "ltr":
-      return ["inset(0 100% 0 0)", "inset(0 0 0 0)"];
     case "rtl":
-      return ["inset(0 0 0 100%)", "inset(0 0 0 0)"];
+      return "inset(0 0 0 100%)";
     case "ttb":
-      return ["inset(0 0 100% 0)", "inset(0 0 0 0)"];
+      return "inset(0 0 100% 0)";
     case "btt":
-      return ["inset(100% 0 0 0)", "inset(0 0 0 0)"];
+      return "inset(100% 0 0 0)";
+    case "ltr":
     default:
-      return ["inset(0 100% 0 0)", "inset(0 0 0 0)"];
+      return "inset(0 100% 0 0)";
   }
 }
 
 /**
  * 执行 ViewTransition 动画（主题切换用）。
  *
- * @param mutate 在 transition 快照回调中同步执行的 DOM 变更
+ * 实现（声明式 CSS 驱动，见 styles/globals.css 的 data-theme-transition 区块）：
+ * 1. 临时移除 data-route-transition，避免路由过渡预设的 main-content
+ *    动画被主题 VT 误触发（必须在 startViewTransition 之前移除）；
+ * 2. 设置 html[data-theme-transition="<direction>"] 激活 CSS 揭示动画——
+ *    同时作用于 root 与 main-content 两组快照（main 拥有独立
+ *    view-transition-name，若不纳入揭示会静止遮挡 root 组动画，
+ *    表现为「页面内容盖住动画、结束后才恢复正常」）；
+ * 3. mutate 以 flushSync 包裹：保证 React 提交收敛在 VT 回调内，
+ *    new 快照捕获到的是新主题画面（异步调度会让提交漂移到快照之后，
+ *    导致揭示的是旧画面 + 结束时内容突变的二次跳变）。
+ *
+ * @param mutate 在 transition 快照回调中同步执行的变更（含 React 状态更新）
  * @param direction 动画方向（决定 clip-path 揭示方向）
- * @returns Promise（动画结束后 resolve）
+ * @returns Promise（VT 结束后 resolve；skip/abort 时同样正常收尾）
  */
 export async function runViewTransition(
   mutate: () => void,
   direction: TransitionDirection,
 ): Promise<void> {
-  const [fromClip, toClip] = getClipKeyframes(direction);
-
   // 不支持 ViewTransition 的浏览器（Firefox 旧版等）直接执行变更，无动画
   if (typeof document === "undefined" || !document.startViewTransition) {
     mutate();
@@ -57,37 +60,46 @@ export async function runViewTransition(
     return;
   }
 
-  // 主题切换期间临时移除路由过渡标记（data-route-transition），
-  // 避免 route-transitions.css 的 main-content 动画被主题 VT 误触发。
-  // 必须在 startViewTransition 之前移除（否则旧帧快照捕获时属性仍在→CSS 命中）。
-  const routeAttr = document.documentElement.getAttribute("data-route-transition");
+  const root = document.documentElement;
+
+  const routeAttr = root.getAttribute("data-route-transition");
 
   if (routeAttr) {
-    document.documentElement.removeAttribute("data-route-transition");
+    root.removeAttribute("data-route-transition");
   }
+
+  // 主题 VT 期间临时摘掉 main 的 view-transition-name：
+  // 带 name 的元素会被提升为独立快照组并叠放在 root 组（整页快照，
+  // 含偏好抽屉等浮层画面）之上，导致主体区内容在动画期间盖住抽屉。
+  // 主题变化是全页级联，统一走单组 root 揭示即可；inline style 优先级
+  // 高于 admin-layout 的 [view-transition-name:main-content] class 规则，
+  // 结束后移除 inline 即恢复路由过渡的分组行为。必须在启动 VT 前设置
+  // （快照捕获时需已生效）。
+  const main = document.querySelector<HTMLElement>("main");
+
+  if (main) main.style.viewTransitionName = "none";
+
+  root.setAttribute("data-theme-transition", direction);
+  // clip-path 起始裁切经 CSS 变量下发（keyframes 内 var() 从应用元素解析）
+  root.style.setProperty("--tt-from", clipFrom(direction));
 
   try {
     const transition = document.startViewTransition(() => {
-      mutate();
+      flushSync(mutate);
     });
 
-    await transition.ready;
-
-    // clip-path 动画结束后还原路由过渡标记（之前是 VT 动画期间）。
-    // 用 finished 事件确保不干扰 VT 的 CSS 动画阶段。
-    await document.documentElement
-      .animate(
-        { clipPath: [fromClip, toClip] },
-        {
-          duration: 700,
-          easing: "ease-in-out",
-          pseudoElement: "::view-transition-new(root)",
-        },
-      )
-      .finished;
+    await transition.finished.catch(() => {});
   } finally {
-    // 确保标记已还原（覆盖 finally 与 finished 竞争的边界）
-    if (routeAttr && !document.documentElement.hasAttribute("data-route-transition")) {
+    root.removeAttribute("data-theme-transition");
+    root.style.removeProperty("--tt-from");
+
+    if (main) main.style.viewTransitionName = "";
+
+    // 还原路由过渡标记（覆盖 skip / abort 等提前退出的边界）
+    if (
+      routeAttr &&
+      !document.documentElement.hasAttribute("data-route-transition")
+    ) {
       document.documentElement.setAttribute("data-route-transition", routeAttr);
     }
   }

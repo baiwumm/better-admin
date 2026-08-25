@@ -35,14 +35,41 @@
   }
 }
 
-/* 禁用 ViewTransition 默认 cross-fade，改用 clip-path 揭示动画
-   （详见 src/themes/transition-direction.ts 的 runViewTransition）
-   路由过渡动画（route-transitions.css）只在 html[data-route-transition] 激活时
-   对 main-content 组声明动画，未激活时保持直切。 */
+/* 禁用 ViewTransition 默认 cross-fade，改用显式声明：
+   - 路由过渡（route-transitions.css）只在 html[data-route-transition] 激活时
+     对 main-content 组声明动画，未激活时保持直切；
+   - 主题切换（transition-direction.ts 的 runViewTransition）通过
+     html[data-theme-transition] 激活 clip-path 揭示——必须同时作用于
+     root 与 main-content 两组：<main> 拥有独立 view-transition-name，
+     若只揭示 root 组，主体区会静止遮挡揭示动画。 */
 ::view-transition-old(root),
 ::view-transition-new(root),
 ::view-transition-old(main-content),
 ::view-transition-new(main-content) {
   animation: none;
   mix-blend-mode: normal;
+}
+
+/* 主题切换：新画面（root + main-content）自 --tt-from 方向揭示展开，
+   旧画面保持静止被覆盖；时长/缓动与旧实现一致 */
+html[data-theme-transition]::view-transition-new(root),
+html[data-theme-transition]::view-transition-new(main-content) {
+  animation: theme-reveal 700ms ease-in-out both;
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: var(--tt-from, inset(0 100% 0 0));
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* 尊重系统「减弱动态效果」：主题切换直接呈现 */
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme-transition]::view-transition-new(root),
+  html[data-theme-transition]::view-transition-new(main-content) {
+    animation: none;
+  }
 }
