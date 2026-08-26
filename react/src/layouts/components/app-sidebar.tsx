@@ -196,6 +196,7 @@ function SidebarLinks({ collapsed }: { collapsed?: boolean }) {
       {SIDEBAR_LINKS.map((link) => {
         const linkEl = (
           <Link
+            key={link.label}
             className="flex h-9 w-full items-center gap-2 rounded-3xl px-2.5 text-muted transition-colors hover:bg-default hover:text-foreground no-underline"
             href={link.href}
             rel="noopener noreferrer"
