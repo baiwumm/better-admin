@@ -232,7 +232,12 @@ function SidebarLeaf({
         name={item.icon as IconName}
         size={16}
       />
-      <Label className="flex-1 truncate text-left">{item.label}</Label>
+      {/* cursor-inherit：Label 渲染为 <label>，其文本的 computed cursor 会走
+          auto 回退（显示文本光标）而非继承 Button 的 pointer，显式声明后
+          与图标区域保持一致 */}
+      <Label className="flex-1 cursor-pointer truncate text-left">
+        {item.label}
+      </Label>
     </Button>
   );
 }

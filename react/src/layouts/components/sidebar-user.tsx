@@ -178,7 +178,7 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
         onOpenChange={exitDialog.setOpen}
       >
         <AlertDialog.Container placement="center">
-          <AlertDialog.Dialog className="sm:max-w-[400px]">
+          <AlertDialog.Dialog className="sm:max-w-100">
             <AlertDialog.Header>
               <AlertDialog.Icon status="danger" />
               <AlertDialog.Heading>确认退出登录？</AlertDialog.Heading>
