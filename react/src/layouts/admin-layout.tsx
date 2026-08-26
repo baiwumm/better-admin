@@ -125,9 +125,13 @@ export function AdminLayout() {
         {showTabs && <TagsBar />}
         {/* 主体内容：指定 view-transition-name 使路由过渡动画只作用于该区域
             （布局/侧边栏/顶栏不参与过渡，见 styles/route-transitions.css）。
+            data-vt-name 供主题切换动画临时摘名（见 transition-direction.ts）。
             滚动统一由本容器承担（滚动条贴合主体区边缘）；KeepAliveOutlet
             在每次页面切换完成后会将滚动位置重置到顶部。 */}
-        <main className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6 [view-transition-name:main-content]">
+        <main
+          className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6 [view-transition-name:main-content]"
+          data-vt-name="main-content"
+        >
           {body}
         </main>
       </div>

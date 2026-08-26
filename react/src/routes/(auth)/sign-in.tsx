@@ -15,11 +15,11 @@ import {
   TextField,
   Typography,
   toast,
-  useTheme,
   Description,
 } from "@heroui/react";
 
 import { useAuthStore } from "@/stores/auth-store";
+import { useResolvedTheme } from "@/stores/design-theme-store";
 import { ENV } from "@/lib/env";
 
 import logo from "/logo.svg";
@@ -53,7 +53,8 @@ export const Route = createFileRoute("/(auth)/sign-in")({
 function SignInPage() {
   const navigate = useNavigate();
   const router = useRouter();
-  const { theme } = useTheme("system");
+  // 实际生效的明暗外观（来自 design-theme-store，跨组件一致）
+  const theme = useResolvedTheme();
   const { redirect: redirectTo } = Route.useSearch();
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);

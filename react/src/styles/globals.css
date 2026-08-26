@@ -40,11 +40,12 @@
 
 /* 禁用 ViewTransition 默认 cross-fade，改用显式声明：
    - 路由过渡（route-transitions.css）只在 html[data-route-transition] 激活时
-     对 main-content 组声明动画，未激活时保持直切；
+     对 main-content / breadcrumbs 组声明动画，未激活时保持直切；
    - 主题切换（transition-direction.ts 的 runViewTransition）通过
-     html[data-theme-transition] 激活 clip-path 揭示——必须同时作用于
-     root 与 main-content 两组：<main> 拥有独立 view-transition-name，
-     若只揭示 root 组，主体区会静止遮挡揭示动画。 */
+     html[data-theme-transition] 激活 clip-path 揭示——带独立 view-transition-name
+     的区域（main-content、breadcrumbs）在主题 VT 启动前会被临时 inline 摘名
+     （见 transition-direction.ts 的 data-vt-name 标记），统一并入单组 root 揭示，
+     避免其快照组静止叠放遮挡动画；下方 main-content 规则作为兜底保留。 */
 ::view-transition-old(root),
 ::view-transition-new(root),
 ::view-transition-old(main-content),
@@ -58,6 +59,15 @@
 html[data-theme-transition]::view-transition-new(root),
 html[data-theme-transition]::view-transition-new(main-content) {
   animation: theme-reveal 700ms ease-in-out both;
+}
+
+/* 主题切换 VT 期间：带独立 view-transition-name 的区域（main-content、
+   breadcrumbs，见 admin-layout / app-header 的 data-vt-name 标记）临时并入
+   root 组统一揭示——否则其快照组会叠放在 root 组之上静止遮挡揭示动画。
+   纯 CSS 属性驱动（随 data-theme-transition 同步生效/撤销），不经过 JS inline
+   style，避免 React 渲染 / 组件透传 / CSSOM 兼容等时序干扰。 */
+html[data-theme-transition] [data-vt-name] {
+  view-transition-name: none !important;
 }
 
 @keyframes theme-reveal {

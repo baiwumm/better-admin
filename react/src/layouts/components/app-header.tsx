@@ -77,20 +77,28 @@ export function AppHeader({
         />
 
         {/* 面包屑：图标 + 菜单名称；view-transition-name 使其随路由过渡
-          协同做轻微位移淡换（动画见 styles/route-transitions.css） */}
+          协同做轻微位移淡换（动画见 styles/route-transitions.css）。
+          name 与 data-vt-name 放在原生 wrapper 上（而非 Breadcrumbs 组件），
+          确保 DOM 属性稳定存在：主题切换动画靠 html[data-theme-transition]
+          [data-vt-name] 规则临时摘名，避免其快照组静止遮挡揭示动画 */}
         {crumbs.length > 0 && (
-          <Breadcrumbs className="min-w-0 [view-transition-name:breadcrumbs] hidden md:flex">
-            {crumbs.map((item) => (
-              <Breadcrumbs.Item key={item.id} className="min-w-0">
-                <DynamicIcon
-                  className="shrink-0 mr-1.5"
-                  name={item.icon as IconName}
-                  size={16}
-                />
-                {item.label}
-              </Breadcrumbs.Item>
-            ))}
-          </Breadcrumbs>
+          <div
+            className="min-w-0 [view-transition-name:breadcrumbs] hidden md:flex"
+            data-vt-name="breadcrumbs"
+          >
+            <Breadcrumbs className="min-w-0">
+              {crumbs.map((item) => (
+                <Breadcrumbs.Item key={item.id} className="min-w-0">
+                  <DynamicIcon
+                    className="shrink-0 mr-1.5"
+                    name={item.icon as IconName}
+                    size={16}
+                  />
+                  {item.label}
+                </Breadcrumbs.Item>
+              ))}
+            </Breadcrumbs>
+          </div>
         )}
       </div>
 

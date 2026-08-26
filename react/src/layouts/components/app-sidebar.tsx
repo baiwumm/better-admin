@@ -9,7 +9,6 @@ import {
   Skeleton,
   Tooltip,
   Typography,
-  useTheme,
 } from "@heroui/react";
 import { ArrowUpRight, ChevronsUpDown, Globe } from "lucide-react";
 
@@ -30,6 +29,8 @@ import { ENV } from "@/lib/env";
 
 import logo from "/logo.svg";
 import logoDark from "/logo-dark.svg";
+
+import { useResolvedTheme } from "@/stores/design-theme-store";
 
 type AppSidebarProps = {
   /** 桌面端折叠态：仅显示一级图标，hover 弹出子菜单 */
@@ -117,7 +118,8 @@ function CollapsedMenuSkeleton() {
  * 点击弹出下拉菜单展示技术栈入口，点击项新窗口跳转对应官网。
  */
 function SidebarBrand({ collapsed }: { collapsed?: boolean }) {
-  const { theme } = useTheme("system");
+  // 实际生效的明暗外观（来自 design-theme-store，跨组件一致）
+  const theme = useResolvedTheme();
 
   const handleMenuAction = (key: Key) => {
     const stack = TECH_STACKS.find((s) => s.name === key);

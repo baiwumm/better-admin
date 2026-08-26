@@ -1,69 +1,28 @@
 import { useCallback } from "react";
-import { useTheme } from "@heroui/react";
 
-import { useDesignThemeStore } from "@/stores/design-theme-store";
 import {
-  runViewTransition,
-  type TransitionDirection,
-} from "@/themes/transition-direction";
+  useDesignThemeStore,
+  type ThemeMode,
+} from "@/stores/design-theme-store";
 
 /**
- * 主题模式切换（带 ViewTransition 动画）
+ * 主题模式切换 hook（带 ViewTransition 揭示动画）。
  *
- * HeroUI 的 useTheme().setTheme 只在 React state 中记录意图，
- * 真正的 dark class / data-theme 切换发生在 layout effect（异步于 setState）。
- * 为了让 ViewTransition 快照正确捕获旧→新两帧，这里在 transition 回调中
- * 同步手动切换 DOM（与 HeroUI applyThemeToDOM 行为一致：toggle class + 设 data-theme），
- * 同时调用 HeroUI setTheme 保持 store 状态一致。
+ * 主题模式意图的真源是 design-theme-store（zustand 单例）：
+ * HeroUI 的 useTheme() 为每个调用点独立的 useState（无 Provider context 共享），
+ * 多组件各自读写会互不同步（曾在「重置偏好」时因过期意图误判短路导致不生效），
+ * 故全部收敛至 store；DOM class / data-theme / localStorage 均由 store action 维护。
  */
 export function useThemeModeTransition() {
-  const { theme, setTheme } = useTheme("system");
-  const transitionDirection = useDesignThemeStore((s) => s.transitionDirection);
+  const theme = useDesignThemeStore((s) => s.themeMode);
+  const setThemeMode = useDesignThemeStore((s) => s.setThemeMode);
 
+  // RadioGroup onChange 上报 string，此处仅做类型收窄；非法值由 action 兜底为 system
   const switchThemeMode = useCallback(
-    async (mode: string) => {
-      // 收窄为合法主题模式
-      const nextMode = (
-        mode === "light" || mode === "dark" || mode === "system"
-          ? mode
-          : "system"
-      ) as "system" | "light" | "dark";
-
-      if (nextMode === theme) return;
-
-      // 解析目标 resolved（system 跟随系统）
-      const resolved: "light" | "dark" =
-        nextMode === "system"
-          ? window.matchMedia("(prefers-color-scheme: dark)").matches
-            ? "dark"
-            : "light"
-          : nextMode;
-
-      // 当前 resolved
-      const current: "light" | "dark" =
-        document.documentElement.classList.contains("dark") ? "dark" : "light";
-
-      if (resolved === current) {
-        // 仅意图变化（如 system 已匹配当前），无需动画
-        setTheme(nextMode);
-
-        return;
-      }
-
-      const direction: TransitionDirection =
-        useDesignThemeStore.getState().transitionDirection;
-
-      await runViewTransition(() => {
-        // 同步切换 DOM（与 HeroUI applyThemeToDOM 一致）
-        document.documentElement.classList.remove(current);
-        document.documentElement.classList.add(resolved);
-        document.documentElement.setAttribute("data-theme", resolved);
-
-        // 同步 HeroUI store 意图
-        setTheme(nextMode);
-      }, direction);
+    (mode: string) => {
+      setThemeMode(mode as ThemeMode);
     },
-    [theme, setTheme, transitionDirection],
+    [setThemeMode],
   );
 
   return { theme, switchThemeMode };

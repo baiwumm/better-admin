@@ -49,6 +49,26 @@ function clipFrom(direction: TransitionDirection): string {
  * @param direction 动画方向（决定 clip-path 揭示方向）
  * @returns Promise（VT 结束后 resolve；skip/abort 时同样正常收尾）
  */
+/**
+ * 执行 ViewTransition 动画（主题切换用）。
+ *
+ * 实现（声明式 CSS 驱动，见 styles/globals.css 的 data-theme-transition 区块）：
+ * 1. 临时移除 data-route-transition，避免路由过渡预设的 main-content /
+ *    breadcrumbs 动画被主题 VT 误触发（必须在 startViewTransition 之前移除）；
+ * 2. 设置 html[data-theme-transition="<direction>"] 激活 CSS 揭示动画——
+ *    同时经 `html[data-theme-transition] [data-vt-name]` 规则临时摘掉各区域
+ *    （admin-layout 的 main-content、app-header 的 breadcrumbs）的独立
+ *    view-transition-name：带 name 的元素会被提升为独立快照组并叠放在 root 组
+ *    之上，静止遮挡揭示动画；主题变化是全页级联，统一并入单组 root 揭示。
+ *    摘名纯 CSS 属性驱动，随该属性的设置/移除原子生效，无 JS 时序竞态；
+ * 3. mutate 以 flushSync 包裹：保证 React 提交收敛在 VT 回调内，
+ *    new 快照捕获到的是新主题画面（异步调度会让提交漂移到快照之后，
+ *    导致揭示的是旧画面 + 结束时内容突变的二次跳变）。
+ *
+ * @param mutate 在 transition 快照回调中同步执行的变更（含 React 状态更新）
+ * @param direction 动画方向（决定 clip-path 揭示方向）
+ * @returns Promise（VT 结束后 resolve；skip/abort 时同样正常收尾）
+ */
 export async function runViewTransition(
   mutate: () => void,
   direction: TransitionDirection,
@@ -68,17 +88,6 @@ export async function runViewTransition(
     root.removeAttribute("data-route-transition");
   }
 
-  // 主题 VT 期间临时摘掉 main 的 view-transition-name：
-  // 带 name 的元素会被提升为独立快照组并叠放在 root 组（整页快照，
-  // 含偏好抽屉等浮层画面）之上，导致主体区内容在动画期间盖住抽屉。
-  // 主题变化是全页级联，统一走单组 root 揭示即可；inline style 优先级
-  // 高于 admin-layout 的 [view-transition-name:main-content] class 规则，
-  // 结束后移除 inline 即恢复路由过渡的分组行为。必须在启动 VT 前设置
-  // （快照捕获时需已生效）。
-  const main = document.querySelector<HTMLElement>("main");
-
-  if (main) main.style.viewTransitionName = "none";
-
   root.setAttribute("data-theme-transition", direction);
   // clip-path 起始裁切经 CSS 变量下发（keyframes 内 var() 从应用元素解析）
   root.style.setProperty("--tt-from", clipFrom(direction));
@@ -92,8 +101,6 @@ export async function runViewTransition(
   } finally {
     root.removeAttribute("data-theme-transition");
     root.style.removeProperty("--tt-from");
-
-    if (main) main.style.viewTransitionName = "";
 
     // 还原路由过渡标记（覆盖 skip / abort 等提前退出的边界）
     if (
