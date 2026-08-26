@@ -10,6 +10,9 @@
 /* 多标签页栏动效 */
 @import './tags-bar.css';
 
+/* 登录页专属样式（品牌区视觉 + 入场动效） */
+@import './sign-in.css';
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

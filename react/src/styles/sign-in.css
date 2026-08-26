@@ -1,0 +1,174 @@
+/*
+ * 登录页专属样式
+ * 设计原则：
+ *  1. 全部颜色派生自项目级 Design Tokens（--accent / --background / --foreground / --muted 等），
+ *     不写死任何色值 → 自动适配 light / dark 与所有 design theme 预设。
+ *  2. 视觉层次（4 层叠加）：
+ *     L1  底色（继承 body bg-background）
+ *     L2  渐变层（--accent 派生柔光）
+ *     L3  1px 网格底纹
+ *     L4  2 个静态氛围光晕（克制，不漂移）
+ *  3. 动效克制：仅入场 fade-up + 字段 stagger，全部受 prefers-reduced-motion 控制。
+ *  4. 性能：纯 CSS，无新增图片 / JS bundle。
+ */
+
+@layer components {
+
+  /* ============================================================
+     品牌区（L2 渐变 + L3 网格 + L4 光晕）
+     ============================================================ */
+  .sign-in-brand {
+    position: relative;
+    overflow: hidden;
+    /* 隔离 layer：把渐变 / 网格 / 光晕全部限制在此容器内 */
+    isolation: isolate;
+  }
+
+  /* L2 渐变层：柔光晕染，从 --accent 派生 */
+  .sign-in-brand::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(
+        120% 80% at 0% 0%,
+        oklch(from var(--accent) l c h / 0.18) 0%,
+        transparent 60%
+      ),
+      radial-gradient(
+        100% 80% at 100% 100%,
+        oklch(from var(--accent) l c h / 0.12) 0%,
+        transparent 60%
+      );
+    pointer-events: none;
+  }
+
+  /* L3 网格底纹：48px × 48px，1px 线，透明度 0.05 */
+  .sign-in-brand::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background-image:
+      linear-gradient(
+        to right,
+        oklch(from var(--foreground) l c h / 0.06) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        oklch(from var(--foreground) l c h / 0.06) 1px,
+        transparent 1px
+      );
+    background-size: 48px 48px;
+    /* 边缘羽化：避免网格与右侧表单衔接处出现硬边 */
+    -webkit-mask-image: radial-gradient(
+      ellipse 90% 80% at 50% 50%,
+      black 60%,
+      transparent 100%
+    );
+    mask-image: radial-gradient(
+      ellipse 90% 80% at 50% 50%,
+      black 60%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+
+  /* L4 氛围光晕：2 个静态柔光球，blur-3xl，仅作为氛围，克制不漂移 */
+  .sign-in-brand-glow {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(80px);
+    opacity: 0.35;
+    pointer-events: none;
+    will-change: auto;
+  }
+  .sign-in-brand-glow--a {
+    top: -10%;
+    left: -10%;
+    width: 380px;
+    height: 380px;
+    background: oklch(from var(--accent) l c h / 0.55);
+  }
+  .sign-in-brand-glow--b {
+    bottom: -15%;
+    right: -10%;
+    width: 320px;
+    height: 320px;
+    background: oklch(from var(--accent) calc(l + 0.1) calc(c * 0.6) calc(h + 40) / 0.45);
+  }
+
+  /* Dark 主题：减弱网格 / 增强光晕可见度 */
+  .dark .sign-in-brand::after,
+  [data-theme="dark"] .sign-in-brand::after {
+    background-image:
+      linear-gradient(
+        to right,
+        oklch(from var(--foreground) l c h / 0.08) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        oklch(from var(--foreground) l c h / 0.08) 1px,
+        transparent 1px
+      );
+  }
+  .dark .sign-in-brand-glow,
+  [data-theme="dark"] .sign-in-brand-glow {
+    opacity: 0.25;
+  }
+
+  /* ============================================================
+     移动端折叠区（L1-L4 复用上方规则；高度限制在 30vh）
+     ============================================================ */
+  .sign-in-brand--compact {
+    min-height: 30vh;
+  }
+
+  /* ============================================================
+     入场动画：fade-up 380ms
+     ============================================================ */
+  @keyframes sign-in-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .sign-in-fade-up {
+    animation: sign-in-fade-up 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* 字段 stagger：3 个一组，每组 60ms 间隔，从表单容器开始。
+     注：Form 内第 4 个起（分隔线、第三方按钮、提交按钮）由各自的专用类统一控延迟。 */
+  .sign-in-field {
+    animation: sign-in-fade-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .sign-in-field:nth-child(1) { animation-delay: 80ms; }
+  .sign-in-field:nth-child(2) { animation-delay: 140ms; }
+  .sign-in-field:nth-child(3) { animation-delay: 200ms; }
+  /* 第 4+ 个：与 submit 同步，避免连续 6 个 stagger 视觉拖沓 */
+  .sign-in-field:nth-child(n+4) { animation-delay: 260ms; }
+
+  /* 提交按钮：放在分隔线与第三方按钮之后，单独 320ms 延迟 */
+  .sign-in-submit {
+    animation: sign-in-fade-up 420ms cubic-bezier(0.16, 1, 0.3, 1) 320ms both;
+  }
+
+  /* ============================================================
+     无障碍：尊重 prefers-reduced-motion
+     ============================================================ */
+  @media (prefers-reduced-motion: reduce) {
+    .sign-in-fade-up,
+    .sign-in-field,
+    .sign-in-submit {
+      animation: none;
+    }
+  }
+}
