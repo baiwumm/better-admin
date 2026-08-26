@@ -4,11 +4,13 @@ import {
   commitNavigation,
   makePoolEntry,
   MAX_POOL_SIZE,
+  reconcileWithTabs,
   registerDisplayed,
   type PoolEntry,
 } from "../keepalive-pool";
 
 const KEEP = new Set(["/keep/a", "/keep/b"]);
+const OPEN_ALL = new Set(["/keep/a", "/keep/b", "/next"]);
 
 function entry(path: string, permanent = false): PoolEntry {
   return { path, permanent };
@@ -79,21 +81,28 @@ describe("registerDisplayed", () => {
 });
 
 describe("commitNavigation", () => {
-  it("清理 transient，仅保留 permanent 与目标页", () => {
+  it("清理 transient 与已关闭的 permanent，仅保留未关闭的 permanent 与目标页", () => {
     const pool = [
       entry("/keep/a", true),
+      entry("/keep/b", true), // 已被关闭（不在 openedTabs）
       entry("/transient/1"),
       entry("/transient/2"),
       entry("/next"),
     ];
+    const opened = new Set(["/keep/a", "/next"]);
 
-    const result = commitNavigation(pool, "/next", KEEP);
+    const result = commitNavigation(pool, "/next", KEEP, opened);
 
     expect(result.map((e) => e.path)).toEqual(["/keep/a", "/next"]);
   });
 
   it("目标页缺失时补入（permanent 判定正确）", () => {
-    const result = commitNavigation([entry("/keep/a", true)], "/keep/b", KEEP);
+    const result = commitNavigation(
+      [entry("/keep/a", true)],
+      "/keep/b",
+      KEEP,
+      OPEN_ALL,
+    );
 
     expect(result).toEqual([entry("/keep/a", true), entry("/keep/b", true)]);
   });
@@ -101,6 +110,49 @@ describe("commitNavigation", () => {
   it("无变更时返回原引用", () => {
     const pool = [entry("/keep/a", true), entry("/next")];
 
-    expect(commitNavigation(pool, "/next", KEEP)).toBe(pool);
+    expect(commitNavigation(pool, "/next", KEEP, OPEN_ALL)).toBe(pool);
+  });
+});
+
+describe("reconcileWithTabs", () => {
+  it("清除已关闭且非呈现中的 permanent 条目", () => {
+    const pool = [entry("/keep/a", true), entry("/keep/b", true)];
+    const opened = new Set(["/keep/a"]);
+
+    const result = reconcileWithTabs(pool, opened, "/keep/a", KEEP);
+
+    expect(result.map((e) => e.path)).toEqual(["/keep/a"]);
+  });
+
+  it("已关闭但正在呈现的条目保留（等待导航提交处理）", () => {
+    const pool = [entry("/keep/b", true)];
+
+    const result = reconcileWithTabs(pool, new Set(), "/keep/b", KEEP);
+
+    expect(result).toEqual(pool);
+  });
+
+  it("已打开的 keepAlive transient 转正为 permanent", () => {
+    const pool = [entry("/keep/b")];
+    const opened = new Set(["/keep/b"]);
+
+    const result = reconcileWithTabs(pool, opened, "/other", KEEP);
+
+    expect(result).toEqual([{ path: "/keep/b", permanent: true }]);
+  });
+
+  it("非 keepAlive 的 opened 条目不转正", () => {
+    const pool = [entry("/plain")];
+    const opened = new Set(["/plain"]);
+
+    const result = reconcileWithTabs(pool, opened, "/other", KEEP);
+
+    expect(result).toBe(pool);
+  });
+
+  it("无变更时返回原引用", () => {
+    const pool = [entry("/keep/a", true)];
+
+    expect(reconcileWithTabs(pool, OPEN_ALL, "/keep/a", KEEP)).toBe(pool);
   });
 });

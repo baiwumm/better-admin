@@ -1,5 +1,5 @@
 import { useLocation } from "@tanstack/react-router";
-import { Breadcrumbs, Button } from "@heroui/react";
+import { Breadcrumbs, Button, Separator } from "@heroui/react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
@@ -43,47 +43,56 @@ export function AppHeader({
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 border-b border-separator bg-surface px-4">
-      {/* 移动端：Drawer 按钮 */}
-      <Button
-        isIconOnly
-        aria-label="打开侧边栏"
-        className="md:hidden"
-        variant="ghost"
-        onPress={onOpenDrawer}
-      >
-        <Menu className="size-5" />
-      </Button>
+      <div className="shrink-0 flex items-center gap-3">
+        {/* 移动端：Drawer 按钮 */}
+        <Button
+          isIconOnly
+          aria-label="打开侧边栏"
+          className="md:hidden"
+          variant="ghost"
+          onPress={onOpenDrawer}
+        >
+          <Menu className="size-5" />
+        </Button>
 
-      {/* 桌面端：折叠 / 展开按钮 */}
-      <Button
-        isIconOnly
-        aria-label={collapsed ? "展开侧边栏" : "折叠侧边栏"}
-        className="hidden md:inline-flex"
-        variant="ghost"
-        onPress={onToggle}
-      >
-        {collapsed ? (
-          <PanelLeftOpen className="size-5" />
-        ) : (
-          <PanelLeftClose className="size-5" />
+        {/* 桌面端：折叠 / 展开按钮 */}
+        <Button
+          isIconOnly
+          aria-label={collapsed ? "展开侧边栏" : "折叠侧边栏"}
+          className="hidden md:inline-flex"
+          variant="ghost"
+          onPress={onToggle}
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="size-5" />
+          ) : (
+            <PanelLeftClose className="size-5" />
+          )}
+        </Button>
+
+        {/* 分隔线：折叠按钮 / 面包屑 */}
+        <Separator
+          className="hidden h-5 self-center md:flex"
+          orientation="vertical"
+        />
+
+        {/* 面包屑：图标 + 菜单名称；view-transition-name 使其随路由过渡
+          协同做轻微位移淡换（动画见 styles/route-transitions.css） */}
+        {crumbs.length > 0 && (
+          <Breadcrumbs className="min-w-0 [view-transition-name:breadcrumbs] hidden md:flex">
+            {crumbs.map((item) => (
+              <Breadcrumbs.Item key={item.id} className="min-w-0">
+                <DynamicIcon
+                  className="shrink-0 mr-1.5"
+                  name={item.icon as IconName}
+                  size={16}
+                />
+                {item.label}
+              </Breadcrumbs.Item>
+            ))}
+          </Breadcrumbs>
         )}
-      </Button>
-
-      {/* 面包屑：图标 + 菜单名称 */}
-      {crumbs.length > 0 && (
-        <Breadcrumbs className="min-w-0">
-          {crumbs.map((item) => (
-            <Breadcrumbs.Item key={item.id} className="min-w-0">
-              <DynamicIcon
-                className="shrink-0 mr-1.5"
-                name={item.icon as IconName}
-                size={16}
-              />
-              {item.label}
-            </Breadcrumbs.Item>
-          ))}
-        </Breadcrumbs>
-      )}
+      </div>
 
       {/* 右侧区域：主题设置入口 */}
       <div className="flex flex-1 items-center justify-end gap-2">

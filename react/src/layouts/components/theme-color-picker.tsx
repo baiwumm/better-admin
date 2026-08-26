@@ -1,6 +1,8 @@
-import { Button, ColorSwatchPicker, Label, parseColor } from "@heroui/react";
+import { Button, ColorSwatchPicker, parseColor } from "@heroui/react";
 import { Shuffle } from "lucide-react";
 import { useCallback, useEffect } from "react";
+
+import { PickerLabel } from "./picker-label";
 
 import { THEME_PALETTES } from "@/themes/color-palettes";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
@@ -67,7 +69,10 @@ export function ThemeColorPicker() {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <Label>主题色</Label>
+        <PickerLabel
+          label="主题色"
+          tooltip="全局主色调，切换时以动画揭示新配色"
+        />
         <Button
           isIconOnly
           aria-label="随机主题色"

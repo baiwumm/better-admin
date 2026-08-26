@@ -1,6 +1,7 @@
-import { Label, Radio, RadioGroup, Description, cn } from "@heroui/react";
+import { Radio, RadioGroup, Description, cn } from "@heroui/react";
 import { Monitor, Moon, Sun, Check } from "lucide-react";
 
+import { PickerLabel } from "./picker-label";
 import {
   ThemePreviewDark,
   ThemePreviewLight,
@@ -41,7 +42,10 @@ export function ThemeModePicker() {
       variant="secondary"
       onChange={switchThemeMode}
     >
-      <Label>主题模式</Label>
+      <PickerLabel
+        label="主题模式"
+        tooltip="界面的明暗外观，跟随系统时自动切换"
+      />
       <div className="grid gap-x-3 grid-cols-3">
         {THEME_OPTIONS.map(({ value, label, icon: Icon, preview: Preview }) => (
           <div key={value} className="flex flex-col gap-2">

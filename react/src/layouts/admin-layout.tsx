@@ -7,6 +7,7 @@ import { Drawer, Spinner, Typography } from "@heroui/react";
 import { AppHeader } from "./components/app-header";
 import { AppSidebar } from "./components/app-sidebar";
 import { KeepAliveOutlet } from "./components/keep-alive-outlet";
+import { TagsBar } from "./components/tags-bar";
 
 import { ForbiddenErrorPage } from "@/components/common/error-pages/forbidden-error";
 import { useMenus } from "@/hooks/use-menus";
@@ -14,6 +15,7 @@ import { type MenuNode } from "@/lib/api-types";
 import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
 import { collectMenuPaths } from "@/lib/menu-utils";
 import { useAuthStore } from "@/stores/auth-store";
+import { useDesignThemeStore } from "@/stores/design-theme-store";
 
 /** 登录即可访问的白名单路径集合（Set 查找 O(1)，模块级只建一次）。 */
 const LOGIN_REQUIRED_SET = new Set<string>(LOGIN_REQUIRED_PATHS);
@@ -56,6 +58,7 @@ export function AdminLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const showTabs = useDesignThemeStore((s) => s.showTabs);
   const { data: menuTree, isLoading, isError } = useMenus();
   const { pathname } = useLocation();
 
@@ -98,11 +101,15 @@ export function AdminLayout() {
 
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground">
-      {/* 桌面侧边栏 */}
+      {/* 桌面侧边栏壳：
+          - width 过渡承担折叠动画（布局属性无法避免 reflow，故由内层配合）；
+          - overflow-hidden 裁剪内容瞬切的溢出（内容宽度在 AppSidebar 内瞬切，
+            避免中间态逐帧文字折行/截断的重排抖动）；
+          - contain:layout/paint/style 把侧边栏内部的样式/布局/绘制变化圈在
+            自身子树内，不波及右侧布局树；
+          - transform-gpu 提升为独立合成层，重绘范围进一步隔离。 */}
       <aside
-        className={`hidden shrink-0 flex-col transition-[width] duration-200 ease-out md:flex ${
-          collapsed ? "w-16" : "w-64"
-        }`}
+        className={`hidden shrink-0 transform-gpu flex-col overflow-hidden border-r border-separator transition-[width] duration-200 ease-out [contain:layout_paint_style] md:flex ${collapsed ? "w-16" : "w-64"}`}
       >
         <AppSidebar collapsed={collapsed} />
       </aside>
@@ -114,6 +121,8 @@ export function AdminLayout() {
           onOpenDrawer={() => setDrawerOpen(true)}
           onToggle={() => setCollapsed((v) => !v)}
         />
+        {/* 多标签页栏（偏好设置可关；仅隐藏 UI，标签数据照常维护） */}
+        {showTabs && <TagsBar />}
         {/* 主体内容：指定 view-transition-name 使路由过渡动画只作用于该区域
             （布局/侧边栏/顶栏不参与过渡，见 styles/route-transitions.css）。
             滚动统一由本容器承担（滚动条贴合主体区边缘）；KeepAliveOutlet

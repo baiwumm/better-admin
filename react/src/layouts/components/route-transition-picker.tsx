@@ -1,4 +1,4 @@
-import { Description, Label, Radio, RadioGroup, cn } from "@heroui/react";
+import { Description, Radio, RadioGroup, cn } from "@heroui/react";
 import {
   Aperture,
   Ban,
@@ -10,6 +10,8 @@ import {
   Scan,
   ZoomIn,
 } from "lucide-react";
+
+import { PickerLabel } from "./picker-label";
 
 import { useDesignThemeStore } from "@/stores/design-theme-store";
 import {
@@ -45,8 +47,7 @@ export function RouteTransitionPicker() {
       variant="secondary"
       onChange={(value) => setRouteTransition(value as RouteTransitionId)}
     >
-      <Label>页面切换动画</Label>
-      <Description>切换菜单 / 页面时的过渡效果</Description>
+      <PickerLabel label="页面切换动画" tooltip="切换菜单 / 页面时的过渡效果" />
       <div className="grid gap-2 grid-cols-3 mt-2">
         {ROUTE_TRANSITIONS.map(({ id, label }) => {
           const Icon = ROUTE_ICONS[id];

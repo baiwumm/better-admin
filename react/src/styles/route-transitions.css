@@ -271,7 +271,39 @@ html[data-route-transition="blur"]::view-transition-new(main-content) {
     --rt-duration: 0.01ms;
   }
   ::view-transition-old(main-content),
-  ::view-transition-new(main-content) {
+  ::view-transition-new(main-content),
+  ::view-transition-old(breadcrumbs),
+  ::view-transition-new(breadcrumbs) {
     animation: none !important;
+  }
+}
+
+/* ── 顶栏面包屑（view-transition-name: breadcrumbs，见 app-header.tsx）──
+ * 仅在路由过渡激活时随主内容协同运动：旧文案顺方向轻微滑出、新文案滑入；
+ * 时长为主内容的 0.55 倍（短促、不抢主体动效的焦点）。
+ * 主题切换 VT 下面包屑新旧帧相同，保持 UA 默认 crossfade 即无感知。 */
+html[data-route-transition]::view-transition-old(breadcrumbs) {
+  animation-name: breadcrumbs-out;
+  animation-duration: calc(var(--rt-duration) * 0.55);
+  animation-timing-function: var(--rt-ease);
+}
+
+html[data-route-transition]::view-transition-new(breadcrumbs) {
+  animation-name: breadcrumbs-in;
+  animation-duration: calc(var(--rt-duration) * 0.55);
+  animation-timing-function: var(--rt-ease);
+}
+
+@keyframes breadcrumbs-out {
+  to {
+    opacity: 0;
+    transform: translateX(calc(-8px * var(--rt-dir-x, 1)));
+  }
+}
+
+@keyframes breadcrumbs-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(8px * var(--rt-dir-x, 1)));
   }
 }

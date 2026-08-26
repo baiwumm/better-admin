@@ -1,5 +1,7 @@
-import { Description, Label, Radio, RadioGroup } from "@heroui/react";
+import { Description, Radio, RadioGroup } from "@heroui/react";
 import { Gauge, Rabbit, Snail, type LucideIcon } from "lucide-react";
+
+import { PickerLabel } from "./picker-label";
 
 import { useDesignThemeStore } from "@/stores/design-theme-store";
 import {
@@ -34,8 +36,7 @@ export function RouteTransitionSpeedPicker() {
         setRouteTransitionSpeed(value as RouteTransitionSpeedId)
       }
     >
-      <Label>页面切换速度</Label>
-      <Description>仅作用于页面切换动画</Description>
+      <PickerLabel label="页面切换速度" tooltip="仅作用于页面切换动画" />
       <div className="mt-2 grid grid-cols-3 gap-2">
         {ROUTE_TRANSITION_SPEEDS.map(({ id, label }) => {
           const Icon = SPEED_ICONS[id];

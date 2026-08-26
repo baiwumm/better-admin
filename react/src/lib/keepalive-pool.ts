@@ -6,7 +6,10 @@
  * - 菜单 keepAlive === true 的页面 permanent 长驻保活；
  * - 其余 transient：仅为过渡期旧帧服务，导航提交后清理；
  * - 池上限 MAX_POOL_SIZE：优先淘汰最早的 transient，不足时在 permanent
- *   间做 LRU（dev 下告警一次——keepAlive 菜单过多通常意味着配置失当）。
+ *   间做 LRU（dev 下告警一次——keepAlive 菜单过多通常意味着配置失当）；
+ * - 多标签页联动（openedTabs）：permanent 条目必须「已打开且未关闭」，
+ *   关闭标签后经 reconcileWithTabs 清除对应实例；渲染期登记的 transient
+ *   在 openedTabs 追上后被转正为 permanent（时序兜底）。
  */
 
 /** 实例池上限。 */
@@ -55,15 +58,20 @@ export function registerDisplayed(
 }
 
 /**
- * 导航提交（flushSync 内）调用：清理临时成员（仅保留 permanent 与目标
- * 页），并确保目标页在池中。纯函数：无变更时返回原引用。
+ * 导航提交（flushSync 内）调用：清理临时成员（仅保留「未关闭的 permanent」
+ * 与目标页），并确保目标页在池中。纯函数：无变更时返回原引用。
  */
 export function commitNavigation(
   pool: PoolEntry[],
   pathname: string,
   keepAlivePaths: ReadonlySet<string>,
+  openedTabs: ReadonlySet<string>,
 ): PoolEntry[] {
-  let next = pool.filter((entry) => entry.permanent || entry.path === pathname);
+  let next = pool.filter(
+    (entry) =>
+      (entry.permanent && openedTabs.has(entry.path)) ||
+      entry.path === pathname,
+  );
 
   if (!next.some((entry) => entry.path === pathname)) {
     next = [...next, makePoolEntry(pathname, keepAlivePaths)];
@@ -71,6 +79,52 @@ export function commitNavigation(
 
   // 无实质变更时返回原引用（配合 setState 引用比较跳过更新）。
   return sameEntries(pool, next) ? pool : next;
+}
+
+/**
+ * 多标签页状态对账（openedTabs 变化时调用）：
+ * 1. 清除：permanent 但已被关闭（不在 openedTabs）且非当前呈现路径的条目
+ *    ——「关闭标签 = 销毁保活实例」语义；
+ * 2. 转正：transient 且 keepAlive 且已在 openedTabs 的条目升级为 permanent
+ *    ——渲染期登记先于 openPath 生效的时序兜底。
+ * 纯函数：无变更时返回原数组引用。
+ */
+export function reconcileWithTabs(
+  pool: PoolEntry[],
+  openedTabs: ReadonlySet<string>,
+  displayedPath: string,
+  keepAlivePaths: ReadonlySet<string>,
+): PoolEntry[] {
+  let changed = false;
+  const next: PoolEntry[] = [];
+
+  for (const entry of pool) {
+    if (
+      entry.permanent &&
+      !openedTabs.has(entry.path) &&
+      entry.path !== displayedPath
+    ) {
+      changed = true;
+
+      continue;
+    }
+
+    if (
+      !entry.permanent &&
+      entry.path !== displayedPath &&
+      openedTabs.has(entry.path) &&
+      keepAlivePaths.has(entry.path)
+    ) {
+      changed = true;
+      next.push({ path: entry.path, permanent: true });
+
+      continue;
+    }
+
+    next.push(entry);
+  }
+
+  return changed ? next : pool;
 }
 
 /** 原地裁剪：先淘汰 transient，仍超限再淘汰 permanent（LRU，dev 告警一次）。 */

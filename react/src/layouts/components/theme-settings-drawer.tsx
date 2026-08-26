@@ -6,6 +6,7 @@ import { ThemeModePicker } from "./theme-mode-picker";
 import { TransitionDirectionPicker } from "./transition-direction-picker";
 import { RouteTransitionPicker } from "./route-transition-picker";
 import { RouteTransitionSpeedPicker } from "./route-transition-speed-picker";
+import { ShowTabsPicker } from "./show-tabs-picker";
 
 /**
  * 主题设置抽屉：右上角 paint-bucket 图标按钮（Drawer.Trigger）触发，
@@ -18,6 +19,7 @@ import { RouteTransitionSpeedPicker } from "./route-transition-speed-picker";
  * - TransitionDirectionPicker  主题动画方向（主题色 / 模式切换的揭示方向）
  * - RouteTransitionPicker      页面切换动画（页面切换的过渡效果预设）
  * - RouteTransitionSpeedPicker 页面切换速度（仅作用于页面切换动画）
+ * - ShowTabsPicker             显示多标签页（顶栏下方标签栏的显隐）
  */
 export function ThemeSettingsDrawer() {
   // 主题设置抽屉状态（Hero UI 官方用法：useOverlayState + 状态挂 Backdrop）
@@ -44,6 +46,7 @@ export function ThemeSettingsDrawer() {
               <TransitionDirectionPicker />
               <RouteTransitionPicker />
               <RouteTransitionSpeedPicker />
+              <ShowTabsPicker />
             </Drawer.Body>
           </Drawer.Dialog>
         </Drawer.Content>

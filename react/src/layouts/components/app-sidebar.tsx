@@ -60,7 +60,15 @@ export function AppSidebar({ collapsed, onNavigate }: AppSidebarProps) {
   const items = filterHiddenMenus(menuTree ?? []);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-surface border border-r">
+    /* 内容层宽度瞬切（不加过渡）：外层 aside 负责 width 动画并裁剪溢出，
+       本层始终以目标宽度布局——过渡期间不产生逐帧中间态重排与文字折行。
+       右边框 / 裁剪 / contain 由 aside 壳承担（见 admin-layout.tsx）。 */
+    <div
+      className={cn(
+        "flex h-full flex-col bg-surface",
+        collapsed ? "w-16" : "w-64",
+      )}
+    >
       {/* 顶部 Logo + 标题 */}
       <div
         className={cn(

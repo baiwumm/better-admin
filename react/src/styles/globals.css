@@ -7,6 +7,9 @@
 /* 路由过渡动画（页面切换）预设 */
 @import './route-transitions.css';
 
+/* 多标签页栏动效 */
+@import './tags-bar.css';
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

@@ -6,6 +6,7 @@ import { fetchApi, bindAuthSnapshot } from "@/lib/api-client";
 import { fetchMenus } from "@/lib/menu-fetch";
 import { MENUS_QUERY_KEY } from "@/hooks/use-menus";
 import { queryClient } from "@/lib/query-client";
+import { useTabsStore } from "@/stores/tabs-store";
 
 interface AuthState {
   user: AuthUser | null;
@@ -103,6 +104,8 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
         });
+        // 会话结束同时清空多标签页（标签属于用户级 UI 态，不跨会话残留）。
+        useTabsStore.getState().resetTabs();
       },
 
       resetAuth: () => {

@@ -18,6 +18,7 @@ const STORAGE_KEY = "better-admin-design-theme";
 const DIRECTION_KEY = "better-admin-transition-direction";
 const ROUTE_TRANSITION_KEY = "better-admin-route-transition";
 const ROUTE_TRANSITION_SPEED_KEY = "better-admin-route-transition-speed";
+const SHOW_TABS_KEY = "better-admin-show-tabs";
 
 // ── DOM 操作（纯函数，不依赖 React） ──
 
@@ -96,6 +97,16 @@ function writeSpeedToStorage(speed: RouteTransitionSpeedId): void {
   localStorage.setItem(ROUTE_TRANSITION_SPEED_KEY, speed);
 }
 
+function readShowTabsFromStorage(): boolean {
+  if (typeof window === "undefined") return true;
+
+  return localStorage.getItem(SHOW_TABS_KEY) !== "0";
+}
+
+function writeShowTabsToStorage(show: boolean): void {
+  localStorage.setItem(SHOW_TABS_KEY, show ? "1" : "0");
+}
+
 /** 把路由过渡速度档位应用到 <html> 的 data-rt-speed 属性（供 CSS 倍率生效）。 */
 export function applyRouteTransitionSpeedToDOM(
   speed: RouteTransitionSpeedId,
@@ -131,6 +142,8 @@ interface DesignThemeState {
   routeTransition: RouteTransitionId;
   /** 路由过渡播放速度档位 */
   routeTransitionSpeed: RouteTransitionSpeedId;
+  /** 是否显示多标签页栏（仅隐藏 UI，不清空已打开的标签数据） */
+  showTabs: boolean;
   /** 切换主题色（带 ViewTransition 动画 + DOM + localStorage） */
   setDesignTheme: (id: string) => void;
   /** 设置动画方向 */
@@ -139,6 +152,8 @@ interface DesignThemeState {
   setRouteTransition: (id: RouteTransitionId) => void;
   /** 设置路由过渡速度（写 store + DOM + localStorage） */
   setRouteTransitionSpeed: (speed: RouteTransitionSpeedId) => void;
+  /** 设置是否显示多标签页（写 store + localStorage） */
+  setShowTabs: (show: boolean) => void;
 }
 
 export const useDesignThemeStore = create<DesignThemeState>((set) => ({
@@ -146,6 +161,7 @@ export const useDesignThemeStore = create<DesignThemeState>((set) => ({
   transitionDirection: "ltr",
   routeTransition: "none",
   routeTransitionSpeed: "normal",
+  showTabs: true,
 
   setDesignTheme: (id) => {
     const validId =
@@ -183,6 +199,11 @@ export const useDesignThemeStore = create<DesignThemeState>((set) => ({
     applyRouteTransitionSpeedToDOM(validSpeed);
     writeSpeedToStorage(validSpeed);
   },
+
+  setShowTabs: (show) => {
+    set({ showTabs: show });
+    writeShowTabsToStorage(show);
+  },
 }));
 
 /**
@@ -194,6 +215,7 @@ export function initDesignTheme(): void {
   const direction = readDirectionFromStorage();
   const routeTransition = readRouteTransitionFromStorage();
   const routeTransitionSpeed = readSpeedFromStorage();
+  const showTabs = readShowTabsFromStorage();
 
   applyThemeToDOM(stored);
   applyRouteTransitionToDOM(routeTransition);
@@ -204,5 +226,6 @@ export function initDesignTheme(): void {
     transitionDirection: direction,
     routeTransition,
     routeTransitionSpeed,
+    showTabs,
   });
 }

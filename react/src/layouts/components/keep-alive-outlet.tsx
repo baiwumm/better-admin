@@ -1,6 +1,7 @@
 import {
   Activity,
   Suspense,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -17,12 +18,14 @@ import { useMenus } from "@/hooks/use-menus";
 import { type MenuNode } from "@/lib/api-types";
 import {
   commitNavigation,
+  reconcileWithTabs,
   registerDisplayed,
   type PoolEntry,
 } from "@/lib/keepalive-pool";
 import { collectKeepAlivePaths, findActivePath } from "@/lib/menu-utils";
 import { findRouteLeafComponent } from "@/lib/route-component";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
+import { useTabsStore } from "@/stores/tabs-store";
 
 /**
  * 单个池面板：某条路由的常驻宿主。
@@ -106,6 +109,9 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
   const { data: menuTree } = useMenus();
   const routeTransition = useDesignThemeStore((s) => s.routeTransition);
   const animate = routeTransition !== "none";
+  // 多标签页联动：已打开未关闭集合 + 刷新计数（key 重挂载实现「刷新」）。
+  const openedPaths = useTabsStore((s) => s.paths);
+  const refreshSeq = useTabsStore((s) => s.refreshSeq);
 
   // keepAlive 路径集合：由菜单数据派生，仅在菜单变化时重建。
   const keepAlivePaths = useMemo(
@@ -113,12 +119,17 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
     [menuTree],
   );
 
+  // 已打开标签集合：仅在标签列表变化时重建。
+  const openedTabs = useMemo(() => new Set(openedPaths), [openedPaths]);
+
   // 最新值经 ref 供过渡回调读取（避免进入 effect deps 造成重跑抖动）。
   const keepAlivePathsRef = useRef(keepAlivePaths);
   const menuTreeRef = useRef(menuTree);
+  const openedTabsRef = useRef(openedTabs);
 
   keepAlivePathsRef.current = keepAlivePaths;
   menuTreeRef.current = menuTree;
+  openedTabsRef.current = openedTabs;
 
   // 实际呈现的路由（与 pathname 分离：pending 期间二者不同）。
   const [displayedPath, setDisplayedPath] = useState(pathname);
@@ -143,9 +154,14 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
 
     const apply = () => {
       flushSync(() => {
-        // 清理临时成员并确保目标页在池（permanent 判定读最新菜单数据）。
+        // 清理临时成员并确保目标页在池（permanent 判定读最新菜单/标签数据）。
         setPool((prev) =>
-          commitNavigation(prev, pathname, keepAlivePathsRef.current),
+          commitNavigation(
+            prev,
+            pathname,
+            keepAlivePathsRef.current,
+            openedTabsRef.current,
+          ),
         );
         setDisplayedPath(pathname);
       });
@@ -183,6 +199,14 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
     }
   }, [animate, displayedPath, pathname]);
 
+  // 标签对账：关闭标签 → 清除对应保活实例；openPath 晚于渲染期登记时
+  // 将已打开的 keepAlive transient 转正（幂等，无变更返回原引用）。
+  useEffect(() => {
+    setPool((prev) =>
+      reconcileWithTabs(prev, openedTabs, displayedPath, keepAlivePaths),
+    );
+  }, [openedTabs, displayedPath, keepAlivePaths]);
+
   // 池常驻渲染：当前呈现项 visible，其余 hidden 保活（hidden 项
   // display:none 不占布局；可见项以自然高度撑开统一的 <main> 滚动区）。
   // overlay 存在时全部转 hidden、仅渲染 overlay——异常态不销毁保活。
@@ -192,9 +216,11 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
     <>
       {pool.map(({ path }) => {
         const active = !showingOverlay && path === displayedPath;
+        // key 含刷新序号：refreshPath 递增后强制销毁重建实例（「刷新」语义）。
+        const poolKey = `${path}#${refreshSeq[path] ?? 0}`;
 
         return (
-          <Activity key={path} mode={active ? "visible" : "hidden"}>
+          <Activity key={poolKey} mode={active ? "visible" : "hidden"}>
             <KeepAlivePane path={path} />
           </Activity>
         );
