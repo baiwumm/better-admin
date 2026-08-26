@@ -3,6 +3,7 @@ import { Breadcrumbs, Button, Separator } from "@heroui/react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
+import { FullscreenButton } from "./fullscreen-button";
 import { ThemeSettingsDrawer } from "./theme-settings-drawer";
 
 import { useMenus } from "@/hooks/use-menus";
@@ -102,8 +103,9 @@ export function AppHeader({
         )}
       </div>
 
-      {/* 右侧区域：主题设置入口 */}
+      {/* 右侧区域：全屏切换 + 主题设置入口 */}
       <div className="flex flex-1 items-center justify-end gap-2">
+        <FullscreenButton />
         <ThemeSettingsDrawer />
       </div>
     </header>
