@@ -650,6 +650,21 @@ Phase 7  统一测试 → 部署全部版本
 - **验证页**：`react/src/features/users/users-page.tsx` 保活演示页（搜索关键字 / 计数按钮 / 长 Mock 列表滚动），Phase 4 接入真实用户管理时替换内容并保留路由挂载方式。
 - **已知边界**：隐藏实例仍订阅 Router Context（不可见的轻量重渲染）；页面 UI 态建议放 store 而非 search params；403/loading 分支下 KeepAliveOutlet 不渲染（缓存随组件树销毁重建，异常场景可接受）。
 
+### 记住我 + 会话真撤销（2026-08-27，契约 v1.2）
+
+- **背景**：React 登录页「记住我」原为纯 UI 摆设；登出仅写日志、token 未作废（logout 后 accessToken 仍有效至自然过期，原默认 7 天）。本次一并修复。
+- **API Contract v1.2**（`nest/openapi/openapi.yaml`）：`LoginRequest` + `rememberMe`；refresh 响应 `required: [accessToken, refreshToken]`（轮换必下发新 token）；新增 `LogoutRequest`（body 可选）。
+- **NestJS**：
+  - 新增 **`refresh_tokens` 托管表**（drizzle 迁移 `0001_supreme_major_mapleleaf.sql` 已应用真实库）：SHA-256 哈希存储不落明文；登录写入、refresh 轮换（事务删旧插新、`expiresAt` 继承原行=固定窗口非滑动续期）、旧 token 重放直接 401。
+  - 有效期分档：accessToken 统一 `JWT_EXPIRES_IN ?? '1h'`（无状态不做黑名单，泄露残留窗口 ≤1h）；refreshToken 勾选 `REFRESH_EXPIRES_IN ?? '30d'` / 未勾选 `REFRESH_EXPIRES_IN_SHORT ?? '1d'`。`.env.example` 已同步说明。
+  - logout 带 `refreshToken` 精确撤销本设备，不带则删该用户全部托管行（全端下线）。
+  - **users.token_version（integer 默认 0）+ JWT `ver` claim**：`jwt.strategy` / refresh 链路比对不一致即 401；resetPassword 与封禁（status→disabled）时 bump + 清空托管会话 → 改密码/封禁即刻全端强制下线；解封不 bump。
+- **React**：
+  - 登录页「记住我」真正生效：提交 `rememberMe`；auth-store 记录该标志并在 `partialize` 中动态决定是否持久化 `refreshToken`（勾选才落 localStorage，未勾选保持仅内存=关浏览器即失效的会话级语义）。
+  - api-client 适配轮换：refresh 成功写回新 refreshToken（未下发则保留原值）；logout 携带本设备 refreshToken。
+- **验证**：接口层 17 项（双分档有效期、轮换继承过期时间、重放拒绝、精确/全量撤销、无鉴权 401 等）+ DB 层 6 项（哈希非明文、ver bump 全端失效等）全部通过；`tsc --noEmit`、nest build、react build/lint 通过。
+- **已知限制（记录在案，后续增强可选）**：accessToken 无黑名单（残留窗口 ≤1h，业内可接受）；无 refreshToken 重放检测全端撤销（可演进为 `revokedAt` 软删替代硬删）；勾选记住我后 localStorage 存 refreshToken 存在 XSS 面（仅勾选用户，30 天上限）。Vue/Next/Nuxt 登录尚未实现，实现时按 v1.2 契约对齐即可。
+
 ---
 
 ## 20. React / Next.js 全局性能规范（vercel-react-best-practices）
