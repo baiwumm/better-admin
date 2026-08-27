@@ -7,6 +7,9 @@
 /* 路由过渡动画（页面切换）预设 */
 @import './route-transitions.css';
 
+/* 色彩模式（正常 / 灰色 / 色弱）滤镜 */
+@import './color-vision.css';
+
 /* 多标签页栏动效 */
 @import './tags-bar.css';
 

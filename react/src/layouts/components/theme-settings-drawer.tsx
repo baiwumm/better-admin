@@ -2,6 +2,7 @@ import { Button, Drawer, useOverlayState } from "@heroui/react";
 import { PaintBucket, RotateCcw } from "lucide-react";
 import { useCallback } from "react";
 
+import { ColorVisionPicker } from "./color-vision-picker";
 import { ThemeColorPicker } from "./theme-color-picker";
 import { ThemeModePicker } from "./theme-mode-picker";
 import { TransitionDirectionPicker } from "./transition-direction-picker";
@@ -19,6 +20,7 @@ import { useDesignThemeStore } from "@/stores/design-theme-store";
  * 抽屉内的各配置项均抽为独立组件，后续新增配置项在此处追加即可：
  * - ThemeColorPicker           主题色
  * - ThemeModePicker            主题模式
+ * - ColorVisionPicker          色彩模式（正常 / 灰色 / 色弱，全局滤镜）
  * - TransitionDirectionPicker  主题动画方向（主题色 / 模式切换的揭示方向）
  * - RouteTransitionPicker      页面切换动画（页面切换的过渡效果预设）
  * - RouteTransitionSpeedPicker 页面切换速度（仅作用于页面切换动画）
@@ -57,6 +59,7 @@ export function ThemeSettingsDrawer() {
             <Drawer.Body className="space-y-6">
               <ThemeColorPicker />
               <ThemeModePicker />
+              <ColorVisionPicker />
               <TransitionDirectionPicker />
               <RouteTransitionPicker />
               <RouteTransitionSpeedPicker />

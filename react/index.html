@@ -23,6 +23,22 @@
 </head>
 
 <body>
+  <!-- 色弱模式滤镜定义（styles/color-vision.css 引用）：隐藏尺寸的内联 SVG，
+       feColorMatrix 近似红绿色弱的补色矩阵；display:none 在部分浏览器会使
+       filter 引用失效，故用 position:absolute + 零尺寸隐藏。 -->
+  <svg aria-hidden="true" focusable="false"
+    style="position: absolute; width: 0; height: 0; overflow: hidden;">
+    <defs>
+      <filter id="better-admin-color-weak" color-interpolation-filters="sRGB">
+        <feColorMatrix type="matrix" values="
+          0.625 0.375 0     0 0
+          0.7   0.3   0     0 0
+          0     0.3   0.7   0 0
+          0     0     0     1 0" />
+      </filter>
+    </defs>
+  </svg>
+
   <!-- 首屏/刷新全屏 Loading 占位：纯 HTML/CSS，不依赖 React/JS。
        浏览器解析到此即显示，避免资源加载期间的白屏；React 挂载后会被 #root 内容整体替换。
        spinner 为 Hero UI Spinner 的真实 SVG（含渐变描边 + 0.75s 线性旋转），视觉一致。 -->

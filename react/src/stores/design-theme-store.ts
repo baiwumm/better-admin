@@ -15,6 +15,7 @@ import {
 } from "@/themes/route-transitions";
 
 const STORAGE_KEY = "better-admin-design-theme";
+const COLOR_VISION_KEY = "better-admin-color-vision";
 const DIRECTION_KEY = "better-admin-transition-direction";
 const ROUTE_TRANSITION_KEY = "better-admin-route-transition";
 const ROUTE_TRANSITION_SPEED_KEY = "better-admin-route-transition-speed";
@@ -23,7 +24,21 @@ const THEME_MODE_KEY = "better-admin-theme-mode";
 
 /** 主题模式：跟随系统 / 浅色 / 深色 */
 export type ThemeMode = "system" | "light" | "dark";
+/** 色彩模式：正常 / 灰色（去色）/ 色弱（红绿色弱近似补色） */
+export type ColorVisionMode = "normal" | "grayscale" | "color-weak";
 type ResolvedTheme = "light" | "dark";
+
+const COLOR_VISION_MODES: readonly ColorVisionMode[] = [
+  "normal",
+  "grayscale",
+  "color-weak",
+];
+
+function isColorVisionMode(value: unknown): value is ColorVisionMode {
+  return (
+    typeof value === "string" && COLOR_VISION_MODES.includes(value as never)
+  );
+}
 
 // ── DOM 操作（纯函数，不依赖 React） ──
 
@@ -128,6 +143,20 @@ function writeThemeModeToStorage(mode: ThemeMode): void {
   localStorage.setItem(THEME_MODE_KEY, mode);
 }
 
+function readColorVisionFromStorage(): ColorVisionMode {
+  if (typeof window === "undefined") return "normal";
+
+  const stored = localStorage.getItem(COLOR_VISION_KEY);
+
+  if (isColorVisionMode(stored)) return stored;
+
+  return "normal";
+}
+
+function writeColorVisionToStorage(mode: ColorVisionMode): void {
+  localStorage.setItem(COLOR_VISION_KEY, mode);
+}
+
 /** 读取系统明暗偏好（无 matchMedia 环境回退 light）。 */
 export function getSystemPreference(): ResolvedTheme {
   if (typeof window === "undefined" || !window.matchMedia) return "light";
@@ -162,6 +191,20 @@ export function applyRouteTransitionSpeedToDOM(
   }
 }
 
+/**
+ * 把色彩模式应用到 <html> 的 data-color-vision 属性
+ * （供 styles/color-vision.css 的滤镜规则生效；normal 移除属性）。
+ */
+export function applyColorVisionToDOM(mode: ColorVisionMode): void {
+  const root = document.documentElement;
+
+  if (mode === "normal") {
+    root.removeAttribute("data-color-vision");
+  } else {
+    root.setAttribute("data-color-vision", mode);
+  }
+}
+
 /** 把路由过渡动画 id 应用到 <html> 的 data-route-transition 属性（供 CSS 选择器启用动画）。 */
 export function applyRouteTransitionToDOM(id: RouteTransitionId): void {
   const root = document.documentElement;
@@ -177,6 +220,7 @@ export function applyRouteTransitionToDOM(id: RouteTransitionId): void {
 
 /** 偏好设置初始状态（重置按钮的目标状态；store 初始值与 reset 共用此单一来源） */
 const DEFAULT_PREFERENCES = {
+  colorVision: "normal",
   designThemeId: "default",
   transitionDirection: "ltr",
   routeTransition: "none",
@@ -186,6 +230,8 @@ const DEFAULT_PREFERENCES = {
 } as const;
 
 interface DesignThemeState {
+  /** 当前色彩模式（正常 / 灰色 / 色弱） */
+  colorVision: ColorVisionMode;
   /** 当前激活的主题色 ID */
   designThemeId: string;
   /** 当前动画方向 */
@@ -200,6 +246,8 @@ interface DesignThemeState {
   themeMode: ThemeMode;
   /** 系统明暗偏好快照（themeMode 为 system 时跟随；由 matchMedia 监听维护） */
   systemPreference: ResolvedTheme;
+  /** 设置色彩模式（带方向揭示动画 + 写 store + DOM data-color-vision + localStorage；非法值收窄为 normal） */
+  setColorVision: (mode: ColorVisionMode) => void;
   /** 切换主题色（带 ViewTransition 动画 + DOM + localStorage） */
   setDesignTheme: (id: string) => void;
   /** 设置动画方向 */
@@ -226,6 +274,21 @@ interface DesignThemeState {
 export const useDesignThemeStore = create<DesignThemeState>((set) => ({
   ...DEFAULT_PREFERENCES,
   systemPreference: getSystemPreference(),
+
+  setColorVision: (mode) => {
+    const validMode = isColorVisionMode(mode) ? mode : "normal";
+
+    const { colorVision, transitionDirection } = useDesignThemeStore.getState();
+
+    if (validMode === colorVision) return;
+
+    // 与主题色/主题模式一致：跟随动画方向做一次全页揭示动画
+    void runViewTransition(() => {
+      set({ colorVision: validMode });
+      applyColorVisionToDOM(validMode);
+      writeColorVisionToStorage(validMode);
+    }, transitionDirection);
+  },
 
   setDesignTheme: (id) => {
     const validId =
@@ -313,10 +376,12 @@ export const useDesignThemeStore = create<DesignThemeState>((set) => ({
     // 终态校正一次，保证 DOM 与 store 一致
     return runViewTransition(() => {
       set({ ...DEFAULT_PREFERENCES });
+      applyColorVisionToDOM(DEFAULT_PREFERENCES.colorVision);
       applyThemeToDOM(DEFAULT_PREFERENCES.designThemeId);
       applyRouteTransitionToDOM(DEFAULT_PREFERENCES.routeTransition);
       applyRouteTransitionSpeedToDOM(DEFAULT_PREFERENCES.routeTransitionSpeed);
       writeThemeToStorage(DEFAULT_PREFERENCES.designThemeId);
+      writeColorVisionToStorage(DEFAULT_PREFERENCES.colorVision);
       writeDirectionToStorage(DEFAULT_PREFERENCES.transitionDirection);
       writeRouteTransitionToStorage(DEFAULT_PREFERENCES.routeTransition);
       writeSpeedToStorage(DEFAULT_PREFERENCES.routeTransitionSpeed);
@@ -337,6 +402,7 @@ export const useDesignThemeStore = create<DesignThemeState>((set) => ({
  * 并注册系统明暗偏好监听（themeMode 为 system 时跟随切换，无动画直接生效）。
  */
 export function initDesignTheme(): void {
+  const colorVision = readColorVisionFromStorage();
   const stored = readThemeFromStorage();
   const direction = readDirectionFromStorage();
   const routeTransition = readRouteTransitionFromStorage();
@@ -345,12 +411,14 @@ export function initDesignTheme(): void {
   const themeMode = readThemeModeFromStorage();
   const systemPreference = getSystemPreference();
 
+  applyColorVisionToDOM(colorVision);
   applyThemeToDOM(stored);
   applyRouteTransitionToDOM(routeTransition);
   applyRouteTransitionSpeedToDOM(routeTransitionSpeed);
   applyThemeModeToDOM(themeMode === "system" ? systemPreference : themeMode);
 
   useDesignThemeStore.setState({
+    colorVision,
     designThemeId: stored,
     transitionDirection: direction,
     routeTransition,
