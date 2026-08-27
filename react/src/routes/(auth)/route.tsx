@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { Chip, Typography } from "@heroui/react";
 
 import { useResolvedTheme } from "@/stores/design-theme-store";
+import { LanguageSwitcher } from "@/layouts/components/language-switcher";
 import { ThemeSettingsDrawer } from "@/layouts/components/theme-settings-drawer";
 import { ENV } from "@/lib/env";
 
@@ -44,8 +45,9 @@ function AuthPageLayout() {
       <div aria-hidden className="sign-in-glow sign-in-glow--a" />
       <div aria-hidden className="sign-in-glow sign-in-glow--b" />
 
-      {/* 偏好设置入口：锚定页面右上角（移动端压在页头，桌面端落在表单区上方） */}
-      <div className="absolute right-4 top-4 z-30">
+      {/* 右上角入口组：语言切换 + 偏好设置（移动端压在页头，桌面端落在表单区上方） */}
+      <div className="absolute right-4 top-4 z-30 flex items-center gap-2">
+        <LanguageSwitcher />
         <ThemeSettingsDrawer />
       </div>
 
