@@ -1,7 +1,11 @@
+import { useTranslation } from "@/i18n";
+
 export function ThemePreviewSystem(props: React.SVGProps<SVGSVGElement>) {
+  const { t } = useTranslation();
+
   return (
     <svg
-      aria-label="System theme preview"
+      aria-label={t("layout.prefs.preview.system")}
       fill="none"
       role="img"
       viewBox="0 0 240 117"
@@ -137,9 +141,11 @@ export function ThemePreviewSystem(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export function ThemePreviewLight(props: React.SVGProps<SVGSVGElement>) {
+  const { t } = useTranslation();
+
   return (
     <svg
-      aria-label="Light"
+      aria-label={t("layout.prefs.preview.light")}
       fill="none"
       role="img"
       viewBox="0 0 240 117"
@@ -204,9 +210,11 @@ export function ThemePreviewLight(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export function ThemePreviewDark(props: React.SVGProps<SVGSVGElement>) {
+  const { t } = useTranslation();
+
   return (
     <svg
-      aria-label="Dark"
+      aria-label={t("layout.prefs.preview.dark")}
       fill="none"
       role="img"
       viewBox="0 0 240 117"

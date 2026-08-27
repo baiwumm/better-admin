@@ -1,10 +1,10 @@
 {
-  "backHome": "Back to Home",
-  "language": {
-    "label": "Language",
-    "switch": "Switch language",
-    "current": "Current language",
-    "zhCN": "简体中文",
-    "en": "English"
-  }
+  "common.backHome": "Back to Home",
+  "common.cancel": "Cancel",
+  "common.confirm": "Confirm",
+  "common.language.current": "Current language",
+  "common.language.en": "English",
+  "common.language.label": "Language",
+  "common.language.switch": "Switch language",
+  "common.language.zhCN": "简体中文"
 }

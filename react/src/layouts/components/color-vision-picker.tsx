@@ -5,12 +5,13 @@ import { Contrast, Eye, Glasses, type LucideIcon } from "lucide-react";
 
 import { PickerLabel } from "./picker-label";
 
+import { useTranslation } from "@/i18n";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
 
-const COLOR_VISION_OPTIONS: { id: ColorVisionMode; label: string }[] = [
-  { id: "normal", label: "正常模式" },
-  { id: "grayscale", label: "灰色模式" },
-  { id: "color-weak", label: "色弱模式" },
+const COLOR_VISION_OPTIONS: { id: ColorVisionMode; labelKey: string }[] = [
+  { id: "normal", labelKey: "layout.prefs.colorVision.normal" },
+  { id: "grayscale", labelKey: "layout.prefs.colorVision.grayscale" },
+  { id: "color-weak", labelKey: "layout.prefs.colorVision.colorWeak" },
 ];
 
 const COLOR_VISION_ICONS: Record<ColorVisionMode, LucideIcon> = {
@@ -28,16 +29,21 @@ const COLOR_VISION_ICONS: Record<ColorVisionMode, LucideIcon> = {
 export function ColorVisionPicker() {
   const colorVision = useDesignThemeStore((s) => s.colorVision);
   const setColorVision = useDesignThemeStore((s) => s.setColorVision);
+  const { t } = useTranslation();
 
   return (
     <RadioGroup
+      aria-label={t("layout.prefs.colorVision.label")}
       value={colorVision}
       variant="secondary"
       onChange={(value) => setColorVision(value as ColorVisionMode)}
     >
-      <PickerLabel label="色彩模式" tooltip="仅调整全局色彩呈现" />
+      <PickerLabel
+        labelKey="layout.prefs.colorVision.label"
+        tooltipKey="layout.prefs.colorVision.tooltip"
+      />
       <div className="mt-2 grid grid-cols-3 gap-2">
-        {COLOR_VISION_OPTIONS.map(({ id, label }) => {
+        {COLOR_VISION_OPTIONS.map(({ id, labelKey }) => {
           const Icon = COLOR_VISION_ICONS[id];
 
           return (
@@ -45,7 +51,7 @@ export function ColorVisionPicker() {
               <Radio.Content className="w-full rounded-lg border border-default px-1 py-2 transition-all data-[selected=true]:border-accent data-[selected=true]:bg-accent/10 hover:scale-105">
                 <div className="flex w-full min-w-0 items-center justify-center gap-1">
                   <Icon className="shrink-0" size={14} />
-                  <Description className="truncate">{label}</Description>
+                  <Description className="truncate">{t(labelKey)}</Description>
                 </div>
               </Radio.Content>
             </Radio>

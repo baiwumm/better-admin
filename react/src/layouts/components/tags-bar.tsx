@@ -24,6 +24,8 @@ import {
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 
 import { useMenus } from "@/hooks/use-menus";
+import { useTranslation } from "@/i18n";
+import { getMenuLabel } from "@/lib/menu-i18n";
 import { type MenuNode } from "@/lib/api-types";
 import { collectMenuPaths, flattenLeafMenus } from "@/lib/menu-utils";
 import { isPinnedTab } from "@/lib/tabs-model";
@@ -111,6 +113,7 @@ export function TagsBar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { data: menuTree } = useMenus();
+  const { t } = useTranslation();
 
   const paths = useTabsStore((s) => s.paths);
   const cachedMeta = useTabsStore((s) => s.meta);
@@ -136,16 +139,18 @@ export function TagsBar() {
     pruneTabs(collectMenuPaths(menuTree as MenuNode[]));
   }, [menuTree, pruneTabs]);
 
-  // 路径 → 标题 / 图标实时映射（菜单数据源）。
+  // 路径 → 标题 / 图标实时映射（菜单数据源；标题经 i18nKey 取词，语言切换即更新）。
   const liveMetaByPath = useMemo(() => {
     const map = new Map<string, { title: string; icon?: string }>();
 
     for (const node of flattenLeafMenus(menuTree ?? [])) {
-      if (node.to) map.set(node.to, { title: node.label, icon: node.icon });
+      if (node.to) {
+        map.set(node.to, { title: getMenuLabel(node, t), icon: node.icon });
+      }
     }
 
     return map;
-  }, [menuTree]);
+  }, [menuTree, t]);
 
   // 菜单就绪 → 写入快照（新值覆盖旧值并持久化：刷新后无需等菜单接口）。
   useEffect(() => {
@@ -309,7 +314,7 @@ export function TagsBar() {
       {/* 左侧 chevron：仅当左方仍有未展示内容时可用 */}
       <Button
         isIconOnly
-        aria-label="向左滚动标签"
+        aria-label={t("layout.tags.scrollLeft")}
         className="hidden size-6 min-w-6 md:flex"
         isDisabled={!canScrollLeft}
         size="sm"
@@ -333,7 +338,7 @@ export function TagsBar() {
             const title =
               live?.title ??
               cached?.title ??
-              (isPinnedTab(path) ? "控制台" : null);
+              (isPinnedTab(path) ? t("menu.pageTitle.console") : null);
             const icon = live?.icon ?? cached?.icon;
             const active = path === pathname;
             const pinned = isPinnedTab(path);
@@ -393,7 +398,7 @@ export function TagsBar() {
       {/* 右侧 chevron */}
       <Button
         isIconOnly
-        aria-label="向右滚动标签"
+        aria-label={t("layout.tags.scrollRight")}
         className="hidden size-6 min-w-6 md:flex"
         isDisabled={!canScrollRight}
         size="sm"
@@ -417,32 +422,45 @@ export function TagsBar() {
             disabledKeys={disabledKeys}
             onAction={handleMenuAction}
           >
-            <Dropdown.Item id="refresh" textValue="刷新页面">
+            <Dropdown.Item id="refresh" textValue={t("layout.tags.refresh")}>
               <RefreshCw className="size-4 shrink-0 text-muted" />
-              刷新页面
+              {t("layout.tags.refresh")}
             </Dropdown.Item>
-            <Dropdown.Item id="close-left" textValue="关闭左侧">
+            <Dropdown.Item
+              id="close-left"
+              textValue={t("layout.tags.closeLeft")}
+            >
               <ArrowLeftToLine className="size-4 shrink-0 text-muted" />
-              关闭左侧
+              {t("layout.tags.closeLeft")}
             </Dropdown.Item>
-            <Dropdown.Item id="close-right" textValue="关闭右侧">
+            <Dropdown.Item
+              id="close-right"
+              textValue={t("layout.tags.closeRight")}
+            >
               <ArrowRightToLine className="size-4 shrink-0 text-muted" />
-              关闭右侧
+              {t("layout.tags.closeRight")}
             </Dropdown.Item>
-            <Dropdown.Item id="close-others" textValue="关闭其他">
+            <Dropdown.Item
+              id="close-others"
+              textValue={t("layout.tags.closeOthers")}
+            >
               <SquareX className="size-4 shrink-0 text-muted" />
-              关闭其他
+              {t("layout.tags.closeOthers")}
             </Dropdown.Item>
-            <Dropdown.Item id="close-all" textValue="全部关闭">
+            <Dropdown.Item id="close-all" textValue={t("layout.tags.closeAll")}>
               <CircleX className="size-4 shrink-0 text-muted" />
-              全部关闭
+              {t("layout.tags.closeAll")}
             </Dropdown.Item>
 
             <Separator />
 
-            <Dropdown.Item id="close" textValue="关闭" variant="danger">
+            <Dropdown.Item
+              id="close"
+              textValue={t("layout.tags.close")}
+              variant="danger"
+            >
               <X className="size-4 shrink-0 text-danger" />
-              关闭
+              {t("layout.tags.close")}
             </Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown.Popover>
@@ -462,11 +480,12 @@ function TabCloseTrigger({
   title: string;
 }) {
   const ref = useIsolatedClick(onClose);
+  const { t } = useTranslation();
 
   return (
     <span
       ref={ref}
-      aria-label={`关闭 ${title}`}
+      aria-label={t("layout.tags.closeNamed", { title })}
       className="-mr-1 flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-50 transition-opacity hover:bg-default hover:opacity-100"
       role="button"
     >

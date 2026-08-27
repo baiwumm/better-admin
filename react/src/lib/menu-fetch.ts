@@ -9,6 +9,8 @@ import { filterAccessibleMenus } from "@/lib/permission";
 export const CONSOLE_MENU_NODE: MenuNode = {
   id: "console",
   label: "控制台",
+  // 渲染层优先按 i18nKey 取词（menu.pageTitle.*），label 仅作无翻译时的回退
+  i18nKey: "menu.pageTitle.console",
   icon: "layout-dashboard",
   to: "/",
   sort: 0,

@@ -28,17 +28,18 @@ export type RouteTransitionId =
 
 export const ROUTE_TRANSITIONS: {
   id: RouteTransitionId;
-  label: string;
+  /** 名称的 i18n key（layout.prefs.routeTransition.<id>），渲染处经 t() 取词 */
+  labelKey: string;
 }[] = [
-  { id: "none", label: "无动画" },
-  { id: "fade", label: "柔和淡化" },
-  { id: "glide", label: "视差推滑" },
-  { id: "rise", label: "浮现上升" },
-  { id: "zoom", label: "纵深缩放" },
-  { id: "reveal", label: "揭示展开" },
-  { id: "cover", label: "覆盖推入" },
-  { id: "circle", label: "圆形揭示" },
-  { id: "blur", label: "景深聚焦" },
+  { id: "none", labelKey: "layout.prefs.routeTransition.none" },
+  { id: "fade", labelKey: "layout.prefs.routeTransition.fade" },
+  { id: "glide", labelKey: "layout.prefs.routeTransition.glide" },
+  { id: "rise", labelKey: "layout.prefs.routeTransition.rise" },
+  { id: "zoom", labelKey: "layout.prefs.routeTransition.zoom" },
+  { id: "reveal", labelKey: "layout.prefs.routeTransition.reveal" },
+  { id: "cover", labelKey: "layout.prefs.routeTransition.cover" },
+  { id: "circle", labelKey: "layout.prefs.routeTransition.circle" },
+  { id: "blur", labelKey: "layout.prefs.routeTransition.blur" },
 ];
 
 export const ROUTE_TRANSITION_IDS: RouteTransitionId[] = ROUTE_TRANSITIONS.map(
@@ -62,11 +63,12 @@ export type RouteTransitionSpeedId = "slow" | "normal" | "fast";
 
 export const ROUTE_TRANSITION_SPEEDS: {
   id: RouteTransitionSpeedId;
-  label: string;
+  /** 名称的 i18n key（layout.prefs.speed.<id>），渲染处经 t() 取词 */
+  labelKey: string;
 }[] = [
-  { id: "slow", label: "慢速" },
-  { id: "normal", label: "标准" },
-  { id: "fast", label: "快速" },
+  { id: "slow", labelKey: "layout.prefs.speed.slow" },
+  { id: "normal", labelKey: "layout.prefs.speed.normal" },
+  { id: "fast", labelKey: "layout.prefs.speed.fast" },
 ];
 
 export const ROUTE_TRANSITION_SPEED_IDS: RouteTransitionSpeedId[] =

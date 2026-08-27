@@ -14,6 +14,7 @@ import {
 import { PickerLabel } from "./picker-label";
 
 import { useDesignThemeStore } from "@/stores/design-theme-store";
+import { useTranslation } from "@/i18n";
 import {
   ROUTE_TRANSITIONS,
   type RouteTransitionId,
@@ -40,16 +41,21 @@ const ROUTE_ICONS: Record<RouteTransitionId, typeof Ban> = {
 export function RouteTransitionPicker() {
   const routeTransition = useDesignThemeStore((s) => s.routeTransition);
   const setRouteTransition = useDesignThemeStore((s) => s.setRouteTransition);
+  const { t } = useTranslation();
 
   return (
     <RadioGroup
+      aria-label={t("layout.prefs.routeTransition.label")}
       value={routeTransition}
       variant="secondary"
       onChange={(value) => setRouteTransition(value as RouteTransitionId)}
     >
-      <PickerLabel label="页面切换动画" tooltip="切换菜单 / 页面时的过渡效果" />
+      <PickerLabel
+        labelKey="layout.prefs.routeTransition.label"
+        tooltipKey="layout.prefs.routeTransition.tooltip"
+      />
       <div className="grid gap-2 grid-cols-3 mt-2">
-        {ROUTE_TRANSITIONS.map(({ id, label }) => {
+        {ROUTE_TRANSITIONS.map(({ id, labelKey }) => {
           const Icon = ROUTE_ICONS[id];
 
           return (
@@ -62,7 +68,7 @@ export function RouteTransitionPicker() {
               >
                 <div className="min-w-0 flex items-center justify-center w-full gap-1">
                   <Icon className="shrink-0" size={14} />
-                  <Description className="truncate">{label}</Description>
+                  <Description className="truncate">{t(labelKey)}</Description>
                 </div>
               </Radio.Content>
             </Radio>

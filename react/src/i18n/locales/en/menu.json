@@ -1,13 +1,24 @@
 {
-  "pageTitle": {
-    "console": "Console",
-    "account": "My Account",
-    "settings": "System Settings",
-    "users": "User Management",
-    "roles": "Role Management",
-    "menus": "Menu Management",
-    "permissions": "Permission Management",
-    "dicts": "Dictionary Management",
-    "logs": "Log Management"
-  }
+  "menu.logs": "Logs",
+  "menu.menus": "Menu Management",
+  "menu.overview": "Overview",
+  "menu.pageTitle.account": "My Account",
+  "menu.pageTitle.console": "Console",
+  "menu.pageTitle.dicts": "Dictionary Management",
+  "menu.pageTitle.logs": "Log Management",
+  "menu.pageTitle.menus": "Menu Management",
+  "menu.pageTitle.permissions": "Permission Management",
+  "menu.pageTitle.roles": "Role Management",
+  "menu.pageTitle.settings": "System Settings",
+  "menu.pageTitle.users": "User Management",
+  "menu.permissions": "Permission Management",
+  "menu.roles": "Role Management",
+  "menu.settings": "System Settings",
+  "menu.settings.account": "Account",
+  "menu.settings.appearance": "Appearance",
+  "menu.settings.display": "Display",
+  "menu.settings.notifications": "Notifications",
+  "menu.settings.profile": "Profile",
+  "menu.system": "System Management",
+  "menu.users": "User Management"
 }

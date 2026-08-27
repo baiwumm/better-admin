@@ -9,17 +9,26 @@ import {
 import { PickerLabel } from "./picker-label";
 
 import { useDesignThemeStore } from "@/stores/design-theme-store";
+import { useTranslation } from "@/i18n";
 import { type TransitionDirection } from "@/themes/transition-direction";
 
 const DIRECTION_OPTIONS: {
   value: TransitionDirection;
-  label: string;
+  labelKey: string;
   icon: typeof ArrowLeftRight;
 }[] = [
-  { value: "ltr", label: "左到右", icon: ArrowLeftRight },
-  { value: "rtl", label: "右到左", icon: ArrowRightLeft },
-  { value: "ttb", label: "上到下", icon: ArrowUpDown },
-  { value: "btt", label: "下到上", icon: ArrowDownUp },
+  {
+    value: "ltr",
+    labelKey: "layout.prefs.direction.ltr",
+    icon: ArrowLeftRight,
+  },
+  {
+    value: "rtl",
+    labelKey: "layout.prefs.direction.rtl",
+    icon: ArrowRightLeft,
+  },
+  { value: "ttb", labelKey: "layout.prefs.direction.ttb", icon: ArrowUpDown },
+  { value: "btt", labelKey: "layout.prefs.direction.btt", icon: ArrowDownUp },
 ];
 
 /**
@@ -31,19 +40,21 @@ export function TransitionDirectionPicker() {
   const setTransitionDirection = useDesignThemeStore(
     (s) => s.setTransitionDirection,
   );
+  const { t } = useTranslation();
 
   return (
     <RadioGroup
+      aria-label={t("layout.prefs.direction.label")}
       value={transitionDirection}
       variant="secondary"
       onChange={(value) => setTransitionDirection(value as TransitionDirection)}
     >
       <PickerLabel
-        label="主题动画方向"
-        tooltip="切换主题色 / 模式时新画面的展开方向"
+        labelKey="layout.prefs.direction.label"
+        tooltipKey="layout.prefs.direction.tooltip"
       />
       <div className="grid gap-2 grid-cols-2 lg:grid-cols-4 mt-2">
-        {DIRECTION_OPTIONS.map(({ value, label, icon: Icon }) => (
+        {DIRECTION_OPTIONS.map(({ value, labelKey, icon: Icon }) => (
           <Radio key={value} className="mt-0" value={value}>
             <Radio.Content
               className={cn(
@@ -53,7 +64,7 @@ export function TransitionDirectionPicker() {
             >
               <div className="min-w-0 flex items-center justify-center w-full gap-1">
                 <Icon className="shrink-0" size={14} />
-                <Description className="truncate">{label}</Description>
+                <Description className="truncate">{t(labelKey)}</Description>
               </div>
             </Radio.Content>
           </Radio>

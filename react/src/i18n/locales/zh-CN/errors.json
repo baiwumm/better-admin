@@ -1,20 +1,12 @@
 {
-  "api": {
-    "sessionExpired": "会话已失效，请重新登录",
-    "loginExpired": "登录已过期，请重新登录",
-    "refreshFailed": "刷新失败，请重新登录",
-    "requestFailed": "请求失败（{{status}}）"
-  },
-  "forbidden": {
-    "title": "禁止访问",
-    "description": "你没有执行该操作的权限，如有疑问请联系管理员。"
-  },
-  "notFound": {
-    "title": "页面不存在",
-    "description": "你访问的页面不存在或已被移除，请检查地址是否正确。"
-  },
-  "serverError": {
-    "title": "出错了",
-    "description": "页面出错了，请刷新重试；若问题持续存在，请联系管理员。"
-  }
+  "errors.api.loginExpired": "登录已过期，请重新登录",
+  "errors.api.refreshFailed": "刷新失败，请重新登录",
+  "errors.api.requestFailed": "请求失败（{{status}}）",
+  "errors.api.sessionExpired": "会话已失效，请重新登录",
+  "errors.forbidden.description": "你没有执行该操作的权限，如有疑问请联系管理员。",
+  "errors.forbidden.title": "禁止访问",
+  "errors.notFound.description": "你访问的页面不存在或已被移除，请检查地址是否正确。",
+  "errors.notFound.title": "页面不存在",
+  "errors.serverError.description": "页面出错了，请刷新重试；若问题持续存在，请联系管理员。",
+  "errors.serverError.title": "出错了"
 }

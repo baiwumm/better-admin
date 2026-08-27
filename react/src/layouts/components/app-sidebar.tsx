@@ -26,6 +26,7 @@ import {
 import { useMenus } from "@/hooks/use-menus";
 import { filterHiddenMenus } from "@/lib/permission";
 import { ENV } from "@/lib/env";
+import { useTranslation } from "@/i18n";
 
 import logo from "/logo.svg";
 import logoDark from "/logo-dark.svg";
@@ -58,8 +59,16 @@ const TECH_STACKS: {
 
 /** 底部快捷链接（菜单区与用户区之间）：新窗口跳转。 */
 const SIDEBAR_LINKS = [
-  { label: "Github", href: "https://github.com/baiwumm" },
-  { label: "博客", href: "https://www.baiwumm.com" },
+  {
+    labelKey: "layout.sidebar.github",
+    href: "https://github.com/baiwumm",
+    kind: "github",
+  },
+  {
+    labelKey: "layout.sidebar.blog",
+    href: "https://www.baiwumm.com",
+    kind: "blog",
+  },
 ] as const;
 
 /** GitHub 官方 mark（lucide 已移除品牌图标，此处内联官方 SVG path）。 */
@@ -77,8 +86,8 @@ function GithubIcon({ className }: { className?: string }) {
 }
 
 /** 链接图标映射（Github 用内联 SVG，其余走 lucide）。 */
-function SidebarLinkIcon({ label }: { label: string }) {
-  if (label === "Github") {
+function SidebarLinkIcon({ kind }: { kind: "github" | "blog" }) {
+  if (kind === "github") {
     return <GithubIcon className="size-4 shrink-0" />;
   }
 
@@ -120,6 +129,7 @@ function CollapsedMenuSkeleton() {
 function SidebarBrand({ collapsed }: { collapsed?: boolean }) {
   // 实际生效的明暗外观（来自 design-theme-store，跨组件一致）
   const theme = useResolvedTheme();
+  const { t } = useTranslation();
 
   const handleMenuAction = (key: Key) => {
     const stack = TECH_STACKS.find((s) => s.name === key);
@@ -164,7 +174,7 @@ function SidebarBrand({ collapsed }: { collapsed?: boolean }) {
           {/* 弹层头部：分组标题 */}
           <div className="px-3 pt-2.5 pb-1">
             <Typography color="muted" type="body-xs">
-              技术栈
+              {t("layout.sidebar.techStack")}
             </Typography>
           </div>
 
@@ -190,24 +200,25 @@ function SidebarBrand({ collapsed }: { collapsed?: boolean }) {
  * 展开态为「图标 + 文字」，折叠态仅图标（Tooltip 提示名称）。
  */
 function SidebarLinks({ collapsed }: { collapsed?: boolean }) {
+  const { t } = useTranslation();
+
   return (
     /* 纵向排布；与用户区之间由 SidebarUser 自带的 border-t 分隔 */
     <div className="flex shrink-0 flex-col px-3.5 py-2">
       {SIDEBAR_LINKS.map((link) => {
+        const label = t(link.labelKey);
         const linkEl = (
           <Link
-            key={link.label}
+            key={link.labelKey}
             className="flex h-9 w-full items-center gap-2 rounded-3xl px-2.5 text-muted transition-colors hover:bg-default hover:text-foreground no-underline"
             href={link.href}
             rel="noopener noreferrer"
             target="_blank"
           >
-            <SidebarLinkIcon label={link.label} />
+            <SidebarLinkIcon kind={link.kind} />
             {!collapsed && (
               <>
-                <span className="min-w-0 flex-1 truncate text-sm">
-                  {link.label}
-                </span>
+                <span className="min-w-0 flex-1 truncate text-sm">{label}</span>
                 <Link.Icon className="pb-0" />
               </>
             )}
@@ -217,11 +228,11 @@ function SidebarLinks({ collapsed }: { collapsed?: boolean }) {
         if (!collapsed) return linkEl;
 
         return (
-          <Tooltip key={link.label} delay={0}>
+          <Tooltip key={link.labelKey} delay={0}>
             {linkEl}
             <Tooltip.Content showArrow placement="right">
               <Tooltip.Arrow />
-              {link.label}
+              {label}
             </Tooltip.Content>
           </Tooltip>
         );

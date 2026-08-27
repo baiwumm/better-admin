@@ -13,7 +13,9 @@ import { ChevronDown } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 
 import { type MenuNode } from "@/lib/api-types";
+import { getMenuLabel } from "@/lib/menu-i18n";
 import { findActivePath } from "@/lib/menu-utils";
+import { useTranslation } from "@/i18n";
 
 type CollapsedMenuProps = {
   items: MenuNode[];
@@ -64,6 +66,8 @@ function CollapsedMenuItem({
   const [isOpen, setIsOpen] = useState(false);
   const hasChildren = Boolean(item.children?.length);
   const isActive = findActivePath([item], pathname).length > 0;
+  const { t } = useTranslation();
+  const label = getMenuLabel(item, t);
 
   const open = useCallback(() => {
     window.clearTimeout(closeTimer.current);
@@ -81,7 +85,7 @@ function CollapsedMenuItem({
       <Tooltip delay={0}>
         <Button
           isIconOnly
-          aria-label={item.label}
+          aria-label={label}
           className={cn(isActive && "bg-default")}
           variant="ghost"
           onPress={() => onNavigate(item.to)}
@@ -90,7 +94,7 @@ function CollapsedMenuItem({
         </Button>
         <Tooltip.Content placement="right">
           <Tooltip.Arrow />
-          {item.label}
+          {label}
         </Tooltip.Content>
       </Tooltip>
     );
@@ -109,10 +113,10 @@ function CollapsedMenuItem({
         onMouseEnter={open}
         onMouseLeave={scheduleClose}
       >
-        <Popover.Dialog aria-label={item.label} className="w-64">
+        <Popover.Dialog aria-label={label} className="w-64">
           <Popover.Arrow />
           <Popover.Heading className="text-muted text-xs mb-2">
-            {item.label}
+            {label}
           </Popover.Heading>
           <CollapsedSubLevel
             items={item.children ?? []}
@@ -148,6 +152,7 @@ function CollapsedSubLevel({
     () => new Set(leaves.filter((l) => l.to === pathname).map((l) => l.to!)),
     [leaves, pathname],
   );
+  const { t } = useTranslation();
 
   return (
     <div className="flex flex-col gap-1">
@@ -157,7 +162,7 @@ function CollapsedSubLevel({
         // “同组某个子菜单激活后其它子菜单点击无反应”），故用 replace + onSelectionChange 兜底。
         <ListBox
           disallowEmptySelection
-          aria-label="子菜单"
+          aria-label={t("layout.sidebar.submenu")}
           className="gap-0.5 bg-transparent p-0"
           selectedKeys={selectedKeys}
           selectionBehavior="replace"
@@ -174,7 +179,7 @@ function CollapsedSubLevel({
               key={child.to ?? child.id}
               className="px-3 py-2 text-sm text-muted data-[selected=true]:text-foreground data-[hovered=true]:text-foreground"
               id={child.to ?? child.id}
-              textValue={child.label}
+              textValue={getMenuLabel(child, t)}
             >
               <div className="flex min-w-0 items-center gap-2">
                 <DynamicIcon
@@ -182,7 +187,7 @@ function CollapsedSubLevel({
                   name={child.icon as IconName}
                   size={16}
                 />
-                <span className="truncate">{child.label}</span>
+                <span className="truncate">{getMenuLabel(child, t)}</span>
               </div>
             </ListBox.Item>
           ))}
@@ -211,6 +216,7 @@ function CollapsedGroup({
   onNavigate: (to?: string | null) => void;
 }) {
   const isActive = findActivePath(item.children ?? [], pathname).length > 0;
+  const { t } = useTranslation();
 
   return (
     <Accordion allowsMultipleExpanded hideSeparator className="w-full">
@@ -221,7 +227,7 @@ function CollapsedGroup({
               className="me-2 size-4 shrink-0"
               name={item.icon as IconName}
             />
-            <span className="flex-1 truncate">{item.label}</span>
+            <span className="flex-1 truncate">{getMenuLabel(item, t)}</span>
             <Accordion.Indicator>
               <ChevronDown />
             </Accordion.Indicator>

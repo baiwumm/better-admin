@@ -10,6 +10,7 @@ import { RouteTransitionPicker } from "./route-transition-picker";
 import { RouteTransitionSpeedPicker } from "./route-transition-speed-picker";
 import { ShowTabsPicker } from "./show-tabs-picker";
 
+import { useTranslation } from "@/i18n";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
 
 /**
@@ -33,6 +34,7 @@ export function ThemeSettingsDrawer() {
   // 主题设置抽屉状态（Hero UI 官方用法：useOverlayState + 状态挂 Backdrop）
   const themeDrawer = useOverlayState();
   const resetPreferences = useDesignThemeStore((s) => s.resetPreferences);
+  const { t } = useTranslation();
 
   const handleReset = useCallback(() => {
     // 不在重置后弹 toast：HeroUI Toast 的进出动画内部走
@@ -54,7 +56,9 @@ export function ThemeSettingsDrawer() {
           <Drawer.Dialog>
             <Drawer.CloseTrigger />
             <Drawer.Header>
-              <Drawer.Heading className="font-bold">偏好设置</Drawer.Heading>
+              <Drawer.Heading className="font-bold">
+                {t("layout.prefs.title")}
+              </Drawer.Heading>
             </Drawer.Header>
             <Drawer.Body className="space-y-6">
               <ThemeColorPicker />
@@ -68,7 +72,7 @@ export function ThemeSettingsDrawer() {
             <Drawer.Footer>
               <Button fullWidth variant="danger" onPress={handleReset}>
                 <RotateCcw className="shrink-0" size={16} />
-                重置设置
+                {t("layout.prefs.reset")}
               </Button>
             </Drawer.Footer>
           </Drawer.Dialog>

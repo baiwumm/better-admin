@@ -3,6 +3,7 @@ import { Check, X } from "lucide-react";
 
 import { PickerLabel } from "./picker-label";
 
+import { useTranslation } from "@/i18n";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
 
 /**
@@ -12,17 +13,18 @@ import { useDesignThemeStore } from "@/stores/design-theme-store";
 export function ShowTabsPicker() {
   const showTabs = useDesignThemeStore((s) => s.showTabs);
   const setShowTabs = useDesignThemeStore((s) => s.setShowTabs);
+  const { t } = useTranslation();
 
   return (
     <div className="flex items-center justify-between gap-4">
       <PickerLabel
-        label="显示多标签页"
-        tooltip="在顶部下方展示已打开的页面标签，支持快速切换与批量关闭"
+        labelKey="layout.prefs.showTabs.label"
+        tooltipKey="layout.prefs.showTabs.tooltip"
       />
 
       {/* Hero UI Switch：Label 与可点击开关同为 Switch.Root 子元素 */}
       <Switch
-        aria-label="显示多标签页"
+        aria-label={t("layout.prefs.showTabs.label")}
         isSelected={showTabs}
         onChange={setShowTabs}
       >

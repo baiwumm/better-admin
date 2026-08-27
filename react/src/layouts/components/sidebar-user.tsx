@@ -17,15 +17,15 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDown, LogOut, IdCard } from "lucide-react";
 
+import { useTranslation } from "@/i18n";
 import { useAuthStore } from "@/stores/auth-store";
 
 type SidebarUserProps = {
   collapsed?: boolean;
 };
 
-/** 未登录兜底展示（正常流程下登录后才进入 AdminLayout）。 */
+/** 未登录兜底展示（正常流程下登录后才进入 AdminLayout；名称经 i18n 取词）。 */
 const fallbackUser = {
-  name: "未登录",
   email: "",
   avatar: "",
 };
@@ -45,8 +45,9 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
   // 退出二次确认弹窗状态（Hero UI 官方用法：useOverlayState + 状态挂 Backdrop）
   const exitDialog = useOverlayState();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { t } = useTranslation();
 
-  const displayName = user?.displayName ?? fallbackUser.name;
+  const displayName = user?.displayName ?? t("layout.user.notSignedIn");
   const email = user?.username ?? fallbackUser.email;
   const initials = displayName.slice(0, 1);
 
@@ -70,14 +71,14 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
     try {
       await logout();
       // 本地会话已清（无论后端成败），提示成功并跳登录页。
-      toast.success("已退出登录");
+      toast.success(t("layout.user.signedOut"));
       exitDialog.close();
       void navigate({ to: "/sign-in" });
     } catch (error) {
       // 仅网络层等真实异常才会到这（后端 401/过期已在 logout 内按失效处理）；
       // 提示用户但不退出、保持登录态。
       toast.danger(
-        error instanceof Error ? error.message : "退出失败，请稍后重试",
+        error instanceof Error ? error.message : t("layout.user.signOutFailed"),
       );
       exitDialog.close();
     } finally {
@@ -157,16 +158,20 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
           <Separator />
 
           <Dropdown.Menu onAction={handleAction}>
-            <Dropdown.Item id="account" textValue="我的账户">
+            <Dropdown.Item id="account" textValue={t("layout.user.myAccount")}>
               <IdCard className="size-4 shrink-0 text-muted" />
-              <Label>我的账户</Label>
+              <Label>{t("layout.user.myAccount")}</Label>
             </Dropdown.Item>
 
             <Separator />
 
-            <Dropdown.Item id="logout" textValue="退出登录" variant="danger">
+            <Dropdown.Item
+              id="logout"
+              textValue={t("layout.user.signOut")}
+              variant="danger"
+            >
               <LogOut className="size-4 shrink-0 text-danger" />
-              <Label>退出登录</Label>
+              <Label>{t("layout.user.signOut")}</Label>
             </Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown.Popover>
@@ -181,18 +186,18 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
           <AlertDialog.Dialog className="sm:max-w-100">
             <AlertDialog.Header>
               <AlertDialog.Icon status="danger" />
-              <AlertDialog.Heading>确认退出登录？</AlertDialog.Heading>
+              <AlertDialog.Heading>
+                {t("layout.user.signOutTitle")}
+              </AlertDialog.Heading>
             </AlertDialog.Header>
-            <AlertDialog.Body>
-              退出后需要重新登录才能访问控制台。确定要退出当前账号吗？
-            </AlertDialog.Body>
+            <AlertDialog.Body>{t("layout.user.signOutDesc")}</AlertDialog.Body>
             <AlertDialog.Footer>
               <Button
                 isDisabled={isLoggingOut}
                 variant="ghost"
                 onPress={exitDialog.close}
               >
-                取消
+                {t("common.cancel")}
               </Button>
               <Button
                 isPending={isLoggingOut}
@@ -203,10 +208,10 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
                   isPending ? (
                     <>
                       <Spinner color="current" size="sm" />
-                      退出中…
+                      {t("layout.user.signingOut")}
                     </>
                   ) : (
-                    "确认退出"
+                    t("layout.user.confirmSignOut")
                   )
                 }
               </Button>

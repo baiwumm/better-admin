@@ -11,6 +11,8 @@ import { SearchTrigger } from "./search-trigger";
 import { ThemeSettingsDrawer } from "./theme-settings-drawer";
 
 import { useMenus } from "@/hooks/use-menus";
+import { useTranslation } from "@/i18n";
+import { getMenuLabel } from "@/lib/menu-i18n";
 import { filterHiddenMenus } from "@/lib/permission";
 import { findActivePath, getBreadcrumbNodes } from "@/lib/menu-utils";
 import { type MenuNode } from "@/lib/api-types";
@@ -37,6 +39,7 @@ export function AppHeader({
 }: AppHeaderProps) {
   const { pathname } = useLocation();
   const { data: menuTree } = useMenus();
+  const { t } = useTranslation();
 
   // 命令面板开合状态（Hero UI 官方用法：useOverlayState + 状态挂 Backdrop），
   // 由本组件持有：SearchTrigger（入口按钮）与 CommandMenu（面板）共享。
@@ -72,7 +75,7 @@ export function AppHeader({
           {/* 移动端：Drawer 按钮 */}
           <Button
             isIconOnly
-            aria-label="打开侧边栏"
+            aria-label={t("layout.header.openSidebar")}
             className="md:hidden"
             size="sm"
             variant="ghost"
@@ -84,7 +87,11 @@ export function AppHeader({
           {/* 桌面端：折叠 / 展开按钮 */}
           <Button
             isIconOnly
-            aria-label={collapsed ? "展开侧边栏" : "折叠侧边栏"}
+            aria-label={
+              collapsed
+                ? t("layout.header.expandSidebar")
+                : t("layout.header.collapseSidebar")
+            }
             className="hidden md:inline-flex"
             size="sm"
             variant="ghost"
@@ -117,7 +124,7 @@ export function AppHeader({
                       name={item.icon as IconName}
                       size={16}
                     />
-                    {item.label}
+                    {getMenuLabel(item, t)}
                   </Breadcrumbs.Item>
                 ))}
               </Breadcrumbs>

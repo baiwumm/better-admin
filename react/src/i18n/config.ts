@@ -27,26 +27,31 @@ function isLanguage(value: unknown): value is Language {
 
 /**
  * 语言资源：五个顶层域文件（common / auth / layout / menu / errors），
- * 各文件内容挂在同名前缀下拼成完整 key（如 auth.json 内的 signIn.title →
- * "auth.signIn.title"）。资源静态 import 打进 bundle（站点文案量级无需网络懒加载）。
+ * 每个文件内是**完整字面量键**（如 menu.json 内的 "menu.users"），
+ * 此处合并为单一 translation 扁平对象。
+ *
+ * 采用扁平键 + keySeparator: false 的原因：后端菜单 i18nKey 存在
+ * "menu.settings"（组）与 "menu.settings.profile"（子项）这类叶子/分支
+ * 共存的键，i18next 的嵌套结构（按 "." 逐级下钻）无法表达；扁平 map
+ * 天然支持任意字面量键，与后端 i18nKey 一字不差直连。
  */
 const resources = {
   en: {
     translation: {
-      auth: authEn,
-      common: commonEn,
-      errors: errorsEn,
-      layout: layoutEn,
-      menu: menuEn,
+      ...authEn,
+      ...commonEn,
+      ...errorsEn,
+      ...layoutEn,
+      ...menuEn,
     },
   },
   "zh-CN": {
     translation: {
-      auth: authZh,
-      common: commonZh,
-      errors: errorsZh,
-      layout: layoutZh,
-      menu: menuZh,
+      ...authZh,
+      ...commonZh,
+      ...errorsZh,
+      ...layoutZh,
+      ...menuZh,
     },
   },
 } as const;
@@ -59,6 +64,9 @@ const resources = {
  */
 export const i18n = createInstance({
   fallbackLng: FALLBACK_LANGUAGE,
+  // 扁平字面量键：禁用 "." 键下钻与 ":" 命名空间分隔（键内无冒号）
+  keySeparator: false,
+  nsSeparator: false,
   interpolation: {
     // React 已自行转义，关闭 i18next 的插值转义避免双重转义
     escapeValue: false,

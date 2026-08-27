@@ -5,6 +5,7 @@ import { useCallback, useEffect } from "react";
 import { PickerLabel } from "./picker-label";
 
 import { THEME_PALETTES } from "@/themes/color-palettes";
+import { useTranslation } from "@/i18n";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
 
 /**
@@ -25,6 +26,7 @@ function findPaletteIdByHex(hex: string): string {
 export function ThemeColorPicker() {
   const activePaletteId = useDesignThemeStore((s) => s.designThemeId);
   const setDesignTheme = useDesignThemeStore((s) => s.setDesignTheme);
+  const { t } = useTranslation();
 
   // 监听跨标签页的主题色变化（StorageEvent 只在其他标签页触发）
   useEffect(() => {
@@ -70,12 +72,12 @@ export function ThemeColorPicker() {
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <PickerLabel
-          label="主题色"
-          tooltip="全局主色调，切换时以动画揭示新配色"
+          labelKey="layout.prefs.themeColor.label"
+          tooltipKey="layout.prefs.themeColor.tooltip"
         />
         <Button
           isIconOnly
-          aria-label="随机主题色"
+          aria-label={t("layout.prefs.themeColor.random")}
           size="sm"
           variant="ghost"
           onPress={handleRandom}

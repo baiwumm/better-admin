@@ -1,20 +1,12 @@
 {
-  "api": {
-    "sessionExpired": "Your session has expired. Please sign in again.",
-    "loginExpired": "Login expired. Please sign in again.",
-    "refreshFailed": "Refresh failed. Please sign in again.",
-    "requestFailed": "Request failed ({{status}})"
-  },
-  "forbidden": {
-    "title": "Access Denied",
-    "description": "You do not have permission to perform this action. Contact an administrator if you have questions."
-  },
-  "notFound": {
-    "title": "Page Not Found",
-    "description": "The page you are looking for does not exist or has been removed. Please check the address."
-  },
-  "serverError": {
-    "title": "Something Went Wrong",
-    "description": "Something went wrong on the page. Please refresh and try again; contact an administrator if the problem persists."
-  }
+  "errors.api.loginExpired": "Login expired. Please sign in again.",
+  "errors.api.refreshFailed": "Refresh failed. Please sign in again.",
+  "errors.api.requestFailed": "Request failed ({{status}})",
+  "errors.api.sessionExpired": "Your session has expired. Please sign in again.",
+  "errors.forbidden.description": "You do not have permission to perform this action. Contact an administrator if you have questions.",
+  "errors.forbidden.title": "Access Denied",
+  "errors.notFound.description": "The page you are looking for does not exist or has been removed. Please check the address.",
+  "errors.notFound.title": "Page Not Found",
+  "errors.serverError.description": "Something went wrong on the page. Please refresh and try again; contact an administrator if the problem persists.",
+  "errors.serverError.title": "Something Went Wrong"
 }

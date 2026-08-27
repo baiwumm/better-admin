@@ -12,7 +12,9 @@ import { ChevronDown } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 
 import { type MenuNode } from "@/lib/api-types";
+import { getMenuLabel } from "@/lib/menu-i18n";
 import { findActivePath } from "@/lib/menu-utils";
+import { useTranslation } from "@/i18n";
 
 type SidebarMenuProps = {
   items: MenuNode[];
@@ -113,6 +115,7 @@ function MenuLevel({
   onExpandedChange: (next: Set<string>) => void;
   onNavigate: (to?: string | null) => void;
 }) {
+  const { t } = useTranslation();
   const groups = useMemo(
     () => items.filter((i) => i.children?.length),
     [items],
@@ -164,7 +167,7 @@ function MenuLevel({
         // 键盘 Enter 仍走 onAction），disallowEmptySelection 避免点击当前项时出现取消选中抖动。
         <ListBox
           disallowEmptySelection
-          aria-label="子菜单"
+          aria-label={t("layout.sidebar.submenu")}
           className="gap-0.5 bg-transparent p-0"
           selectedKeys={selectedKeys}
           selectionBehavior="replace"
@@ -181,7 +184,7 @@ function MenuLevel({
               key={child.to ?? child.id}
               className="rounded-3xl px-3 py-2 text-sm text-muted hover:text-foreground data-[selected=true]:text-foreground data-[selected=true]:bg-default"
               id={child.to ?? child.id}
-              textValue={child.label}
+              textValue={getMenuLabel(child, t)}
             >
               <div className="flex min-w-0 items-center gap-2">
                 <DynamicIcon
@@ -189,7 +192,7 @@ function MenuLevel({
                   name={child.icon as IconName}
                   size={16}
                 />
-                <span className="truncate">{child.label}</span>
+                <span className="truncate">{getMenuLabel(child, t)}</span>
               </div>
             </ListBox.Item>
           ))}
@@ -220,6 +223,8 @@ function SidebarLeaf({
   isActive: boolean;
   onNavigate: (to?: string | null) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <Button
       fullWidth
@@ -236,7 +241,7 @@ function SidebarLeaf({
           auto 回退（显示文本光标）而非继承 Button 的 pointer，显式声明后
           与图标区域保持一致 */}
       <Label className="flex-1 cursor-pointer truncate text-left">
-        {item.label}
+        {getMenuLabel(item, t)}
       </Label>
     </Button>
   );
@@ -259,6 +264,7 @@ function SidebarGroup({
   onNavigate: (to?: string | null) => void;
 }) {
   const isActive = isGroupActive(item, pathname);
+  const { t } = useTranslation();
 
   return (
     <Accordion
@@ -286,7 +292,7 @@ function SidebarGroup({
               name={item.icon as IconName}
               size={16}
             />
-            <span className="flex-1 truncate">{item.label}</span>
+            <span className="flex-1 truncate">{getMenuLabel(item, t)}</span>
             <Accordion.Indicator>
               <ChevronDown />
             </Accordion.Indicator>

@@ -13,6 +13,8 @@ import { ChevronRight, Laptop, Moon, Sun } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 
 import { type MenuNode } from "@/lib/api-types";
+import { getMenuLabel, type Translate } from "@/lib/menu-i18n";
+import { useTranslation } from "@/i18n";
 import { filterHiddenMenus } from "@/lib/permission";
 import { useMenus } from "@/hooks/use-menus";
 import { useThemeModeTransition } from "@/themes/use-theme-mode-transition";
@@ -41,26 +43,26 @@ interface MenuSection {
   entries: MenuEntry[];
 }
 
-/** 主题切换条目：keywords 供英文关键字搜索（light / dark / system） */
+/** 主题切换条目：labelKey 经 t() 取词；keywords 供英文关键字搜索（light / dark / system） */
 const THEME_ENTRIES = [
   {
     id: "theme-light",
     icon: Sun,
-    label: "浅色",
+    labelKey: "layout.prefs.themeMode.light",
     keywords: "light",
     mode: "light",
   },
   {
     id: "theme-dark",
     icon: Moon,
-    label: "深色",
+    labelKey: "layout.prefs.themeMode.dark",
     keywords: "dark",
     mode: "dark",
   },
   {
     id: "theme-system",
     icon: Laptop,
-    label: "跟随系统",
+    labelKey: "layout.prefs.themeMode.system",
     keywords: "system auto",
     mode: "system",
   },
@@ -73,7 +75,7 @@ const THEME_ENTRIES = [
  * - 顶层叶子节点 → 无标题 Section 的单条目（如「控制台」）。
  * 数据源已由 filterHiddenMenus 做过权限过滤，与侧边栏完全一致。
  */
-function collectMenuSections(tree: MenuNode[]): MenuSection[] {
+function collectMenuSections(tree: MenuNode[], t: Translate): MenuSection[] {
   const sections: MenuSection[] = [];
 
   const walk = (
@@ -83,18 +85,20 @@ function collectMenuSections(tree: MenuNode[]): MenuSection[] {
     out: MenuEntry[],
   ) => {
     for (const node of nodes) {
+      const label = getMenuLabel(node, t);
+
       if (node.children?.length) {
-        walk(node.children, [...trail, node.label], rootTitle, out);
+        walk(node.children, [...trail, label], rootTitle, out);
         continue;
       }
       if (!node.to) continue;
       out.push({
         id: node.id,
         icon: node.icon,
-        label: node.label,
+        label,
         trail,
         to: node.to,
-        searchText: `${[...trail, node.label].join(" ")} ${rootTitle}`
+        searchText: `${[...trail, label].join(" ")} ${rootTitle}`
           .toLowerCase()
           .trim(),
       });
@@ -105,9 +109,9 @@ function collectMenuSections(tree: MenuNode[]): MenuSection[] {
     if (node.children?.length) {
       const entries: MenuEntry[] = [];
 
-      walk(node.children, [], node.label, entries);
+      walk(node.children, [], getMenuLabel(node, t), entries);
       if (entries.length > 0) {
-        sections.push({ id: node.id, title: node.label, entries });
+        sections.push({ id: node.id, title: getMenuLabel(node, t), entries });
       }
     } else if (node.to) {
       sections.push({
@@ -116,10 +120,10 @@ function collectMenuSections(tree: MenuNode[]): MenuSection[] {
           {
             id: node.id,
             icon: node.icon,
-            label: node.label,
+            label: getMenuLabel(node, t),
             trail: [],
             to: node.to,
-            searchText: node.label.toLowerCase(),
+            searchText: getMenuLabel(node, t).toLowerCase(),
           },
         ],
       });
@@ -142,11 +146,13 @@ function collectMenuSections(tree: MenuNode[]): MenuSection[] {
  * 重新打开时自动复位为空，无需 effect 重置。
  */
 export function CommandMenu({ state }: CommandMenuProps) {
+  const { t } = useTranslation();
+
   return (
     <Modal.Backdrop isOpen={state.isOpen} onOpenChange={state.setOpen}>
       <Modal.Container placement="top" size="lg">
         <Modal.Dialog
-          aria-label="命令面板"
+          aria-label={t("layout.command.palette")}
           className="gap-0 overflow-hidden p-0"
         >
           <CommandMenuBody onClose={state.close} />
@@ -163,11 +169,12 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const { data: menuTree } = useMenus();
   const { switchThemeMode } = useThemeModeTransition();
+  const { t } = useTranslation();
 
-  // 与侧边栏同一份权限过滤后的菜单树派生命令分组
+  // 与侧边栏同一份权限过滤后的菜单树派生命令分组（label 经 i18nKey 取词）
   const sections = useMemo(
-    () => collectMenuSections(filterHiddenMenus(menuTree ?? [])),
-    [menuTree],
+    () => collectMenuSections(filterHiddenMenus(menuTree ?? []), t),
+    [menuTree, t],
   );
 
   // 菜单条目动作索引：id → 路由（Map 查找 O(1)）
@@ -195,9 +202,11 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
     if (!normalizedQuery) return THEME_ENTRIES;
 
     return THEME_ENTRIES.filter((theme) =>
-      `${theme.label}${theme.keywords}`.toLowerCase().includes(normalizedQuery),
+      `${t(theme.labelKey)}${theme.keywords}`
+        .toLowerCase()
+        .includes(normalizedQuery),
     );
-  }, [normalizedQuery]);
+  }, [normalizedQuery, t]);
 
   const totalCount =
     visibleSections.reduce((sum, s) => sum + s.entries.length, 0) +
@@ -239,7 +248,7 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
       <SearchField
         // eslint-disable-next-line jsx-a11y/no-autofocus -- 命令面板打开即聚焦输入框是标准交互（cmdk 同款）；面板随开合卸载，无残留焦点问题
         autoFocus
-        aria-label="搜索"
+        aria-label={t("layout.command.search")}
         value={query}
         variant="secondary"
         onChange={setQuery}
@@ -250,7 +259,7 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
         <SearchField.Group className="h-12 rounded-none border-0 border-b border-separator bg-transparent px-3 shadow-none focus-within:ring-0!">
           <SearchField.SearchIcon />
           <SearchField.Input
-            placeholder="输入命令或搜索…"
+            placeholder={t("layout.command.placeholder")}
             onKeyDown={(e) => {
               if (e.key === "ArrowDown") {
                 e.preventDefault();
@@ -277,11 +286,11 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
       >
         {totalCount === 0 ? (
           <div className="flex h-28 items-center justify-center text-sm text-muted">
-            未找到结果
+            {t("layout.command.empty")}
           </div>
         ) : (
           <ListBox
-            aria-label="搜索结果"
+            aria-label={t("layout.command.results")}
             selectionMode="none"
             onAction={handleAction}
           >
@@ -327,16 +336,18 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
 
             {visibleThemes.length > 0 && (
               <ListBox.Section id="command-theme-section">
-                <Header>主题</Header>
+                <Header>{t("layout.command.themeGroup")}</Header>
                 {visibleThemes.map((theme) => (
                   <ListBox.Item
                     key={theme.id}
                     id={theme.id}
-                    textValue={theme.label}
+                    textValue={t(theme.labelKey)}
                   >
                     <div className="flex min-w-0 items-center gap-2">
                       <theme.icon className="size-4 shrink-0 text-muted" />
-                      <span className="truncate text-sm">{theme.label}</span>
+                      <span className="truncate text-sm">
+                        {t(theme.labelKey)}
+                      </span>
                     </div>
                   </ListBox.Item>
                 ))}

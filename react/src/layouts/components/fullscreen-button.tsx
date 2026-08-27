@@ -2,6 +2,8 @@ import { Button } from "@heroui/react";
 import { Maximize, Minimize } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
+import { useTranslation } from "@/i18n";
+
 /**
  * 全屏切换按钮：点击进入 / 退出浏览器全屏。
  * 显示状态以 document.fullscreenElement 为准并监听 fullscreenchange 同步，
@@ -24,6 +26,8 @@ export function FullscreenButton() {
     };
   }, []);
 
+  const { t } = useTranslation();
+
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) {
       void document.exitFullscreen();
@@ -35,7 +39,11 @@ export function FullscreenButton() {
   return (
     <Button
       isIconOnly
-      aria-label={isFullscreen ? "退出全屏" : "进入全屏"}
+      aria-label={
+        isFullscreen
+          ? t("layout.fullscreen.exit")
+          : t("layout.fullscreen.enter")
+      }
       variant="ghost"
       onPress={toggleFullscreen}
     >
