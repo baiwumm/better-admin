@@ -21,6 +21,7 @@ import {
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { useState } from "react";
 
+import { useTranslation } from "@/i18n";
 import { useAuthStore } from "@/stores/auth-store";
 
 type SignInSearch = {
@@ -99,6 +100,7 @@ function SignInPage() {
   const { redirect: redirectTo } = Route.useSearch();
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const { t } = useTranslation();
 
   // 本地 UI 态：密码显隐 + 记住我（记住我将随登录提交，控制长短会话与本地持久化）
   const [showPassword, setShowPassword] = useState(false);
@@ -115,7 +117,9 @@ function SignInPage() {
 
     try {
       await login(username, password, remember);
-      toast.success(remember ? "登录成功，已记住此设备" : "登录成功，欢迎回来");
+      toast.success(
+        remember ? t("auth.signIn.remembered") : t("auth.signIn.welcomeBack"),
+      );
       if (redirectTo && isSafeRedirect(redirectTo)) {
         // 站内回跳（href 不受 to 的路由类型约束，SPA 内部导航）
         await router.navigate({ href: redirectTo });
@@ -123,7 +127,9 @@ function SignInPage() {
         await navigate({ to: "/" });
       }
     } catch (error) {
-      toast.danger(error instanceof Error ? error.message : "登录失败，请重试");
+      toast.danger(
+        error instanceof Error ? error.message : t("auth.signIn.failed"),
+      );
     }
   };
 
@@ -138,9 +144,9 @@ function SignInPage() {
       {/* 标题区 */}
       <div className="mb-7 flex flex-col gap-2">
         <Typography className="text-2xl font-bold tracking-tight" type="h1">
-          欢迎回来
+          {t("auth.signIn.welcome")}
         </Typography>
-        <Description>请输入账号信息登录后台管理系统</Description>
+        <Description>{t("auth.signIn.subtitle")}</Description>
       </div>
 
       {/* 登录表单 */}
@@ -149,9 +155,11 @@ function SignInPage() {
           isRequired
           className="sign-in-field"
           name="username"
-          validate={(value) => (value.trim() ? null : "请输入用户名")}
+          validate={(value) =>
+            value.trim() ? null : t("auth.signIn.usernameRequired")
+          }
         >
-          <Label>用户名</Label>
+          <Label>{t("auth.signIn.username")}</Label>
           <InputGroup className="sign-in-input-group" variant="secondary">
             <InputGroup.Prefix>
               <User
@@ -160,7 +168,9 @@ function SignInPage() {
                 strokeWidth={1.75}
               />
             </InputGroup.Prefix>
-            <InputGroup.Input placeholder="请输入用户名" />
+            <InputGroup.Input
+              placeholder={t("auth.signIn.usernamePlaceholder")}
+            />
           </InputGroup>
           <FieldError />
         </TextField>
@@ -170,9 +180,11 @@ function SignInPage() {
           className="sign-in-field"
           name="password"
           type={showPassword ? "text" : "password"}
-          validate={(value) => (value ? null : "请输入密码")}
+          validate={(value) =>
+            value ? null : t("auth.signIn.passwordRequired")
+          }
         >
-          <Label>密码</Label>
+          <Label>{t("auth.signIn.password")}</Label>
           <InputGroup className="sign-in-input-group" variant="secondary">
             <InputGroup.Prefix>
               <Lock
@@ -181,11 +193,17 @@ function SignInPage() {
                 strokeWidth={1.75}
               />
             </InputGroup.Prefix>
-            <InputGroup.Input placeholder="请输入密码" />
+            <InputGroup.Input
+              placeholder={t("auth.signIn.passwordPlaceholder")}
+            />
             <InputGroup.Suffix>
               <Button
                 isIconOnly
-                aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                aria-label={
+                  showPassword
+                    ? t("auth.signIn.hidePassword")
+                    : t("auth.signIn.showPassword")
+                }
                 size="sm"
                 type="button"
                 variant="ghost"
@@ -222,7 +240,7 @@ function SignInPage() {
               <Checkbox.Control>
                 <Checkbox.Indicator />
               </Checkbox.Control>
-              记住我
+              {t("auth.signIn.rememberMe")}
             </Checkbox.Content>
           </Checkbox>
         </div>
@@ -239,10 +257,10 @@ function SignInPage() {
             isPending ? (
               <>
                 <Spinner color="current" size="sm" />
-                登录中…
+                {t("auth.signIn.submitting")}
               </>
             ) : (
-              "登 录"
+              t("auth.signIn.submit")
             )
           }
         </Button>
@@ -250,7 +268,7 @@ function SignInPage() {
         {/* 分隔线：或（HeroUI Separator + 文字） */}
         <div className="sign-in-field mt-2 flex items-center gap-3 text-xs text-muted">
           <Separator className="flex-1" />
-          <Description>Or</Description>
+          <Description>{t("auth.signIn.or")}</Description>
           <Separator className="flex-1" />
         </div>
 
@@ -261,7 +279,7 @@ function SignInPage() {
             className="sign-in-field sign-in-oauth"
             type="button"
             variant="tertiary"
-            onPress={() => toast.info("GitHub 登录开发中")}
+            onPress={() => toast.info(t("auth.signIn.githubDeveloping"))}
           >
             <GithubIcon aria-hidden className="size-4" />
             GitHub
@@ -271,7 +289,7 @@ function SignInPage() {
             className="sign-in-field sign-in-oauth"
             type="button"
             variant="tertiary"
-            onPress={() => toast.info("Google 登录开发中")}
+            onPress={() => toast.info(t("auth.signIn.googleDeveloping"))}
           >
             <GoogleIcon aria-hidden className="size-4" />
             Google

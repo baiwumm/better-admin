@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { Chip, Typography } from "@heroui/react";
 
+import { useTranslation } from "@/i18n";
 import { useResolvedTheme } from "@/stores/design-theme-store";
 import { LanguageSwitcher } from "@/layouts/components/language-switcher";
 import { ThemeSettingsDrawer } from "@/layouts/components/theme-settings-drawer";
@@ -9,12 +10,12 @@ import { ENV } from "@/lib/env";
 import logo from "/logo.svg";
 import logoDark from "/logo-dark.svg";
 
-/** 品牌区 4 个特性 chip（多技术栈 + 关键能力） */
+/** 品牌区 4 个特性 chip（多技术栈 + 关键能力；labelKey 经 t() 取词） */
 const BRAND_CHIPS = [
-  "React · Vue · Next · Nuxt",
-  "RBAC 权限模型",
-  "PostgreSQL · Drizzle",
-  "Vercel 部署",
+  "auth.brand.chip.stacks",
+  "auth.brand.chip.rbac",
+  "auth.brand.chip.storage",
+  "auth.brand.chip.deploy",
 ] as const;
 
 export const Route = createFileRoute("/(auth)")({
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/(auth)")({
 function AuthPageLayout() {
   // 实际生效的明暗外观（来自 design-theme-store，跨组件一致）
   const theme = useResolvedTheme();
+  const { t } = useTranslation();
 
   return (
     // 唯一高度容器：锁定 h-dvh（100dvh 不支持时回退 100vh）+ overflow-hidden，
@@ -83,27 +85,25 @@ function AuthPageLayout() {
               className="text-3xl font-bold leading-tight tracking-tight sm:text-4xl"
               type="h1"
             >
-              一套产品，四种实现
+              {t("auth.brand.slogan")}
             </Typography>
             <Typography className="mt-4" color="muted" type="body-sm">
-              {ENV.appDesc}
+              {t("auth.brand.description")}
             </Typography>
             <Typography className="mt-2 max-w-md" color="muted" type="body-sm">
-              用
-              React、Vue、Next.js、Nuxt，四种现代技术栈，共同构建一套统一的产品、UI
-              与业务逻辑。
+              {t("auth.brand.sloganDetail")}
             </Typography>
 
             {/* 特性 Chip 行 */}
             <div className="mt-8 flex flex-wrap gap-2">
-              {BRAND_CHIPS.map((label) => (
+              {BRAND_CHIPS.map((labelKey) => (
                 <Chip
-                  key={label}
+                  key={labelKey}
                   className="border border-separator/60 bg-surface/60 backdrop-blur"
                   size="sm"
                   variant="secondary"
                 >
-                  {label}
+                  {t(labelKey)}
                 </Chip>
               ))}
             </div>
@@ -111,7 +111,7 @@ function AuthPageLayout() {
 
           {/* 底部：桌面端安全提示（移动端隐藏，避免撑高 brand 区） */}
           <div className="relative z-10 hidden items-center gap-2 text-xs text-muted lg:flex">
-            <span>端到端鉴权 · JWT · HttpOnly Refresh</span>
+            <span>{t("auth.brand.security")}</span>
           </div>
         </aside>
 
