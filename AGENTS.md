@@ -665,6 +665,19 @@ Phase 7  统一测试 → 部署全部版本
 - **验证**：接口层 17 项（双分档有效期、轮换继承过期时间、重放拒绝、精确/全量撤销、无鉴权 401 等）+ DB 层 6 项（哈希非明文、ver bump 全端失效等）全部通过；`tsc --noEmit`、nest build、react build/lint 通过。
 - **已知限制（记录在案，后续增强可选）**：accessToken 无黑名单（残留窗口 ≤1h，业内可接受）；无 refreshToken 重放检测全端撤销（可演进为 `revokedAt` 软删替代硬删）；勾选记住我后 localStorage 存 refreshToken 存在 XSS 面（仅勾选用户，30 天上限）。Vue/Next/Nuxt 登录尚未实现，实现时按 v1.2 契约对齐即可。
 
+### 全站国际化 i18n（2026-08-27，React 端已完成）
+
+- **范围**：React 端全站国际化（简体中文默认 + English），语言切换不改 URL（纯客户端状态，无 locale 路由段），localStorage 持久化、刷新保持。Vue / Next / Nuxt 后续实现时按本节架构对齐。
+- **技术选型**：`i18next` + `react-i18next`（自建实例，非默认单例——必须经 `provider.tsx` 的 `I18nextProvider` 注入，否则 `useTranslation` 落到未初始化的全局单例上返回 key 原文）。
+- **初始化时序（硬约束）**：`main.tsx` bootstrap 先 `initLanguage()`（同步读 localStorage + 设 `<html lang>`）→ `await initI18n()` → 才 `createRoot().render()`。菜单树可能在首帧前经 `useMenus` prefetch 到达，`t()` 必须已可用。非 hook 环境（api-client 等）统一走 `@/i18n` 导出的模块级 `t()` 与 `getErrorMessage(key, fallback, options?)`（延迟求值 + 容错回退，禁止在模块顶层定义常量时取词）。
+- **语言包架构（扁平键）**：`src/i18n/locales/{zh-CN,en}/{common,auth,layout,menu,errors}.json` 五域，文件内是**完整字面量键**（如 `"menu.users"`），config 合并为单一 translation 对象并设 `keySeparator: false`。原因：后端 `menus.i18n_key` 存在 `menu.settings`（组）与 `menu.settings.profile`（子项）叶子/分支共存的键，i18next 嵌套结构无法表达，扁平 map 天然支持。新增 `src/i18n/__tests__/locales.test.ts` 守卫两语言键集合一致（随 `pnpm test` 运行）。
+- **菜单国际化（方案 C 就地接入）**：渲染层统一 `getMenuLabel(node, t)`（`lib/menu-i18n.ts`）——`node.i18nKey ? t(key) : node.label`，五处消费点（侧边栏展开/折叠、面包屑、命令面板、标签栏）已接入；后端菜单名随语言实时翻译。后端 `menus.i18n_key` 列为既建设计（OpenAPI 契约已含），**无需数据库迁移**；`role_menus`/权限位链路不经过 label/i18nKey，零影响。前端固定注入的 `CONSOLE_MENU_NODE` 已带 `i18nKey: "menu.pageTitle.console"`。
+- **菜单-路由交叉核对（阶段 4）**：真实库 7 菜单 `to` 全部与前端路由一致；新增「字典管理」菜单（`nest/scripts/migrate-menus-add-dicts.ts` 幂等迁移，已应用真实库）；seed.ts 重写对齐真实库（移除概览/系统设置分支、路径 `/settings/*`）。**注意：库内 `menus.icon` 是裸 lucide 名（`book-text`），带 `lucide:` 前缀会导致前端 DynamicIcon 报 Name not found**（已修复并统一）。
+- **覆盖面**：登录页全量（含校验/toast/记住我）、登录壳品牌区、8 个占位路由（正文删除改空 div，title 走 `titleKey`）、users Mock 页、错误页三件套、admin-layout 异常 overlay（memo 组件化）、api-client 错误文案、`document.title` 链路（路由 `staticData.titleKey` + 语言订阅即时刷新）、偏好设置抽屉 + 7 个 picker、themes 三张常量表（label→labelKey）、header/sidebar/命令面板/标签栏右键菜单/退出弹窗全部 t() 化；登录页与后台顶栏均有语言切换入口。
+- **语言切换联动**：`language-store`（localStorage `better-admin-language`，非法值收窄 zh-CN）→ `i18n.changeLanguage` + `document.documentElement.lang` + **`tabs-store.clearTabsCache()`**（作废旧语言标签标题快照，tags-bar 回退实时菜单渲染）。HeroUI 侧经 `I18nProvider locale` 适配 react-aria。
+- **回归结论**：`tsc`/`lint`/`build`/`test`(47) 全绿；浏览器实测语言切换 URL 不变、刷新保持、keepAlive 页跨语言往返状态保留且文案即时换新、标签栏快照失效、404/登录/退出全流程双语正确。
+- **后续（记录在案）**：`dict.*` 字典项键已预留（后端 dict_items.i18n_key），待真实业务页接入时再补前端翻译；index.html boot-text「正在加载…」为 JS 运行前文案，固定默认语言；`VITE_APP_DESC` 环境变量已无 UI 消费方。
+
 ---
 
 ## 20. React / Next.js 全局性能规范（vercel-react-best-practices）
