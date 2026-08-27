@@ -1,7 +1,7 @@
 {
-  "menu.logs": "Logs",
+  "menu.dicts": "Dictionary Management",
+  "menu.logs": "Log Management",
   "menu.menus": "Menu Management",
-  "menu.overview": "Overview",
   "menu.pageTitle.account": "My Account",
   "menu.pageTitle.console": "Console",
   "menu.pageTitle.dicts": "Dictionary Management",

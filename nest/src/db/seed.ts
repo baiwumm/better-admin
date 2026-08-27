@@ -82,20 +82,14 @@ async function seed() {
     .onConflictDoNothing();
 
   // ---------- 菜单树 ----------
-  // 概览 / 系统管理（用户 / 角色 / 权限 / 菜单 / 日志）/ 系统设置
-  const mOverview = nanoid();
+  // 系统管理（用户 / 角色 / 权限 / 菜单 / 字典 / 日志）
   const mSystem = nanoid();
   const mUsers = nanoid();
   const mRoles = nanoid();
   const mPermissions = nanoid();
   const mMenus = nanoid();
+  const mDicts = nanoid();
   const mLogs = nanoid();
-  const mSettings = nanoid();
-  const mSettingsProfile = nanoid();
-  const mSettingsAccount = nanoid();
-  const mSettingsAppearance = nanoid();
-  const mSettingsNotifications = nanoid();
-  const mSettingsDisplay = nanoid();
 
   // 菜单声明可用按钮位（全量位：搜索/新增/编辑/删除/批量删/新增子级/重置）
   const menuFullBits =
@@ -110,17 +104,6 @@ async function seed() {
   await db
     .insert(menus)
     .values([
-      {
-        id: mOverview,
-        label: '概览',
-        i18nKey: 'menu.overview',
-        icon: 'lucide:layout-dashboard',
-        to: '/',
-        parentId: null,
-        sort: 0,
-        enabled: true,
-        permissions: 0n,
-      },
       {
         id: mSystem,
         label: '系统管理',
@@ -137,7 +120,7 @@ async function seed() {
         label: '用户管理',
         i18nKey: 'menu.users',
         icon: 'lucide:users',
-        to: '/users',
+        to: '/settings/users',
         parentId: mSystem,
         sort: 0,
         enabled: true,
@@ -148,7 +131,7 @@ async function seed() {
         label: '角色管理',
         i18nKey: 'menu.roles',
         icon: 'lucide:shield',
-        to: '/roles',
+        to: '/settings/roles',
         parentId: mSystem,
         sort: 1,
         enabled: true,
@@ -159,7 +142,7 @@ async function seed() {
         label: '权限管理',
         i18nKey: 'menu.permissions',
         icon: 'lucide:key-round',
-        to: '/permissions',
+        to: '/settings/permissions',
         parentId: mSystem,
         sort: 2,
         enabled: true,
@@ -170,88 +153,33 @@ async function seed() {
         label: '菜单管理',
         i18nKey: 'menu.menus',
         icon: 'lucide:menu',
-        to: '/menus',
+        to: '/settings/menus',
         parentId: mSystem,
         sort: 3,
+        enabled: true,
+        permissions: menuFullBits,
+      },
+      {
+        id: mDicts,
+        label: '字典管理',
+        i18nKey: 'menu.dicts',
+        icon: 'lucide:book-text',
+        to: '/settings/dicts',
+        parentId: mSystem,
+        sort: 4,
         enabled: true,
         permissions: menuFullBits,
       },
       {
         id: mLogs,
-        label: '日志',
+        label: '日志管理',
         i18nKey: 'menu.logs',
         icon: 'lucide:scroll-text',
-        to: '/logs',
+        to: '/settings/logs',
         parentId: mSystem,
-        sort: 4,
+        sort: 5,
         enabled: true,
         permissions: menuFullBits,
-      },
-      {
-        id: mSettings,
-        label: '系统设置',
-        i18nKey: 'menu.settings',
-        icon: 'lucide:settings',
-        to: '',
-        parentId: null,
-        sort: 2,
-        enabled: true,
-        permissions: 0n,
-      },
-      {
-        id: mSettingsProfile,
-        label: '个人资料',
-        i18nKey: 'menu.settings.profile',
-        icon: 'lucide:user-cog',
-        to: '/settings/profile',
-        parentId: mSettings,
-        sort: 0,
-        enabled: true,
-        permissions: 0n,
-      },
-      {
-        id: mSettingsAccount,
-        label: '账户',
-        i18nKey: 'menu.settings.account',
-        icon: 'lucide:wrench',
-        to: '/settings/account',
-        parentId: mSettings,
-        sort: 1,
-        enabled: true,
-        permissions: 0n,
-      },
-      {
-        id: mSettingsAppearance,
-        label: '外观',
-        i18nKey: 'menu.settings.appearance',
-        icon: 'lucide:palette',
-        to: '/settings/appearance',
-        parentId: mSettings,
-        sort: 2,
-        enabled: true,
-        permissions: 0n,
-      },
-      {
-        id: mSettingsNotifications,
-        label: '通知',
-        i18nKey: 'menu.settings.notifications',
-        icon: 'lucide:bell',
-        to: '/settings/notifications',
-        parentId: mSettings,
-        sort: 3,
-        enabled: true,
-        permissions: 0n,
-      },
-      {
-        id: mSettingsDisplay,
-        label: '显示',
-        i18nKey: 'menu.settings.display',
-        icon: 'lucide:monitor',
-        to: '/settings/display',
-        parentId: mSettings,
-        sort: 4,
-        enabled: true,
-        permissions: 0n,
       },
     ])
     .onConflictDoNothing();
@@ -260,19 +188,13 @@ async function seed() {
   // 关键防御：使用 SUPER_ADMIN_BITS（全量位 -1n），禁止硬编码 127。
   // super_admin 对所有菜单拥有全量授权位。
   const allMenuIds = [
-    mOverview,
     mSystem,
     mUsers,
     mRoles,
     mPermissions,
     mMenus,
+    mDicts,
     mLogs,
-    mSettings,
-    mSettingsProfile,
-    mSettingsAccount,
-    mSettingsAppearance,
-    mSettingsNotifications,
-    mSettingsDisplay,
   ];
   await db
     .insert(roleMenus)

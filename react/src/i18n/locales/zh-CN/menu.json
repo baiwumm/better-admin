@@ -1,7 +1,7 @@
 {
-  "menu.logs": "日志",
+  "menu.dicts": "字典管理",
+  "menu.logs": "日志管理",
   "menu.menus": "菜单管理",
-  "menu.overview": "概览",
   "menu.pageTitle.account": "我的账户",
   "menu.pageTitle.console": "控制台",
   "menu.pageTitle.dicts": "字典管理",
