@@ -43,7 +43,7 @@ export function ThemeSettingsDrawer() {
 
   return (
     <Drawer state={themeDrawer}>
-      <Button isIconOnly variant="ghost">
+      <Button isIconOnly size="sm" variant="ghost">
         <PaintBucket />
       </Button>
       <Drawer.Backdrop

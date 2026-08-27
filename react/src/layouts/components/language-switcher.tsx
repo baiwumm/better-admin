@@ -27,6 +27,7 @@ export function LanguageSwitcher() {
       <Button
         isIconOnly
         aria-label={t("common.language.switch")}
+        size="sm"
         variant="ghost"
       >
         <Languages />

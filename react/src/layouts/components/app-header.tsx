@@ -74,10 +74,11 @@ export function AppHeader({
             isIconOnly
             aria-label="打开侧边栏"
             className="md:hidden"
+            size="sm"
             variant="ghost"
             onPress={onOpenDrawer}
           >
-            <Menu className="size-5" />
+            <Menu />
           </Button>
 
           {/* 桌面端：折叠 / 展开按钮 */}
@@ -85,14 +86,11 @@ export function AppHeader({
             isIconOnly
             aria-label={collapsed ? "展开侧边栏" : "折叠侧边栏"}
             className="hidden md:inline-flex"
+            size="sm"
             variant="ghost"
             onPress={onToggle}
           >
-            {collapsed ? (
-              <PanelLeftOpen className="size-5" />
-            ) : (
-              <PanelLeftClose className="size-5" />
-            )}
+            {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
           </Button>
 
           {/* 分隔线：折叠按钮 / 面包屑 */}

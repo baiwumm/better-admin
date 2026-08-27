@@ -86,7 +86,7 @@ function CollapsedMenuItem({
           variant="ghost"
           onPress={() => onNavigate(item.to)}
         >
-          <DynamicIcon name={item.icon as IconName} size={20} />
+          <DynamicIcon name={item.icon as IconName} />
         </Button>
         <Tooltip.Content placement="right">
           <Tooltip.Arrow />
@@ -100,7 +100,7 @@ function CollapsedMenuItem({
   return (
     <Popover isOpen={isOpen} onOpenChange={setIsOpen}>
       <Button isIconOnly variant="ghost">
-        <DynamicIcon name={item.icon as IconName} size={20} />
+        <DynamicIcon name={item.icon as IconName} />
       </Button>
       <Popover.Content
         className="p-0"

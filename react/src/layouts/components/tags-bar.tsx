@@ -316,7 +316,7 @@ export function TagsBar() {
         variant="ghost"
         onPress={() => scrollByStep(-1)}
       >
-        <ChevronLeft className="size-4" />
+        <ChevronLeft size={16} />
       </Button>
 
       <ScrollShadow
@@ -400,7 +400,7 @@ export function TagsBar() {
         variant="ghost"
         onPress={() => scrollByStep(1)}
       >
-        <ChevronRight className="size-4" />
+        <ChevronRight size={16} />
       </Button>
 
       {/* 全局共享的右键菜单：虚拟锚点（1px fixed 按钮）移到鼠标坐标，

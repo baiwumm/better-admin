@@ -26,10 +26,11 @@ export function SearchTrigger({ onPress }: SearchTriggerProps) {
         isIconOnly
         aria-label="搜索"
         className="sm:hidden"
+        size="sm"
         variant="ghost"
         onPress={onPress}
       >
-        <Search className="size-5" />
+        <Search />
       </Button>
 
       {/* sm+：假输入框样式按钮 */}
