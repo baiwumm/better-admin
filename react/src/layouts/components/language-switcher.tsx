@@ -1,5 +1,4 @@
-import { cn, Dropdown, Label } from "@heroui/react";
-import { buttonVariants } from "@heroui/styles";
+import { Dropdown, Label, Button } from "@heroui/react";
 import { Check, Languages } from "lucide-react";
 
 import { useTranslation, type Language } from "@/i18n";
@@ -25,15 +24,13 @@ export function LanguageSwitcher() {
 
   return (
     <Dropdown>
-      <Dropdown.Trigger
+      <Button
+        isIconOnly
         aria-label={t("common.language.switch")}
-        className={cn(
-          buttonVariants({ isIconOnly: true, variant: "ghost" }),
-          "shrink-0",
-        )}
+        variant="ghost"
       >
         <Languages />
-      </Dropdown.Trigger>
+      </Button>
       <Dropdown.Popover className="min-w-40">
         <Dropdown.Menu onAction={(key) => setLanguage(key as Language)}>
           {LANGUAGE_OPTIONS.map(({ labelKey, value }) => {

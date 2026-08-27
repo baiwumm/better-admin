@@ -39,11 +39,7 @@ export function FullscreenButton() {
       variant="ghost"
       onPress={toggleFullscreen}
     >
-      {isFullscreen ? (
-        <Minimize className="size-5" />
-      ) : (
-        <Maximize className="size-5" />
-      )}
+      {isFullscreen ? <Minimize /> : <Maximize />}
     </Button>
   );
 }
