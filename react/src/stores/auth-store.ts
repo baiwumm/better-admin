@@ -11,12 +11,21 @@ import { useTabsStore } from "@/stores/tabs-store";
 interface AuthState {
   user: AuthUser | null;
   accessToken: string | null;
-  /** refreshToken 仅存内存，不持久化（安全默认：关闭页面后需重新登录）。 */
+  /**
+   * refreshToken 仅存内存，不持久化（安全默认：关闭页面后需重新登录）。
+   * 勾选「记住我」登录时例外：随 rememberMe 一并持久化（见 partialize）。
+   */
   refreshToken: string | null;
+  /** 记住我：true 时 refreshToken 长效并持久化，支持跨浏览器会话静默续期。 */
+  rememberMe: boolean;
   isAuthenticated: boolean;
   isLoading: boolean;
-  /** 真实登录：POST /api/auth/login */
-  login: (username: string, password: string) => Promise<void>;
+  /** 真实登录：POST /api/auth/login（rememberMe 对应契约 v1.2 的长短会话分档） */
+  login: (
+    username: string,
+    password: string,
+    rememberMe?: boolean,
+  ) => Promise<void>;
   /** 真实退出：POST /api/auth/logout（带 token），成功后清本地会话。 */
   logout: () => Promise<void>;
   /** 供 api-client 刷新流程写入新 accessToken（不触发持久化副作用之外的行为）。 */
@@ -35,22 +44,24 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       accessToken: null,
       refreshToken: null,
+      rememberMe: false,
       isAuthenticated: false,
       isLoading: false,
 
-      login: async (username, password) => {
+      login: async (username, password, rememberMe = false) => {
         set({ isLoading: true });
         try {
           const res = await fetchApi<LoginResponse>("/auth/login", {
             method: "POST",
             auth: false,
-            body: { username: username.trim(), password },
+            body: { username: username.trim(), password, rememberMe },
           });
 
           set({
             user: res.user,
             accessToken: res.accessToken,
             refreshToken: res.refreshToken,
+            rememberMe,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -69,17 +80,19 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
-        const token = get().accessToken;
+        const { accessToken, refreshToken } = get();
 
         try {
           // 仅在仍有 token 时调用后端 logout；无 token 直接清本地。
           // allowRetry:false —— 关键：退出是主动行为，禁止触发 401 自动刷新
           // 与整页跳登录（否则 accessToken 过期时会被动跳走，表现为异常跳转）。
           // 后端注销失败（401/过期）视为会话已失效，本地照常清理。
-          if (token) {
+          // 带 refreshToken：服务端精确撤销本设备托管会话（契约 v1.2）。
+          if (accessToken) {
             await fetchApi("/auth/logout", {
               method: "POST",
               allowRetry: false,
+              body: refreshToken ? { refreshToken } : {},
             });
           }
         } catch {
@@ -102,6 +115,7 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           accessToken: null,
           refreshToken: null,
+          rememberMe: false,
           isAuthenticated: false,
         });
         // 会话结束同时清空多标签页（标签属于用户级 UI 态，不跨会话残留）。
@@ -113,17 +127,23 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           accessToken: null,
           refreshToken: null,
+          rememberMe: false,
           isAuthenticated: false,
         });
       },
     }),
     {
       name: "auth-storage",
-      // 仅持久化非敏感会话字段；refreshToken 不持久化（安全默认）。
+      // 仅持久化非敏感会话字段。
+      // refreshToken 默认不持久化（安全默认：关浏览器即失效）；
+      // 勾选「记住我」登录后随 rememberMe 一并持久化，跨浏览器会话静默续期。
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
         isAuthenticated: state.isAuthenticated,
+        ...(state.rememberMe
+          ? { rememberMe: true, refreshToken: state.refreshToken }
+          : {}),
       }),
     },
   ),

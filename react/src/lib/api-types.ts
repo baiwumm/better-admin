@@ -1,5 +1,5 @@
 /**
- * 与 NestJS API（openapi.yaml v1.1.0）对齐的响应类型。
+ * 与 NestJS API（openapi.yaml v1.2.0）对齐的响应类型。
  * 字段命名保持 camelCase，与 Contract 一致；当前阶段为 Mock 数据，
  * 接入后端后直接复用同一套类型。
  */
@@ -43,6 +43,12 @@ export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
   user: AuthUser;
+}
+
+/** 刷新响应（v1.2：refreshToken 轮换，旧 token 作废） */
+export interface RefreshResponse {
+  accessToken: string;
+  refreshToken: string;
 }
 
 /** 菜单节点（/menus 树，路由层的导航数据源） */

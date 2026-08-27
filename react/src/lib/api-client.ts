@@ -102,16 +102,23 @@ async function refreshAccessToken(): Promise<string> {
       );
     }
 
-    const body = (await res.json()) as { data?: { accessToken?: string } };
+    const body = (await res.json()) as {
+      data?: { accessToken?: string; refreshToken?: string };
+    };
     const newAccessToken = body.data?.accessToken;
+    // 契约 v1.2：refreshToken 轮换后端会下发新 token，必须写回内存/持久化
+    const newRefreshToken = body.data?.refreshToken ?? null;
 
     if (!newAccessToken) {
       snapshot.clearSession();
       throw new ApiClientError(401, "REFRESH_NO_TOKEN", "刷新失败，请重新登录");
     }
 
-    // 仅更新 accessToken（refreshToken 后端通常不重新下发）
-    snapshot.setTokens({ accessToken: newAccessToken, refreshToken });
+    snapshot.setTokens({
+      accessToken: newAccessToken,
+      // 后端未下发新 refreshToken 时保持原值（setTokens 对 undefined 不覆盖）
+      ...(newRefreshToken ? { refreshToken: newRefreshToken } : {}),
+    });
 
     return newAccessToken;
   })();

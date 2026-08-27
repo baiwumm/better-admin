@@ -99,7 +99,7 @@ function SignInPage() {
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);
 
-  // 本地 UI 态：密码显隐 + 记住我（纯 UI 切换，非浮层，useState 安全）
+  // 本地 UI 态：密码显隐 + 记住我（记住我将随登录提交，控制长短会话与本地持久化）
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
 
@@ -113,8 +113,8 @@ function SignInPage() {
     const password = String(formData.get("password") ?? "");
 
     try {
-      await login(username, password);
-      toast.success("登录成功，欢迎回来");
+      await login(username, password, remember);
+      toast.success(remember ? "登录成功，已记住此设备" : "登录成功，欢迎回来");
       if (redirectTo && isSafeRedirect(redirectTo)) {
         // 站内回跳（href 不受 to 的路由类型约束，SPA 内部导航）
         await router.navigate({ href: redirectTo });
@@ -209,7 +209,7 @@ function SignInPage() {
           <FieldError />
         </TextField>
 
-        {/* 辅助行：记住我（纯 UI 切换，非浮层，useState 安全） */}
+        {/* 辅助行：记住我（随登录提交；勾选后服务端签发长效 refreshToken 且本地持久化） */}
         <div className="sign-in-field flex items-center text-sm">
           <Checkbox
             isSelected={remember}
