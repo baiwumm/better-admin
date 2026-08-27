@@ -85,8 +85,10 @@ export function commitNavigation(
  * 多标签页状态对账（openedTabs 变化时调用）：
  * 1. 清除：permanent 但已被关闭（不在 openedTabs）且非当前呈现路径的条目
  *    ——「关闭标签 = 销毁保活实例」语义；
- * 2. 转正：transient 且 keepAlive 且已在 openedTabs 的条目升级为 permanent
- *    ——渲染期登记先于 openPath 生效的时序兜底。
+ * 2. 转正：transient 且 keepAlive 且已在 openedTabs 的条目升级为 permanent。
+ *    包含当前呈现路径——刷新直入页面时菜单尚未返回（keepAlivePaths 为空，
+ *    登记为 transient），菜单到达后必须在此转正，否则导航提交时会被当作
+ *    过渡期临时实例清除，保活失效。
  * 纯函数：无变更时返回原数组引用。
  */
 export function reconcileWithTabs(
@@ -111,7 +113,6 @@ export function reconcileWithTabs(
 
     if (
       !entry.permanent &&
-      entry.path !== displayedPath &&
       openedTabs.has(entry.path) &&
       keepAlivePaths.has(entry.path)
     ) {

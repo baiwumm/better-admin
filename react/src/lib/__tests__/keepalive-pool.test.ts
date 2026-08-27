@@ -141,6 +141,17 @@ describe("reconcileWithTabs", () => {
     expect(result).toEqual([{ path: "/keep/b", permanent: true }]);
   });
 
+  it("呈现中的 keepAlive transient 也转正（刷新直入 + 菜单晚到兜底）", () => {
+    // 刷新直入 /keep/a：菜单未返回时登记为 transient，菜单到达后转正，
+    // 否则导航提交时 commitNavigation 会将其当作临时实例清除、保活失效。
+    const pool = [entry("/keep/a")];
+    const opened = new Set(["/keep/a"]);
+
+    const result = reconcileWithTabs(pool, opened, "/keep/a", KEEP);
+
+    expect(result).toEqual([{ path: "/keep/a", permanent: true }]);
+  });
+
   it("非 keepAlive 的 opened 条目不转正", () => {
     const pool = [entry("/plain")];
     const opened = new Set(["/plain"]);

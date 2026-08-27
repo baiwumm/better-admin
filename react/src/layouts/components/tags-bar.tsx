@@ -43,8 +43,14 @@ type TabMenuAction =
 /** 鼠标中键按键值。 */
 const MIDDLE_BUTTON = 1;
 
+/** 鼠标左键按键值。 */
+const MAIN_BUTTON = 0;
+
 /** chevron 按钮单次滚动距离（px）。 */
 const SCROLL_STEP = 160;
+
+/** 判定为拖拽平移的位移阈值（px），避免误吞普通点击。 */
+const DRAG_THRESHOLD = 6;
 
 /** 滚动阴影可见性（含 horizontal 双侧态 leftRight）。 */
 type ScrollState =
@@ -102,7 +108,8 @@ function useIsolatedClick(onClose: () => void) {
  *   结构为「菜单图标 名称 Pin 图标」；普通标签尾部为关闭热区；
  * - 标签主体为 HeroUI Button（未激活 outline / 激活 tertiary 原生样式），
  *   关闭热区位于 Button 内部（useIsolatedClick 隔离 press）；
- * - 标签过多时横向滚动（ScrollShadow 渐隐阴影 + chevron + 滚轮横滚），
+ * - 标签过多时横向滚动（ScrollShadow 渐隐阴影 + chevron + 滚轮横滚 +
+ *   鼠标按住拖拽平移，隐藏原生滚动条避免占用固定栏高挤压标签），
  *   激活标签自动滚动进可视区；新标签带进场动画（styles/tags-bar.css）；
  * - 标题优先取菜单实时数据，其次取 sessionStorage 快照（刷新后立即可渲染
  *   中文标题），两者皆无时显示骨架占位；
@@ -162,12 +169,48 @@ export function TagsBar() {
   // ── 横向滚动 ──
   const scrollRef = useRef<HTMLDivElement>(null);
   const [visibility, setVisibility] = useState<ScrollState>("none");
+  // 最近一次指针手势是否发生了拖拽平移（吞掉其后的 click，防误切换标签）。
+  const dragMovedRef = useRef(false);
 
-  // 标签数量变化后重新挂载 wheel 监听。
+  // 溢出检测 / 滚轮横滚 / 按住拖拽平移：统一挂在滚动容器上（一次性挂载）。
+  // 可见性必须自管理——隐藏原生滚动条后不再有「滚动条出现改变容器
+  // content-box」的信号；且新增标签只增加内容宽度、不改变容器尺寸，
+  // 需同时用 ResizeObserver 观察内容元素。
   useEffect(() => {
     const el = scrollRef.current;
 
     if (!el) return;
+
+    /** 由横向剩余滚动量推导 chevron 禁用态与渐隐阴影状态。 */
+    const updateVisibility = () => {
+      const max = el.scrollWidth - el.clientWidth;
+
+      if (max <= 1) {
+        setVisibility("none");
+
+        return;
+      }
+
+      const start = Math.abs(el.scrollLeft);
+
+      if (start > 1 && start < max - 1) {
+        setVisibility("leftRight");
+      } else if (start > 1) {
+        setVisibility("left");
+      } else {
+        setVisibility("right");
+      }
+    };
+
+    updateVisibility();
+
+    el.addEventListener("scroll", updateVisibility, { passive: true });
+
+    const resizeObserver = new ResizeObserver(updateVisibility);
+
+    resizeObserver.observe(el);
+
+    if (el.firstElementChild) resizeObserver.observe(el.firstElementChild);
 
     // 滚轮纵向增量转横向滚动（wheel 需 non-passive 才能 preventDefault）。
     const onWheel = (event: WheelEvent) => {
@@ -177,10 +220,63 @@ export function TagsBar() {
       el.scrollLeft += event.deltaMode === 1 ? event.deltaY * 16 : event.deltaY;
     };
 
-    el.addEventListener("wheel", onWheel, { passive: false });
+    // 按住拖拽平移（仅鼠标左键）：位移超过阈值判定为拖动并捕获指针，
+    // 拖动中阻止选中文本；结束后的 click 一律吞掉防止误触发点击。
+    let drag: { startX: number; startScroll: number } | null = null;
 
-    return () => el.removeEventListener("wheel", onWheel);
-  }, [paths.length]);
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse" || event.button !== MAIN_BUTTON) return;
+
+      drag = { startX: event.clientX, startScroll: el.scrollLeft };
+      dragMovedRef.current = false;
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!drag) return;
+
+      const dx = event.clientX - drag.startX;
+
+      if (!dragMovedRef.current && Math.abs(dx) < DRAG_THRESHOLD) return;
+
+      if (!dragMovedRef.current) {
+        dragMovedRef.current = true;
+        el.setPointerCapture(event.pointerId);
+      }
+
+      event.preventDefault();
+      el.scrollLeft = drag.startScroll - dx;
+    };
+
+    const onPointerEnd = () => {
+      drag = null;
+    };
+
+    const onClickCapture = (event: MouseEvent) => {
+      if (!dragMovedRef.current) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      dragMovedRef.current = false;
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("pointerdown", onPointerDown);
+    el.addEventListener("pointermove", onPointerMove);
+    el.addEventListener("pointerup", onPointerEnd);
+    el.addEventListener("pointercancel", onPointerEnd);
+    el.addEventListener("click", onClickCapture, true);
+
+    return () => {
+      el.removeEventListener("scroll", updateVisibility);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("pointerdown", onPointerDown);
+      el.removeEventListener("pointermove", onPointerMove);
+      el.removeEventListener("pointerup", onPointerEnd);
+      el.removeEventListener("pointercancel", onPointerEnd);
+      el.removeEventListener("click", onClickCapture, true);
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   // 激活标签自动滚动进可视区。
   useEffect(() => {
@@ -297,9 +393,11 @@ export function TagsBar() {
     if (redirect) void navigate({ href: redirect });
   };
 
-  /** 点击标签切换路由。 */
+  /** 点击标签切换路由（刚发生拖拽平移时忽略，防误触）。 */
   const handleSelect = (path: string) => {
-    if (path !== pathname) void navigate({ href: path });
+    if (dragMovedRef.current || path === pathname) return;
+
+    void navigate({ href: path });
   };
 
   /** 关闭单个标签（关闭热区 / 中键共用）；关闭的是当前页则跟随 redirect。 */
@@ -326,10 +424,14 @@ export function TagsBar() {
 
       <ScrollShadow
         ref={scrollRef}
-        className="min-w-0 flex-1"
+        hideScrollBar
+        // 手型光标仅在可滚动（溢出）时展示：无可平移内容时提示拖拽会误导。
+        className={`min-w-0 flex-1 ${
+          visibility === "none" ? "" : "cursor-grab active:cursor-grabbing"
+        }`}
         orientation="horizontal"
         size={24}
-        onVisibilityChange={setVisibility}
+        visibility={visibility === "leftRight" ? "both" : visibility}
       >
         <ul className="flex w-max items-center gap-1 px-0.5 py-1.5">
           {paths.map((path) => {
