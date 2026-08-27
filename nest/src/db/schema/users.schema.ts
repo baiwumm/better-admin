@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import { pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { integer, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -20,6 +20,11 @@ export const users = pgTable(
     displayName: text('display_name').notNull(),
     avatar: text('avatar'),
     status: text('status').notNull().default('active'),
+    /**
+     * 令牌版本号：签发 JWT 时写入 payload（ver claim）。
+     * 改密码 / 封禁时 +1，使该用户全部存量 access/refresh token 失效（全端强制下线）。
+     */
+    tokenVersion: integer('token_version').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

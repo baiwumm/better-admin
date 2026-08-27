@@ -7,11 +7,14 @@ interface AuthJwtPayload {
   sub: string;
   username: string;
   type?: 'access' | 'refresh';
+  /** 签发时的用户 tokenVersion */
+  ver?: number;
 }
 
 /**
  * JWT 策略：从 Authorization: Bearer 提取 access token，
  * 校验后从 users 表加载用户（含 roles 与 permissions 聚合位），挂载到 req.user。
+ * 同时校验 ver claim 与 users.token_version 一致（改密码/封禁后全端强制下线）。
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
@@ -30,7 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         message: '无效的访问令牌',
       });
     }
-    const user = await this.authService.loadUserWithPermissions(payload.sub);
+    const user = await this.authService.loadUserWithPermissions(payload.sub, payload.ver);
     if (!user) {
       throw new UnauthorizedException({
         code: 'UNAUTHORIZED',

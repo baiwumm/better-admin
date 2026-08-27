@@ -11,6 +11,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService, AuthUser } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
+import { LogoutDto } from './dto/logout.dto';
 import { Request } from 'express';
 
 @Controller('auth')
@@ -47,12 +48,19 @@ export class AuthController {
     return (req.user as AuthUser) ?? null;
   }
 
-  /** POST /api/auth/logout（强制鉴权，记录登出日志，返回 204） */
+  /**
+   * POST /api/auth/logout（强制鉴权，撤销托管 refreshToken，记录登出日志，返回 204）。
+   * body 可选：带 refreshToken 精确撤销本设备；不带则撤销该用户全部会话。
+   */
   @Post('logout')
   @HttpCode(204)
   @UseGuards(AuthGuard('jwt'))
-  async logout(@Req() req: Request) {
-    await this.authService.logout(req.user as AuthUser, this.clientMeta(req));
+  async logout(@Req() req: Request, @Body() dto?: LogoutDto) {
+    await this.authService.logout(
+      req.user as AuthUser,
+      this.clientMeta(req),
+      dto?.refreshToken ?? null,
+    );
     return;
   }
 }

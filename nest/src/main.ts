@@ -44,7 +44,7 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Better Admin API')
     .setDescription('Better Admin Phase 2 (NestJS + PostgreSQL) API Contract')
-    .setVersion('1.1.0')
+    .setVersion('1.2.0')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);

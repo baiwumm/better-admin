@@ -3,6 +3,7 @@
 // - 本文件仅导出 drizzle 表定义（drizzle-kit 通过此 barrel 生成迁移）。
 // - 权限枚举由各模块按需从 './permissions.enum' 直接导入。
 export * from './users.schema';
+export * from './refresh_tokens.schema';
 export * from './roles.schema';
 export * from './menus.schema';
 export * from './user_roles.schema';

@@ -6,8 +6,10 @@ info:
     Better Admin Phase 2 (NestJS + PostgreSQL) API Contract.
     本文件为 API Contract 的唯一事实来源（Single Source of Truth），详见 nest/docs/openapi-design.md。
     采用文档优先（Contract-First）；NestJS 实现须与本文一致。
-    版本注记：v1.0.0 基线；v1.1 优化批量删(DELETE /users?ids=)、logout 强制鉴权、settings 改 SETTINGS_UPDATE、新增 INVALID_OPERATION。
-  version: 1.1.0
+    版本注记：v1.0.0 基线；v1.1 优化批量删(DELETE /users?ids=)、logout 强制鉴权、settings 改 SETTINGS_UPDATE、新增 INVALID_OPERATION；
+    v1.2 登录支持 rememberMe（长短会话分档）、refreshToken 服务端托管（refresh_tokens 表哈希存储）并轮换下发、
+    logout 支持按 refreshToken 精确撤销、JWT 增加 ver claim 对齐 users.token_version（改密码/封禁全端下线）。
+  version: 1.2.0
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -82,6 +84,12 @@ components:
         password:
           type: string
           example: admin123
+        rememberMe:
+          type: boolean
+          default: false
+          description: >
+            记住我。true 时签发长效 refreshToken（默认 30d），false（缺省）为短会话
+            （refreshToken 默认 1d）；accessToken 有效期不受影响（默认 1h）。
 
     RefreshRequest:
       type: object
@@ -89,6 +97,13 @@ components:
       properties:
         refreshToken:
           type: string
+
+    LogoutRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          description: 可选。传入则仅撤销本设备托管的 refreshToken 会话；缺省撤销该用户全部设备会话。
 
     LoginResponse:
       type: object
@@ -664,12 +679,20 @@ paths:
       tags: [Auth]
       summary: 登出
       description: >
-        登出接口强制鉴权（须携带 Token），服务端据此记录该用户的登出日志
-        （logs 表 type=login, action=logout），并返回 204 No Content 或 200 空对象。
-        前端同时清除本地 Token。
+        登出接口强制鉴权（须携带 Token）。服务端撤销该用户托管的 refreshToken 并记录登出日志
+        （logs 表 type=login, action=logout），返回 204 No Content。
+        请求体可选：携带 refreshToken 仅精确撤销本设备会话；不携带则撤销该用户全部设备会话。
+        注意：accessToken 保持无状态，撤销后残留有效期内（默认 ≤1h）仍可访问，属预期行为；
+        后续请求因 refresh 失败将被引导重新登录。
       security:
         - bearerAuth: []
       x-permission: NONE
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
       responses:
         '204':
           description: 登出成功（无内容）
@@ -690,7 +713,7 @@ paths:
               $ref: '#/components/schemas/RefreshRequest'
       responses:
         '200':
-          description: 刷新成功
+          description: 刷新成功（refreshToken 已轮换，旧 token 作废；新 token 过期时间继承原会话剩余窗口）
           content:
             application/json:
               schema:
@@ -699,8 +722,11 @@ paths:
                 properties:
                   data:
                     type: object
+                    required: [accessToken, refreshToken]
                     properties:
                       accessToken:
+                        type: string
+                      refreshToken:
                         type: string
         '401':
           $ref: '#/components/responses/Unauthorized'

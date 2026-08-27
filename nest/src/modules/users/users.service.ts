@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { users, userRoles, roles, logs } from '../../db/schema';
+import { users, userRoles, roles, logs, refreshTokens } from '../../db/schema';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/user-create.dto';
 import { UpdateUserDto } from './dto/user-update.dto';
@@ -44,7 +44,13 @@ const SORTABLE = new Set([
 ]);
 
 function toView(row: typeof users.$inferSelect): Omit<UserView, 'roles'> {
-  const { passwordHash: _omit, deletedAt: _d, ...rest } = row;
+  // tokenVersion 为内部会话撤销用的版本号，不对外暴露
+  const {
+    passwordHash: _omit,
+    deletedAt: _d,
+    tokenVersion: _tv,
+    ...rest
+  } = row;
   return rest as Omit<UserView, 'roles'>;
 }
 
@@ -356,10 +362,15 @@ export class UsersService {
       });
     }
     const passwordHash = await bcrypt.hash(newPassword, 10);
+    // 同步 bump tokenVersion：该用户全部存量 access/refresh token 立即失效（强制重登）
     await db
       .update(users)
-      .set({ passwordHash })
+      .set({ passwordHash, tokenVersion: existing.tokenVersion + 1 })
       .where(eq(users.id, id));
+    // 撤销其全部托管 refreshToken，防止改密码后旧刷新链路继续续期
+    await db
+      .delete(refreshTokens)
+      .where(eq(refreshTokens.userId, id));
     await this.writeLog('user.reset_password', operatorId, { id });
     return null;
   }
@@ -378,11 +389,18 @@ export class UsersService {
         message: '用户不存在',
       });
     }
+    // 封禁时 bump tokenVersion 并清空托管会话：已登录设备即刻全端下线；
+    // 解封不 bump（恢复账号无需追加撤销）。
+    const bumpVersion =
+      status === 'disabled' ? existing.tokenVersion + 1 : existing.tokenVersion;
     const [row] = await db
       .update(users)
-      .set({ status })
+      .set({ status, tokenVersion: bumpVersion })
       .where(eq(users.id, id))
       .returning();
+    if (status === 'disabled') {
+      await db.delete(refreshTokens).where(eq(refreshTokens.userId, id));
+    }
     await this.writeLog('user.status_update', operatorId, { id, status });
     const rolesMap = await this.loadRoles([id]);
     return { ...toView(row), roles: rolesMap.get(id) ?? [] };
