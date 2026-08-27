@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { Button, Typography } from "@heroui/react";
 import { Link } from "@tanstack/react-router";
 
+import { useTranslation } from "@/i18n";
+
 type ErrorPageShellProps = {
   /** 状态码，如 "404" */
   status: string;
@@ -24,6 +26,8 @@ export function ErrorPageShell({
   icon,
   actions,
 }: ErrorPageShellProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex h-dvh w-full flex-col items-center justify-center gap-3 bg-background p-6 text-foreground">
       <Typography
@@ -50,7 +54,7 @@ export function ErrorPageShell({
       <div className="mt-4">
         {actions ?? (
           <Link to="/">
-            <Button variant="primary">返回首页</Button>
+            <Button variant="primary">{t("common.backHome")}</Button>
           </Link>
         )}
       </div>

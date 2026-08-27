@@ -1,1 +1,6 @@
-{}
+{
+  "overlay": {
+    "verifyingPermission": "正在校验权限…",
+    "permissionCheckFailed": "权限校验失败，请刷新重试"
+  }
+}

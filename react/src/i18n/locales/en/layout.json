@@ -1,1 +1,6 @@
-{}
+{
+  "overlay": {
+    "verifyingPermission": "Verifying permissions…",
+    "permissionCheckFailed": "Permission check failed. Please refresh and try again."
+  }
+}

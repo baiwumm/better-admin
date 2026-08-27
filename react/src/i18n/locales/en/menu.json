@@ -1,1 +1,13 @@
-{}
+{
+  "pageTitle": {
+    "console": "Console",
+    "account": "My Account",
+    "settings": "System Settings",
+    "users": "User Management",
+    "roles": "Role Management",
+    "menus": "Menu Management",
+    "permissions": "Permission Management",
+    "dicts": "Dictionary Management",
+    "logs": "Log Management"
+  }
+}

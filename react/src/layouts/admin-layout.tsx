@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { Drawer, Spinner, Typography } from "@heroui/react";
 
@@ -11,6 +11,7 @@ import { TagsBar } from "./components/tags-bar";
 
 import { ForbiddenErrorPage } from "@/components/common/error-pages/forbidden-error";
 import { useMenus } from "@/hooks/use-menus";
+import { useTranslation } from "@/i18n";
 import { type MenuNode } from "@/lib/api-types";
 import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
 import { collectMenuPaths } from "@/lib/menu-utils";
@@ -20,23 +21,32 @@ import { useDesignThemeStore } from "@/stores/design-theme-store";
 /** 登录即可访问的白名单路径集合（Set 查找 O(1)，模块级只建一次）。 */
 const LOGIN_REQUIRED_SET = new Set<string>(LOGIN_REQUIRED_PATHS);
 
-/* 异常态覆盖层为静态内容：提升到模块级，避免每次渲染重建 JSX（hoist-jsx） */
-const LOADING_OVERLAY = (
-  <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-3 text-muted">
-    <Spinner color="current" />
-    <Typography className="text-sm" color="muted" type="body-sm">
-      正在校验权限…
-    </Typography>
-  </div>
-);
+/* 异常态覆盖层：组件化取词（跟随语言切换重渲染），
+   外层用 memo 包装保持引用稳定，替代原先的模块级 JSX 常量（hoist-jsx） */
+const LoadingOverlay = memo(function LoadingOverlay() {
+  const { t } = useTranslation();
 
-const ERROR_OVERLAY = (
-  <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-3 text-muted">
-    <Typography className="text-sm" color="muted" type="body-sm">
-      权限校验失败，请刷新重试
-    </Typography>
-  </div>
-);
+  return (
+    <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-3 text-muted">
+      <Spinner color="current" />
+      <Typography className="text-sm" color="muted" type="body-sm">
+        {t("layout.overlay.verifyingPermission")}
+      </Typography>
+    </div>
+  );
+});
+
+const ErrorOverlay = memo(function ErrorOverlay() {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-3 text-muted">
+      <Typography className="text-sm" color="muted" type="body-sm">
+        {t("layout.overlay.permissionCheckFailed")}
+      </Typography>
+    </div>
+  );
+});
 
 /**
  * Admin 双栏布局：
@@ -82,10 +92,10 @@ export function AdminLayout() {
 
   if (isLoading || (menuTree === undefined && !isError)) {
     // 菜单未就绪（首次请求中，且无旧数据）→ loading
-    overlay = LOADING_OVERLAY;
+    overlay = <LoadingOverlay />;
   } else if (isError) {
     // 加载失败：提示失败，不误跳 403
-    overlay = ERROR_OVERLAY;
+    overlay = <ErrorOverlay />;
   } else {
     // 菜单已就绪：非白名单路径做权限校验
     const forbidden = !isWhitelisted && !allowedPaths.has(pathname);

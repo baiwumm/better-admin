@@ -1,4 +1,5 @@
 import { ENV } from "@/lib/env";
+import { getErrorMessage } from "@/i18n";
 
 /**
  * 统一 API 客户端（fetch 封装）。
@@ -83,7 +84,7 @@ async function refreshAccessToken(): Promise<string> {
       throw new ApiClientError(
         401,
         "NO_REFRESH_TOKEN",
-        "会话已失效，请重新登录",
+        getErrorMessage("errors.api.sessionExpired", "会话已失效，请重新登录"),
       );
     }
 
@@ -98,7 +99,7 @@ async function refreshAccessToken(): Promise<string> {
       throw new ApiClientError(
         res.status,
         "REFRESH_FAILED",
-        "登录已过期，请重新登录",
+        getErrorMessage("errors.api.loginExpired", "登录已过期，请重新登录"),
       );
     }
 
@@ -111,7 +112,11 @@ async function refreshAccessToken(): Promise<string> {
 
     if (!newAccessToken) {
       snapshot.clearSession();
-      throw new ApiClientError(401, "REFRESH_NO_TOKEN", "刷新失败，请重新登录");
+      throw new ApiClientError(
+        401,
+        "REFRESH_NO_TOKEN",
+        getErrorMessage("errors.api.refreshFailed", "刷新失败，请重新登录"),
+      );
     }
 
     snapshot.setTokens({
@@ -191,7 +196,11 @@ export async function fetchApiRaw(
       await refreshAccessToken();
     } catch {
       redirectToSignIn();
-      throw new ApiClientError(401, "UNAUTHORIZED", "登录已过期，请重新登录");
+      throw new ApiClientError(
+        401,
+        "UNAUTHORIZED",
+        getErrorMessage("errors.api.loginExpired", "登录已过期，请重新登录"),
+      );
     }
 
     return fetchApiRaw(path, { ...options, allowRetry: false });
@@ -211,7 +220,10 @@ export async function fetchApiRaw(
     throw new ApiClientError(
       response.status,
       err.code,
-      err.message ?? `请求失败（${response.status}）`,
+      err.message ??
+        getErrorMessage("errors.api.requestFailed", "请求失败（{{status}}）", {
+          status: response.status,
+        }),
     );
   }
 

@@ -15,10 +15,14 @@ export function t(key: string, options?: Record<string, unknown>): string {
  * fallback 文案，保证任何时刻用户至少能看到原文而非空串或报错。
  * 典型用例：api-client 的错误信息（模块加载早于 React 渲染，不能定义常量时取词）。
  */
-export function getErrorMessage(key: string, fallback: string): string {
+export function getErrorMessage(
+  key: string,
+  fallback: string,
+  options?: Record<string, unknown>,
+): string {
   if (!i18n.isInitialized) return fallback;
 
-  const translated = i18n.t(key);
+  const translated = i18n.t(key, options);
 
   // 未命中 key 时 i18next 会回显 key 本身，此时也退回 fallback
   return translated === key ? fallback : translated;

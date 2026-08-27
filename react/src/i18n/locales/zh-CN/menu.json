@@ -1,1 +1,13 @@
-{}
+{
+  "pageTitle": {
+    "console": "控制台",
+    "account": "我的账户",
+    "settings": "系统设置",
+    "users": "用户管理",
+    "roles": "角色管理",
+    "menus": "菜单管理",
+    "permissions": "权限管理",
+    "dicts": "字典管理",
+    "logs": "日志管理"
+  }
+}
