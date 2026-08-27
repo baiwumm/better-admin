@@ -53,7 +53,7 @@ async function main() {
     id: dictMenuId,
     label: '字典管理',
     i18nKey: 'menu.dicts',
-    icon: 'lucide:book-text',
+    icon: 'book-text',
     to: '/settings/dicts',
     parentId: parent.id,
     sort: 4,
