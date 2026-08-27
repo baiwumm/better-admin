@@ -6,9 +6,11 @@ import { RouterProvider } from "@tanstack/react-router";
 import { Provider } from "./provider.tsx";
 import { router } from "./router.ts";
 
+import { initI18n } from "@/i18n";
 import { queryClient } from "@/lib/query-client";
 import { bindAuthToApiClient } from "@/stores/auth-store";
 import { initDesignTheme } from "@/stores/design-theme-store";
+import { initLanguage } from "@/stores/language-store";
 import "@/styles/globals.css";
 
 // 将 auth-store 注入 api-client（解耦：api-client 借此读写 token / 触发退出）。
@@ -17,12 +19,25 @@ void bindAuthToApiClient();
 // 渲染前同步恢复主题色（防止闪烁：CSS 解析时 data-design-theme 已就位）
 initDesignTheme();
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <Provider>
-        <RouterProvider router={router} />
-      </Provider>
-    </QueryClientProvider>
-  </React.StrictMode>,
-);
+// 同步读取持久化语言并设置 <html lang>（防止闪烁；翻译初始化见 bootstrap）
+const language = initLanguage();
+
+/**
+ * 渲染前先完成 i18n 初始化：菜单树可能在首帧前经 useMenus prefetch 到达，
+ * t() 必须已可用。资源为静态打包，await 无网络开销。
+ */
+async function bootstrap(): Promise<void> {
+  await initI18n(language);
+
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <Provider>
+          <RouterProvider router={router} />
+        </Provider>
+      </QueryClientProvider>
+    </React.StrictMode>,
+  );
+}
+
+void bootstrap();

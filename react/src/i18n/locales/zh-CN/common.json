@@ -1,0 +1,9 @@
+{
+  "language": {
+    "label": "语言",
+    "switch": "切换语言",
+    "current": "当前语言",
+    "zhCN": "简体中文",
+    "en": "English"
+  }
+}

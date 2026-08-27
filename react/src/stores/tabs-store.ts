@@ -67,6 +67,8 @@ interface TabsState {
   syncMeta: (entries: Record<string, TabMetaSnapshot>) => void;
   /** 权限治理：移除不可达标签及其元数据（恢复 / 权限变更后调用）。 */
   pruneTabs: (allowedPaths: ReadonlySet<string>) => void;
+  /** 清空标题快照缓存（语言切换时调用）：标签列表保留，tags-bar 回退实时菜单名称。 */
+  clearTabsCache: () => void;
   /** 清空（登出 / 会话失效时调用）。 */
   resetTabs: () => void;
 }
@@ -188,6 +190,11 @@ export const useTabsStore = create<TabsState>()(() => ({
 
       return { paths, meta };
     });
+  },
+
+  clearTabsCache: () => {
+    // 仅清元数据快照；paths 不动（用户打开的标签不被关闭），持久化由订阅自动同步
+    useTabsStore.setState({ meta: {} });
   },
 
   resetTabs: () => {

@@ -6,6 +6,7 @@ import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { CommandMenu } from "./command-menu";
 import { FullscreenButton } from "./fullscreen-button";
+import { LanguageSwitcher } from "./language-switcher";
 import { SearchTrigger } from "./search-trigger";
 import { ThemeSettingsDrawer } from "./theme-settings-drawer";
 
@@ -126,10 +127,11 @@ export function AppHeader({
           )}
         </div>
 
-        {/* 右侧区域：搜索入口 + 全屏切换 + 主题设置入口 */}
+        {/* 右侧区域：搜索入口 + 全屏切换 + 语言切换 + 主题设置入口 */}
         <div className="flex flex-1 items-center justify-end gap-2">
           <SearchTrigger onPress={searchState.open} />
           <FullscreenButton />
+          <LanguageSwitcher />
           <ThemeSettingsDrawer />
         </div>
       </header>
