@@ -82,6 +82,7 @@ function isSafeRedirect(target: string): boolean {
 }
 
 export const Route = createFileRoute("/(auth)/sign-in")({
+  staticData: { title: "用户登录" },
   validateSearch: (search: Record<string, unknown>): SignInSearch => ({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
   }),
