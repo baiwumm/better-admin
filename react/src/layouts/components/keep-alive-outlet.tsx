@@ -63,6 +63,13 @@ function menuDepthOf(path: string, menuTree: MenuNode[] | undefined): number {
   return menuTree ? findActivePath(menuTree, path).length : 0;
 }
 
+/** 主体滚动区回顶（页面位置不做保活，见产品约定；导航与刷新共用）。 */
+function resetMainScroll() {
+  const main = document.querySelector<HTMLElement>("main");
+
+  if (main) main.scrollTop = 0;
+}
+
 /**
  * 路由呈现管理器：替代裸 `<Outlet/>` 放在 AdminLayout 主体区，
  * 同时承担 **组件状态保活** 与 **路由过渡动画** 两项职责。
@@ -87,6 +94,12 @@ function menuDepthOf(path: string, menuTree: MenuNode[] | undefined): number {
  *   html[data-route-transition] 选择器机制不变）；
  * - 导航方向感知：按新旧路径在菜单树中的层级深度判定前进/后退，
  *   写入 html[data-rt-direction]（"back" 时 CSS 反转位移类动画方向）。
+ *
+ * == 刷新 ==
+ * 标签右键「刷新」= 实例销毁重建（key 含刷新序号）。激活页的刷新复用
+ * VT 编排：store 的刷新序号与已应用序号分离，序号差异在 layout effect
+ * 检出后启动 VT、回调内 flushSync 落地——旧帧先被捕获，静态页也有
+ * 「重切一遍」的动画反馈；非激活页 / 异常态 / 无 VT 立即提交（语义不变）。
  *
  * == 滚动 ==
  * 统一由 AdminLayout 的 <main> 滚动（滚动条贴合主体区边缘）；页面位置
@@ -134,6 +147,17 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
   // 实际呈现的路由（与 pathname 分离：pending 期间二者不同）。
   const [displayedPath, setDisplayedPath] = useState(pathname);
 
+  // 已应用的刷新序号（与 store 最新值分离）：激活页的刷新延迟到 VT 回调
+  // 内提交，旧帧先被捕获，实例重挂载因此能重播切换动画；初始取 store
+  // 快照，避免挂载时把已有序号回退成 0 造成多余重挂载。
+  const [appliedRefreshSeq, setAppliedRefreshSeq] = useState<
+    Record<string, number>
+  >(() => useTabsStore.getState().refreshSeq);
+
+  // 异常态 overlay：存在时全部池面板转 hidden、仅渲染 overlay——异常态
+  // 不销毁保活；两个过渡 effect 依赖此值，需先于其声明。
+  const showingOverlay = overlay != null;
+
   // 统一实例池（插入序稳定，不做重排——顺序变化会导致隐藏实例 DOM 移动，
   // 可能丢失元素内部状态）。
   const [pool, setPool] = useState<PoolEntry[]>([]);
@@ -170,16 +194,9 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
       setDisplayedPath(pathname);
     };
 
-    // 切换完成、新帧快照捕获前：滚动回顶部（页面位置不做保活，
-    // 见产品约定；DOM 已提交，重置对 VT 新帧即时生效）。
-    const resetMainScroll = () => {
-      const main = document.querySelector<HTMLElement>("main");
-
-      if (main) main.scrollTop = 0;
-    };
-
     const apply = () => {
       flushSync(commitChanges);
+      // DOM 已提交，重置对 VT 新帧即时生效。
       resetMainScroll();
     };
 
@@ -210,6 +227,56 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
     }
   }, [animate, displayedPath, pathname]);
 
+  // 刷新编排：标签右键「刷新」= 实例销毁重建（key 含已应用序号）。激活页
+  // 的刷新与导航共用 VT 编排——序号延迟到 VT 回调内提交，旧帧先被捕获，
+  // 静态页也有「重切一遍」的动画反馈；非激活页 / 异常态 / 无 VT（含
+  // reduced-motion）保持原行为立即提交（无动画但语义不变）。
+  useLayoutEffect(() => {
+    const pendingPaths = Object.keys(refreshSeq).filter(
+      (path) => (refreshSeq[path] ?? 0) > (appliedRefreshSeq[path] ?? 0),
+    );
+
+    if (pendingPaths.length === 0) return;
+
+    // 刷新即实例销毁重建：序号落地 + 滚动回顶（页面位置不做保活）。
+    const commitRefresh = () => {
+      setAppliedRefreshSeq(refreshSeq);
+      resetMainScroll();
+    };
+
+    const canVt =
+      animate &&
+      typeof document !== "undefined" &&
+      typeof document.startViewTransition === "function" &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (
+      canVt &&
+      !showingOverlay &&
+      displayedPath === pathname &&
+      pendingPaths.includes(displayedPath)
+    ) {
+      // 刷新不是导航：清除上次导航遗留的方向标记，避免位移类动画反向播放。
+      document.documentElement.removeAttribute("data-rt-direction");
+
+      const transition = document.startViewTransition(() => {
+        flushSync(commitRefresh);
+      });
+
+      // 快速连续刷新时旧过渡被浏览器 skip，ready 以 AbortError reject——吞掉。
+      transition.ready.catch(() => {});
+    } else {
+      commitRefresh();
+    }
+  }, [
+    animate,
+    appliedRefreshSeq,
+    displayedPath,
+    pathname,
+    refreshSeq,
+    showingOverlay,
+  ]);
+
   // 标签对账：关闭标签 → 清除对应保活实例；openPath 晚于渲染期登记时
   // 将已打开的 keepAlive transient 转正（幂等，无变更返回原引用）。
   useEffect(() => {
@@ -220,15 +287,13 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
 
   // 池常驻渲染：当前呈现项 visible，其余 hidden 保活（hidden 项
   // display:none 不占布局；可见项以自然高度撑开统一的 <main> 滚动区）。
-  // overlay 存在时全部转 hidden、仅渲染 overlay——异常态不销毁保活。
-  const showingOverlay = overlay != null;
-
   return (
     <>
       {pool.map(({ path }) => {
         const active = !showingOverlay && path === displayedPath;
-        // key 含刷新序号：refreshPath 递增后强制销毁重建实例（「刷新」语义）。
-        const poolKey = `${path}#${refreshSeq[path] ?? 0}`;
+        // key 含已应用刷新序号：VT 回调内提交序号递增后强制销毁重建实例
+        // （「刷新」语义，激活页刷新时动画由刷新编排 effect 编排）。
+        const poolKey = `${path}#${appliedRefreshSeq[path] ?? 0}`;
 
         return (
           <Activity key={poolKey} mode={active ? "visible" : "hidden"}>
