@@ -28,6 +28,7 @@
   "layout.prefs.preview.light": "浅色外观预览",
   "layout.prefs.preview.system": "跟随系统外观预览",
   "layout.prefs.reset": "重置设置",
+  "layout.prefs.resetSuccess": "已恢复默认设置",
   "layout.prefs.routeTransition.blur": "景深聚焦",
   "layout.prefs.routeTransition.circle": "圆形揭示",
   "layout.prefs.routeTransition.cover": "覆盖推入",

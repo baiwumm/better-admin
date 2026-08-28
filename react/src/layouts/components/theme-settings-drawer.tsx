@@ -1,4 +1,4 @@
-import { Button, Drawer, useOverlayState } from "@heroui/react";
+import { Button, Drawer, toast, useOverlayState } from "@heroui/react";
 import { PaintBucket, RotateCcw } from "lucide-react";
 import { useCallback } from "react";
 
@@ -36,12 +36,16 @@ export function ThemeSettingsDrawer() {
   const resetPreferences = useDesignThemeStore((s) => s.resetPreferences);
   const { t } = useTranslation();
 
-  const handleReset = useCallback(() => {
-    // 不在重置后弹 toast：HeroUI Toast 的进出动画内部走
-    // document.startViewTransition，即使与主题 VT 错峰，其自身 VT 仍会让
-    // main / 面包屑短暂形成独立快照组叠层。重置的揭示动画本身已是充分反馈。
-    resetPreferences();
-  }, [resetPreferences]);
+  const handleReset = useCallback(async () => {
+    // 先等重置的揭示动画播完（resetPreferences 的 Promise 在动画完全结束后
+    // resolve），再弹 toast 成功提示。此前刻意不弹 toast：HeroUI toast 的进出
+    // 动画内部走 document.startViewTransition，会让 main / 面包屑短暂形成独立
+    // 快照组叠层（即「浮顶」鬼影）。自禁用 toast 根级 VT（provider.tsx 的
+    // disableToastViewTransition，改用纯 CSS 动画）后，该问题已解决，可放心
+    // 弹出成功提示。
+    await resetPreferences();
+    toast.success(t("layout.prefs.resetSuccess"));
+  }, [resetPreferences, t]);
 
   return (
     <Drawer state={themeDrawer}>

@@ -28,6 +28,7 @@
   "layout.prefs.preview.light": "Light appearance preview",
   "layout.prefs.preview.system": "System appearance preview",
   "layout.prefs.reset": "Reset",
+  "layout.prefs.resetSuccess": "Preferences restored",
   "layout.prefs.routeTransition.blur": "Depth Blur",
   "layout.prefs.routeTransition.circle": "Circle Reveal",
   "layout.prefs.routeTransition.cover": "Cover",
