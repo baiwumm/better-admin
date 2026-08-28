@@ -1,0 +1,7 @@
+{
+  "features.permissions.description": "系统权限点定义（由后端统一下发，仅展示，不提供编辑能力）",
+  "features.permissions.column.name": "权限名称",
+  "features.permissions.column.value": "权限点",
+  "features.permissions.column.bits": "位掩码值",
+  "features.permissions.column.icon": "图标"
+}

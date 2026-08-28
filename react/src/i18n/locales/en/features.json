@@ -1,0 +1,7 @@
+{
+  "features.permissions.description": "System permission definitions delivered by the backend (read-only, no editing)",
+  "features.permissions.column.name": "Permission",
+  "features.permissions.column.value": "Key",
+  "features.permissions.column.bits": "Bit Mask",
+  "features.permissions.column.icon": "Icon"
+}
