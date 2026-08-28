@@ -18,33 +18,33 @@ export interface PermissionMeta {
   label: string;
   /** 位掩码值（bigint） */
   bits: bigint;
-  /** 图标，如 'lucide:plus' */
+  /** 图标（裸 lucide 图标名，如 'plus'；前端 DynamicIcon 直接消费，与 menus.icon 约定一致） */
   icon: string;
 }
 
 export const Permissions = {
-  SEARCH: { value: 'SEARCH', label: 'search', bits: 1n, icon: 'lucide:search' },
-  ADD: { value: 'ADD', label: 'add', bits: 2n, icon: 'lucide:plus' },
-  EDIT: { value: 'EDIT', label: 'edit', bits: 4n, icon: 'lucide:pencil-line' },
-  DELETE: { value: 'DELETE', label: 'delete', bits: 8n, icon: 'lucide:trash-2' },
+  SEARCH: { value: 'SEARCH', label: 'search', bits: 1n, icon: 'search' },
+  ADD: { value: 'ADD', label: 'add', bits: 2n, icon: 'plus' },
+  EDIT: { value: 'EDIT', label: 'edit', bits: 4n, icon: 'pencil-line' },
+  DELETE: { value: 'DELETE', label: 'delete', bits: 8n, icon: 'trash-2' },
   BATCH_DELETE: {
     value: 'BATCH_DELETE',
     label: 'batchDelete',
     bits: 16n,
-    icon: 'i-lucide-list-x',
+    icon: 'list-x',
   },
   ADD_CHILD: {
     value: 'ADD_CHILD',
     label: 'addChild',
     bits: 32n,
-    icon: 'lucide:git-branch-plus',
+    icon: 'git-branch-plus',
   },
-  RESET: { value: 'RESET', label: 'reset', bits: 64n, icon: 'lucide:rotate-ccw' },
+  RESET: { value: 'RESET', label: 'reset', bits: 64n, icon: 'rotate-ccw' },
   SETTINGS_UPDATE: {
     value: 'SETTINGS_UPDATE',
     label: 'settingsUpdate',
     bits: 128n,
-    icon: 'lucide:settings',
+    icon: 'settings',
   },
 } as const satisfies Record<string, PermissionMeta>;
 
