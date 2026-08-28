@@ -22,7 +22,12 @@ export function PasswordInput({ label, ...inputProps }: PasswordInputProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   return (
-    <TextField className="w-full">
+    <TextField
+      aria-label={
+        label ?? inputProps["aria-label"] ?? t("common.password.input")
+      }
+      className="w-full"
+    >
       {label && <Label>{label}</Label>}
       <InputGroup>
         <InputGroup.Input

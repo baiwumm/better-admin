@@ -44,7 +44,8 @@ import { useTranslation } from "@/i18n";
  * - 父级候选排除自身及后代（防成环），编辑态允许变更父级，不选默认顶级；
  * - 按钮权限位：下拉多选（图标 + 中文名，复用权限页 i18n 映射），存 OR 位掩码；
  * - 外链打开方式不落库：to 以 https:// 开头时由导航层新窗口打开（契约 v1.4 已移除 target）；
- * - 图标输入末尾实时预览（裸 lucide 名，空则占位 circle）。
+ * - 父级下拉按树形层级缩进（flattenParentOptions 的 depth）；
+ * - 图标输入末尾实时预览（裸 lucide 名，为空不渲染预览）。
  */
 
 export type MenuFormMode = "create" | "addChild" | "edit";
@@ -266,6 +267,9 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
     <Form
       className="flex flex-col gap-4"
       id={FORM_ID}
+      // aria：禁用 react-aria 原生约束校验（否则 required 输入框会抢先聚焦并
+      // 阻断提交，RHF/zod 的 FieldError 无法呈现），校验统一交给 react-hook-form
+      validationBehavior="aria"
       onSubmit={(event) => void onSubmit(event)}
     >
       <div className="flex flex-col gap-1">
@@ -294,7 +298,10 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
                       id={option.id}
                       textValue={option.label.trim()}
                     >
-                      <span className="flex items-center gap-1.5">
+                      <span
+                        className="flex items-center gap-1.5"
+                        style={{ paddingInlineStart: option.depth * 16 }}
+                      >
                         {origin?.icon ? (
                           <DynamicIcon
                             aria-hidden
@@ -333,6 +340,7 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
           name="label"
           render={({ field, fieldState }) => (
             <TextField
+              isRequired
               className="flex flex-col gap-1"
               isInvalid={Boolean(fieldState.error)}
               value={field.value ?? ""}
@@ -357,6 +365,7 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
           name="i18nKey"
           render={({ field, fieldState }) => (
             <TextField
+              isRequired
               className="flex flex-col gap-1"
               isInvalid={Boolean(fieldState.error)}
               value={field.value ?? ""}
@@ -383,6 +392,7 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
           name="icon"
           render={({ field, fieldState }) => (
             <TextField
+              isRequired
               className="flex flex-col gap-1"
               isInvalid={Boolean(fieldState.error)}
               value={field.value ?? ""}
@@ -392,16 +402,18 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
               <Label>{t("features.menus.form.icon")}</Label>
               <InputGroup variant="secondary">
                 <InputGroup.Input placeholder="house" />
-                <InputGroup.Suffix className="pe-0">
-                  <span className="grid size-8 place-items-center">
-                    <DynamicIcon
-                      aria-hidden
-                      className="size-4 text-muted"
-                      name={(iconPreview || EMPTY_ICON) as IconName}
-                      size={16}
-                    />
-                  </span>
-                </InputGroup.Suffix>
+                {iconPreview ? (
+                  <InputGroup.Suffix className="pe-0">
+                    <span className="grid size-8 place-items-center">
+                      <DynamicIcon
+                        aria-hidden
+                        className="size-4 text-muted"
+                        name={iconPreview as IconName}
+                        size={16}
+                      />
+                    </span>
+                  </InputGroup.Suffix>
+                ) : null}
               </InputGroup>
               {fieldState.error && (
                 <FieldError>{t("features.menus.form.iconRequired")}</FieldError>
@@ -423,7 +435,7 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
             >
               <Label>{t("features.menus.form.route")}</Label>
               <Input
-                placeholder="/settings/xxx 或 https://…"
+                placeholder={t("features.menus.form.routePlaceholder")}
                 variant="secondary"
               />
               {fieldState.error ? (
@@ -509,6 +521,7 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
       <div className="flex flex-col gap-1">
         <Label>{t("features.menus.form.sort")}</Label>
         <NumberField
+          aria-label={t("features.menus.form.sort")}
           maxValue={999}
           minValue={0}
           value={values.sort}
@@ -580,7 +593,7 @@ interface SwitchRowProps {
 /** 左 Label 右 Switch 的单行开关 */
 function SwitchRow({ label, checked, onChange }: SwitchRowProps) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+    <div className="flex items-center justify-between gap-3 rounded-3xl border border-border px-3 py-2">
       <Label>{label}</Label>
       <Switch aria-label={label} isSelected={checked} onChange={onChange}>
         {({ isSelected }) => (

@@ -367,6 +367,7 @@ function SortableColumnRow({
         <GripVertical />
       </Button>
       <Checkbox
+        aria-label={label}
         isDisabled={!canToggle}
         isSelected={isVisible}
         onChange={onVisibleChange}

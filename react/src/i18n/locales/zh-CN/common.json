@@ -41,5 +41,6 @@
   "common.language.en": "English",
   "common.language.label": "语言",
   "common.language.switch": "切换语言",
-  "common.language.zhCN": "简体中文"
+  "common.language.zhCN": "简体中文",
+  "common.password.input": "密码"
 }

@@ -96,15 +96,12 @@ export function ConfirmDialog({
             {description && <div className="text-sm">{description}</div>}
             {confirmKeyword && (
               <TextField
+                aria-label={keywordLabel ?? confirmKeyword}
                 className="mt-3 w-full"
                 value={keywordInput}
                 onChange={setKeywordInput}
               >
-                <Input
-                  aria-label={keywordLabel ?? confirmKeyword}
-                  autoComplete="off"
-                  placeholder={confirmKeyword}
-                />
+                <Input autoComplete="off" placeholder={confirmKeyword} />
                 <Description>
                   {keywordLabel ??
                     t("common.confirmDialog.keywordHint", {

@@ -42,19 +42,17 @@ export function collectSelfAndDescendantIds(node: MenuNode): Set<string> {
   return ids;
 }
 
-/** 展平树为父级候选：[depth 缩进前缀] + 名称 */
+/** 展平树为父级候选：label 保持原名，depth 供下拉项做树形缩进 */
 export function flattenParentOptions(nodes: MenuNode[]): {
   id: string;
   label: string;
+  depth: number;
 }[] {
-  const options: { id: string; label: string }[] = [];
+  const options: { id: string; label: string; depth: number }[] = [];
 
   const walk = (list: MenuNode[], depth: number) => {
     for (const node of list) {
-      options.push({
-        id: node.id,
-        label: `${"　".repeat(depth)}${node.label}`,
-      });
+      options.push({ id: node.id, label: node.label, depth });
       if (node.children?.length) walk(node.children, depth + 1);
     }
   };
