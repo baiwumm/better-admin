@@ -50,7 +50,8 @@ export interface DataTableProps<TData extends RowData> {
   isLoading?: boolean;
   /** 空数据占位（默认统一文案） */
   emptyState?: ReactNode;
-  ariaLabel?: string;
+  /** 无障碍标签（透传 Table.Content；react-aria 对 Table 强制要求） */
+  "aria-label"?: string;
   className?: string;
   /** Table.Content 的 className（如 min-w-* 控制横向滚动宽度） */
   contentClassName?: string;
@@ -60,7 +61,7 @@ export function DataTable<TData extends RowData>({
   table,
   isLoading = false,
   emptyState,
-  ariaLabel,
+  "aria-label": ariaLabel,
   className,
   contentClassName,
 }: DataTableProps<TData>) {

@@ -20,7 +20,8 @@ export interface DataTableFilterSelectProps {
   options: DataTableFilterOption[];
   /** 未选择时的展示文案（默认「全部」） */
   placeholder?: string;
-  ariaLabel?: string;
+  /** 无障碍标签（默认取 placeholder / 「全部」） */
+  "aria-label"?: string;
   className?: string;
 }
 
@@ -34,7 +35,7 @@ export function DataTableFilterSelect({
   onChange,
   options,
   placeholder,
-  ariaLabel,
+  "aria-label": ariaLabel,
   className,
 }: DataTableFilterSelectProps) {
   const { t } = useTranslation();
