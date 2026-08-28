@@ -40,7 +40,7 @@ export function DataTableToolbar<TData extends RowData>({
         className,
       )}
     >
-      <div className="flex flex-1 flex-wrap items-center gap-3">{children}</div>
+      <div className="flex flex-1 flex-wrap items-center gap-2">{children}</div>
       <div className="flex items-center gap-2">
         {endSlot}
         {table && (
