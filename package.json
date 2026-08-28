@@ -1,0 +1,17 @@
+{
+  "name": "better-admin",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Better Admin — 同一套产品、同一套数据库，用 React / Vue / Next.js / Nuxt / NestJS 分别实现的全栈 Admin 系统（仓库级版本真源，不放依赖）",
+  "author": "baiwumm",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baiwumm/better-admin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/baiwumm/better-admin/issues"
+  },
+  "scripts": {
+    "sync-versions": "node scripts/sync-versions.mjs"
+  }
+}

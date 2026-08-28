@@ -1,7 +1,7 @@
 {
   "name": "better-admin-react",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "Better Admin — React + HeroUI 前端（UI 基准版本，NestJS API 消费方）",
   "author": "baiwumm",
