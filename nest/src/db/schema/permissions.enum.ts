@@ -40,11 +40,11 @@ export const Permissions = {
     icon: 'git-branch-plus',
   },
   RESET: { value: 'RESET', label: 'reset', bits: 64n, icon: 'rotate-ccw' },
-  SETTINGS_UPDATE: {
-    value: 'SETTINGS_UPDATE',
-    label: 'settingsUpdate',
+  RESET_PASSWORD: {
+    value: 'RESET_PASSWORD',
+    label: 'resetPassword',
     bits: 128n,
-    icon: 'settings',
+    icon: 'key-round',
   },
 } as const satisfies Record<string, PermissionMeta>;
 

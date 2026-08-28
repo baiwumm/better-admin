@@ -10,5 +10,4 @@ export * from './user_roles.schema';
 export * from './role_menus.schema';
 export * from './dict_types.schema';
 export * from './dict_items.schema';
-export * from './settings.schema';
 export * from './logs.schema';

@@ -91,7 +91,7 @@ export class UsersController {
 
   /** POST /api/users/:id/reset-password */
   @Post(':id/reset-password')
-  @Permissions('RESET')
+  @Permissions('RESET_PASSWORD')
   resetPassword(
     @Param('id') id: string,
     @Body() dto: ResetPasswordDto,

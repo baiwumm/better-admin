@@ -13,7 +13,6 @@ import {
   roleMenus,
   dictTypes,
   dictItems,
-  settings,
 } from './schema';
 import { SUPER_ADMIN_BITS, Permissions } from './schema/permissions.enum';
 
@@ -91,7 +90,7 @@ async function seed() {
   const mDicts = nanoid();
   const mLogs = nanoid();
 
-  // 菜单声明可用按钮位（全量位：搜索/新增/编辑/删除/批量删/新增子级/重置）
+  // 菜单声明可用按钮位（全量位：搜索/新增/编辑/删除/批量删/新增子级/重置/重置密码）
   const menuFullBits =
     Permissions.SEARCH.bits |
     Permissions.ADD.bits |
@@ -99,7 +98,8 @@ async function seed() {
     Permissions.DELETE.bits |
     Permissions.BATCH_DELETE.bits |
     Permissions.ADD_CHILD.bits |
-    Permissions.RESET.bits;
+    Permissions.RESET.bits |
+    Permissions.RESET_PASSWORD.bits;
 
   await db
     .insert(menus)
@@ -287,70 +287,6 @@ async function seed() {
     ])
     .onConflictDoNothing();
 
-  // ---------- 系统设置预置 Key ----------
-  await db
-    .insert(settings)
-    .values([
-      {
-        id: nanoid(),
-        key: 'site.title',
-        value: 'Better Admin',
-        group: 'basic',
-        description: '站点标题',
-      },
-      {
-        id: nanoid(),
-        key: 'site.logo',
-        value: '/logo.svg',
-        group: 'basic',
-        description: 'Logo URL',
-      },
-      {
-        id: nanoid(),
-        key: 'site.description',
-        value: 'Better Admin 后台管理系统',
-        group: 'basic',
-        description: '站点描述',
-      },
-      {
-        id: nanoid(),
-        key: 'user.allowRegister',
-        value: false,
-        group: 'user',
-        description: '是否开放注册',
-      },
-      {
-        id: nanoid(),
-        key: 'user.passwordExpireDays',
-        value: 90,
-        group: 'user',
-        description: '密码有效期(天)',
-      },
-      {
-        id: nanoid(),
-        key: 'theme.primary',
-        value: '#64748b',
-        group: 'theme',
-        description: '主题主色',
-      },
-      {
-        id: nanoid(),
-        key: 'theme.darkMode',
-        value: 'system',
-        group: 'theme',
-        description: '默认深色模式',
-      },
-      {
-        id: nanoid(),
-        key: 'system.logRetentionDays',
-        value: 90,
-        group: 'system',
-        description: '日志保留天数',
-      },
-    ])
-    .onConflictDoNothing();
-
-   
   console.log('[seed] Phase 2 种子数据写入完成。');
 }
 

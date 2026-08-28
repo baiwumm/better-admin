@@ -6,10 +6,10 @@ info:
     Better Admin Phase 2 (NestJS + PostgreSQL) API Contract.
     本文件为 API Contract 的唯一事实来源（Single Source of Truth），详见 nest/docs/openapi-design.md。
     采用文档优先（Contract-First）；NestJS 实现须与本文一致。
-    版本注记：v1.0.0 基线；v1.1 优化批量删(DELETE /users?ids=)、logout 强制鉴权、settings 改 SETTINGS_UPDATE、新增 INVALID_OPERATION；
+    版本注记：v1.0.0 基线；v1.1 优化批量删(DELETE /users?ids=)、logout 强制鉴权、settings 改 SETTINGS_UPDATE、新增 INVALID_OPERATION；v1.3 新增 GET /menus/tree 管理全量树、移除 Settings 模块与 SETTINGS_UPDATE 权限点；
     v1.2 登录支持 rememberMe（长短会话分档）、refreshToken 服务端托管（refresh_tokens 表哈希存储）并轮换下发、
     logout 支持按 refreshToken 精确撤销、JWT 增加 ver claim 对齐 users.token_version（改密码/封禁全端下线）。
-  version: 1.2.0
+  version: 1.3.0
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -30,7 +30,6 @@ tags:
     description: 菜单管理（树形 + 按钮位掩码）
   - name: Dict
     description: 字典管理
-  - name: Settings
     description: 系统设置
   - name: Logs
     description: 日志（operation/login/api/error）
@@ -560,28 +559,6 @@ components:
         enabled:
           type: boolean
 
-    # ---------- Settings ----------
-    Setting:
-      type: object
-      properties:
-        key:
-          type: string
-        value:
-          description: jsonb，可为字符串/数字/布尔/对象
-        group:
-          type: string
-          enum: [basic, user, theme, system]
-        description:
-          type: string
-          nullable: true
-
-    SettingUpdateRequest:
-      type: object
-      required: [value]
-      properties:
-        value:
-          description: jsonb，可为字符串/数字/布尔/对象
-
     # ---------- Logs ----------
     Log:
       type: object
@@ -968,7 +945,7 @@ paths:
     post:
       tags: [Users]
       summary: 重置用户密码
-      x-permission: RESET
+      x-permission: RESET_PASSWORD
       parameters:
         - name: id
           in: path
@@ -1271,6 +1248,28 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /menus/tree:
+    get:
+      tags: [Menus]
+      summary: 管理用全量菜单树（不做角色可见性过滤，含停用/隐藏节点；v1.3 新增）
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MenuNode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /menus/{id}:
     parameters:
       - name: id
@@ -1615,89 +1614,6 @@ paths:
                     nullable: true
         '401':
           $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  # ===================== Settings =====================
-  /settings:
-    get:
-      tags: [Settings]
-      summary: 系统设置列表
-      x-permission: SEARCH
-      parameters:
-        - name: group
-          in: query
-          schema: { type: string, enum: [basic, user, theme, system] }
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [data]
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Setting'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /settings/{key}:
-    parameters:
-      - name: key
-        in: path
-        required: true
-        schema: { type: string }
-    get:
-      tags: [Settings]
-      summary: 设置项详情
-      x-permission: SEARCH
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [data]
-                properties:
-                  data:
-                    $ref: '#/components/schemas/Setting'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      tags: [Settings]
-      summary: 更新设置项
-      x-permission: SETTINGS_UPDATE
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SettingUpdateRequest'
-      responses:
-        '200':
-          description: 成功
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [data]
-                properties:
-                  data:
-                    $ref: '#/components/schemas/Setting'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
 

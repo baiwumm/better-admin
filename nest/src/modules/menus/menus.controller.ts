@@ -39,6 +39,19 @@ export class MenusController {
     return this.menusService.findTree((req.user as AuthUser) ?? null);
   }
 
+  /**
+   * GET /api/menus/tree — 管理用全量菜单树（契约 v1.3）。
+   *
+   * 不做角色可见性过滤（含停用/隐藏节点），须持有菜单 SEARCH 位；
+   * userPermissions 仍按当前用户下发，供前端操作按钮门控。
+   * 注意：必须声明在 @Get(':id') 之前，避免 'tree' 被当作 id 参数匹配。
+   */
+  @Get('tree')
+  @Permissions('SEARCH')
+  findManageTree(@Req() req: Request): Promise<MenuNode[]> {
+    return this.menusService.findManageTree((req.user as AuthUser) ?? null);
+  }
+
   /** GET /api/menus/:id — 菜单详情 */
   @Get(':id')
   @Permissions('SEARCH')

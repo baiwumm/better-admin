@@ -4,8 +4,9 @@ import { users } from './users.schema';
 
 /**
  * 日志表（只增不删，无软删除）
- * 清理策略：建议通过 pg_cron 或 NestJS @Cron() 定时任务，
- * 按 settings 表中 system.logRetentionDays 配置值（默认90天）清理过期日志。
+ * 清理策略：原计划按 settings 表 system.logRetentionDays 定时清理，
+ * settings 模块已随契约 v1.3 移除；日志清理如需启用，另行以配置文件或
+ * 新配置表实现。
  */
 export const logs = pgTable(
   'logs',

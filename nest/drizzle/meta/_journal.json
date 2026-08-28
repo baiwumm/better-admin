@@ -15,6 +15,13 @@
       "when": 1787810516410,
       "tag": "0001_supreme_major_mapleleaf",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787900365828,
+      "tag": "0002_lively_obadiah_stane",
+      "breakpoints": true
     }
   ]
 }

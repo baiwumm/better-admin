@@ -85,7 +85,7 @@ RBAC 采用位掩码（见 database-design.md §1）。API Contract 层面约定
   ```
 - 后端 `@Permissions('ADD')` 装饰器读取该约定，做位掩码 `&` 校验。
 - Contract 中列出每个端点所需权限，前端据此预判按钮可用性（与 `menus.permissions` 同源）。
-- `PERMISSIONS` 枚举（与 database-design.md §1.2 一致）含：`SEARCH`(1) / `ADD`(2) / `EDIT`(4) / `DELETE`(8) / `BATCH_DELETE`(16) / `ADD_CHILD`(32) / `RESET`(64) / **`SETTINGS_UPDATE`(128)**。其中 `SETTINGS_UPDATE` 为系统设置写操作专用独立位，不挂在菜单按钮位上。
+- `PERMISSIONS` 枚举（与 database-design.md §1.2 一致）含：`SEARCH`(1) / `ADD`(2) / `EDIT`(4) / `DELETE`(8) / `BATCH_DELETE`(16) / `ADD_CHILD`(32) / `RESET`(64) / `RESET_PASSWORD`(128)，共 **8 个权限点**（v0.3 移除 `SETTINGS_UPDATE`、新增 `RESET_PASSWORD`；`RESET` 为前端「重置」按钮显隐位，`RESET_PASSWORD` 守卫重置密码端点）。
 
 ---
 
@@ -153,14 +153,9 @@ RBAC 采用位掩码（见 database-design.md §1）。API Contract 层面约定
 | PUT | `/api/dict/items/:id` | EDIT | 编辑字典项 |
 | DELETE | `/api/dict/items/:id` | DELETE | 删除字典项 |
 
-### 3.7 系统设置 `settings`
-| 方法 | 路径 | 权限 | 说明 |
-| --- | --- | --- | --- |
-| GET | `/api/settings` | SEARCH | 列表（可按 ?group 过滤） |
-| GET | `/api/settings/:key` | SEARCH | 单 key 详情 |
-| PUT | `/api/settings/:key` | SETTINGS_UPDATE | 更新值（独立位，不与菜单 EDIT 复用，见 database-design.md §2.8） |
-
-> *settings 写权限使用独立位 `SETTINGS_UPDATE`（bit 128），不复用业务数据的 `EDIT` 位，遵循最小权限原则（详见 database-design.md §1.2 / §2.8）。
+### 3.7 系统设置 `settings` — 已移除（v0.3）
+> `/api/settings` 系列端点与 `SETTINGS_UPDATE` 权限位已随契约 v1.3 整体移除
+> （详见 database-design.md §2.8 / 变更记录）。
 
 ### 3.8 日志 `logs`
 | 方法 | 路径 | 权限 | 说明 |
@@ -275,7 +270,6 @@ tags:                                # 按模块分 tag
   - name: Roles
   - name: Menus
   - name: Dict
-  - name: Settings
   - name: Logs
 components:
   securitySchemes:
@@ -327,3 +321,4 @@ paths:
 | --- | --- | --- |
 | 2026-08-21 | v0.1 | Phase 2 API Contract 设计方案：文档优先策略、全局约定、八模块端点+权限位、错误码清单、数据结构、yaml 组织。仅方案，未开发。 |
 | 2026-08-21 | v0.2 | 契约优化：批量删改 DELETE /users?ids=、logout 强制鉴权记日志、settings 写接口改 SETTINGS_UPDATE（§2 枚举同步）、新增 INVALID_OPERATION(400) 错误码。与 database-design.md v0.2 对齐。仅方案，未开发。 |
+| 2026-08-28 | v0.3 | 契约 v1.3：新增 `GET /api/menus/tree` 管理全量菜单树（SEARCH 位）；移除 Settings 模块全部端点与 `SETTINGS_UPDATE` 权限位；新增 `RESET_PASSWORD` 位并接管重置密码端点守卫。与 database-design.md v0.3 对齐。 |

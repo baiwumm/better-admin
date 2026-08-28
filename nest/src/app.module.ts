@@ -7,7 +7,6 @@ import { RolesModule } from './modules/roles/roles.module';
 import { MenusModule } from './modules/menus/menus.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { DictModule } from './modules/dict/dict.module';
-import { SettingsModule } from './modules/settings/settings.module';
 import { LogsModule } from './modules/logs/logs.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -16,7 +15,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 /**
  * 根模块（Phase 2 基础设施阶段）。
  * 已接入：全局异常过滤器、全局响应拦截器、API 日志拦截器、ValidationPipe、
- * Auth / Users / Roles / Menus / Permissions / Dict / Settings / Logs 模块。
+ * Auth / Users / Roles / Menus / Permissions / Dict / Logs 模块。
  */
 @Module({
   imports: [
@@ -27,7 +26,6 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     MenusModule,
     PermissionsModule,
     DictModule,
-    SettingsModule,
     LogsModule,
   ],
   controllers: [],

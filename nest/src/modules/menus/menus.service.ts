@@ -174,6 +174,24 @@ export class MenusService {
     return this.buildTree(filteredRows, permMap);
   }
 
+  /**
+   * GET /api/menus/tree — 管理用全量菜单树（契约 v1.3 新增）。
+   *
+   * 与 findTree 的区别：不做角色可见性过滤——包含 enabled=false / hideInMenu
+   * 的全部节点，供菜单管理页编辑使用；userPermissions 仍按当前用户下发，
+   * 供前端操作按钮门控。控制器层要求菜单 SEARCH 位。
+   */
+  async findManageTree(user: AuthUser | null): Promise<MenuNode[]> {
+    const rows = await db
+      .select()
+      .from(menus)
+      .orderBy(menus.sort, menus.createdAt);
+    const permMap = user
+      ? await this.buildPermissionMap(user.id)
+      : new Map<string, bigint>();
+    return this.buildTree(rows, permMap);
+  }
+
   /** GET /api/menus/:id — 单菜单详情（含子树与 userPermissions） */
   async findOne(id: string, user: AuthUser | null) {
     const row = await db.query.menus.findFirst({ where: eq(menus.id, id) });

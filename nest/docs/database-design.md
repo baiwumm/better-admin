@@ -50,8 +50,8 @@
 | DELETE | delete | 8 | lucide:trash-2 | 删除 |
 | BATCH_DELETE | batchDelete | 16 | i-lucide-list-x | 批量删除 |
 | ADD_CHILD | addChild | 32 | lucide:git-branch-plus | 新增子级 |
-| RESET | reset | 64 | lucide:rotate-ccw | 重置 |
-| SETTINGS_UPDATE | settingsUpdate | 128 | lucide:settings | 系统设置更新（独立位，不与菜单 EDIT 复用，见 §3.7） |
+| RESET | reset | 64 | lucide:rotate-ccw | 重置（前端「重置」按钮显隐，纯前端位） |
+| RESET_PASSWORD | resetPassword | 128 | lucide:key-round | 重置密码（守卫 `POST /users/:id/reset-password`） |
 
 ### 1.3 权限判定链路
 
@@ -217,18 +217,12 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 唯一约束建议：`(type_code, value)`。
 
-### 2.8 `settings`（系统设置）
+### 2.8 `settings`（系统设置）— 已移除（v0.3）
 
-| 字段 | 类型 | 约束 | 说明 |
-| --- | --- | --- | --- |
-| id | text | PK | |
-| key | varchar(100) | NOT NULL, UNIQUE | 配置键，如 `site.title` |
-| value | jsonb | NOT NULL | 配置值（字符串/数字/布尔/对象） |
-| group | varchar(50) | NOT NULL | 分组：basic/user/theme/system |
-| description | varchar(255) | NULL | 说明 |
-
-> 对应 requirements §10.6（系统设置：基础/用户/主题/系统配置）与前端 `/settings` 页。
-> **写入权限独立化**：`PUT /api/settings/:key` 写操作所需权限为 **`SETTINGS_UPDATE`**（bit 128，见 §1.2），**不与菜单/业务数据的 `EDIT` 位复用**。`SETTINGS_UPDATE` 是接口级守卫专用位，不挂在 `menus.permissions` 菜单按钮位上（系统设置页本身非菜单树内的普通 CRUD 按钮场景），由 `@Permissions('SETTINGS_UPDATE')` 单独校验，遵循最小权限原则。
+> settings 表与 `/api/settings` 系列端点已随契约 v1.3 / 本文档 v0.3 **整体移除**
+> （系统设置页暂无落地计划，相关接口不再维护）；迁移 `0002_*` 已在真实库
+> DROP 该表。原「SETTINGS_UPDATE 独立写权限位」约定一并废止。
+> 日志清理若需保留期配置，另行以新配置载体实现，不复用本表。
 
 ### 2.9 `logs`（日志）
 
@@ -245,7 +239,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 索引：`logs_type_idx (type)`、`logs_created_idx (created_at)`。
 
-> **日志自动清理策略**：日志表只增不删（无软删），长期运行会膨胀。生产环境建议通过 **`pg_cron`**（数据库侧定时任务）或应用层 **`@Cron()`**（NestJS 定时任务）定期清理：读取 `settings` 表的 `system.logRetentionDays` 配置值（默认 90 天），删除 `created_at` 早于 `now() - interval 'N days'` 的过期日志。清理任务本身应记录到 `error`/`operation` 日志以便追溯，避免静默丢失审计数据。
+> **日志自动清理策略**：日志表只增不删（无软删），长期运行会膨胀。生产环境建议通过 **`pg_cron`**（数据库侧定时任务）或应用层 **`@Cron()`**（NestJS 定时任务）定期清理：保留期原计划读 `settings.system.logRetentionDays`（settings 已于 v0.3 移除，启用时另行引入配置载体），删除 `created_at` 早于 `now() - interval 'N days'` 的过期日志。清理任务本身应记录到 `error`/`operation` 日志以便追溯，避免静默丢失审计数据。
 
 ---
 
@@ -319,7 +313,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | 10.3 权限管理 | `PERMISSIONS` 枚举 + `menus.permissions`/`role_menus.permissions` 位 | 已建模（位掩码方案） |
 | 10.4 菜单管理 | `menus`（树形 + 按钮位 + i18n_key） | 已建模 |
 | 10.5 Dashboard | 数据统计（后续接口，不在本 Schema） | 后续阶段 |
-| 10.6 系统设置 | `settings`（8 预置 key） | 已建模 |
+| 10.6 系统设置 | ~~`settings`~~ | v0.3 移除（含端点与权限位） |
 | 10.7 日志 | `logs`（4 类型） | 已建模 |
 | 字典管理（用户补充） | `dict_types` + `dict_items` | 已建模 |
 | 国际化（用户补充→撤回） | 纯前端 i18n，后端只存 key | 已约定 |
@@ -330,7 +324,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 1. 编写 `nest/openapi/openapi.yaml`（API Contract，覆盖各模块端点、统一响应、错误码、权限装饰器约定）——Single Source of Contract。
 2. 初始化 NestJS 工程 + Drizzle 接入（运行时连 6543 pooler，迁移用 5432 直连）。
-3. 按 Contract 实现各模块（auth/users/roles/permissions/menus/dict/settings/logs）。
+3. 按 Contract 实现各模块（auth/users/roles/permissions/menus/dict/logs）。
 4. 种子脚本 + 迁移脚本。
 5. Swagger 文档可访问 + 基础测试。
 6. 更新 `AGENTS.md` 阶段状态。
@@ -343,4 +337,5 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | --- | --- | --- |
 | 2026-08-21 | v0.1 | Phase 2 数据库设计方案：位掩码 RBAC、9 张表（无 i18n 表）、日志 4 类型、设置预置、字典、纯前端 i18n 约定。仅文档，未开发。 |
 | 2026-08-21 | v0.2 | 六项关键改进：超级管理员全量位(`9223372036854775807`)、主键 `nanoid(12)` 强制服务端生成、users 软删部分唯一索引、新增 `SETTINGS_UPDATE` 独立位、日志自动清理策略、字典/菜单 i18n 管理规范。仅文档，未开发。 |
+| 2026-08-28 | v0.3 | 新增管理用全量菜单树约定（`GET /api/menus/tree`，契约 v1.3）；**移除 `settings` 表/模块与 `SETTINGS_UPDATE` 权限位**；新增 `RESET_PASSWORD`(128) 位守卫重置密码端点（`RESET` 保留为前端「重置」按钮显隐位），权限点共 8 个，真实库已 DROP settings 表。 |
 | 2026-08-21 | v0.3 | 新增 §1.5 菜单树权限填充性能约束（禁止 N+1，O(1) 内存映射法，仅 2 次查询）。仅文档，未开发。 |

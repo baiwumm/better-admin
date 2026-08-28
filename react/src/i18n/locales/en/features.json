@@ -9,6 +9,7 @@
   "features.permissions.items.DELETE": "Delete",
   "features.permissions.items.BATCH_DELETE": "Batch Delete",
   "features.permissions.items.ADD_CHILD": "Add Child",
-  "features.permissions.items.RESET": "Reset Password",
+  "features.permissions.items.RESET": "Reset",
+  "features.permissions.items.RESET_PASSWORD": "Reset Password",
   "features.permissions.items.SETTINGS_UPDATE": "Update Settings"
 }
