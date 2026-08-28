@@ -78,6 +78,7 @@ export function ThemeColorPicker() {
         <Button
           isIconOnly
           aria-label={t("layout.prefs.themeColor.random")}
+          className="text-muted"
           size="sm"
           variant="ghost"
           onPress={handleRandom}

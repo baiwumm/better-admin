@@ -23,7 +23,14 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Button, Checkbox, Popover, cn } from "@heroui/react";
+import {
+  Button,
+  Checkbox,
+  Label,
+  Popover,
+  Typography,
+  cn,
+} from "@heroui/react";
 import { GripVertical, RotateCcw, Settings2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -192,6 +199,11 @@ export function DataTableViewOptions<TData extends RowData>({
   if (hideableColumns.length === 0) return null;
 
   const handleVisibleChange = (columnId: string, visible: boolean) => {
+    // 至少保留一列：已是唯一可见列时不允许取消勾选（UI 层同步禁用）
+    const visibleCount = hideableColumns.filter((c) => c.getIsVisible()).length;
+
+    if (!visible && visibleCount <= 1) return;
+
     const visibility: ColumnVisibilityState = {};
 
     for (const column of hideableColumns) {
@@ -230,6 +242,9 @@ export function DataTableViewOptions<TData extends RowData>({
     }
   };
 
+  // 当前可见的可隐藏列数（至少保留一列可见）
+  const visibleCount = hideableColumns.filter((c) => c.getIsVisible()).length;
+
   const columnLabel = (id: string) => {
     const column = table.getColumn(id);
 
@@ -245,7 +260,7 @@ export function DataTableViewOptions<TData extends RowData>({
         <Settings2 />
         {t("common.datatable.columnSettings")}
       </Button>
-      <Popover.Content className="w-72">
+      <Popover.Content className="w-60">
         <Popover.Dialog>
           <div className="flex items-center justify-between">
             <Popover.Heading className="text-sm font-semibold">
@@ -258,12 +273,12 @@ export function DataTableViewOptions<TData extends RowData>({
               variant="ghost"
               onPress={resetColumns}
             >
-              <RotateCcw className="size-4" />
+              <RotateCcw className="text-muted" />
             </Button>
           </div>
-          <p className="pb-2 text-xs text-muted">
+          <Typography className="pb-2" color="muted" type="body-xs">
             {t("common.datatable.columnOrderHint")}
-          </p>
+          </Typography>
           <DndContext
             collisionDetection={closestCenter}
             modifiers={[restrictToVerticalAxis, restrictToParentElement]}
@@ -278,6 +293,10 @@ export function DataTableViewOptions<TData extends RowData>({
                 {orderIds.map((id) => (
                   <SortableColumnRow
                     key={id}
+                    canToggle={
+                      !(table.getColumn(id)?.getIsVisible() ?? true) ||
+                      visibleCount > 1
+                    }
                     dragLabel={t("common.datatable.columnDrag", {
                       column: columnLabel(id),
                     })}
@@ -302,6 +321,8 @@ interface SortableColumnRowProps {
   id: string;
   label: string;
   isVisible: boolean;
+  /** 是否允许切换可见性（最后一列可见时禁止取消勾选） */
+  canToggle: boolean;
   onVisibleChange: (visible: boolean) => void;
   /** 无障碍：拖拽手柄描述（含列名） */
   dragLabel: string;
@@ -312,6 +333,7 @@ function SortableColumnRow({
   id,
   label,
   isVisible,
+  canToggle,
   onVisibleChange,
   dragLabel,
 }: SortableColumnRowProps) {
@@ -328,28 +350,34 @@ function SortableColumnRow({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex items-center gap-2 rounded-lg px-2 py-1",
+        "flex items-center gap-1 rounded-3xl",
         isDragging && "z-10 bg-default shadow-md",
       )}
       style={{ transform: CSS.Translate.toString(transform), transition }}
     >
-      <button
+      <Button
         {...attributes}
         {...listeners}
+        isIconOnly
         aria-label={dragLabel}
-        className="cursor-grab touch-none rounded p-0.5 text-muted hover:bg-default hover:text-foreground active:cursor-grabbing"
-        type="button"
+        className="cursor-grab touch-none"
+        size="sm"
+        variant="ghost"
       >
-        <GripVertical className="size-4" />
-      </button>
-      <Checkbox isSelected={isVisible} onChange={onVisibleChange}>
+        <GripVertical />
+      </Button>
+      <Checkbox
+        isDisabled={!canToggle}
+        isSelected={isVisible}
+        onChange={onVisibleChange}
+      >
         <Checkbox.Content>
           <Checkbox.Control>
             <Checkbox.Indicator />
           </Checkbox.Control>
         </Checkbox.Content>
       </Checkbox>
-      <span className="flex-1 truncate text-sm">{label}</span>
+      <Label className="flex-1 truncate text-sm">{label}</Label>
     </div>
   );
 }
