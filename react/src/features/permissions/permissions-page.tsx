@@ -4,8 +4,10 @@ import type { PermissionItem } from "@/lib/api-types";
 
 import { Typography } from "@heroui/react";
 import { useTable } from "@tanstack/react-table";
+import { RotateCcw, Search } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import { useMemo, useState } from "react";
+import { Button, SearchField } from "@heroui/react";
 
 import { DataTable } from "@/components/common/data-table";
 import {
@@ -44,7 +46,16 @@ export function PermissionsPage() {
   const { t } = useTranslation();
   const userId = useAuthStore((state) => state.user?.id);
   const { data, isLoading } = usePermissions();
+  // 搜索采用提交式语义：输入框输入 → 「搜索」按钮 / Enter 应用，「重置」清空
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+
+  const applySearch = () => setSearch(searchInput.trim());
+
+  const resetSearch = () => {
+    setSearchInput("");
+    setSearch("");
+  };
 
   // 按位掩码值升序展示（SEARCH=1 → SETTINGS_UPDATE=128），排序不进入表格交互
   const items = useMemo<PermissionRow[]>(
@@ -129,11 +140,33 @@ export function PermissionsPage() {
         columnSettingKey={
           userId ? buildColumnSettingKey(userId, "/permissions") : undefined
         }
-        searchPlaceholder={t("features.permissions.searchPlaceholder")}
-        searchValue={search}
         table={table}
-        onSearchChange={setSearch}
-      />
+      >
+        <SearchField
+          aria-label={t("common.datatable.searchLabel")}
+          className="w-64"
+          value={searchInput}
+          variant="secondary"
+          onChange={setSearchInput}
+          onSubmit={applySearch}
+        >
+          <SearchField.Group>
+            <SearchField.SearchIcon />
+            <SearchField.Input
+              placeholder={t("features.permissions.searchPlaceholder")}
+            />
+            <SearchField.ClearButton />
+          </SearchField.Group>
+        </SearchField>
+        <Button size="sm" onPress={applySearch}>
+          <Search />
+          {t("common.datatable.search")}
+        </Button>
+        <Button size="sm" variant="tertiary" onPress={resetSearch}>
+          <RotateCcw />
+          {t("common.datatable.reset")}
+        </Button>
+      </DataTableToolbar>
       <DataTable
         aria-label={t("menu.pageTitle.permissions")}
         className="w-full"
