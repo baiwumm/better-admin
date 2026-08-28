@@ -152,25 +152,35 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
   useLayoutEffect(() => {
     if (displayedPath === pathname) return;
 
-    const apply = () => {
-      flushSync(() => {
-        // 清理临时成员并确保目标页在池（permanent 判定读最新菜单/标签数据）。
-        setPool((prev) =>
-          commitNavigation(
-            prev,
-            pathname,
-            keepAlivePathsRef.current,
-            openedTabsRef.current,
-          ),
-        );
-        setDisplayedPath(pathname);
-      });
+    // 提交路由切换：清理临时池成员并确保目标页在池（permanent 判定读
+    // 最新菜单/标签数据）。无 VT 时直接调用——useLayoutEffect 内的
+    // setState 会在浏览器绘制前同步完成重渲染；flushSync 仅限 VT 回调内
+    // 使用（浏览器异步调用回调，不在 React 生命周期内），在生命周期方法
+    // 里同步调用会触发 "flushSync was called from inside a lifecycle
+    // method" 警告。
+    const commitChanges = () => {
+      setPool((prev) =>
+        commitNavigation(
+          prev,
+          pathname,
+          keepAlivePathsRef.current,
+          openedTabsRef.current,
+        ),
+      );
+      setDisplayedPath(pathname);
+    };
 
-      // 切换完成、新帧快照捕获前：滚动回顶部（页面位置不做保活，
-      // 见产品约定；flushSync 已提交 DOM，此处重置对 VT 新帧即时生效）。
+    // 切换完成、新帧快照捕获前：滚动回顶部（页面位置不做保活，
+    // 见产品约定；DOM 已提交，重置对 VT 新帧即时生效）。
+    const resetMainScroll = () => {
       const main = document.querySelector<HTMLElement>("main");
 
       if (main) main.scrollTop = 0;
+    };
+
+    const apply = () => {
+      flushSync(commitChanges);
+      resetMainScroll();
     };
 
     // 导航方向：目标深度更浅视为后退（供 CSS 反转位移类动画方向）。
@@ -195,7 +205,8 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
       // 快速连续导航时旧过渡被浏览器 skip，ready 以 AbortError reject——吞掉。
       transition.ready.catch(() => {});
     } else {
-      apply();
+      commitChanges();
+      resetMainScroll();
     }
   }, [animate, displayedPath, pathname]);
 
