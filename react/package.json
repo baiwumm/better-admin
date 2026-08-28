@@ -1,8 +1,19 @@
 {
-  "name": "vite-template",
+  "name": "better-admin-react",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "Better Admin — React + HeroUI 前端（UI 基准版本，NestJS API 消费方）",
+  "author": "baiwumm",
+  "homepage": "https://react.baiwumm.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baiwumm/better-admin.git",
+    "directory": "react"
+  },
+  "bugs": {
+    "url": "https://github.com/baiwumm/better-admin/issues"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

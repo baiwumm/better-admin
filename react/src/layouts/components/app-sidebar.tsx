@@ -61,7 +61,7 @@ const TECH_STACKS: {
 const SIDEBAR_LINKS = [
   {
     labelKey: "layout.sidebar.github",
-    href: "https://github.com/baiwumm",
+    href: "https://github.com/baiwumm/better-admin",
     kind: "github",
   },
   {
