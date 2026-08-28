@@ -1,12 +1,5 @@
-type Row<TData extends RowData> = RowBase<TData>;
-
-type TanStackTable<TData extends RowData> = TanStackTableBase<TData>;
-
 import type { RowData } from "@tanstack/react-table";
-import type {
-  LegacyRow as RowBase,
-  LegacyReactTable as TanStackTableBase,
-} from "@tanstack/react-table/legacy";
+import type { AppRow, AppTable } from "./table-types";
 
 import { Checkbox } from "@heroui/react";
 
@@ -32,7 +25,7 @@ import { useTranslation } from "@/i18n";
 export function DataTableSelectAll<TData extends RowData>({
   table,
 }: {
-  table: TanStackTable<TData>;
+  table: AppTable<TData>;
 }) {
   const { t } = useTranslation();
   const allSelected = table.getIsAllRowsSelected();
@@ -57,7 +50,7 @@ export function DataTableSelectAll<TData extends RowData>({
 export function DataTableSelectRow<TData extends RowData>({
   row,
 }: {
-  row: Row<TData>;
+  row: AppRow<TData>;
 }) {
   const { t } = useTranslation();
 

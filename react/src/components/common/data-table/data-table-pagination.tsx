@@ -1,7 +1,5 @@
-type TanStackTable<TData extends RowData> = TanStackTableBase<TData>;
-
 import type { RowData } from "@tanstack/react-table";
-import type { LegacyReactTable as TanStackTableBase } from "@tanstack/react-table/legacy";
+import type { AppTable } from "./table-types";
 
 import { ListBox, Pagination, Select } from "@heroui/react";
 
@@ -37,7 +35,7 @@ export function getPageItems(
 
 export interface DataTablePaginationProps<TData extends RowData> {
   /** useReactTable 实例（manualPagination: true） */
-  table: TanStackTable<TData>;
+  table: AppTable<TData>;
   /** 服务端总数 */
   total: number;
   className?: string;
@@ -54,7 +52,7 @@ export function DataTablePagination<TData extends RowData>({
 }: DataTablePaginationProps<TData>) {
   const { t } = useTranslation();
 
-  const { pageIndex, pageSize } = table.getState().pagination;
+  const { pageIndex, pageSize } = table.state.pagination;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const currentPage = pageIndex + 1;
 

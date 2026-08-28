@@ -1,4 +1,11 @@
 export { DataTable } from "./data-table";
+export { appTableFeatures } from "./table-types";
+export type {
+  AppTable,
+  AppTableFeatures,
+  AppColumnDef,
+  AppRow,
+} from "./table-types";
 export {
   DataTablePagination,
   PAGE_SIZE_OPTIONS,

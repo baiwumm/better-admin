@@ -1,10 +1,9 @@
-type TanStackTable<TData extends RowData> = TanStackTableBase<TData>;
-
-import type { ReactNode } from "react";
 import type { RowData } from "@tanstack/react-table";
-import type { LegacyReactTable as TanStackTableBase } from "@tanstack/react-table/legacy";
+import type { ReactNode } from "react";
+import type { AppTable } from "./table-types";
 
-import { Button, SearchField, cn } from "@heroui/react";
+import { Search, RotateCcw } from "lucide-react";
+import { Button, SearchField, Surface, cn } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 
 import { DataTableViewOptions } from "./data-table-view-options";
@@ -13,7 +12,7 @@ import { useTranslation } from "@/i18n";
 
 export interface DataTableToolbarProps<TData extends RowData> {
   /** 列设置（传入 table 即渲染右侧「列设置」下拉；storageKey 用于持久化） */
-  table?: TanStackTable<TData>;
+  table?: AppTable<TData>;
   /** 列设置持久化 key（column-setting:{userId}:{routePath}），不传则不持久化 */
   columnSettingKey?: string;
   /** 搜索关键字（受控，绑定列表 store 的 search） */
@@ -102,9 +101,9 @@ export function DataTableToolbar<TData extends RowData>({
   };
 
   return (
-    <div
+    <Surface
       className={cn(
-        "mb-3 flex flex-wrap items-center justify-between gap-3",
+        "mb-4 flex flex-wrap items-center justify-between gap-3 p-4 rounded-3xl",
         className,
       )}
     >
@@ -114,6 +113,7 @@ export function DataTableToolbar<TData extends RowData>({
             aria-label={searchPlaceholder ?? t("common.datatable.searchLabel")}
             className="w-64"
             value={inputValue}
+            variant="secondary"
             onChange={handleInputChange}
             onSubmit={commit}
           >
@@ -130,10 +130,12 @@ export function DataTableToolbar<TData extends RowData>({
         )}
         {showSearch && (
           <>
-            <Button size="sm" variant="secondary" onPress={handleSearchPress}>
+            <Button size="sm" onPress={handleSearchPress}>
+              <Search />
               {t("common.datatable.search")}
             </Button>
-            <Button size="sm" variant="ghost" onPress={handleReset}>
+            <Button size="sm" variant="tertiary" onPress={handleReset}>
+              <RotateCcw />
               {t("common.datatable.reset")}
             </Button>
           </>
@@ -146,6 +148,6 @@ export function DataTableToolbar<TData extends RowData>({
           <DataTableViewOptions storageKey={columnSettingKey} table={table} />
         )}
       </div>
-    </div>
+    </Surface>
   );
 }

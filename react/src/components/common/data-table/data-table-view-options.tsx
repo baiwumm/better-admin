@@ -1,13 +1,11 @@
-type TanStackTable<TData extends RowData> = TanStackTableBase<TData>;
-
 import type { RowData } from "@tanstack/react-table";
-import type { LegacyReactTable as TanStackTableBase } from "@tanstack/react-table/legacy";
 import type { Selection } from "@heroui/react";
 import type { ColumnVisibilityState } from "@tanstack/react-table";
+import type { AppTable } from "./table-types";
 
-import { Dropdown, Label, Separator, cn } from "@heroui/react";
+import { Dropdown, Label, Separator, Button } from "@heroui/react";
 import { useEffect, useState } from "react";
-import { Columns3, RotateCcw } from "lucide-react";
+import { Settings2, RotateCcw } from "lucide-react";
 
 import { useTranslation } from "@/i18n";
 
@@ -46,7 +44,7 @@ function readHiddenColumns(storageKey: string): string[] {
 }
 
 export interface DataTableViewOptionsProps<TData extends RowData> {
-  table: TanStackTable<TData>;
+  table: AppTable<TData>;
   /** 持久化 key（buildColumnSettingKey 生成）；不传则不持久化 */
   storageKey?: string;
   className?: string;
@@ -100,7 +98,7 @@ export function DataTableViewOptions<TData extends RowData>({
     } catch {
       // 存储不可用时忽略（列设置退化为会话内生效）
     }
-  }, [JSON.stringify(table.getState().columnVisibility), storageKey]);
+  }, [JSON.stringify(table.state.columnVisibility), storageKey]);
 
   if (hideableColumns.length === 0) return null;
 
@@ -143,16 +141,10 @@ export function DataTableViewOptions<TData extends RowData>({
 
   return (
     <Dropdown>
-      {/* Dropdown.Trigger 本身是 button 元素，内容直接放入（避免 button 嵌套） */}
-      <Dropdown.Trigger
-        className={cn(
-          "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-transparent px-3 text-sm hover:bg-default",
-          className,
-        )}
-      >
-        <Columns3 className="size-4" />
-        <span>{t("common.datatable.columnSettings")}</span>
-      </Dropdown.Trigger>
+      <Button className={className} size="sm" variant="outline">
+        <Settings2 />
+        {t("common.datatable.columnSettings")}
+      </Button>
       <Dropdown.Popover className="min-w-44">
         <Dropdown.Menu
           selectedKeys={selectedKeys}

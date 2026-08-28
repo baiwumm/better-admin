@@ -1,8 +1,6 @@
-type TanStackTable<TData extends RowData> = TanStackTableBase<TData>;
-
-import type { ReactNode } from "react";
 import type { RowData } from "@tanstack/react-table";
-import type { LegacyReactTable as TanStackTableBase } from "@tanstack/react-table/legacy";
+import type { ReactNode } from "react";
+import type { AppTable } from "./table-types";
 
 import { Button, Separator, Typography, cn } from "@heroui/react";
 import { useEffect } from "react";
@@ -11,7 +9,7 @@ import { X } from "lucide-react";
 import { useTranslation } from "@/i18n";
 
 export interface DataTableBulkActionsProps<TData extends RowData> {
-  table: TanStackTable<TData>;
+  table: AppTable<TData>;
   /** 选中后展示的操作按钮（如「批量删除」，由消费方做权限门控） */
   children?: ReactNode;
   className?: string;

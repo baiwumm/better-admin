@@ -1,16 +1,13 @@
+import type { RowData } from "@tanstack/react-table";
 import type { SortDescriptor } from "@heroui/react";
 import type { ReactNode } from "react";
 import type { SortingState } from "@tanstack/react-table";
-import type { RowData } from "@tanstack/react-table";
-import type { LegacyReactTable as TanStackTableBase } from "@tanstack/react-table/legacy";
+import type { AppTable } from "./table-types";
 
 import { Spinner, Table, Typography, cn } from "@heroui/react";
 import { flexRender } from "@tanstack/react-table";
 
 import { useTranslation } from "@/i18n";
-
-/** v9 legacy 兼容层类型（单泛型），业务列定义保持 v8 风格写法 */
-type TanStackTable<TData extends RowData> = TanStackTableBase<TData>;
 
 /**
  * TanStack Table（逻辑层）→ HeroUI Table（渲染层）桥接。
@@ -48,7 +45,7 @@ function toSortingState(descriptor: SortDescriptor): SortingState {
 
 export interface DataTableProps<TData extends RowData> {
   /** useReactTable 实例 */
-  table: TanStackTable<TData>;
+  table: AppTable<TData>;
   /** 首次加载 / 整页刷新时展示遮罩 */
   isLoading?: boolean;
   /** 空数据占位（默认统一文案） */
@@ -69,7 +66,7 @@ export function DataTable<TData extends RowData>({
 }: DataTableProps<TData>) {
   const { t } = useTranslation();
 
-  const sorting = table.getState().sorting;
+  const sorting = table.state.sorting;
 
   return (
     <div className={cn("relative", className)}>

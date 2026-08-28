@@ -1,10 +1,9 @@
 import type { TFunction } from "i18next";
-import type { LegacyColumnDef } from "@tanstack/react-table/legacy";
 import type { IconName } from "lucide-react/dynamic";
 import type { PermissionItem } from "@/lib/api-types";
 
 import { Typography } from "@heroui/react";
-import { getCoreRowModel, useLegacyTable } from "@tanstack/react-table/legacy";
+import { useTable } from "@tanstack/react-table";
 import { DynamicIcon } from "lucide-react/dynamic";
 import { useMemo, useState } from "react";
 
@@ -13,6 +12,10 @@ import {
   DataTableToolbar,
   buildColumnSettingKey,
 } from "@/components/common/data-table";
+import {
+  appTableFeatures,
+  type AppColumnDef,
+} from "@/components/common/data-table/table-types";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useTranslation } from "@/i18n";
 import { useAuthStore } from "@/stores/auth-store";
@@ -65,8 +68,23 @@ export function PermissionsPage() {
     );
   }, [items, search, t]);
 
-  const columns = useMemo<LegacyColumnDef<PermissionRow>[]>(
+  const columns = useMemo<AppColumnDef<PermissionRow>[]>(
     () => [
+      {
+        id: "label",
+        enableSorting: false,
+        header: t("features.permissions.column.name"),
+        cell: ({ row }) => {
+          const item = row.original;
+
+          return (
+            <Typography className="font-medium" type="body-sm">
+              {getPermissionBaseName(item, t)}
+              <span className="ms-1 text-muted">({item.value})</span>
+            </Typography>
+          );
+        },
+      },
       {
         id: "icon",
         enableSorting: false,
@@ -84,21 +102,6 @@ export function PermissionsPage() {
           ),
       },
       {
-        id: "label",
-        enableSorting: false,
-        header: t("features.permissions.column.name"),
-        cell: ({ row }) => {
-          const item = row.original;
-
-          return (
-            <Typography className="font-medium" type="body-sm">
-              {getPermissionBaseName(item, t)}
-              <span className="ms-1 text-muted">({item.value})</span>
-            </Typography>
-          );
-        },
-      },
-      {
         id: "bits",
         enableSorting: false,
         header: t("features.permissions.column.bits"),
@@ -112,10 +115,12 @@ export function PermissionsPage() {
     [t],
   );
 
-  const table = useLegacyTable({
+  const table = useTable({
     columns,
     data: filtered,
-    getCoreRowModel: getCoreRowModel(),
+    features: appTableFeatures,
+    // 全量展示：关闭自动分页切片（本页不渲染分页条）
+    manualPagination: true,
   });
 
   return (
