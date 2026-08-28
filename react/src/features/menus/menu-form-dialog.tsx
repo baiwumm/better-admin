@@ -10,7 +10,6 @@ import {
   FieldError,
   Form,
   Input,
-  InputGroup,
   Label,
   ListBox,
   Modal,
@@ -88,6 +87,32 @@ const menuFormSchema = z.object({
 });
 
 type MenuFormValues = z.infer<typeof menuFormSchema>;
+
+/**
+ * 表单初始值：
+ * - edit：回显被编辑节点；
+ * - addChild：仅锁定父级为入参节点，其余字段全部留空（不回显父级数据）；
+ * - create：全空。
+ */
+function buildDefaultValues(
+  mode: MenuFormMode,
+  node: MenuNode | null,
+): MenuFormValues {
+  const addChild = mode === "addChild";
+
+  return {
+    parentId: addChild ? (node?.id ?? "") : (node?.parentId ?? ""),
+    label: addChild ? "" : (node?.label ?? ""),
+    i18nKey: addChild ? "" : (node?.i18nKey ?? ""),
+    icon: addChild ? "" : (node?.icon ?? ""),
+    to: addChild ? "" : (node?.to ?? ""),
+    sort: addChild ? 0 : (node?.sort ?? 0),
+    keepAlive: addChild ? false : (node?.keepAlive ?? false),
+    hideInMenu: addChild ? false : (node?.hideInMenu ?? false),
+    enabled: addChild ? true : (node?.enabled ?? true),
+    defaultOpen: addChild ? false : (node?.defaultOpen ?? false),
+  };
+}
 
 export function MenuFormDialog({
   isOpen,
@@ -191,22 +216,10 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
 
   const { control, handleSubmit, watch, setValue } = useForm<MenuFormValues>({
     resolver: zodResolver(menuFormSchema),
-    defaultValues: {
-      parentId: mode === "addChild" ? (node?.id ?? "") : (node?.parentId ?? ""),
-      label: node?.label ?? "",
-      i18nKey: node?.i18nKey ?? "",
-      icon: node?.icon ?? "",
-      to: node?.to ?? "",
-      sort: node?.sort ?? 0,
-      keepAlive: node?.keepAlive ?? false,
-      hideInMenu: node?.hideInMenu ?? false,
-      enabled: node?.enabled ?? true,
-      defaultOpen: node?.defaultOpen ?? false,
-    },
+    defaultValues: buildDefaultValues(mode, node),
   });
 
   const values = watch();
-  const iconPreview = values.icon?.trim();
 
   // 权限位多选：由 permBits 推导选中项；展示名复用权限页 i18n 映射
   const selectedPermissionNames = (permissionItems ?? [])
@@ -278,6 +291,7 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
           <Select
             aria-label={t("features.menus.form.parent")}
             className="flex-1"
+            isDisabled={mode === "addChild"}
             placeholder={t("features.menus.form.parentPlaceholder")}
             value={values.parentId || null}
             variant="secondary"
@@ -319,7 +333,7 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
               </ListBox>
             </Select.Popover>
           </Select>
-          {values.parentId && (
+          {values.parentId && mode !== "addChild" && (
             <Button
               isIconOnly
               aria-label={t("features.menus.form.parentClear")}
@@ -400,21 +414,11 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
               onChange={field.onChange}
             >
               <Label>{t("features.menus.form.icon")}</Label>
-              <InputGroup variant="secondary">
-                <InputGroup.Input placeholder="house" />
-                {iconPreview ? (
-                  <InputGroup.Suffix className="pe-0">
-                    <span className="grid size-8 place-items-center">
-                      <DynamicIcon
-                        aria-hidden
-                        className="size-4 text-muted"
-                        name={iconPreview as IconName}
-                        size={16}
-                      />
-                    </span>
-                  </InputGroup.Suffix>
-                ) : null}
-              </InputGroup>
+              <Input
+                aria-label="Icon"
+                placeholder="house"
+                variant="secondary"
+              />
               {fieldState.error && (
                 <FieldError>{t("features.menus.form.iconRequired")}</FieldError>
               )}

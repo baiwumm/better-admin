@@ -71,6 +71,40 @@ function resetMainScroll() {
 }
 
 /**
+ * 启动带门控标记的路由 VT：VT 期间设置 html[data-route-vt]，结束后移除。
+ *
+ * HeroUI toast 每次增删也会启动**根级** ViewTransition（toast-queue 的
+ * defaultWrapUpdate），而 html[data-route-transition] 是常驻属性——若不加
+ * 门控，toast 的 VT 会命中 route-transitions.css 的 main-content/breadcrumbs
+ * 动画选择器，把整套页面切换动画对着静止页面重放一遍（保存成功 toast 触发
+ * 「页面重进了一次」即此根因；主题 VT 在 runViewTransition 里临时摘
+ * data-route-transition 是同类规避先例）。标记仅由路由/刷新 VT 设置，
+ * toast 等第三方 VT 不携带，动画选择器不生效。
+ */
+let routeVtSeq = 0;
+
+function startRouteVt(update: () => void) {
+  const root = document.documentElement;
+  const seq = ++routeVtSeq;
+
+  root.setAttribute("data-route-vt", "");
+
+  const transition = document.startViewTransition(update);
+
+  // 快速连续导航/刷新时旧过渡被浏览器 skip，ready 以 AbortError reject——吞掉；
+  // finished 恒为 fulfill，标记延迟到结束后移除（仅最新一次负责移除，
+  // 避免旧过渡收尾时摘掉正在播放中的新过渡的标记）。
+  transition.ready.catch(() => {});
+  transition.finished
+    .finally(() => {
+      if (seq === routeVtSeq) root.removeAttribute("data-route-vt");
+    })
+    .catch(() => {});
+
+  return transition;
+}
+
+/**
  * 路由呈现管理器：替代裸 `<Outlet/>` 放在 AdminLayout 主体区，
  * 同时承担 **组件状态保活** 与 **路由过渡动画** 两项职责。
  *
@@ -91,7 +125,7 @@ function resetMainScroll() {
  * - layout effect 中 `startViewTransition`（此时捕获到真实旧帧）→
  *   回调内 flushSync 同步完成「清理临时池成员 + 切换 displayedPath」；
  * - 新帧快照后播放 CSS 预设动画（styles/route-transitions.css，
- *   html[data-route-transition] 选择器机制不变）；
+ *   html[data-route-transition] + startRouteVt 的 data-route-vt 门控）；
  * - 导航方向感知：按新旧路径在菜单树中的层级深度判定前进/后退，
  *   写入 html[data-rt-direction]（"back" 时 CSS 反转位移类动画方向）。
  *
@@ -217,10 +251,7 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (canVt) {
-      const transition = document.startViewTransition(apply);
-
-      // 快速连续导航时旧过渡被浏览器 skip，ready 以 AbortError reject——吞掉。
-      transition.ready.catch(() => {});
+      startRouteVt(apply);
     } else {
       commitChanges();
       resetMainScroll();
@@ -259,12 +290,9 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
       // 刷新不是导航：清除上次导航遗留的方向标记，避免位移类动画反向播放。
       document.documentElement.removeAttribute("data-rt-direction");
 
-      const transition = document.startViewTransition(() => {
+      startRouteVt(() => {
         flushSync(commitRefresh);
       });
-
-      // 快速连续刷新时旧过渡被浏览器 skip，ready 以 AbortError reject——吞掉。
-      transition.ready.catch(() => {});
     } else {
       commitRefresh();
     }

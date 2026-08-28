@@ -63,13 +63,18 @@ export function MenusPage() {
   });
 
   // 保存/删除后统一失效：仅当前激活的管理树查询（单次请求）+ 导航树（侧边栏
-  // 名称/结构同步必须刷新，属必要请求）
+  // 名称/结构同步必须刷新，属必要请求）。导航树必须 exact——["menus"] 是
+  // ["menus","manageTree",…] 的前缀，非 exact 会把刚失效在途的管理树取消重发，
+  // 造成 /menus/tree 请求两次。
   const handleSaved = useCallback(() => {
     void queryClient.invalidateQueries({
       queryKey: [...MENUS_TREE_QUERY_KEY, appliedSearch],
       exact: true,
     });
-    void queryClient.invalidateQueries({ queryKey: MENUS_QUERY_KEY });
+    void queryClient.invalidateQueries({
+      queryKey: MENUS_QUERY_KEY,
+      exact: true,
+    });
   }, [queryClient, appliedSearch]);
 
   const applySearch = useCallback(

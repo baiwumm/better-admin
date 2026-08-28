@@ -2,6 +2,10 @@
  *
  * 通过 `html[data-route-transition="<id>"]` 激活对应预设（预设表见
  * themes/route-transitions.ts，编排见 layouts/components/keep-alive-outlet.tsx）。
+ * 同时要求 `html[data-route-vt]`（路由/刷新 VT 期间由 startRouteVt 设置）：
+ * HeroUI toast 增删也会启动根级 VT，若无此门控会误命中下方选择器，
+ * 把页面切换动画对着静止页面重放（主题 VT 则在 runViewTransition 里
+ * 临时摘 data-route-transition，同样不会命中）。
  *
  * 作用范围：AdminLayout 的 <main> 主体区域（view-transition-name: main-content）。
  * 浏览器为命名元素单独生成 ViewTransition 快照组，路由过渡只作用于主体
@@ -37,66 +41,66 @@ html[data-rt-direction="back"] {
 }
 
 /* ── fade：柔和淡化（交叉淡化，最克制） ── */
-html[data-route-transition="fade"]::view-transition-old(main-content) {
+html[data-route-vt][data-route-transition="fade"]::view-transition-old(main-content) {
   animation: rt-fade-out var(--rt-duration) var(--rt-ease) both;
 }
-html[data-route-transition="fade"]::view-transition-new(main-content) {
+html[data-route-vt][data-route-transition="fade"]::view-transition-new(main-content) {
   animation: rt-fade-in var(--rt-duration) var(--rt-ease) both;
 }
 
 /* ── glide：视差推滑（旧页浅移淡出，新页深位跟进，Material shared-axis 风格） ── */
-html[data-route-transition="glide"]::view-transition-old(main-content) {
+html[data-route-vt][data-route-transition="glide"]::view-transition-old(main-content) {
   animation: rt-glide-out var(--rt-duration) var(--rt-ease) both;
 }
-html[data-route-transition="glide"]::view-transition-new(main-content) {
+html[data-route-vt][data-route-transition="glide"]::view-transition-new(main-content) {
   animation: rt-glide-in var(--rt-duration) var(--rt-ease) both;
 }
 
 /* ── rise：浮现上升（旧页上飘离场，新页自下方浮升进入） ── */
-html[data-route-transition="rise"]::view-transition-old(main-content) {
+html[data-route-vt][data-route-transition="rise"]::view-transition-old(main-content) {
   animation: rt-rise-out var(--rt-duration) var(--rt-ease) both;
 }
-html[data-route-transition="rise"]::view-transition-new(main-content) {
+html[data-route-vt][data-route-transition="rise"]::view-transition-new(main-content) {
   animation: rt-rise-in var(--rt-duration) var(--rt-ease) both;
 }
 
 /* ── zoom：纵深缩放（旧页向镜头推进消失，新页自深处放大浮出，iOS push 风） ── */
-html[data-route-transition="zoom"]::view-transition-old(main-content) {
+html[data-route-vt][data-route-transition="zoom"]::view-transition-old(main-content) {
   animation: rt-zoom-out var(--rt-duration) var(--rt-ease) both;
 }
-html[data-route-transition="zoom"]::view-transition-new(main-content) {
+html[data-route-vt][data-route-transition="zoom"]::view-transition-new(main-content) {
   animation: rt-zoom-in var(--rt-duration) var(--rt-ease) both;
 }
 
 /* ── reveal：揭示展开（新页自左向右扫入覆盖；全程不透明，旧页静止被遮盖） ── */
-html[data-route-transition="reveal"]::view-transition-old(main-content) {
+html[data-route-vt][data-route-transition="reveal"]::view-transition-old(main-content) {
   animation: rt-reveal-dim calc(var(--rt-duration) + 60ms) var(--rt-ease) both;
 }
-html[data-route-transition="reveal"]::view-transition-new(main-content) {
+html[data-route-vt][data-route-transition="reveal"]::view-transition-new(main-content) {
   animation: rt-reveal-in calc(var(--rt-duration) + 60ms) var(--rt-ease) both;
 }
 
 /* ── cover：覆盖推入（iOS push 风：新页整屏自右滑入覆盖，旧页静止微缩退让） ── */
-html[data-route-transition="cover"]::view-transition-old(main-content) {
+html[data-route-vt][data-route-transition="cover"]::view-transition-old(main-content) {
   animation: rt-cover-out var(--rt-duration) var(--rt-ease) both;
 }
-html[data-route-transition="cover"]::view-transition-new(main-content) {
+html[data-route-vt][data-route-transition="cover"]::view-transition-new(main-content) {
   animation: rt-cover-in var(--rt-duration) var(--rt-ease) both;
 }
 
 /* ── circle：圆形揭示（新页以光圈自中心展开覆盖；全程不透明避免穿帮） ── */
-html[data-route-transition="circle"]::view-transition-old(main-content) {
+html[data-route-vt][data-route-transition="circle"]::view-transition-old(main-content) {
   animation: rt-reveal-dim calc(var(--rt-duration) + 60ms) var(--rt-ease) both;
 }
-html[data-route-transition="circle"]::view-transition-new(main-content) {
+html[data-route-vt][data-route-transition="circle"]::view-transition-new(main-content) {
   animation: rt-circle-in calc(var(--rt-duration) + 60ms) var(--rt-ease) both;
 }
 
 /* ── blur：景深聚焦（旧页虚化退场，新页由虚到实对焦进入） ── */
-html[data-route-transition="blur"]::view-transition-old(main-content) {
+html[data-route-vt][data-route-transition="blur"]::view-transition-old(main-content) {
   animation: rt-blur-out var(--rt-duration) var(--rt-ease) both;
 }
-html[data-route-transition="blur"]::view-transition-new(main-content) {
+html[data-route-vt][data-route-transition="blur"]::view-transition-new(main-content) {
   animation: rt-blur-in var(--rt-duration) var(--rt-ease) both;
 }
 
@@ -282,13 +286,13 @@ html[data-route-transition="blur"]::view-transition-new(main-content) {
  * 仅在路由过渡激活时随主内容协同运动：旧文案顺方向轻微滑出、新文案滑入；
  * 时长为主内容的 0.55 倍（短促、不抢主体动效的焦点）。
  * 主题切换 VT 下面包屑新旧帧相同，保持 UA 默认 crossfade 即无感知。 */
-html[data-route-transition]::view-transition-old(breadcrumbs) {
+html[data-route-vt][data-route-transition]::view-transition-old(breadcrumbs) {
   animation-name: breadcrumbs-out;
   animation-duration: calc(var(--rt-duration) * 0.55);
   animation-timing-function: var(--rt-ease);
 }
 
-html[data-route-transition]::view-transition-new(breadcrumbs) {
+html[data-route-vt][data-route-transition]::view-transition-new(breadcrumbs) {
   animation-name: breadcrumbs-in;
   animation-duration: calc(var(--rt-duration) * 0.55);
   animation-timing-function: var(--rt-ease);
