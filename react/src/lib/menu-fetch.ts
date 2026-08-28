@@ -18,7 +18,6 @@ export const CONSOLE_MENU_NODE: MenuNode = {
   hideInMenu: false,
   enabled: true,
   defaultOpen: false,
-  target: "_self",
   // 全 1 掩码：任何登录用户都可见（前端兜底，不依赖后端下发）
   permissions: "9223372036854775807",
   userPermissions: "9223372036854775807",

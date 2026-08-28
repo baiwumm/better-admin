@@ -73,7 +73,7 @@ export function SidebarMenu({ items, onNavigate }: SidebarMenuProps) {
   const handleNavigate = useCallback(
     (to?: string | null) => {
       if (!to) return;
-      // 外链（契约 v1.3：to 以 https:// 开头，target 自动 _blank）新窗口打开
+      // 外链（to 以 https:// 开头）新窗口打开；契约 v1.4 起不再有 target 字段
       if (to.startsWith("https://")) {
         window.open(to, "_blank", "noopener");
         onNavigate?.();

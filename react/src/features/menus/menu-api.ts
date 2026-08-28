@@ -2,7 +2,7 @@ import type { MenuNode } from "@/lib/api-types";
 
 import { fetchApi } from "@/lib/api-client";
 
-/** 菜单模块 API 层：管理树拉取 + CRUD（契约 v1.3）。 */
+/** 菜单模块 API 层：管理树拉取 + CRUD（契约 v1.4，无 target 字段）。 */
 
 /** 管理用全量菜单树查询 key（与导航树 MENUS_QUERY_KEY 分离，便于精准失效） */
 export const MENUS_TREE_QUERY_KEY = ["menus", "manageTree"] as const;
@@ -26,7 +26,6 @@ export interface MenuSaveInput {
   hideInMenu?: boolean;
   enabled?: boolean;
   defaultOpen?: boolean;
-  target?: string;
   /** bigint 位掩码字符串（勾选权限位的 OR） */
   permissions?: string;
 }

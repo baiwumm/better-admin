@@ -64,7 +64,6 @@ export interface MenuNode {
   hideInMenu: boolean;
   enabled: boolean;
   defaultOpen: boolean;
-  target: "_self" | "_blank";
   /** bigint 位掩码字符串（该菜单所需权限集） */
   permissions: string;
   /** 当前登录用户在此菜单的实际授权位（登录态返回；null 表示未下发） */

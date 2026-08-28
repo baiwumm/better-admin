@@ -1,6 +1,5 @@
 import {
   IsBoolean,
-  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -51,9 +50,6 @@ export class CreateMenuDto {
   @IsBoolean()
   defaultOpen?: boolean = false;
 
-  @IsOptional()
-  @IsIn(['_self', '_blank'])
-  target?: '_self' | '_blank' = '_self';
 
   @IsOptional()
   @IsString()

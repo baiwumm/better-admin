@@ -322,3 +322,4 @@ paths:
 | 2026-08-21 | v0.1 | Phase 2 API Contract 设计方案：文档优先策略、全局约定、八模块端点+权限位、错误码清单、数据结构、yaml 组织。仅方案，未开发。 |
 | 2026-08-21 | v0.2 | 契约优化：批量删改 DELETE /users?ids=、logout 强制鉴权记日志、settings 写接口改 SETTINGS_UPDATE（§2 枚举同步）、新增 INVALID_OPERATION(400) 错误码。与 database-design.md v0.2 对齐。仅方案，未开发。 |
 | 2026-08-28 | v0.3 | 契约 v1.3：新增 `GET /api/menus/tree` 管理全量菜单树（SEARCH 位）；移除 Settings 模块全部端点与 `SETTINGS_UPDATE` 权限位；新增 `RESET_PASSWORD` 位并接管重置密码端点守卫；`GET /api/menus/tree` 支持 search/order 参数，`menus.to` 唯一与格式校验（MENU_TO_EXISTS / MENU_TO_INVALID）。与 database-design.md v0.3 对齐。 |
+| 2026-08-28 | v0.4 | 契约 v1.4：菜单 `MenuNode` / `MenuCreateRequest` / `MenuUpdateRequest` 移除 `target` 字段（`menus.target` 列删除，外链打开方式由前端按 `to` 是否外链推导）。与 database-design.md v0.4 对齐。 |

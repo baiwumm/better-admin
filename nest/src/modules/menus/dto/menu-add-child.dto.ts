@@ -1,6 +1,5 @@
 import {
   IsBoolean,
-  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -50,9 +49,6 @@ export class AddChildDto {
   @IsBoolean()
   defaultOpen?: boolean = false;
 
-  @IsOptional()
-  @IsIn(['_self', '_blank'])
-  target?: '_self' | '_blank' = '_self';
 
   @IsOptional()
   @IsString()

@@ -43,7 +43,7 @@ import { useTranslation } from "@/i18n";
  *   冲突返回 MENU_TO_EXISTS）；留空视为目录分组（侧边栏点击仅展开）；
  * - 父级候选排除自身及后代（防成环），编辑态允许变更父级，不选默认顶级；
  * - 按钮权限位：下拉多选（图标 + 中文名，复用权限页 i18n 映射），存 OR 位掩码；
- * - target 不暴露：to 以 https:// 开头自动置 _blank，其余 _self；
+ * - 外链打开方式不落库：to 以 https:// 开头时由导航层新窗口打开（契约 v1.4 已移除 target）；
  * - 图标输入末尾实时预览（裸 lucide 名，空则占位 circle）。
  */
 
@@ -258,8 +258,6 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
       hideInMenu: values.hideInMenu,
       enabled: values.enabled,
       defaultOpen: values.defaultOpen,
-      // 外链自动新窗口打开（target 不再暴露给表单）
-      target: values.to.startsWith("https://") ? "_blank" : "_self",
       permissions: permBits.toString(),
     });
   });

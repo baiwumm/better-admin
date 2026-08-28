@@ -28,7 +28,6 @@ export type MenuNode = {
   hideInMenu: boolean;
   enabled: boolean;
   defaultOpen: boolean;
-  target: string;
   permissions: string;
   userPermissions: string | null;
   children: MenuNode[];
@@ -47,7 +46,6 @@ function rowToBase(row: typeof menus.$inferSelect) {
     hideInMenu: row.hideInMenu,
     enabled: row.enabled,
     defaultOpen: row.defaultOpen,
-    target: row.target,
     permissions: row.permissions.toString(),
   };
 }
@@ -306,7 +304,6 @@ export class MenusService {
         hideInMenu: dto.hideInMenu ?? false,
         enabled: dto.enabled ?? true,
         defaultOpen: dto.defaultOpen ?? false,
-        target: dto.target ?? '_self',
         permissions: BigInt(dto.permissions ?? '0'),
       })
       .returning();
@@ -357,7 +354,6 @@ export class MenusService {
         hideInMenu: dto.hideInMenu ?? existing.hideInMenu,
         enabled: dto.enabled ?? existing.enabled,
         defaultOpen: dto.defaultOpen ?? existing.defaultOpen,
-        target: dto.target ?? existing.target,
         permissions:
           dto.permissions === undefined ? existing.permissions : BigInt(dto.permissions),
       })

@@ -115,8 +115,7 @@ async function main() {
       hideInMenu: false,
       enabled: true,
       defaultOpen: false,
-      target: '_self',
-      permissions: 0n,
+        permissions: 0n,
     });
     console.log(
       `[migrate-settings-menu] 新增子菜单 ${child.label} (${child.to}) id=${id}`,

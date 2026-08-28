@@ -61,7 +61,6 @@ async function main() {
     hideInMenu: false,
     enabled: true,
     defaultOpen: false,
-    target: '_self',
     permissions: 0n,
   });
   console.log(

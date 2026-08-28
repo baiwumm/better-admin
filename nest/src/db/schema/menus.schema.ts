@@ -38,7 +38,6 @@ export const menus = pgTable(
     hideInMenu: boolean('hide_in_menu').notNull().default(false),
     enabled: boolean('enabled').notNull().default(true),
     defaultOpen: boolean('default_open').notNull().default(false),
-    target: text('target').notNull().default('_self'),
     permissions: bigint('permissions', { mode: 'bigint' })
       .notNull()
       .default(sql`0`),
