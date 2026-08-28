@@ -8,7 +8,7 @@ import {
   cn,
   type Selection,
 } from "@heroui/react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ExternalLink } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 
 import { type MenuNode } from "@/lib/api-types";
@@ -72,10 +72,16 @@ export function SidebarMenu({ items, onNavigate }: SidebarMenuProps) {
 
   const handleNavigate = useCallback(
     (to?: string | null) => {
-      if (to) {
-        navigate({ href: to });
+      if (!to) return;
+      // 外链（契约 v1.3：to 以 https:// 开头，target 自动 _blank）新窗口打开
+      if (to.startsWith("https://")) {
+        window.open(to, "_blank", "noopener");
         onNavigate?.();
+
+        return;
       }
+      navigate({ href: to });
+      onNavigate?.();
     },
     [navigate, onNavigate],
   );
@@ -243,6 +249,9 @@ function SidebarLeaf({
       <Label className="flex-1 cursor-pointer truncate text-left">
         {getMenuLabel(item, t)}
       </Label>
+      {item.to?.startsWith("https://") && (
+        <ExternalLink aria-hidden className="size-3.5 shrink-0 text-muted" />
+      )}
     </Button>
   );
 }

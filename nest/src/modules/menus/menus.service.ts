@@ -1,9 +1,10 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { count, eq } from 'drizzle-orm';
+import { count, eq, ilike, or } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { menus, roleMenus, userRoles, logs } from '../../db/schema';
 import {
@@ -119,8 +120,12 @@ export class MenusService {
     return allowed;
   }
 
-  /** 将扁平菜单列表在内存中递归组装成树（children 按 sort 排序） */
-  private buildTree(rows: (typeof menus.$inferSelect)[], permMap: Map<string, bigint>): MenuNode[] {
+  /** 将扁平菜单列表在内存中递归组装成树（children 按 sort 排序，方向可配） */
+  private buildTree(
+    rows: (typeof menus.$inferSelect)[],
+    permMap: Map<string, bigint>,
+    order: 'asc' | 'desc' = 'asc',
+  ): MenuNode[] {
     const nodes = new Map<string, MenuNode>();
     for (const row of rows) {
       nodes.set(row.id, {
@@ -140,7 +145,7 @@ export class MenusService {
       }
     }
     const sortRec = (list: MenuNode[]) => {
-      list.sort((a, b) => a.sort - b.sort);
+      list.sort((a, b) => (order === 'desc' ? b.sort - a.sort : a.sort - b.sort));
       for (const n of list) sortRec(n.children);
     };
     sortRec(roots);
@@ -181,15 +186,53 @@ export class MenusService {
    * 的全部节点，供菜单管理页编辑使用；userPermissions 仍按当前用户下发，
    * 供前端操作按钮门控。控制器层要求菜单 SEARCH 位。
    */
-  async findManageTree(user: AuthUser | null): Promise<MenuNode[]> {
-    const rows = await db
-      .select()
-      .from(menus)
-      .orderBy(menus.sort, menus.createdAt);
+  async findManageTree(
+    user: AuthUser | null,
+    search?: string,
+    order: 'asc' | 'desc' = 'asc',
+  ): Promise<MenuNode[]> {
+    const allRows = await db.select().from(menus);
+
+    let rows = allRows;
+    const normalized = search?.trim();
+
+    if (normalized) {
+      const pattern = `%${normalized}%`;
+      // 后端模糊搜索：label / i18n_key / to 命中即保留，并回溯祖先链保证树完整
+      const matched = await db
+        .select({ id: menus.id })
+        .from(menus)
+        .where(
+          or(
+            ilike(menus.label, pattern),
+            ilike(menus.i18nKey, pattern),
+            ilike(menus.to, pattern),
+          ),
+        );
+      const matchedIds = new Set(matched.map((r) => r.id));
+
+      if (matchedIds.size > 0) {
+        const byId = new Map(allRows.map((m) => [m.id, m]));
+        const allowed = new Set(matchedIds);
+
+        for (const id of matchedIds) {
+          let cur = byId.get(id);
+          while (cur?.parentId) {
+            if (allowed.has(cur.parentId)) break;
+            allowed.add(cur.parentId);
+            cur = byId.get(cur.parentId);
+          }
+        }
+        rows = allRows.filter((r) => allowed.has(r.id));
+      } else {
+        rows = [];
+      }
+    }
+
     const permMap = user
       ? await this.buildPermissionMap(user.id)
       : new Map<string, bigint>();
-    return this.buildTree(rows, permMap);
+    return this.buildTree(rows, permMap, order);
   }
 
   /** GET /api/menus/:id — 单菜单详情（含子树与 userPermissions） */
@@ -220,7 +263,36 @@ export class MenusService {
     }
   }
 
+  /** to 非空时校验格式：必须以 / 或 https:// 开头（契约 v1.3） */
+  private assertValidTo(to: string | null | undefined) {
+    if (!to) return;
+    if (!to.startsWith('/') && !to.startsWith('https://')) {
+      throw new BadRequestException({
+        code: 'MENU_TO_INVALID',
+        message: '路由路径必须以 / 或 https:// 开头',
+      });
+    }
+  }
+
+  /** to 非空时全局唯一（update 场景排除自身），部分唯一索引兜底（契约 v1.3） */
+  private async assertToUnique(to: string | null | undefined, excludeId?: string) {
+    if (!to) return;
+    const rows = await db
+      .select({ id: menus.id })
+      .from(menus)
+      .where(eq(menus.to, to));
+
+    if (rows.some((r) => r.id !== excludeId)) {
+      throw new ConflictException({
+        code: 'MENU_TO_EXISTS',
+        message: '路由路径已存在',
+      });
+    }
+  }
+
   private async createMenu(dto: CreateMenuDto, operatorId: string | null) {
+    this.assertValidTo(dto.to);
+    await this.assertToUnique(dto.to ?? null);
     const [row] = await db
       .insert(menus)
       .values({
@@ -268,6 +340,10 @@ export class MenusService {
         message: '菜单不存在',
       });
     }
+    const effectiveTo = dto.to === undefined ? existing.to : dto.to;
+
+    this.assertValidTo(effectiveTo);
+    await this.assertToUnique(effectiveTo ?? null, id);
     const [row] = await db
       .update(menus)
       .set({

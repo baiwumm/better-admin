@@ -8,8 +8,10 @@ import type {
 import {
   columnOrderingFeature,
   columnVisibilityFeature,
+  createExpandedRowModel,
   createPaginatedRowModel,
   createSortedRowModel,
+  rowExpandingFeature,
   rowPaginationFeature,
   rowSelectionFeature,
   rowSortingFeature,
@@ -18,17 +20,21 @@ import {
 
 /**
  * 项目统一的 TanStack Table v9 feature 集（模块级静态注册，tree-shaking 友好）：
- * 列可见性 + 列排序（列设置面板）+ 行排序 + 分页 + 行选择（批量操作）。
+ * 列可见性/列排序/行展开（树形表格）+ 行排序 + 分页 + 行选择。
  * 新增 feature（如列筛选、展开行）时在此集中追加，所有业务页面同步获得类型与 API。
  */
 export const appTableFeatures = tableFeatures({
   columnOrderingFeature,
   columnVisibilityFeature,
+  rowExpandingFeature,
   rowSortingFeature,
   rowPaginationFeature,
   rowSelectionFeature,
+  expandedRowModel: createExpandedRowModel(),
   sortedRowModel: createSortedRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
+  // 列级 meta 类型声明（对齐 v9 类型槽机制）：align 控制表头/单元格居中
+  columnMeta: {} as { align?: "center" },
 });
 
 export type AppTableFeatures = typeof appTableFeatures;

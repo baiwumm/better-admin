@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -48,8 +49,18 @@ export class MenusController {
    */
   @Get('tree')
   @Permissions('SEARCH')
-  findManageTree(@Req() req: Request): Promise<MenuNode[]> {
-    return this.menusService.findManageTree((req.user as AuthUser) ?? null);
+  findManageTree(
+    @Req() req: Request,
+    @Query('search') search?: string,
+    @Query('order') order?: string,
+  ): Promise<MenuNode[]> {
+    const sort = order === 'desc' ? 'desc' : 'asc';
+
+    return this.menusService.findManageTree(
+      (req.user as AuthUser) ?? null,
+      search,
+      sort,
+    );
   }
 
   /** GET /api/menus/:id — 菜单详情 */

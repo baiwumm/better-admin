@@ -36,3 +36,6 @@ bun.lockb
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+
+# TanStack 插件本地缓存
+.tanstack/

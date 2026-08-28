@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "menus_to_unique" ON "menus" USING btree ("to") WHERE "to" IS NOT NULL;

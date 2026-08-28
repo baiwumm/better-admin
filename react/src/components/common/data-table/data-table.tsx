@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 import type { SortingState } from "@tanstack/react-table";
 import type { AppTable } from "./table-types";
 
-import { Spinner, Table, Typography, cn } from "@heroui/react";
+import { Spinner, Table, cn } from "@heroui/react";
 import { flexRender } from "@tanstack/react-table";
 
-import { useTranslation } from "@/i18n";
+import { EmptyContent } from "@/components/common/empty-content/empty-content";
 
 /**
  * TanStack Table（逻辑层）→ HeroUI Table（渲染层）桥接。
@@ -46,7 +46,7 @@ function toSortingState(descriptor: SortDescriptor): SortingState {
 export interface DataTableProps<TData extends RowData> {
   /** useReactTable 实例 */
   table: AppTable<TData>;
-  /** 首次加载 / 整页刷新时展示遮罩 */
+  /** 加载中（含 refetch）展示遮罩 */
   isLoading?: boolean;
   /** 空数据占位（默认统一文案） */
   emptyState?: ReactNode;
@@ -65,17 +65,10 @@ export function DataTable<TData extends RowData>({
   className,
   contentClassName,
 }: DataTableProps<TData>) {
-  const { t } = useTranslation();
-
   const sorting = table.state.sorting;
 
   return (
     <div className={cn("relative", className)}>
-      {isLoading && (
-        <div className="absolute inset-0 z-10 grid place-items-center bg-default/60">
-          <Spinner size="md" />
-        </div>
-      )}
       <Table>
         <Table.ScrollContainer>
           <Table.Content
@@ -97,42 +90,60 @@ export function DataTable<TData extends RowData>({
                     id={header.id}
                     isRowHeader={index === 0}
                   >
-                    {({ sortDirection }) =>
-                      header.column.getCanSort() ? (
-                        <Table.SortableColumnHeader
-                          sortDirection={sortDirection}
-                        >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
+                    {({ sortDirection }) => {
+                      const content = flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      );
+                      const centered =
+                        header.column.columnDef.meta?.align === "center";
+
+                      if (!centered) {
+                        return header.column.getCanSort() ? (
+                          <Table.SortableColumnHeader
+                            sortDirection={sortDirection}
+                          >
+                            {content}
+                          </Table.SortableColumnHeader>
+                        ) : (
+                          content
+                        );
+                      }
+
+                      return (
+                        <div className="flex w-full justify-center">
+                          {header.column.getCanSort() ? (
+                            <Table.SortableColumnHeader
+                              sortDirection={sortDirection}
+                            >
+                              {content}
+                            </Table.SortableColumnHeader>
+                          ) : (
+                            content
                           )}
-                        </Table.SortableColumnHeader>
-                      ) : (
-                        flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )
-                      )
-                    }
+                        </div>
+                      );
+                    }}
                   </Table.Column>
                 ))}
             </Table.Header>
-            <Table.Body
-              renderEmptyState={() =>
-                emptyState ?? (
-                  <Typography className="py-10 text-center" color="muted">
-                    {t("common.datatable.empty")}
-                  </Typography>
-                )
-              }
-            >
+            <Table.Body renderEmptyState={() => emptyState ?? <EmptyContent />}>
               {table.getRowModel().rows.map((row) => (
                 <Table.Row key={row.id} id={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <Table.Cell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
+                      {cell.column.columnDef.meta?.align === "center" ? (
+                        <div className="flex w-full justify-center">
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext(),
+                          )}
+                        </div>
+                      ) : (
+                        flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )
                       )}
                     </Table.Cell>
                   ))}
@@ -142,6 +153,11 @@ export function DataTable<TData extends RowData>({
           </Table.Content>
         </Table.ScrollContainer>
       </Table>
+      {isLoading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-default/20 backdrop-blur-[1px]">
+          <Spinner size="md" />
+        </div>
+      )}
     </div>
   );
 }

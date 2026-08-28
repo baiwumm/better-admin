@@ -337,5 +337,5 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | --- | --- | --- |
 | 2026-08-21 | v0.1 | Phase 2 数据库设计方案：位掩码 RBAC、9 张表（无 i18n 表）、日志 4 类型、设置预置、字典、纯前端 i18n 约定。仅文档，未开发。 |
 | 2026-08-21 | v0.2 | 六项关键改进：超级管理员全量位(`9223372036854775807`)、主键 `nanoid(12)` 强制服务端生成、users 软删部分唯一索引、新增 `SETTINGS_UPDATE` 独立位、日志自动清理策略、字典/菜单 i18n 管理规范。仅文档，未开发。 |
-| 2026-08-28 | v0.3 | 新增管理用全量菜单树约定（`GET /api/menus/tree`，契约 v1.3）；**移除 `settings` 表/模块与 `SETTINGS_UPDATE` 权限位**；新增 `RESET_PASSWORD`(128) 位守卫重置密码端点（`RESET` 保留为前端「重置」按钮显隐位），权限点共 8 个，真实库已 DROP settings 表。 |
+| 2026-08-28 | v0.3 | 新增管理用全量菜单树约定（`GET /api/menus/tree`，契约 v1.3，支持 search 模糊与 order 排序方向）；**移除 `settings` 表/模块与 `SETTINGS_UPDATE` 权限位**；新增 `RESET_PASSWORD`(128) 位守卫重置密码端点（`RESET` 保留为前端「重置」按钮显隐位），权限点共 8 个，真实库已 DROP settings 表；`menus.to` 增加部分唯一索引（NULL 不约束）与格式/唯一校验（MENU_TO_INVALID / MENU_TO_EXISTS）。 |
 | 2026-08-21 | v0.3 | 新增 §1.5 菜单树权限填充性能约束（禁止 N+1，O(1) 内存映射法，仅 2 次查询）。仅文档，未开发。 |

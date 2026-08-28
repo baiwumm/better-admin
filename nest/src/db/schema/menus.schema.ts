@@ -7,6 +7,7 @@ import {
   bigint,
   timestamp,
   index,
+  uniqueIndex,
   type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -52,5 +53,7 @@ export const menus = pgTable(
   (table) => [
     index('menus_parent_idx').on(table.parentId),
     index('menus_sort_idx').on(table.parentId, table.sort),
+    // to 全局唯一（目录节点 to 为 NULL，不参与唯一约束）——契约 v1.3
+    uniqueIndex('menus_to_unique').on(table.to).where(sql`"to" IS NOT NULL`),
   ],
 );
