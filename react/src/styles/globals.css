@@ -45,17 +45,24 @@
 }
 
 /* 禁用 ViewTransition 默认 cross-fade，改用显式声明：
-   - 路由过渡（route-transitions.css）只在 html[data-route-transition] 激活时
-     对 main-content / breadcrumbs 组声明动画，未激活时保持直切；
+   - 路由过渡（route-transitions.css）只在 html[data-route-vt]（路由/刷新 VT 门控）
+     激活时对 main-content / breadcrumbs 组声明动画，未激活时保持直切；
    - 主题切换（transition-direction.ts 的 runViewTransition）通过
      html[data-theme-transition] 激活 clip-path 揭示——带独立 view-transition-name
      的区域（main-content、breadcrumbs）在主题 VT 启动前会被临时 inline 摘名
      （见 transition-direction.ts 的 data-vt-name 标记），统一并入单组 root 揭示，
-     避免其快照组静止叠放遮挡动画；下方 main-content 规则作为兜底保留。 */
+     避免其快照组静止叠放遮挡动画；下方 main-content 规则作为兜底保留。
+   - breadcrumbs 必须纳入兜底：HeroUI toast 每次增删都会启动一次根级 VT，若无此
+     规则，面包屑组会在 toast 的 VT 里播放 UA 默认交叉淡化（plus-lighter 混合），
+     深色主题下表现为页面/面包屑「原地浮一下」——toast 弹出、消失各一次。
+     路由 VT 中面包屑的动画由更高优先级的
+     html[data-route-vt][data-route-transition] 规则显式声明，不受此兜底影响。 */
 ::view-transition-old(root),
 ::view-transition-new(root),
 ::view-transition-old(main-content),
-::view-transition-new(main-content) {
+::view-transition-new(main-content),
+::view-transition-old(breadcrumbs),
+::view-transition-new(breadcrumbs) {
   animation: none;
   mix-blend-mode: normal;
 }
@@ -89,6 +96,62 @@ html[data-theme-transition] [data-vt-name] {
 @media (prefers-reduced-motion: reduce) {
   html[data-theme-transition]::view-transition-new(root),
   html[data-theme-transition]::view-transition-new(main-content) {
+    animation: none;
+  }
+}
+
+/* ── Toast 进出场动画（门控已把 HeroUI toast 的根级 VT 降级直跑，
+   toast 自身不再有 VT 滑动；这里用纯 CSS 承担进出场：入场随元素挂载播放，
+   退场由 lib/toast-animation.ts 延迟移除播放。方向与 HeroUI 原本的
+   toast-slide-top-in/out 一致，但为小幅度位移 + 淡入淡出，不滑出视口、
+   不产生「浮顶」观感，也不产生任何 view-transition 伪元素。── */
+.toast--top:not([data-hidden="true"]) {
+  animation: toast-enter-top 220ms ease-out;
+}
+
+.toast--bottom:not([data-hidden="true"]) {
+  animation: toast-enter-bottom 220ms ease-out;
+}
+
+@keyframes toast-enter-top {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-enter-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-exit-top {
+  to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes toast-exit-bottom {
+  to {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast--top:not([data-hidden="true"]),
+  .toast--bottom:not([data-hidden="true"]) {
     animation: none;
   }
 }

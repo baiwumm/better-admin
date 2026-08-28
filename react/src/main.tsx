@@ -8,6 +8,7 @@ import { router } from "./router.ts";
 
 import { initI18n } from "@/i18n";
 import { queryClient } from "@/lib/query-client";
+import { installToastExitAnimation } from "@/lib/toast-animation";
 import { bindAuthToApiClient } from "@/stores/auth-store";
 import { initDesignTheme } from "@/stores/design-theme-store";
 import { initLanguage } from "@/stores/language-store";
@@ -15,6 +16,11 @@ import "@/styles/globals.css";
 
 // 将 auth-store 注入 api-client（解耦：api-client 借此读写 token / 触发退出）。
 void bindAuthToApiClient();
+
+// toast 退场动画：禁用 toast 根级 VT 后（见 provider.tsx），toast 无 VT 滑动，
+// 这里补上 CSS 进出场动画（入场纯 CSS，退场靠队列 close 补丁延迟移除，
+// 见 lib/toast-animation.ts）。
+installToastExitAnimation();
 
 // 渲染前同步恢复主题色（防止闪烁：CSS 解析时 data-design-theme 已就位）
 initDesignTheme();
