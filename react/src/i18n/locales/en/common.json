@@ -18,6 +18,8 @@
   "common.demo.users.verifyTitle": "Component State Keep-alive Check",
   "common.datatable.searchLabel": "Search",
   "common.datatable.searchPlaceholder": "Search…",
+  "common.datatable.search": "Search",
+  "common.datatable.reset": "Reset",
   "common.datatable.total": "{{total}} items",
   "common.datatable.pageSizeLabel": "Page size",
   "common.datatable.pageSizeItem": "{{count}} / page",

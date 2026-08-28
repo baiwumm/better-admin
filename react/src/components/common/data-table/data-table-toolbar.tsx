@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import type { RowData } from "@tanstack/react-table";
 import type { LegacyReactTable as TanStackTableBase } from "@tanstack/react-table/legacy";
 
-import { SearchField, cn } from "@heroui/react";
+import { Button, SearchField, cn } from "@heroui/react";
 import { useEffect, useRef, useState } from "react";
 
 import { DataTableViewOptions } from "./data-table-view-options";
@@ -22,6 +22,11 @@ export interface DataTableToolbarProps<TData extends RowData> {
   searchPlaceholder?: string;
   /** 左侧搜索框之后的筛选区（DataTableFilterSelect 等任意节点） */
   children?: ReactNode;
+  /**
+   * 「重置」按钮的外部回调（可选）：点击重置时除清空搜索外，
+   * 额外重置列表 store 的筛选/排序等（服务端分页页使用）。
+   */
+  onReset?: () => void;
   /** 右侧动作区（列设置之后的追加插槽，如「新增」按钮） */
   endSlot?: ReactNode;
   className?: string;
@@ -31,8 +36,11 @@ export interface DataTableToolbarProps<TData extends RowData> {
 const SEARCH_DEBOUNCE_MS = 300;
 
 /**
- * 表格工具栏：左侧搜索框 + 筛选插槽，右侧列设置 + 动作插槽。
- * 搜索经 300ms 防抖提交（清空立即提交）；容器 reset 传入新值时同步回输入框。
+ * 表格工具栏（各列表页统一形态）：
+ * 左侧 = 搜索框 + 「搜索」「重置」按钮 + 筛选插槽；
+ * 右侧 = 动作插槽（endSlot）+ 列设置。
+ * 搜索经 300ms 防抖自动提交（清空立即提交），「搜索」按钮立即按当前输入提交，
+ * 「重置」清空搜索并调用 onReset；容器 reset 传入新值时同步回输入框。
  */
 export function DataTableToolbar<TData extends RowData>({
   table,
@@ -41,6 +49,7 @@ export function DataTableToolbar<TData extends RowData>({
   onSearchChange,
   searchPlaceholder,
   children,
+  onReset,
   endSlot,
   className,
 }: DataTableToolbarProps<TData>) {
@@ -80,6 +89,18 @@ export function DataTableToolbar<TData extends RowData>({
 
   const showSearch = Boolean(onSearchChange);
 
+  /** 「搜索」按钮：立即按当前输入提交（不等防抖） */
+  const handleSearchPress = () => commit(inputValue);
+
+  /** 「重置」按钮：清空搜索（含未提交的防抖），并触发外部重置回调 */
+  const handleReset = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = null;
+    setInputValue("");
+    onSearchChange?.("");
+    onReset?.();
+  };
+
   return (
     <div
       className={cn(
@@ -106,6 +127,16 @@ export function DataTableToolbar<TData extends RowData>({
               <SearchField.ClearButton />
             </SearchField.Group>
           </SearchField>
+        )}
+        {showSearch && (
+          <>
+            <Button size="sm" variant="secondary" onPress={handleSearchPress}>
+              {t("common.datatable.search")}
+            </Button>
+            <Button size="sm" variant="ghost" onPress={handleReset}>
+              {t("common.datatable.reset")}
+            </Button>
+          </>
         )}
         {children}
       </div>

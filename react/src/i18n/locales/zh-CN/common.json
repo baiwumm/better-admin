@@ -18,6 +18,8 @@
   "common.demo.users.verifyTitle": "组件状态保活验证",
   "common.datatable.searchLabel": "搜索",
   "common.datatable.searchPlaceholder": "搜索…",
+  "common.datatable.search": "搜索",
+  "common.datatable.reset": "重置",
   "common.datatable.total": "共 {{total}} 条",
   "common.datatable.pageSizeLabel": "每页条数",
   "common.datatable.pageSizeItem": "{{count}} 条/页",

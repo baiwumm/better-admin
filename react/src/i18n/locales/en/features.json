@@ -1,7 +1,14 @@
 {
-  "features.permissions.description": "System permission definitions delivered by the backend (read-only, no editing)",
+  "features.permissions.searchPlaceholder": "Filter by permission name",
   "features.permissions.column.name": "Permission",
-  "features.permissions.column.value": "Key",
   "features.permissions.column.bits": "Bit Mask",
-  "features.permissions.column.icon": "Icon"
+  "features.permissions.column.icon": "Icon",
+  "features.permissions.items.SEARCH": "Search",
+  "features.permissions.items.ADD": "Add",
+  "features.permissions.items.EDIT": "Edit",
+  "features.permissions.items.DELETE": "Delete",
+  "features.permissions.items.BATCH_DELETE": "Batch Delete",
+  "features.permissions.items.ADD_CHILD": "Add Child",
+  "features.permissions.items.RESET": "Reset Password",
+  "features.permissions.items.SETTINGS_UPDATE": "Update Settings"
 }
