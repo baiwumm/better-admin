@@ -31,3 +31,8 @@ bun.lockb
 
 # 本地环境变量（含品牌名等，仅本地/部署平台，禁止提交）
 .env
+
+# TypeScript 增量构建缓存与 vite.config 编译产物（tsc -b 生成，勿提交）
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts

@@ -79,3 +79,128 @@ export interface PermissionItem {
   bits: number;
   icon: string;
 }
+
+/* ---------------------------------------------------------------------------
+ * 业务实体类型（与 openapi.yaml v1.2.0 各模块 schema 对齐）
+ * ------------------------------------------------------------------------- */
+
+/** 列表通用查询参数（后端各 QueryDTO 均含 page/pageSize，多数含 search） */
+export interface ListQueryParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  [key: string]: unknown;
+}
+
+/** 用户状态（users.status） */
+export type UserStatus = "active" | "disabled";
+
+/** 用户角色摘要（users 响应内嵌的 roles 数组项） */
+export interface UserRoleSummary {
+  id: string;
+  name: string;
+  code: string;
+}
+
+/** 用户实体（/users） */
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  displayName: string;
+  avatar: string | null;
+  status: UserStatus;
+  tokenVersion: number;
+  roles: UserRoleSummary[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 创建用户请求体 */
+export interface CreateUserInput {
+  username: string;
+  email: string;
+  password: string;
+  displayName: string;
+  roleIds: string[];
+}
+
+/** 更新用户请求体（password 可选，不改密码则不下发） */
+export interface UpdateUserInput {
+  email: string;
+  displayName: string;
+  roleIds: string[];
+  password?: string;
+}
+
+/** 角色实体（/roles） */
+export interface Role {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  enabled: boolean;
+  sort: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 创建/更新角色请求体 */
+export interface SaveRoleInput {
+  name: string;
+  code: string;
+  description?: string;
+  enabled: boolean;
+  sort?: number;
+}
+
+/** 角色菜单授权项（PUT /roles/:id/menus 请求体与 GET 响应共用结构） */
+export interface RoleMenuGrant {
+  menuId: string;
+  /** bigint 位掩码字符串：该角色在此菜单的实际授权位 */
+  permissions: string;
+}
+
+/** 角色菜单授权响应/请求载荷 */
+export interface RoleMenusPayload {
+  roleId: string;
+  menus: RoleMenuGrant[];
+}
+
+/** 字典类型（/dict/types） */
+export interface DictType {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 字典项（/dict/types/:code/items） */
+export interface DictItem {
+  id: string;
+  typeCode: string;
+  value: string;
+  label: string;
+  i18nKey: string | null;
+  sort: number;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 日志类型（logs.type，对应页面 4 个 Tab） */
+export type LogType = "operation" | "login" | "api" | "error";
+
+/** 日志实体（/logs，列表与详情同构） */
+export interface Log {
+  id: string;
+  type: LogType;
+  userId: string | null;
+  action: string;
+  ip: string | null;
+  userAgent: string | null;
+  detail: unknown;
+  createdAt: string;
+}

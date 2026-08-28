@@ -1,3 +1,5 @@
+import type { ApiListEnvelope, ListQueryParams } from "@/lib/api-types";
+
 import { ENV } from "@/lib/env";
 import { getErrorMessage } from "@/i18n";
 
@@ -234,4 +236,35 @@ export async function fetchApiRaw(
 
   // 非信封结构（兜底）
   return { data: json };
+}
+
+/** 将查询参数对象序列化为 query string（跳过 undefined / null / 空字符串）。 */
+export function buildQueryString(params: ListQueryParams): string {
+  const search = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    search.set(key, String(value));
+  }
+
+  const qs = search.toString();
+
+  return qs ? `?${qs}` : "";
+}
+
+/**
+ * 列表请求封装：返回强类型的 `{ data, pagination }` 信封。
+ * 后端所有列表接口统一走 `{data, pagination:{page,pageSize,total}}` 结构。
+ */
+export async function fetchApiList<T>(
+  path: string,
+  params: ListQueryParams = {},
+  options: RequestOptions = {},
+): Promise<ApiListEnvelope<T>> {
+  const envelope = await fetchApiRaw(
+    `${path}${buildQueryString(params)}`,
+    options,
+  );
+
+  return envelope as ApiListEnvelope<T>;
 }

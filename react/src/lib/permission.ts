@@ -85,7 +85,7 @@ export function filterHiddenMenus(nodes: MenuNode[]): MenuNode[] {
  * hasPermission(userBits, requiredBits)，例如 hasPermission(bits, 1n << 4n)。
  */
 export function hasPermission(
-  userBits: string | null | undefined,
+  userBits: string | number | null | undefined,
   requiredBits: bigint,
 ): boolean {
   const bits = parsePermissionBits(userBits);
