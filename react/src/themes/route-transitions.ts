@@ -55,7 +55,7 @@ export function isRouteTransition(value: unknown): value is RouteTransitionId {
 }
 
 /** 过渡动画时长（毫秒）。标准速度下的基准值，实际时长 × 速度倍率。 */
-export const ROUTE_TRANSITION_DURATION_MS = 340;
+export const ROUTE_TRANSITION_DURATION_MS = 420;
 
 // ── 播放速度档位 ──
 

@@ -21,7 +21,7 @@
 :root {
   /* 基准时长 × 速度倍率（html[data-rt-speed] 由偏好设置驱动） */
   --rt-speed: 1;
-  --rt-duration: calc(340ms * var(--rt-speed));
+  --rt-duration: calc(420ms * var(--rt-speed));
   --rt-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   /* 导航方向系数：前进 1 / 后退 -1（html[data-rt-direction="back"]，由
      KeepAliveOutlet 按菜单层级深度判定），用于反转位移类动画方向。 */
