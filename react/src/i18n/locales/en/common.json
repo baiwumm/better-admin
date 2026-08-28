@@ -25,6 +25,8 @@
   "common.datatable.pageSizeItem": "{{count}} / page",
   "common.datatable.columnSettings": "Columns",
   "common.datatable.resetColumns": "Reset columns",
+  "common.datatable.columnOrderHint": "Drag to reorder, check to toggle",
+  "common.datatable.columnDrag": "Drag to reorder column \"{{column}}\"",
   "common.datatable.selected": "{{count}} selected",
   "common.datatable.clearSelection": "Clear selection",
   "common.datatable.selectAll": "Select all on this page",

@@ -6,6 +6,7 @@ import type {
 } from "@tanstack/react-table";
 
 import {
+  columnOrderingFeature,
   columnVisibilityFeature,
   createPaginatedRowModel,
   createSortedRowModel,
@@ -17,10 +18,11 @@ import {
 
 /**
  * 项目统一的 TanStack Table v9 feature 集（模块级静态注册，tree-shaking 友好）：
- * 列可见性（列设置）+ 行排序 + 分页 + 行选择（批量操作）。
+ * 列可见性 + 列排序（列设置面板）+ 行排序 + 分页 + 行选择（批量操作）。
  * 新增 feature（如列筛选、展开行）时在此集中追加，所有业务页面同步获得类型与 API。
  */
 export const appTableFeatures = tableFeatures({
+  columnOrderingFeature,
   columnVisibilityFeature,
   rowSortingFeature,
   rowPaginationFeature,

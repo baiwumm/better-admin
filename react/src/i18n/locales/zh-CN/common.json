@@ -25,6 +25,8 @@
   "common.datatable.pageSizeItem": "{{count}} 条/页",
   "common.datatable.columnSettings": "列设置",
   "common.datatable.resetColumns": "重置列设置",
+  "common.datatable.columnOrderHint": "拖拽调整列顺序，勾选控制显隐",
+  "common.datatable.columnDrag": "拖拽调整「{{column}}」列的顺序",
   "common.datatable.selected": "已选 {{count}} 项",
   "common.datatable.clearSelection": "清空选择",
   "common.datatable.selectAll": "全选本页",
