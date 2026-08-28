@@ -12,6 +12,10 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import {
+  restrictToParentElement,
+  restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
+import {
   SortableContext,
   arrayMove,
   sortableKeyboardCoordinates,
@@ -27,6 +31,7 @@ import { useTranslation } from "@/i18n";
 
 /**
  * 列设置面板：可见性勾选 + 拖拽排序（dnd-kit headless 逻辑 + HeroUI 渲染）。
+ * 拖拽经 modifiers 限制为纵向且不出列表容器（避免无限拖拽与溢出滚动条）。
  *
  * 参与面板的列 = 可隐藏列（`getCanHide()`）；功能性列（行选择、行操作等
  * `enableHiding: false` 的列）不进面板，拖拽重排时保持默认位置（首/尾固定）。
@@ -261,6 +266,7 @@ export function DataTableViewOptions<TData extends RowData>({
           </p>
           <DndContext
             collisionDetection={closestCenter}
+            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
             sensors={sensors}
             onDragEnd={handleDragEnd}
           >
