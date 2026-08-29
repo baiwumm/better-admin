@@ -14,7 +14,7 @@ import {
   dictTypes,
   dictItems,
 } from './schema';
-import { SUPER_ADMIN_BITS, Permissions } from './schema/permissions.enum';
+import { SUPER_ADMIN_BITS, Permissions, SUPER_ADMIN_ROLE_CODE } from './schema/permissions.enum';
 
 /**
  * Phase 2 初始化种子脚本（详见 database-design.md §4 与 §6）
@@ -42,7 +42,7 @@ async function seed() {
       {
         id: superAdminRoleId,
         name: '超级管理员',
-        code: 'super_admin',
+        code: SUPER_ADMIN_ROLE_CODE,
         description: '全量权限，系统内置',
         enabled: true,
         sort: 0,

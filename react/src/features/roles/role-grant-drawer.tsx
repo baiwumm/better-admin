@@ -30,6 +30,7 @@ import { EmptyContent } from "@/components/common/empty-content/empty-content";
 import { ErrorContent } from "@/components/common/error-content/error-content";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useTranslation } from "@/i18n";
+import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
 import { getMenuLabel } from "@/lib/menu-i18n";
 
 /**
@@ -113,7 +114,7 @@ function GrantPanel({
   // 系统内置角色保护：super_admin 的 role_menus 授权是全量权限载体（seed 写入
   // -1n 全量位，登录/每请求实时聚合），改动会让绑定用户立即失去全部权限；
   // 后端 PUT /roles/:id/menus 亦有 403 SUPER_ADMIN_ROLE_PROTECTED 兜底
-  const isProtected = roleCode === "super_admin";
+  const isProtected = roleCode === SUPER_ADMIN_ROLE_CODE;
 
   // 全量菜单树（含停用/隐藏节点；不带 search 全量拉取）
   const menusQuery = useQuery({

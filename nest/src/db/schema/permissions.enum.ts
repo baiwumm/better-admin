@@ -51,6 +51,9 @@ export const Permissions = {
 /** 超级管理员全量位（bigint 全 1 掩码，内部表示采用 -1n，见 database-design §1.1）。 */
 export const SUPER_ADMIN_BITS = -1n;
 
+/** 系统内置超级管理员角色 code（seed 与服务端保护逻辑统一引用，禁止散落字面量）。 */
+export const SUPER_ADMIN_ROLE_CODE = 'super_admin';
+
 /**
  * 超级管理员全量位的正数表示（2^63 - 1 = 9223372036854775807）。
  * 对外 JSON 传输统一使用该值（openapi 示例 `permissions: 9223372036854775807`），

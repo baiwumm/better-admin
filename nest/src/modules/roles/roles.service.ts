@@ -12,6 +12,7 @@ import {
   Permissions,
   SUPER_ADMIN_BITS,
   SUPER_ADMIN_BITS_POSITIVE,
+  SUPER_ADMIN_ROLE_CODE,
   normalizePermissionBits,
 } from '../../db/schema/permissions.enum';
 import { CreateRoleDto } from './dto/role-create.dto';
@@ -77,7 +78,7 @@ export class RolesService {
    * 角色会让绑定用户立即失去全部权限且无自助恢复手段，故一律 403 拦截。
    */
   private assertNotSuperAdmin(role: { code: string }) {
-    if (role.code === 'super_admin') {
+    if (role.code === SUPER_ADMIN_ROLE_CODE) {
       throw new ForbiddenException({
         code: 'SUPER_ADMIN_ROLE_PROTECTED',
         message: '超级管理员为系统内置角色，其授权不可修改',

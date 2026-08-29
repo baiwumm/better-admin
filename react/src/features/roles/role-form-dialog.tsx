@@ -23,6 +23,7 @@ import { z } from "zod";
 
 import { createRole, getRoleErrorMessage, updateRole } from "./role-api";
 
+import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
 import { useTranslation } from "@/i18n";
 
 /**
@@ -118,7 +119,7 @@ function RoleForm({ mode, role, onDone, onSaved }: RoleFormProps) {
   const isEdit = mode === "edit";
   // 系统内置角色保护（仅编辑态）：code/name/enabled 均不可改，
   // 唯一可编辑字段为 description（后端授权/删除另有 403 兜底）
-  const isSuperAdmin = isEdit && role?.code === "super_admin";
+  const isSuperAdmin = isEdit && role?.code === SUPER_ADMIN_ROLE_CODE;
 
   const { control, handleSubmit, watch, setValue } = useForm<RoleFormValues>({
     resolver: zodResolver(roleFormSchema),

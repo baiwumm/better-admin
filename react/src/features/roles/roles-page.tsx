@@ -50,6 +50,7 @@ import { useHasPermissionKey } from "@/hooks/use-permissions";
 import { createListStore } from "@/hooks/create-list-store";
 import { useListQuery } from "@/hooks/use-list-query";
 import { useTranslation } from "@/i18n";
+import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
@@ -283,7 +284,7 @@ export function RolesPage() {
           // 系统内置角色保护：super_admin 的授权是全量权限载体，
           // 授权/删除/状态切换均不可用（后端亦有 403 SUPER_ADMIN_ROLE_PROTECTED 兜底）；
           // 编辑保留——name/description 无权限语义
-          const isSuperAdmin = row.original.code === "super_admin";
+          const isSuperAdmin = row.original.code === SUPER_ADMIN_ROLE_CODE;
           const canGrant = canEdit && !isSuperAdmin;
           const canToggle = canEdit && !isSuperAdmin;
           const canDeleteRow = canDelete && !isSuperAdmin;
