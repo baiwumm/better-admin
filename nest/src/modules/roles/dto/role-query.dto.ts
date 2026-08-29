@@ -18,4 +18,9 @@ export class RoleQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  /** 状态筛选（字符串布尔，缺省返回全部） */
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  enabled?: 'true' | 'false';
 }

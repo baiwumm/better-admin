@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -70,6 +71,20 @@ function assertValidBits(raw: string) {
 
 @Injectable()
 export class RolesService {
+  /**
+   * 系统内置角色保护：super_admin 的 role_menus 授权是全量权限的载体
+   * （登录/每请求实时 OR 聚合，seed 写入 -1n 全量位），修改其授权或删除
+   * 角色会让绑定用户立即失去全部权限且无自助恢复手段，故一律 403 拦截。
+   */
+  private assertNotSuperAdmin(role: { code: string }) {
+    if (role.code === 'super_admin') {
+      throw new ForbiddenException({
+        code: 'SUPER_ADMIN_ROLE_PROTECTED',
+        message: '超级管理员为系统内置角色，其授权不可修改',
+      });
+    }
+  }
+
   private handleUniqueError(err: any): never {
     // drizzle 0.45 将 pg 错误包装为 DrizzleQueryError，原始错误的 constraint 挂在 cause 上
     const constraint: string = err?.constraint ?? err?.cause?.constraint ?? '';
@@ -111,6 +126,9 @@ export class RolesService {
       conditions.push(
         sql`(${roles.name} ILIKE ${pattern} OR ${roles.code} ILIKE ${pattern})`,
       );
+    }
+    if (query.enabled) {
+      conditions.push(eq(roles.enabled, query.enabled === 'true'));
     }
     const where = conditions.length ? and(...conditions) : undefined;
 
@@ -198,6 +216,7 @@ export class RolesService {
         message: '角色不存在',
       });
     }
+    this.assertNotSuperAdmin(existing);
     // 检查是否有关联用户，存在则禁止删除
     const [{ cnt }] = await db
       .select({ cnt: count() })
@@ -242,6 +261,7 @@ export class RolesService {
         message: '角色不存在',
       });
     }
+    this.assertNotSuperAdmin(existing);
 
     // 校验 menuId 全部存在
     const menuIds = dto.menus.map((m) => m.menuId);
