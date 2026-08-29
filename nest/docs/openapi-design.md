@@ -311,7 +311,7 @@ paths:
 2. 初始化 NestJS 工程，接入 Drizzle（database-design.md 表）。
 3. 实现各模块，代码与 yaml 对齐；Swagger UI `/docs` 核对。
 4. 种子 + 迁移；基础测试。
-5. 更新 AGENTS.md 阶段状态。
+5. 更新 `docs/progress.md` 进度记录，并同步 `AGENTS.md` 当前阶段指针。
 
 ---
 

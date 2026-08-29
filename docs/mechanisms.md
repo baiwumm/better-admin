@@ -2,7 +2,7 @@
 
 > 本文沉淀三个高频疑问的机制结论，供开发与排查快速查阅。
 > 相关设计文档：`nest/docs/database-design.md`（§1.1 超管全量位、§1.5 菜单可见性）、
-> `AGENTS.md`（keepAlive 路由缓存章节）、`nest/openapi/openapi.yaml`（API Contract）。
+> `docs/progress.md`（keepAlive 路由缓存 + 过渡动画重构条目）、`nest/openapi/openapi.yaml`（API Contract）。
 > 更新日期：2026-08-29（基于当前代码实现梳理，代码为准）。
 
 ---

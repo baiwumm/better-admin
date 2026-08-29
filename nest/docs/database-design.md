@@ -326,7 +326,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 3. 按 Contract 实现各模块（auth/users/roles/permissions/menus/dict/logs）。
 4. 种子脚本 + 迁移脚本。
 5. Swagger 文档可访问 + 基础测试。
-6. 更新 `AGENTS.md` 阶段状态。
+6. 更新 `docs/progress.md` 进度记录，并同步 `AGENTS.md` 当前阶段指针。
 
 ---
 
