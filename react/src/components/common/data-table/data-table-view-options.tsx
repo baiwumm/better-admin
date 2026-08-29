@@ -138,6 +138,12 @@ export function DataTableViewOptions<TData extends RowData>({
 
   /** 面板内的列展示顺序（仅可隐藏列；初始化为列定义默认顺序） */
   const [orderIds, setOrderIds] = useState<string[]>(hideableIds);
+  /**
+   * 默认顺序基线（挂载时固化为列定义顺序）：v9 的 getAllLeafColumns() 会
+   * 应用当前 columnOrder，拖拽后再取 hideableIds 得到的是拖拽后的顺序，
+   * 重置时不能用它回写面板，否则面板列表永远无法还原。
+   */
+  const [defaultOrderIds] = useState<string[]>(hideableIds);
   const [hasRestored, setHasRestored] = useState(false);
 
   // 挂载时恢复持久化的列设置（仅一次）：隐藏列 + 顺序
@@ -230,7 +236,8 @@ export function DataTableViewOptions<TData extends RowData>({
   };
 
   const resetColumns = () => {
-    setOrderIds(hideableIds);
+    // 用挂载时固化的默认顺序还原面板；表格侧以空 columnOrder 回到定义顺序
+    setOrderIds(defaultOrderIds);
     table.setColumnVisibility({});
     table.setColumnOrder([]);
     if (storageKey) {
