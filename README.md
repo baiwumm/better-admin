@@ -43,7 +43,7 @@ better-admin/
 ├── react/       # React（UI 基准；Hero UI 为主 + Shadcn UI 补充）
 ├── vue/         # Vue + Shadcn UI
 ├── nest/        # NestJS 后端 API
-├── docs/        # 项目文档（需求：docs/requirements.md）
+├── docs/        # 项目文档（需求 / 进度 / UI 规范 / 机制沉淀等）
 ├── AGENTS.md    # AI Agent 开发指南
 └── README.md
 ```
@@ -52,30 +52,23 @@ better-admin/
 
 ## 在线 Demo
 
-> ⏳ 尚未上线，敬请期待。规划地址如下：
+> React 版与 NestJS API 已部署上线；Vue / Next.js / Nuxt 为规划地址，对应版本实现后上线。
 
-- Next.js：`https://next.baiwumm.com`
-- Nuxt：`https://nuxt.baiwumm.com`
-- React：`https://react.baiwumm.com`
-- Vue：`https://vue.baiwumm.com`
-- API：`https://api.baiwumm.com`
+- React：`https://react.baiwumm.com`（开发中）
+- API：`https://api.baiwumm.com`（开发中，Swagger 文档见 `/docs`）
+- Next.js：`https://next.baiwumm.com`（规划中）
+- Nuxt：`https://nuxt.baiwumm.com`（规划中）
+- Vue：`https://vue.baiwumm.com`（规划中）
 
 ---
 
 ## 开发阶段记录
 
-> 当前阶段与最新进度见 [`docs/progress.md`](docs/progress.md)；以下为历史阶段记录。
+> 当前阶段与详细进度见 [`docs/progress.md`](docs/progress.md)（按时间倒序）。
 
-**Phase 1A：React + Shadcn Admin 基础建设（已完成）**
+**当前阶段**：React + NestJS 全栈推进中（API 契约 v1.4.3）——React 端登录认证、全站国际化、权限管理 / 菜单管理 / 字典管理 / 角色管理已上线；用户管理、日志管理、概览 Dashboard 迁移中。
 
-- [x] `react/` 初始化完成，基于官方 Shadcn Admin（v2.2.1）二次开发
-- [x] UI 基础结构建立（Layout / Sidebar / Header / Theme / Dark Mode / shadcn/ui 组件）
-- [x] 项目可独立运行：`pnpm install` / `pnpm dev` / `pnpm build` / `pnpm lint` 全部通过
-- [ ] 登录、RBAC 权限、真实业务页面（用户/角色/权限/菜单/系统设置/日志）
-- [ ] 接入 NestJS API 与数据库（当前仅使用 Demo Mock 数据）
-
-> 下一阶段为 Phase 1B（UI 定制），当前不进入；各版本开发路线：
-> React → NestJS → Vue → Next.js → Nuxt.js → 统一测试 → 部署。
+历史阶段：Phase 1A React + Shadcn Admin 基础建设（已完成）→ Phase 1B Better Admin UI 定制（已完成）→ Phase 1C React Hero UI 迁移启动 → Phase 2 NestJS + PostgreSQL（已完成），各阶段明细见 `docs/progress.md`。
 
 ---
 
@@ -106,11 +99,11 @@ pnpm start:dev
 ## 开发状态
 
 - [x] 项目工程规范与文档基础设施（README、AGENTS.md、需求文档）
-- [x] React 版本（基于 Hero UI 的 UI 基准已建立；UI 组件策略：Hero UI 为主 + Shadcn UI 补充，详见 [`docs/react.md`](docs/react.md)）
-- [ ] NestJS 后端 API
+- [x] React 版本（Hero UI 基准；登录认证 / 国际化 / 角色 / 菜单 / 字典 / 权限管理已上线，详见 [`docs/react.md`](docs/react.md)）
+- [x] NestJS 后端 API（用户 / 角色 / 权限 / 菜单 / 字典 / 日志，OpenAPI 契约 v1.4.3，详见 `nest/docs/`）
 - [ ] Vue 版本
 - [ ] Next.js 版本
 - [ ] Nuxt 版本
 - [ ] 统一测试与部署
 
-详细需求见 [`docs/requirements.md`](docs/requirements.md)，开发规范见 [`AGENTS.md`](AGENTS.md)。
+详细需求见 [`docs/requirements.md`](docs/requirements.md)，开发规范见 [`AGENTS.md`](AGENTS.md)，阶段性进度见 [`docs/progress.md`](docs/progress.md)。
