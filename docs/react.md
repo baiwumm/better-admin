@@ -65,13 +65,14 @@ Browser → React → NestJS API → PostgreSQL
 
 ### 状态管理
 
-- **Zustand**：`src/stores/auth-store.ts`（演示登录态：Mock user + accessToken，cookie 持久化）。
-- **React Context**：`src/context/*`（theme、font、direction、layout、search）。
+- **Zustand**：`src/stores/auth-store.ts`（登录态 + accessToken/refreshToken + 用户权限位；「记住我」决定 refreshToken 是否持久化）。
+- **React Context**：`src/context/*`（theme 等 HeroUI/react-aria 运行时上下文）。
 
 ### 数据请求
 
-- TanStack Query（QueryClient 全局配置：retry、staleTime、401/403 处理）+ axios。
-- 当前保留的演示页（users 列表范式）使用 `src/features/users/data/` 下的静态 Mock，**未请求任何真实 API**。
+- TanStack Query：全局单例 QueryClient（`src/lib/query-client.ts`：retry 1、staleTime 1 分钟、`refetchOnWindowFocus: false`）；请求统一走 `src/lib/api-client.ts` 的 `fetchApi`（NestJS REST API）。
+- 菜单树（`["menus"]`）登录成功后 prefetch，供路由 beforeLoad 同步判权；权限点枚举（`["permissions"]`）懒加载、staleTime 5 分钟、全项目共享缓存，均无持久化。
+- 请求与缓存机制（含保活与菜单可见性）详见 `docs/mechanisms.md`。
 
 ### 主题 / Dark Mode
 
