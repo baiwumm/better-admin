@@ -9,8 +9,9 @@ info:
     版本注记：v1.0.0 基线；v1.1 优化批量删(DELETE /users?ids=)、logout 强制鉴权、settings 改 SETTINGS_UPDATE、新增 INVALID_OPERATION；v1.3 新增 GET /menus/tree 管理全量树（search/order 参数）并移除 Settings 模块与 SETTINGS_UPDATE 权限点、新增 RESET_PASSWORD 位；menus.to 部分唯一索引与格式/唯一校验（MENU_TO_INVALID / MENU_TO_EXISTS）；
     v1.2 登录支持 rememberMe（长短会话分档）、refreshToken 服务端托管（refresh_tokens 表哈希存储）并轮换下发、
     logout 支持按 refreshToken 精确撤销、JWT 增加 ver claim 对齐 users.token_version（改密码/封禁全端下线）；
-    v1.4 移除菜单 target 字段（menus.target 列删除，外链打开方式由前端按 to 是否外链推导）。
-  version: 1.4.0
+    v1.4 移除菜单 target 字段（menus.target 列删除，外链打开方式由前端按 to 是否外链推导）；
+    v1.4.1 补录 DELETE /dict/types/{code} 的 409 响应声明（DICT_TYPE_IN_USE，实现已有、文档补齐）。
+  version: 1.4.1
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -31,7 +32,6 @@ tags:
     description: 菜单管理（树形 + 按钮位掩码）
   - name: Dict
     description: 字典管理
-    description: 系统设置
   - name: Logs
     description: 日志（operation/login/api/error）
 
@@ -1504,6 +1504,15 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: 字典类型仍被字典项引用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: DICT_TYPE_IN_USE
+                message: 该字典类型下仍有字典项，无法删除
 
   /dict/types/{code}/items:
     parameters:

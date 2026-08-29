@@ -693,6 +693,20 @@ Phase 7  统一测试 → 部署全部版本
 - **文档同步**：`nest/openapi/openapi.yaml` v1.3.0、`nest/docs/database-design.md` v0.3（§2.8 标注移除）、`nest/docs/openapi-design.md` v0.3（§3.7 标注移除）。
 - **React 端**：权限管理只读页已上线（消费 `GET /api/permissions`，前端 i18n 名称映射）；下一步为菜单管理页。
 
+### 契约 v1.4 / React 端菜单管理 + 字典管理上线（2026-08-29）
+
+- **React 菜单管理页（契约 v1.4）**：管理树 CRUD（新增/子菜单/编辑/删除、权限位多选、图标实时预览），已上线。
+- **React 字典管理页（本期新增）**：`src/features/dicts/`（dict-api / dicts-page / 两个表单弹窗），双栏布局——左栏字典类型（本地提交式过滤 + 新增/编辑/删除），右栏选中类型的字典项（DataTable + 提交式过滤 + CRUD）。
+  - 契约为准：类型按 code 定位（`PUT/DELETE /dict/types/{code}`），项挂在类型下（`GET/POST /dict/types/{code}/items`）；契约无分页，前后端一致采用全量 + 前端过滤。
+  - 清空语义：`description` / `i18nKey` 清空须传 `""`（后端部分更新 `??` 兜底不接受 null），表单已按此处理。
+  - 删除拦截：类型被项引用时后端 409 `DICT_TYPE_IN_USE`；前端错误码经 `getDictErrorMessage` 做 i18n 映射（errors.dict.*，zh/en 双语）。
+  - 缓存联动：字典项保存后 `dict-store.refreshDict(code)` 强刷业务侧下拉缓存；类型删除后 `clearDict(code)` 清残留；右栏 React Query 按 typeCode 精准失效。
+  - 权限门控：`useHasPermissionKey(SEARCH/ADD/EDIT/DELETE)` 控制按钮显隐；浮层全部 `useOverlayState`（§7.2）。
+  - 类型修正：`api-types.ts` 的 `DictItem` 移除后端不返回的 `createdAt/updatedAt`；`dict-store` 新增 `clearDict`/`refreshDict`。
+- **契约 v1.4.1**：补录 `DELETE /dict/types/{code}` 的 409 响应声明（实现已有、文档补齐）；修复 tags 块 v1.3 移除 Settings 时遗留的重复 `description` 键（此前该 YAML 无法被严格解析器读取）。
+- **验证**：react `tsc --noEmit` / `lint` / `build` / `test`(61) 全绿；openapi.yaml 经 js-yaml 严格解析通过。
+- **待办（记录在案）**：用户管理（替换 keepAlive Mock 页）、角色管理、日志管理、概览 Dashboard 仍待迁移。
+
 ---
 
 ---
