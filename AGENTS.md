@@ -705,7 +705,21 @@ Phase 7  统一测试 → 部署全部版本
   - 类型修正：`api-types.ts` 的 `DictItem` 移除后端不返回的 `createdAt/updatedAt`；`dict-store` 新增 `clearDict`/`refreshDict`。
 - **契约 v1.4.1**：补录 `DELETE /dict/types/{code}` 的 409 响应声明（实现已有、文档补齐）；修复 tags 块 v1.3 移除 Settings 时遗留的重复 `description` 键（此前该 YAML 无法被严格解析器读取）。
 - **验证**：react `tsc --noEmit` / `lint` / `build` / `test`(61) 全绿；openapi.yaml 经 js-yaml 严格解析通过。
-- **待办（记录在案）**：用户管理（替换 keepAlive Mock 页）、角色管理、日志管理、概览 Dashboard 仍待迁移。
+- **待办（记录在案）**：用户管理（替换 keepAlive Mock 页）、日志管理、概览 Dashboard 仍待迁移。
+
+### 契约 v1.4.2/v1.4.3 + React 角色管理上线（2026-08-30）
+
+- **后端**：`GET /roles` 新增 `enabled` 状态筛选参数（v1.4.2）；super_admin 角色保护（v1.4.3）——`PUT /roles/{id}/menus` 与 `DELETE /roles/{id}` 对 `code === 'super_admin'` 返回 403 `SUPER_ADMIN_ROLE_PROTECTED`。
+- **super_admin 保护的设计依据（重要，勿推翻）**：超管的"全量权限"不是代码身份判定，而是 seed 写入 role_menus 的 -1n 全量位经登录/每请求实时 OR 聚合而来（`auth.service.aggregatePermissions`）；PermissionsGuard 与菜单可见性的"超管免检"分支判据都是聚合值。清空其授权 = 全后台立即 403 且无自助恢复手段，故必须拦截。已知口径：`roles.enabled` 目前不参与权限聚合（停用角色为 no-op），后续单独立项评估。
+- **React 角色管理页**：`src/features/roles/`（role-api / roles-page / role-form-dialog / role-grant-drawer）。
+  - 列表：首个启用 `createListStore + useListQuery` 服务端分页基建的页面（page/pageSize/search/enabled），`DataTablePagination` 分页条改为三列布局（范围总数/页码/每页条数，全局共用）。
+  - CRUD：code 创建后锁定；删除强确认（输入角色 code）；状态切换走 `toast.promise` 三段反馈；sort 列 + 表单 NumberField。
+  - 菜单授权抽屉：数据源 `GET /menus/tree`（全量含停用；要求菜单 SEARCH 位）；**纯 Antd Tree 勾选模型**——权限位为叶子菜单的子节点、状态完全由子节点推导、级联双向（勾父全选位/取消父清空位）；`GET/PUT /roles/:id/menus` 全量替换；保存后失效 `MENUS_QUERY_KEY`（改自己的角色侧边栏立即生效）。注意树节点 `userPermissions` 是当前用户的授权，授权场景只消费声明位 `permissions`。
+  - super_admin 三层保护：后端 403 兜底 + 操作列隐藏授权/删除/状态切换 + 编辑弹窗仅 description 可改 + 授权抽屉保存禁用（Alert 警示条）。
+  - 错误码 i18n：`errors.roles.*`（inUse/codeExists/nameExists/notFound/superAdminProtected/invalidOperation，zh/en）。
+- **通用组件**：`EmptyContent` 扩展可选 icon/title/description/action（默认行为不变）；新增 `ErrorContent`（错误态语义，与空状态分离，全局共用）；`ConfirmDialog` 强确认输入框 variant=secondary；公共列键 `common.column.sort/createdAt` 抽取（角色/字典/菜单三页同步）。
+- **验证**：react `tsc/lint/build/test`(61) 与 nest `tsc/build` 全绿；openapi.yaml js-yaml 严格解析通过。
+- **待办（记录在案）**：用户管理（替换 keepAlive Mock 页）、日志管理、概览 Dashboard 仍待迁移；`roles.enabled` 参与权限聚合待评估。
 
 ---
 
