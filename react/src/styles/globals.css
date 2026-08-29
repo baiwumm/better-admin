@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 
+/* 自托管字体（Maple Mono CN 子集 @font-face） */
+@import './fonts.css';
+
 /* 项目级 Design Tokens（唯一来源；最后加载且未分层 → 级联优先于上述 Hero 变量） */
 @import './theme.css';
 
