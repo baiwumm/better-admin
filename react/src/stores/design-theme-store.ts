@@ -90,13 +90,13 @@ function writeDirectionToStorage(direction: TransitionDirection): void {
 }
 
 function readRouteTransitionFromStorage(): RouteTransitionId {
-  if (typeof window === "undefined") return "none";
+  if (typeof window === "undefined") return DEFAULT_PREFERENCES.routeTransition;
 
   const stored = localStorage.getItem(ROUTE_TRANSITION_KEY);
 
   if (stored && isRouteTransition(stored)) return stored;
 
-  return "none";
+  return DEFAULT_PREFERENCES.routeTransition;
 }
 
 function writeRouteTransitionToStorage(id: RouteTransitionId): void {
@@ -223,7 +223,7 @@ const DEFAULT_PREFERENCES = {
   colorVision: "normal",
   designThemeId: "default",
   transitionDirection: "ltr",
-  routeTransition: "none",
+  routeTransition: "glide",
   routeTransitionSpeed: "normal",
   showTabs: true,
   themeMode: "system",

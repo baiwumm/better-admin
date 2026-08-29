@@ -16,6 +16,7 @@ import { getMenuLabel } from "@/lib/menu-i18n";
 import { filterHiddenMenus } from "@/lib/permission";
 import { findActivePath, getBreadcrumbNodes } from "@/lib/menu-utils";
 import { type MenuNode } from "@/lib/api-types";
+import { useDisplayedPathStore } from "@/stores/displayed-path-store";
 
 type AppHeaderProps = {
   collapsed: boolean;
@@ -41,6 +42,12 @@ export function AppHeader({
   const { data: menuTree } = useMenus();
   const { t } = useTranslation();
 
+  // 面包屑跟随「已提交」的呈现路径（KeepAliveOutlet 在过渡回调内 flushSync
+  // 时同步镜像），不直接用 pathname：主体内容冻结在旧页期间，面包屑文案
+  // 与其保持一致、在同一提交内一起切换，不会先于页面内容跳变。
+  // store 初值在挂载校正前为空，回退 pathname。
+  const committedPath = useDisplayedPathStore((s) => s.path);
+
   // 命令面板开合状态（Hero UI 官方用法：useOverlayState + 状态挂 Backdrop），
   // 由本组件持有：SearchTrigger（入口按钮）与 CommandMenu（面板）共享。
   const searchState = useOverlayState();
@@ -63,7 +70,7 @@ export function AppHeader({
   // 从可见菜单树解析出当前路由对应的面包屑节点链（含图标与名称）。
   const crumbs: MenuNode[] = (() => {
     const tree = filterHiddenMenus(menuTree ?? []);
-    const activePath = findActivePath(tree, pathname);
+    const activePath = findActivePath(tree, committedPath || pathname);
 
     return activePath.length > 0 ? getBreadcrumbNodes(tree, activePath) : [];
   })();
@@ -106,16 +113,11 @@ export function AppHeader({
             orientation="vertical"
           />
 
-          {/* 面包屑：图标 + 菜单名称；view-transition-name 使其随路由过渡
-          协同做轻微位移淡换（动画见 styles/route-transitions.css）。
-          name 与 data-vt-name 放在原生 wrapper 上（而非 Breadcrumbs 组件），
-          确保 DOM 属性稳定存在：主题切换动画靠 html[data-theme-transition]
-          [data-vt-name] 规则临时摘名，避免其快照组静止遮挡揭示动画 */}
+          {/* 面包屑：图标 + 菜单名称。不做 view-transition 绑定（曾因
+          old/new 快照同文案的重影问题改为绑定、最终按产品约定移除），
+          切换时随 root 组瞬间替换，文案与主体内容同一 commit 更新 */}
           {crumbs.length > 0 && (
-            <div
-              className="min-w-0 [view-transition-name:breadcrumbs] hidden md:flex"
-              data-vt-name="breadcrumbs"
-            >
+            <div className="min-w-0 hidden md:flex">
               <Breadcrumbs className="min-w-0">
                 {crumbs.map((item) => (
                   <Breadcrumbs.Item key={item.id} className="min-w-0">

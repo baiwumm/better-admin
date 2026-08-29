@@ -25,6 +25,7 @@ import {
 import { collectKeepAlivePaths, findActivePath } from "@/lib/menu-utils";
 import { findRouteLeafComponent } from "@/lib/route-component";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
+import { useDisplayedPathStore } from "@/stores/displayed-path-store";
 import { useTabsStore } from "@/stores/tabs-store";
 
 /**
@@ -75,7 +76,7 @@ function resetMainScroll() {
  *
  * HeroUI toast 每次增删也会启动**根级** ViewTransition（toast-queue 的
  * defaultWrapUpdate），而 html[data-route-transition] 是常驻属性——若不加
- * 门控，toast 的 VT 会命中 route-transitions.css 的 main-content/breadcrumbs
+ * 门控，toast 的 VT 会命中 route-transitions.css 的 main-content
  * 动画选择器，把整套页面切换动画对着静止页面重放一遍（保存成功 toast 触发
  * 「页面重进了一次」即此根因；主题 VT 在 runViewTransition 里临时摘
  * data-route-transition 是同类规避先例）。标记仅由路由/刷新 VT 设置，
@@ -159,6 +160,9 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
   // 多标签页联动：已打开未关闭集合 + 刷新计数（key 重挂载实现「刷新」）。
   const openedPaths = useTabsStore((s) => s.paths);
   const refreshSeq = useTabsStore((s) => s.refreshSeq);
+  // 呈现路径的全局镜像（AppHeader 面包屑等布局区消费），更新点见下。
+  const committedPath = useDisplayedPathStore((s) => s.path);
+  const setCommittedPath = useDisplayedPathStore((s) => s.setPath);
 
   // keepAlive 路径集合：由菜单数据派生，仅在菜单变化时重建。
   const keepAlivePaths = useMemo(
@@ -226,6 +230,10 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
         ),
       );
       setDisplayedPath(pathname);
+      // 面包屑等布局区跟随「已提交」路径：在 VT 回调的同一 flushSync 内
+      // 更新，旧帧拍到的才是真旧文案（否则 old/new 快照同为新文案，
+      // 滑出/滑入动画对同一份文字重叠播放造成重影）。
+      setCommittedPath(pathname);
     };
 
     const apply = () => {
@@ -257,6 +265,13 @@ export function KeepAliveOutlet({ overlay }: { overlay?: ReactNode }) {
       resetMainScroll();
     }
   }, [animate, displayedPath, pathname]);
+
+  // 呈现路径镜像校正：store 是模块级单例，登录/登出后重挂载时可能残留
+  // 上一次会话的旧值——挂载后首个 layout effect（绘制前）同步为当前
+  // displayedPath。后续导航已随 commitChanges 同步更新，此处为幂等 no-op。
+  useLayoutEffect(() => {
+    if (committedPath !== displayedPath) setCommittedPath(displayedPath);
+  }, [committedPath, displayedPath, setCommittedPath]);
 
   // 刷新编排：标签右键「刷新」= 实例销毁重建（key 含已应用序号）。激活页
   // 的刷新与导航共用 VT 编排——序号延迟到 VT 回调内提交，旧帧先被捕获，

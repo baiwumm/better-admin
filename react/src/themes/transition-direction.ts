@@ -53,11 +53,11 @@ function clipFrom(direction: TransitionDirection): string {
  * 执行 ViewTransition 动画（主题切换用）。
  *
  * 实现（声明式 CSS 驱动，见 styles/globals.css 的 data-theme-transition 区块）：
- * 1. 临时移除 data-route-transition，避免路由过渡预设的 main-content /
- *    breadcrumbs 动画被主题 VT 误触发（必须在 startViewTransition 之前移除）；
+ * 1. 临时移除 data-route-transition，避免路由过渡预设的 main-content
+ *    动画被主题 VT 误触发（必须在 startViewTransition 之前移除）；
  * 2. 设置 html[data-theme-transition="<direction>"] 激活 CSS 揭示动画——
  *    同时经 `html[data-theme-transition] [data-vt-name]` 规则临时摘掉各区域
- *    （admin-layout 的 main-content、app-header 的 breadcrumbs）的独立
+ *    （admin-layout 的 main-content）的独立
  *    view-transition-name：带 name 的元素会被提升为独立快照组并叠放在 root 组
  *    之上，静止遮挡揭示动画；主题变化是全页级联，统一并入单组 root 揭示。
  *    摘名纯 CSS 属性驱动，随该属性的设置/移除原子生效，无 JS 时序竞态；
