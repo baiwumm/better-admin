@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { THEME_PALETTES } from "@/themes/color-palettes";
+import { DEFAULT_RADIUS_ID, isRadiusId, type RadiusId } from "@/themes/radius";
 import {
   runViewTransition,
   type TransitionDirection,
@@ -19,6 +20,7 @@ const COLOR_VISION_KEY = "better-admin-color-vision";
 const DIRECTION_KEY = "better-admin-transition-direction";
 const ROUTE_TRANSITION_KEY = "better-admin-route-transition";
 const ROUTE_TRANSITION_SPEED_KEY = "better-admin-route-transition-speed";
+const RADIUS_KEY = "better-admin-radius";
 const SHOW_TABS_KEY = "better-admin-show-tabs";
 const THEME_MODE_KEY = "better-admin-theme-mode";
 
@@ -117,6 +119,20 @@ function writeSpeedToStorage(speed: RouteTransitionSpeedId): void {
   localStorage.setItem(ROUTE_TRANSITION_SPEED_KEY, speed);
 }
 
+function readRadiusFromStorage(): RadiusId {
+  if (typeof window === "undefined") return DEFAULT_RADIUS_ID;
+
+  const stored = localStorage.getItem(RADIUS_KEY);
+
+  if (stored && isRadiusId(stored)) return stored;
+
+  return DEFAULT_RADIUS_ID;
+}
+
+function writeRadiusToStorage(radius: RadiusId): void {
+  localStorage.setItem(RADIUS_KEY, radius);
+}
+
 function readShowTabsFromStorage(): boolean {
   if (typeof window === "undefined") return true;
 
@@ -205,6 +221,17 @@ export function applyColorVisionToDOM(mode: ColorVisionMode): void {
   }
 }
 
+/** 把圆角档位应用到 <html> 的 data-radius 属性（供 radius.css 变量覆盖生效）。 */
+export function applyRadiusToDOM(radius: RadiusId): void {
+  const root = document.documentElement;
+
+  if (radius === DEFAULT_RADIUS_ID) {
+    root.removeAttribute("data-radius");
+  } else {
+    root.setAttribute("data-radius", radius);
+  }
+}
+
 /** 把路由过渡动画 id 应用到 <html> 的 data-route-transition 属性（供 CSS 选择器启用动画）。 */
 export function applyRouteTransitionToDOM(id: RouteTransitionId): void {
   const root = document.documentElement;
@@ -222,6 +249,7 @@ export function applyRouteTransitionToDOM(id: RouteTransitionId): void {
 const DEFAULT_PREFERENCES = {
   colorVision: "normal",
   designThemeId: "default",
+  radius: "medium",
   transitionDirection: "ltr",
   routeTransition: "glide",
   routeTransitionSpeed: "normal",
@@ -234,6 +262,8 @@ interface DesignThemeState {
   colorVision: ColorVisionMode;
   /** 当前激活的主题色 ID */
   designThemeId: string;
+  /** 当前圆角档位（直角 / 小 / 中 / 大；中为默认即主题原始值） */
+  radius: RadiusId;
   /** 当前动画方向 */
   transitionDirection: TransitionDirection;
   /** 路由过渡动画（页面切换；'none' 表示关闭） */
@@ -250,6 +280,8 @@ interface DesignThemeState {
   setColorVision: (mode: ColorVisionMode) => void;
   /** 切换主题色（带 ViewTransition 动画 + DOM + localStorage） */
   setDesignTheme: (id: string) => void;
+  /** 设置圆角档位（写 store + DOM data-radius + localStorage；即时生效无动画） */
+  setRadius: (radius: RadiusId) => void;
   /** 设置动画方向 */
   setTransitionDirection: (direction: TransitionDirection) => void;
   /** 设置路由过渡动画（写 store + DOM + localStorage） */
@@ -304,6 +336,14 @@ export const useDesignThemeStore = create<DesignThemeState>((set) => ({
       applyThemeToDOM(validId);
       writeThemeToStorage(validId);
     }, direction);
+  },
+
+  setRadius: (radius) => {
+    const validRadius = isRadiusId(radius) ? radius : DEFAULT_RADIUS_ID;
+
+    set({ radius: validRadius });
+    applyRadiusToDOM(validRadius);
+    writeRadiusToStorage(validRadius);
   },
 
   setTransitionDirection: (direction) => {
@@ -378,10 +418,12 @@ export const useDesignThemeStore = create<DesignThemeState>((set) => ({
       set({ ...DEFAULT_PREFERENCES });
       applyColorVisionToDOM(DEFAULT_PREFERENCES.colorVision);
       applyThemeToDOM(DEFAULT_PREFERENCES.designThemeId);
+      applyRadiusToDOM(DEFAULT_PREFERENCES.radius);
       applyRouteTransitionToDOM(DEFAULT_PREFERENCES.routeTransition);
       applyRouteTransitionSpeedToDOM(DEFAULT_PREFERENCES.routeTransitionSpeed);
       writeThemeToStorage(DEFAULT_PREFERENCES.designThemeId);
       writeColorVisionToStorage(DEFAULT_PREFERENCES.colorVision);
+      writeRadiusToStorage(DEFAULT_PREFERENCES.radius);
       writeDirectionToStorage(DEFAULT_PREFERENCES.transitionDirection);
       writeRouteTransitionToStorage(DEFAULT_PREFERENCES.routeTransition);
       writeSpeedToStorage(DEFAULT_PREFERENCES.routeTransitionSpeed);
@@ -405,6 +447,7 @@ export function initDesignTheme(): void {
   const colorVision = readColorVisionFromStorage();
   const stored = readThemeFromStorage();
   const direction = readDirectionFromStorage();
+  const radius = readRadiusFromStorage();
   const routeTransition = readRouteTransitionFromStorage();
   const routeTransitionSpeed = readSpeedFromStorage();
   const showTabs = readShowTabsFromStorage();
@@ -413,6 +456,7 @@ export function initDesignTheme(): void {
 
   applyColorVisionToDOM(colorVision);
   applyThemeToDOM(stored);
+  applyRadiusToDOM(radius);
   applyRouteTransitionToDOM(routeTransition);
   applyRouteTransitionSpeedToDOM(routeTransitionSpeed);
   applyThemeModeToDOM(themeMode === "system" ? systemPreference : themeMode);
@@ -420,6 +464,7 @@ export function initDesignTheme(): void {
   useDesignThemeStore.setState({
     colorVision,
     designThemeId: stored,
+    radius,
     transitionDirection: direction,
     routeTransition,
     routeTransitionSpeed,

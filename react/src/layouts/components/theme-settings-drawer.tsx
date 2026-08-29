@@ -8,6 +8,7 @@ import { ThemeModePicker } from "./theme-mode-picker";
 import { TransitionDirectionPicker } from "./transition-direction-picker";
 import { RouteTransitionPicker } from "./route-transition-picker";
 import { RouteTransitionSpeedPicker } from "./route-transition-speed-picker";
+import { RadiusPicker } from "./radius-picker";
 import { ShowTabsPicker } from "./show-tabs-picker";
 
 import { useTranslation } from "@/i18n";
@@ -25,6 +26,7 @@ import { useDesignThemeStore } from "@/stores/design-theme-store";
  * - TransitionDirectionPicker  主题动画方向（主题色 / 模式切换的揭示方向）
  * - RouteTransitionPicker      页面切换动画（页面切换的过渡效果预设）
  * - RouteTransitionSpeedPicker 页面切换速度（仅作用于页面切换动画）
+ * - RadiusPicker               圆角（直角 / 小 / 中 / 大，全站圆角整体缩放）
  * - ShowTabsPicker             显示多标签页（顶栏下方标签栏的显隐）
  *
  * 底部提供「重置设置」按钮：一键恢复全部偏好为初始状态（含主题模式回
@@ -71,6 +73,7 @@ export function ThemeSettingsDrawer() {
               <TransitionDirectionPicker />
               <RouteTransitionPicker />
               <RouteTransitionSpeedPicker />
+              <RadiusPicker />
               <ShowTabsPicker />
             </Drawer.Body>
             <Drawer.Footer>
