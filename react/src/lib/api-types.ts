@@ -176,7 +176,7 @@ export interface DictType {
   updatedAt: string;
 }
 
-/** 字典项（/dict/types/:code/items） */
+/** 字典项（/dict/types/:code/items；后端视图不含时间字段） */
 export interface DictItem {
   id: string;
   typeCode: string;
@@ -185,8 +185,6 @@ export interface DictItem {
   i18nKey: string | null;
   sort: number;
   enabled: boolean;
-  createdAt: string;
-  updatedAt: string;
 }
 
 /** 日志类型（logs.type，对应页面 4 个 Tab） */

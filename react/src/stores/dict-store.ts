@@ -25,6 +25,18 @@ interface DictState {
    * 失败时抛错（消费方决定是否提示），不写入缓存。
    */
   fetchDict: (typeCode: string, force?: boolean) => Promise<DictItem[]>;
+  /** 清除指定类型的缓存条目（字典类型被删除后调用，避免残留脏数据） */
+  clearDict: (typeCode: string) => void;
+  /**
+   * 直接写入缓存（不发请求）：字典管理页在自身列表刷新完成后，
+   * 复用本次请求结果回填业务侧缓存（refreshDict 会重复发请求，勿在管理页使用）。
+   */
+  setDict: (typeCode: string, items: DictItem[]) => void;
+  /**
+   * 强制刷新指定类型的缓存（字典管理页保存后调用，保证业务下拉实时）；
+   * 类型已被删除时请求 404，静默忽略（应改用 clearDict）。
+   */
+  refreshDict: (typeCode: string) => void;
 }
 
 export const useDictStore = create<DictState>()((set, get) => ({
@@ -59,6 +71,32 @@ export const useDictStore = create<DictState>()((set, get) => ({
       }));
       throw error;
     }
+  },
+
+  clearDict: (typeCode) => {
+    set((state) => {
+      if (!(typeCode in state.itemsByCode)) return state;
+
+      const itemsByCode = { ...state.itemsByCode };
+
+      delete itemsByCode[typeCode];
+
+      return { itemsByCode };
+    });
+  },
+
+  setDict: (typeCode, items) => {
+    set((state) => ({
+      itemsByCode: { ...state.itemsByCode, [typeCode]: items },
+    }));
+  },
+
+  refreshDict: (typeCode) => {
+    void get()
+      .fetchDict(typeCode, true)
+      .catch(() => {
+        // 静默失败：管理页保存后的联动刷新，不额外打断用户
+      });
   },
 }));
 
