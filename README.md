@@ -62,7 +62,9 @@ better-admin/
 
 ---
 
-## 当前开发阶段
+## 开发阶段记录
+
+> 当前阶段与最新进度见 [`docs/progress.md`](docs/progress.md)；以下为历史阶段记录。
 
 **Phase 1A：React + Shadcn Admin 基础建设（已完成）**
 
@@ -80,7 +82,7 @@ better-admin/
 ## 快速开始
 
 ```bash
-# React（已初始化：基于官方 Shadcn Admin 建立 UI 基础）
+# React（Hero UI 基准版本）
 cd react
 pnpm install
 pnpm dev
@@ -104,7 +106,7 @@ pnpm start:dev
 ## 开发状态
 
 - [x] 项目工程规范与文档基础设施（README、AGENTS.md、需求文档）
-- [x] React 版本（基于 Shadcn Admin 的 UI 基础已建立；UI 组件策略：Hero UI 为主 + Shadcn UI 补充，详见 [`docs/react.md`](docs/react.md)）
+- [x] React 版本（基于 Hero UI 的 UI 基准已建立；UI 组件策略：Hero UI 为主 + Shadcn UI 补充，详见 [`docs/react.md`](docs/react.md)）
 - [ ] NestJS 后端 API
 - [ ] Vue 版本
 - [ ] Next.js 版本

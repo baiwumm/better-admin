@@ -9,9 +9,9 @@
 **React 是 Better Admin 的 UI Source of Truth（UI 基准版本）。**
 
 - 后续 Vue、Next.js、Nuxt 版本以 React 版本的页面结构、UI 组件、视觉、交互、响应式与 Dark Mode 行为作为参考基准。
-- React 版本直接基于官方 **Shadcn Admin** 源码进行二次开发（产品与工程起点），当前阶段以「建立基础、稳定运行」为目标。
-- **UI 组件库策略**：React（含 Next.js）以 **Hero UI 为主、Shadcn UI 为补充**（优先级：Hero UI > Shadcn UI > 项目级自定义）；存量 Shadcn UI 渐进式保留，不做一次性大规模重构；样式变量以 Hero UI 设计体系为主要参考（详见 `AGENTS.md` §7.2 / `ui-spec.md` §18.3）。
-- React 是纯前端实现，**不直接连接数据库**；后续接入 NestJS API：
+- **`/react` 基于 Hero UI 模板实现，不含 Shadcn UI 组件**；业务模块迁移期间以 `/react-shadcn`（原 Shadcn Admin 实现）为只读参考，做能力等价重写，新增功能一律使用 Hero UI。
+- **UI 组件库策略**：React（含 Next.js）以 **Hero UI 为主、Shadcn UI 为补充**（优先级：Hero UI > Shadcn UI > 项目级自定义）；样式变量以 Hero UI 设计体系为主要参考（详见 `AGENTS.md` §7.2 / `ui-spec.md` §18.3）。
+- React 是纯前端实现，**不直接连接数据库**，通过 NestJS API 访问数据：
 
 ```text
 Browser → React → NestJS API → PostgreSQL
@@ -21,47 +21,32 @@ Browser → React → NestJS API → PostgreSQL
 
 ## 2. 技术栈
 
-> 版本以 `/react/package.json` 与实际安装结果为准（`pnpm list --depth 0` 核实，记录于 2026-08）。
+> 版本以 `/react/package.json` 为准（记录于 2026-08-30）。
 
-| 类别 | 选型 | 实际版本 |
+| 类别 | 选型 | 版本 |
 | --- | --- | --- |
-| 语言 | TypeScript（strict，`tsc -b` 工程引用） | `~6.0.3` |
-| UI 框架 | React | `19.2.5`（react / react-dom） |
-| 构建工具 | Vite（含 `@vitejs/plugin-react`） | `8.0.8` / `6.0.1` |
-| 样式 | Tailwind CSS（v4，CSS-first，`@tailwindcss/vite` 插件，无 `tailwind.config`） | `4.2.2` |
-| 字体 | 默认 **Maple Mono CN**（自托管，`public/fonts/maple-mono-cn/`，cn-font-split 分包，OFL-1.1）；可选 Inter / Manrope / system | `@chinese-fonts/maple-mono-cn 2.0.0` |
-| UI 组件库 | **Hero UI 为主（`@heroui/react`）** + **Shadcn UI 为补充（按需引入，`src/components/ui/`）** | `@heroui/react`（已引入） |
-| 路由 | TanStack Router（文件式路由 `src/routes/`，自动生成 `src/routeTree.gen.ts`，路由插件 + Devtools） | `@tanstack/react-router 1.168.22` |
-| 状态管理 | Zustand（全局 store，如 `src/stores/auth-store.ts`）；主题/字体/方向/布局/搜索使用 React Context | `zustand 5.0.12` |
-| 数据请求 | TanStack Query + axios（当前仅演示 Mock 数据，未接真实后端） | `@tanstack/react-query 5.99.0` / `axios 1.15.0` |
-| 表单 | react-hook-form + zod + hookform/resolvers | `7.72.1` / `4.3.6` / `5.2.2` |
-| 表格 | TanStack Table（含可复用 DataTable：列头、过滤、排序、分页、批量操作、视图选项） | `@tanstack/react-table 8.21.3` |
-| 图表 | Recharts | `3.8.1` |
-| 图标 | lucide-react（+ 少量 Radix Icons、SVG 品牌图标） | `1.8.0` |
-| Toast | sonner | `2.0.7` |
-| 弹层原语 | Radix UI（alert-dialog、dialog、dropdown、popover、select、sheet、sidebar、tabs、tooltip 等 19 个包） | `@radix-ui/react-*` |
-| 全局搜索 | cmdk | `1.1.1` |
-| 日期/密钥等 | react-day-picker、input-otp、date-fns、react-top-loading-bar | 见 package.json |
-| 认证（可选） | Clerk（模块化，仅存在于 `src/routes/clerk/`，无 Key 时优雅降级，不影响主应用；当前演示登录为前端 Mock） | `@clerk/react 6.4.3` |
-| 代码规范 | ESLint（flat config，推荐 + typescript-eslint + react-hooks/refresh + tanstack query 插件） | `eslint 10.2.1` |
-| 格式化 | Prettier（含 import 排序、tailwindcss 插件） | `prettier 3.8.3` |
-| 测试 | Vitest（浏览器模式 + Playwright Chromium）+ faker | `vitest 4.1.4` / `playwright 1.59.1` |
-| 包管理器 | pnpm（`pnpm-lock.yaml` 提交仓库，依赖锁定） | pnpm 10.33.0（实测） |
-| 运行环境 | Node.js | v24.15.0（已验证） |
-
-### shadcn/ui 使用方式
-
-- shadcn/ui 组件以源码形式存在于 `src/components/ui/`（非运行时注册表），配置见 `components.json`（style: `new-york`，css: `src/styles/index.css`，baseColor: `slate`，别名 `@/*`）。
-- 官方对部分组件做了 RTL 适配或二次修改（见官方 README 的 "Modified Components" / "RTL Updated Components"），更新组件时需注意手动合并。
+| 语言 | TypeScript（strict） | `5.6.3` |
+| UI 框架 | React | `^19.0.0` |
+| 构建工具 | Vite（含 `@vitejs/plugin-react`） | `8.0.16` |
+| 样式 | Tailwind CSS（v4，CSS-first，`@tailwindcss/vite` 插件，无 `tailwind.config`） | `4.3.1` |
+| 字体 | 默认 **Maple Mono CN**（`index.html` 内联声明）+ system 回退 | — |
+| UI 组件库 | **Hero UI**（`@heroui/react` + `@heroui/styles`）；**当前无任何 shadcn / radix 组件**，Shadcn UI 仅为策略上的补充选项（按需引入） | `3.2.4` |
+| 路由 | TanStack Router（文件式路由 `src/routes/`，自动生成 `src/routeTree.gen.ts`） | `1.168.22` |
+| 状态管理 | Zustand（全局 store，如 `src/stores/auth-store.ts`） | `5.0.12` |
+| 数据请求 | TanStack Query + axios（统一走 `src/lib/api-client.ts` 请求 NestJS REST API） | `5.99.0` / `1.15.0` |
+| 表单 | react-hook-form + zod + `@hookform/resolvers` | `7.86.0` / `4.4.3` |
+| 表格 | TanStack Table（可复用 DataTable：列头、过滤、排序、分页） | `^9.2.3` |
+| 拖拽 | dnd-kit（core / modifiers / sortable / util） | `^6.3.1` 等 |
+| 国际化 | i18next + react-i18next（自建实例，非默认单例） | `26.4.0` / `17.0.12` |
+| 图标 | lucide-react | `^1.33.0` |
+| 代码规范 | ESLint（flat config）+ Prettier | `9.25.1` / `3.5.3` |
+| 测试 | Vitest | `4.1.11` |
+| 包管理器 | pnpm（`pnpm-lock.yaml` 提交仓库，依赖锁定） | pnpm 10 |
 
 ### 路由
 
-- 文件式路由：`src/routes/`。
-  - `__root.tsx`：根布局（进度条、Toaster、Devtools）。
-  - `(auth)/`：演示认证页（sign-in、sign-in-2、sign-up、otp、forgot-password）。
-  - `_authenticated/`：认证态布局（Sidebar + Header 等）下的仪表盘、用户管理（列表范式）、角色/权限/菜单/日志（占位页）、系统设置、错误页。
-  - `(errors)/`：401/403/404/500/503。
-- 路由树由 `@tanstack/router-plugin` 自动生成到 `src/routeTree.gen.ts`，修改路由文件后由 Vite 插件自动重建。
+- 文件式路由：`src/routes/`，路由树由 `@tanstack/router-plugin` 自动生成到 `src/routeTree.gen.ts`，修改路由文件后由 Vite 插件自动重建。
+- 目录约定、路由表、登录鉴权与路由-菜单契约详见 [`routing.md`](routing.md)（现状以其为准）。
 
 ### 状态管理
 
@@ -79,36 +64,16 @@ Browser → React → NestJS API → PostgreSQL
 - 自定义 `ThemeProvider`（`src/context/theme-provider.tsx`），在 `<html>` 上切换 `light`/`dark` class，支持 `system`，cookie 持久化。
 - Tailwind v4 通过 `@custom-variant dark` 实现 class 策略（`src/styles/index.css`）。
 
----
-
-## 3. Shadcn Admin
-
-| 项 | 内容 |
-| --- | --- |
-| 官方仓库 | <https://github.com/satnaing/shadcn-admin> |
-| 官方 Demo | <https://shadcn-admin.netlify.app/> |
-| 上游版本 | `2.2.1`（`package.json` `version` 字段），取自官方 `main` 分支快照 |
-| 获取方式 | 通过 codeload 下载官方 `main` 分支 zip 快照整理到 `/react`；**未嵌套 `.git`**（Better Admin 主仓库保持为唯一的 Git 仓库） |
-| 剔除内容 | 仅剔除仓库级 `.github/`（issue 模板、社区规范、针对上游仓库的 CI 工作流、FUNDING.yml）；应用代码、配置、文档、LICENSE 均保留 |
-| 新增内容 | `pnpm-workspace.yaml`（pnpm 10+ 构建脚本策略，见下） |
-
-### 二次开发原则
-
-- **React 是 UI Source of Truth**（页面结构 / UI 设计 / 交互 / UX / Design Tokens / 组件行为）。
-- **UI 组件库策略**：React / Next.js 以 **Hero UI 为主、Shadcn UI 为补充**；现有 Layout / Sidebar / Header / Navigation / Theme / Dark Mode / Responsive / shadcn/ui 组件 / DataTable / Form / Dialog / Drawer / Command / Chart / Hooks / Utils / 页面结构 / 交互逻辑 **继续保留**（渐进式调整，非一次性重构）。
-- 不随意更换官方已选定的技术方案（路由、状态管理、表单、请求、图表等）。
-- 逐步在现有架构上扩展，禁止凭记忆重建「类似 Shadcn Admin」的项目。
-
 ### 关于 pnpm 构建脚本（pnpm-workspace.yaml）
 
 - pnpm 10+ 出于安全默认不执行依赖的构建脚本（`ERR_PNPM_IGNORED_BUILDS`）。
 - 本仓库通过 `react/pnpm-workspace.yaml` 的 `allowBuilds` 显式声明 `esbuild` **不执行**脚本：
-  - `esbuild` 的平台二进制已随 `@esbuild/win32-x64` 包提供，无需 postinstall（已实测 dev/build 正常）。
+  - `esbuild` 的平台二进制已随对应平台包提供，无需 postinstall（已实测 dev/build 正常）。
 - 如需在本地运行这些脚本，可将对应值改为 `true` 或执行 `pnpm approve-builds`。
 
 ---
 
-## 4. 项目目录
+## 3. 项目目录
 
 ```text
 react/
@@ -158,28 +123,24 @@ react/
 
 ---
 
-## 5. 开发命令
+## 4. 开发命令
 
 ```bash
 cd react
 
-pnpm install        # 安装依赖（exit 0，已实测）
-pnpm dev            # 启动 Vite 开发服务器（默认 http://localhost:5173，已实测）
-pnpm build          # 类型检查（tsc -b）+ 生产构建（vite build），已实测通过
-pnpm lint           # ESLint 检查（已实测通过，无 error）
-pnpm format:check   # Prettier 格式检查（已实测通过）
+pnpm install        # 安装依赖
+pnpm dev            # 启动 Vite 开发服务器（默认 http://localhost:5173）
+pnpm build          # 类型检查（tsc）+ 生产构建（vite build）
+pnpm lint           # ESLint 检查（--fix）
+pnpm test           # Vitest 测试
 pnpm preview        # 预览生产构建
-pnpm format         # Prettier 全量格式化
-pnpm knip           # 未使用文件/依赖分析
-pnpm test           # Vitest 浏览器测试（需先 pnpm test:browser:install 安装 Playwright Chromium）
 ```
 
-> 说明：保留官方原有脚本名称；`test` 系列需要安装 Playwright 浏览器，当前阶段未执行。
-> 环境变量：`/react/.env.example` 仅有公开配置 `VITE_CLERK_PUBLISHABLE_KEY`（可选 Clerk 用），当前无需创建 `.env`。
+> 环境变量：`/react/.env.example` 为参考模板（前端可见变量带 `VITE_` 前缀）；真实密钥不入仓库（见 AGENTS.md §9）。
 
 ---
 
-## 6. 当前状态
+## 5. 当前状态
 
 ### 已完成
 
@@ -188,19 +149,17 @@ pnpm test           # Vitest 浏览器测试（需先 pnpm test:browser:install 
 - [x] Phase 3 联调：真实登录/退出（AlertDialog + useOverlayState）、后端菜单联调、双 Token 刷新、菜单路由权限门卫。
 - [x] 布局级权限门卫：未登录拦截、白名单放行、菜单未就绪全屏 Spinner、无权限渲染 403。
 - [x] TanStack Router 文件式路由 + QueryClient + Zustand auth-store（含 persist）。
+- [x] 角色管理 / 菜单管理 / 字典管理 / 权限管理页已上线，全站国际化（zh-CN / en）完成（进度详见 `docs/progress.md`）。
 - [x] 组件分层：`components/common/`（错误页等通用组件）、`layouts/components/`（布局子组件），按需扩展 `ui/`、`business/`。
-- [x] `pnpm install`、`pnpm dev`、`pnpm build`（含 `tsc`）、`pnpm lint` 全部通过。
+- [x] `pnpm install`、`pnpm dev`、`pnpm build`（含 `tsc`）、`pnpm lint`、`pnpm test` 全部通过。
 
 ### 尚未完成
 
-- [ ] 业务页面（用户/角色/权限/菜单/系统设置/日志等真实业务模块）。
-- [ ] 接入 Vue 版本（Vue + NestJS API）。
+- [ ] 用户管理（当前 `users-page.tsx` 为 keepAlive 演示 Mock 页，接入真实 API 时替换）。
+- [ ] 日志管理、概览 Dashboard。
 - [ ] 渐进迁移 `/react-shadcn` 中尚未搬入的功能与页面。
-- [ ] Dashboard 统计卡片、Users 列表、Settings 表单仍为官方演示 Mock 数据，接入 API 后替换。
-- [ ] `showSubmittedData` 演示提交提示暂留于保留的演示页，接入真实 API 时移除。
 
 ### 后端 / 数据库接入状态
 
-- **当前未接入后端**：`Browser → React`（仅 Mock 数据）。
-- **当前未接入数据库**：无任何数据库驱动、Schema 或连接配置。
-- 按项目阶段规划，这两项在后续 Phase（NestJS、React + NestJS）中完成。
+- **已接入 NestJS API**（`Browser → React → NestJS`）：认证、菜单、角色、权限、字典等模块走真实接口。
+- **不直接连接数据库**（项目约束，见 AGENTS.md §5）。

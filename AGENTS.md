@@ -70,7 +70,7 @@ better-admin/
 
 - 目录：`/react`
 - 技术栈：React + Tailwind CSS + TypeScript；UI 组件库 **Hero UI 为主 + Shadcn UI 补充**（§7.2）
-- 职责：以 **Hero UI 初始化模板为基础，渐进式迁移 `/react-shadcn`（原 Shadcn Admin 源码）的功能与页面**，是整套产品的 **UI Source of Truth**（页面结构 / UI 设计 / 交互 / UX / Design Tokens / 组件行为）。
+- 职责：`/react` 基于 **Hero UI 模板实现，不含 Shadcn UI 组件**；业务模块迁移期间以 `/react-shadcn`（原 Shadcn Admin 实现）为只读参考，做能力等价重写（见 §4.6），是整套产品的 **UI Source of Truth**（页面结构 / UI 设计 / 交互 / UX / Design Tokens / 组件行为）。
 - 数据流：`Browser → React → NestJS API → PostgreSQL`（不直接连接数据库）。
 
 ### 4.6 React 迁移策略（`/react` 与 `/react-shadcn` 的关系）
@@ -86,19 +86,21 @@ better-admin/
 5. **阶段性提交**：每个模块迁移以独立、清晰的提交完成，便于 review 与回滚。
 6. **参考源只读**：`/react-shadcn` 仅作只读参考与比对，**不得修改**其代码（见 §18 第 13 条）。
 
-**迁移进度表**
+**迁移进度表**（完成 `/react-shadcn` 删除后，本节整体移除）
 
 | 模块 | 对应 `/react-shadcn` 源 | 状态 |
 | --- | --- | --- |
 | Layout | `layout/` 相关 | 🔲 待迁移 |
 | Dashboard | `dashboard/` / 概览 | 🔲 待迁移 |
-| 用户管理 | `users/` | 🔲 待迁移 |
-| 角色管理 | `roles/` | 🔲 待迁移 |
-| 权限管理 | `permissions/` | 🔲 待迁移 |
-| 菜单管理 | `menus/` | 🔲 待迁移 |
-| 系统设置 | `settings/` | 🔲 待迁移 |
+| 用户管理 | `users/` | 🔲 待迁移（当前为 keepAlive 演示页） |
+| 角色管理 | `roles/` | ✅ 已上线（2026-08-30） |
+| 权限管理 | `permissions/` | ✅ 已上线（2026-08-28） |
+| 菜单管理 | `menus/` | ✅ 已上线（2026-08-29） |
+| 系统设置 | `settings/` | — 模块已移除（契约 v1.3），无迁移计划 |
 | 日志管理 | `logs/` | 🔲 待迁移 |
-| 认证 | `auth/` / 登录登出 | 🔲 待迁移 |
+| 认证 | `auth/` / 登录登出 | ✅ 已上线（2026-08-27，含记住我 / 会话真撤销） |
+
+> 字典管理不在此表（`/react-shadcn` 无对应源，为新增模块）；各阶段明细见 [`docs/progress.md`](docs/progress.md)。
 
 ### 4.2 Vue
 
@@ -206,7 +208,7 @@ DELETE /api/users/:id
 ### 7.1 UI Source of Truth 与设计基准
 
 - **React 是 Better Admin 的 UI Source of Truth**：页面结构、UI 设计、交互、UX、Design Tokens、组件行为均以 React 版本为基准。React 保持 Source of Truth **并不意味着 React 必须全部使用 Shadcn UI**。
-- React 版本基于官方 **Shadcn Admin** v2.2.1 源码二次开发，作为产品与工程起点；**UI 组件库策略独立定义**（见 §7.2）。
+- React 版本（`/react`）基于 Hero UI 模板实现，不含 Shadcn UI 组件；业务模块迁移期间以 `/react-shadcn`（原 Shadcn Admin 实现）为只读参考（见 §4.6）。**UI 组件库策略独立定义**（见 §7.2）。
 - Vue、Next.js、Nuxt 版本按 React 版本实现，保持页面、组件行为、视觉与交互一致。
 
 ### 7.2 UI 组件库策略（核心规则）
@@ -336,6 +338,7 @@ ci: CI 配置变更
 - 每完成一个阶段/模块 → `docs/progress.md` 新增条目（置顶）+ `AGENTS.md` 当前阶段指针同步。
 - 契约/Schema 变更 → `nest/openapi/openapi.yaml` / `nest/docs/database-design.md` 先行更新，`docs/progress.md` 记录变更。
 - 发现可复用的机制结论 → 沉淀到 `docs/mechanisms.md`，进度条目里只留一行引用。
+- **现状与历史分离**：描述「当前是什么」的表述过时必须更新；描述「当时做了什么」的记录（`docs/progress.md` 条目、各文档变更记录表、README 阶段历史）**永不回改**——事实修正写新条目，不改旧条目。
 - 引用其他文档一律用**相对路径 + 章节号**，**禁止整段复制规则内容**（避免多源漂移）。
 
 ---
@@ -402,7 +405,7 @@ https://api.baiwumm.com
 
 以下为所有 AI Agent 在开发 Better Admin 时必须遵守的**硬性规则**：
 
-1. **React 是 UI 基准版本（UI Source of Truth）**，基于 Shadcn Admin 二次开发；UI 组件库策略遵循 §7.2：React / Next.js 以 **Hero UI 为主、Shadcn UI 为补充**，Vue / Nuxt 以 **Shadcn UI 为主**。
+1. **React 是 UI 基准版本（UI Source of Truth）**，`/react` 基于 Hero UI 实现；UI 组件库策略遵循 §7.2：React / Next.js 以 **Hero UI 为主、Shadcn UI 为补充**，Vue / Nuxt 以 **Shadcn UI 为主**。
 2. **Vue、Next.js、Nuxt 的 UI 应尽可能与 React 版本保持一致**（包括组件、视觉与交互）。
 3. **React 和 Vue 使用 NestJS API**；不得绕过 NestJS 直接访问数据库。
 4. **Next.js 和 Nuxt 采用各自的全栈能力，不依赖 NestJS**。

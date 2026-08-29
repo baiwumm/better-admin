@@ -1,15 +1,15 @@
 # Better Admin — UI Spec（Phase 1B 规划）
 
-> 本文档基于对现有 React 版本（`/react`，Shadcn Admin v2.2.1）的源码分析，定义 Better Admin 的页面结构与 UI 规范。
+> 本文档基于原 Shadcn Admin 实现（现 `/react-shadcn`，只读参考）的源码分析产出，定义 Better Admin 的页面结构与 UI 规范；`/react` 现为 Hero UI 基准。
 > 本文档**只做分析与规划，不涉及代码修改**；落地实施在 Phase 1B 及后续阶段进行。
 >
-> **UI 组件库策略更新（2026-08-22）**：React / Next.js 采用 **Hero UI 为主 + Shadcn UI 为补充**，Vue / Nuxt 保持 **Shadcn UI 为主**（详见 §18.3）；本文档记录的 Token / 视觉数值来自 Shadcn Admin 现状，后续样式变量以 **Hero UI 设计体系为主要参考**对齐（§18.3）。
+> **UI 组件库策略更新（2026-08-22）**：React / Next.js 采用 **Hero UI 为主 + Shadcn UI 为补充**，Vue / Nuxt 保持 **Shadcn UI 为主**（详见 §18.3）；本文档记录的 Token / 视觉数值来自原 Shadcn Admin 实现的分析，后续样式变量以 **Hero UI 设计体系为主要参考**对齐（§18.3）。
 
 ---
 
 ## 0. 文档目的与使用方式
 
-- **记录现状**：客观描述 Shadcn Admin 实际实现的设计令牌、组件行为与页面模式（所有数值均来自 `/react` 源码）。
+- **记录现状**：客观描述原 Shadcn Admin 实现（现 `/react-shadcn`，只读参考）的设计令牌、组件行为与页面模式（所有数值均来自该实现的源码分析）。
 - **定义规范**：为 Better Admin 定制阶段提供页面结构、Sidebar、Layout、主题、组件使用等方面的统一约定。
 - **约束后续实现**：Vue、Next.js、Nuxt 版本按本规范还原 React 基准；跨技术栈保持 UI 一致性。
 - 文档与 [`requirements.md`](requirements.md) 配合使用；`requirements.md` 定义业务需求，本文档定义 UI 与交互规范。
@@ -20,7 +20,9 @@
 
 ## 1. 页面结构
 
-### 1.1 现状（Shadcn Admin 路由树）
+### 1.1 原始路由树（Shadcn Admin 实现，仅作迁移参考）
+
+> 本节为迁移参考源的源结构记录，**路由现状以 [`routing.md`](routing.md) 为准**。
 
 ```text
 /
@@ -600,7 +602,7 @@ Shadcn UI
 
 **渐进式调整**：
 
-- 存量 Shadcn Admin / Shadcn UI 组件**保留**，不一次性重构；新增功能优先 Hero UI；修改已有组件时按实际收益决定是否迁移。
+- `/react` 基于 Hero UI 模板实现，**不含 Shadcn UI 组件**；业务模块迁移期间以 `/react-shadcn`（原 Shadcn Admin 实现）为只读参考，做能力等价重写；新增功能一律使用 Hero UI，不一次性重构。
 - 业务能力优先于组件库替换：不为了组件库统一破坏页面结构、交互、业务逻辑与 DataTable / Form 等基础设施。
 - Vue / Nuxt（shadcn-vue / shadcn-nuxt）保持 **Shadcn UI 为主**，暂不引入 Hero UI（Hero UI 官方暂无 Vue 实现，社区方案非官方，切换需单独评估）。
 

@@ -18,7 +18,7 @@ better-admin
 
 Better Admin 是一个基于现代 Web 技术栈构建的全栈 Admin 系统。
 
-项目以 **React 版本（基于 Shadcn Admin 源码二次开发）** 作为前端 UI / UX 的基准（UI Source of Truth）；不同技术栈采用各自的 UI 组件库（React / Next.js：**Hero UI 为主 + Shadcn UI 补充**；Vue / Nuxt：**Shadcn UI 为主**），在保持整体视觉风格、页面结构和交互体验一致的前提下，分别使用不同的前端及全栈技术进行实现。
+项目以 **React 版本（基于 Hero UI 实现）** 作为前端 UI / UX 的基准（UI Source of Truth）；不同技术栈采用各自的 UI 组件库（React / Next.js：**Hero UI 为主 + Shadcn UI 补充**；Vue / Nuxt：**Shadcn UI 为主**），在保持整体视觉风格、页面结构和交互体验一致的前提下，分别使用不同的前端及全栈技术进行实现。
 
 项目的核心目标不是开发多套不同的后台系统，而是：
 
@@ -102,7 +102,7 @@ better-admin/
 - TypeScript
 - UI 组件库：**Hero UI（为主）+ Shadcn UI（补充）**（见 §7.3）
 
-React 版本以 Shadcn Admin 源码作为工程基础进行二次开发；UI 组件库策略遵循「渐进式调整」：存量 Shadcn UI 保留，新增功能优先 Hero UI，不做一次性大规模重构。
+React 版本（`/react`）基于 Hero UI 模板实现，不含 Shadcn UI 组件；业务模块迁移期间以 `/react-shadcn`（原 Shadcn Admin 实现）为只读参考，做能力等价重写。UI 组件库策略遵循「渐进式调整」：新增功能优先 Hero UI，不做一次性大规模重构。
 
 React 不直接连接数据库。
 
@@ -376,7 +376,7 @@ NestJS ── Drizzle ──┤
 
 **React 是 Better Admin 的 UI Source of Truth**（页面结构、UI 设计、交互、UX、Design Tokens、组件行为）。
 
-React 版本基于官方 **Shadcn Admin** 源码二次开发（产品与工程起点）。
+React 版本（`/react`）基于 Hero UI 模板实现（UI 组件库策略见 §7.3）。
 
 Vue、Next.js、Nuxt.js 版本按照 React 版本实现页面结构与交互。
 
@@ -470,7 +470,7 @@ Shadcn UI
 
 ### 渐进式调整（React / Next.js）
 
-- 存量 Shadcn Admin / Shadcn UI 成熟能力（Layout、Sidebar、Header、Theme、Dark Mode、Responsive、DataTable、Form、Dialog、Drawer、Command、Chart、Hooks、Utils）**继续保留**，不一次性重构。
+- `/react` 基于 Hero UI 模板实现，不含 Shadcn UI 组件；业务模块迁移期间以 `/react-shadcn`（原 Shadcn Admin 实现）为只读参考，做能力等价重写，不一次性重构。
 - 新增功能优先使用 Hero UI；修改已有组件时按实际收益决定是否迁移。
 - 不破坏现有页面结构与业务逻辑；DataTable 等复杂组件不因组件库统一而强行重写，**业务能力优先于组件库替换**。
 
@@ -852,7 +852,7 @@ pnpm start:dev
 
 ```text
 Phase 1
-React + Shadcn Admin（工程基础）
+React（Hero UI 工程基础）
         ↓
 完成 UI 基础（UI 组件策略按 §7.3 渐进演进）
 
@@ -938,7 +938,7 @@ Better Admin
 
 # 17. 项目最终定位
 
-Better Admin 不仅是一个 Admin 模板，也不是简单的 Shadcn Admin 二次开发项目。
+Better Admin 不仅是一个 Admin 模板，也不是对某个开源模板的简单二次开发项目。
 
 它的最终定位是：
 

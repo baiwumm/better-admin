@@ -1,7 +1,7 @@
 # Better Admin — 路由功能说明（React 版）
 
 > 范围：本文档描述 `/react`（Hero UI 基准版本）的约定式路由体系：目录约定、路由表、登录鉴权、404/错误页、页面权限与路由-菜单契约。
-> 状态：已落地实现（TanStack Router 文件式路由）；`/react-shadcn` 为只读参考源，Vue / Next.js / Nuxt 后续按本文档的**路由表与行为约定**对齐。
+> 状态：已落地实现（TanStack Router 文件式路由）；原 Shadcn Admin 实现（`/react-shadcn`）仅作迁移期参考，完成删除后此表述移除。Vue / Next.js / Nuxt 后续按本文档的**路由表与行为约定**对齐。
 >
 > 相关代码：`react/src/routes/`、`react/src/router.ts`、`react/src/lib/route-paths.ts`、`react/src/lib/permission.ts`、`react/src/stores/auth-store.ts`
 > 依赖：`@tanstack/react-router`、`@tanstack/react-query`、`zustand`（详见 `react/package.json`）
