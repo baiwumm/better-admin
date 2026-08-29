@@ -104,10 +104,10 @@ export function MenusPage() {
     mutationFn: (id: string) => deleteMenu(id),
     onSuccess: () => {
       handleSaved();
-      toast(t("features.menus.message.deleteSuccess"));
+      toast.success(t("features.menus.message.deleteSuccess"));
     },
     onError: (error) => {
-      toast(error instanceof Error ? error.message : String(error));
+      toast.danger(error instanceof Error ? error.message : String(error));
     },
   });
 
