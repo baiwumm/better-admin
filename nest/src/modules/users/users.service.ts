@@ -58,7 +58,8 @@ function toView(row: typeof users.$inferSelect): Omit<UserView, 'roles'> {
 export class UsersService {
   /** 捕获唯一索引冲突，转换为业务 409 错误 */
   private handleUniqueError(err: any): never {
-    const constraint: string = err?.constraint ?? '';
+    // drizzle 0.45 将 pg 错误包装为 DrizzleQueryError，原始错误的 constraint 挂在 cause 上
+    const constraint: string = err?.constraint ?? err?.cause?.constraint ?? '';
     if (constraint.includes('username')) {
       throw new ConflictException({
         code: 'USERNAME_EXISTS',

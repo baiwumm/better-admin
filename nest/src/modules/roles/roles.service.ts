@@ -71,7 +71,8 @@ function assertValidBits(raw: string) {
 @Injectable()
 export class RolesService {
   private handleUniqueError(err: any): never {
-    const constraint: string = err?.constraint ?? '';
+    // drizzle 0.45 将 pg 错误包装为 DrizzleQueryError，原始错误的 constraint 挂在 cause 上
+    const constraint: string = err?.constraint ?? err?.cause?.constraint ?? '';
     if (constraint.includes('code')) {
       throw new ConflictException({
         code: 'ROLE_CODE_EXISTS',

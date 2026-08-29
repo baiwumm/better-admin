@@ -33,7 +33,8 @@ export type DictItemView = {
 @Injectable()
 export class DictService {
   private handleUniqueError(err: any): never {
-    const constraint: string = err?.constraint ?? '';
+    // drizzle 0.45 将 pg 错误包装为 DrizzleQueryError，原始错误的 constraint 挂在 cause 上
+    const constraint: string = err?.constraint ?? err?.cause?.constraint ?? '';
     if (constraint.includes('dict_types_code_unique')) {
       throw new ConflictException({
         code: 'DICT_TYPE_CODE_EXISTS',
