@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { Breadcrumbs, Button, Separator, useOverlayState } from "@heroui/react";
-import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 import { CommandMenu } from "./command-menu";
@@ -31,7 +30,7 @@ type AppHeaderProps = {
  * - 桌面（md+）：点击切换侧边栏折叠/展开
  * - 移动端（<md）：点击使用 Drawer 弹出侧边栏
  * - 面包屑：根据当前路由从可见菜单树解析出「根分组 → 当前页」的路径，
- *   每项显示图标 + 菜单名称，末项为当前页（不可点击）。
+ *   每项显示菜单名称，末项为当前页（不可点击）。
  */
 export function AppHeader({
   collapsed,
@@ -121,11 +120,6 @@ export function AppHeader({
               <Breadcrumbs className="min-w-0">
                 {crumbs.map((item) => (
                   <Breadcrumbs.Item key={item.id} className="min-w-0">
-                    <DynamicIcon
-                      className="shrink-0 mr-1.5"
-                      name={item.icon as IconName}
-                      size={16}
-                    />
                     {getMenuLabel(item, t)}
                   </Breadcrumbs.Item>
                 ))}
