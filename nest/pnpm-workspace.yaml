@@ -1,4 +1,4 @@
 allowBuilds:
-  '@scarf/scarf': set this to true or false
+  '@scarf/scarf': true
   bcrypt: true
   esbuild: false
