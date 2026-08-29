@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { memo, useMemo, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
-import { Drawer, Spinner, Typography } from "@heroui/react";
+import { Spinner, Typography } from "@heroui/react";
 
 import { AppHeader } from "./components/app-header";
 import { AppSidebar } from "./components/app-sidebar";
@@ -52,6 +52,7 @@ const ErrorOverlay = memo(function ErrorOverlay() {
  * Admin 双栏布局：
  * - 桌面（md+）：左侧 256px 侧边栏（可折叠为图标栏），右侧顶部 64px + 主体内容
  * - 移动端（<md）：不显示侧边栏，点击顶栏按钮用 Drawer 弹出侧边栏
+ *   （Drawer 与其触发按钮同在 AppHeader 内，满足 HeroUI Trigger anatomy）
  *
  * 菜单权限门卫（布局级，替代原路由跳转方案）：
  * - 未登录：beforeLoad 已拦截，此处双保险返回空。
@@ -65,7 +66,6 @@ const ErrorOverlay = memo(function ErrorOverlay() {
  */
 export function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const showTabs = useDesignThemeStore((s) => s.showTabs);
@@ -128,7 +128,6 @@ export function AdminLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <AppHeader
           collapsed={collapsed}
-          onOpenDrawer={() => setDrawerOpen(true)}
           onToggle={() => setCollapsed((v) => !v)}
         />
         {/* 多标签页栏（偏好设置可关；仅隐藏 UI，标签数据照常维护） */}
@@ -145,24 +144,6 @@ export function AdminLayout() {
           {body}
         </main>
       </div>
-
-      {/* 移动端 Drawer 侧边栏 */}
-      <Drawer>
-        <Drawer.Backdrop
-          className="md:hidden"
-          isOpen={drawerOpen}
-          onOpenChange={setDrawerOpen}
-        >
-          <Drawer.Content placement="left">
-            <Drawer.Dialog className="h-full w-64 p-0">
-              <AppSidebar
-                collapsed={false}
-                onNavigate={() => setDrawerOpen(false)}
-              />
-            </Drawer.Dialog>
-          </Drawer.Content>
-        </Drawer.Backdrop>
-      </Drawer>
     </div>
   );
 }

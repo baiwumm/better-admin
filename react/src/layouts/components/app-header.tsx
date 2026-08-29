@@ -1,8 +1,15 @@
 import { useEffect } from "react";
 import { useLocation } from "@tanstack/react-router";
-import { Breadcrumbs, Button, Separator, useOverlayState } from "@heroui/react";
+import {
+  Breadcrumbs,
+  Button,
+  Drawer,
+  Separator,
+  useOverlayState,
+} from "@heroui/react";
 import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
+import { AppSidebar } from "./app-sidebar";
 import { CommandMenu } from "./command-menu";
 import { FullscreenButton } from "./fullscreen-button";
 import { LanguageSwitcher } from "./language-switcher";
@@ -21,8 +28,6 @@ type AppHeaderProps = {
   collapsed: boolean;
   /** 桌面端：点击切换折叠态 */
   onToggle: () => void;
-  /** 移动端：点击打开 Drawer 侧边栏 */
-  onOpenDrawer: () => void;
 };
 
 /**
@@ -32,11 +37,7 @@ type AppHeaderProps = {
  * - 面包屑：根据当前路由从可见菜单树解析出「根分组 → 当前页」的路径，
  *   每项显示菜单名称，末项为当前页（不可点击）。
  */
-export function AppHeader({
-  collapsed,
-  onToggle,
-  onOpenDrawer,
-}: AppHeaderProps) {
+export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
   const { pathname } = useLocation();
   const { data: menuTree } = useMenus();
   const { t } = useTranslation();
@@ -51,6 +52,11 @@ export function AppHeader({
   // 由本组件持有：SearchTrigger（入口按钮）与 CommandMenu（面板）共享。
   const searchState = useOverlayState();
   const searchSetOpen = searchState.setOpen;
+
+  // 移动端侧边栏抽屉开合状态（Hero UI 官方用法：useOverlayState + 状态挂
+  // Drawer 根的 state prop）。菜单按钮作为 Drawer 的触发子元素（官方 anatomy
+  // 要求 Drawer 根下存在 pressable 子元素，否则 PressResponder 控制台告警）。
+  const mobileMenu = useOverlayState();
 
   // 全局快捷键 ⌘K / Ctrl+K 开关命令面板（仅登录后布局挂载期间生效）
   useEffect(() => {
@@ -78,17 +84,31 @@ export function AppHeader({
     <>
       <header className="flex h-16 shrink-0 items-center gap-3 border-b border-separator bg-surface px-4">
         <div className="shrink-0 flex items-center gap-3">
-          {/* 移动端：Drawer 按钮 */}
-          <Button
-            isIconOnly
-            aria-label={t("layout.header.openSidebar")}
-            className="md:hidden"
-            size="sm"
-            variant="ghost"
-            onPress={onOpenDrawer}
-          >
-            <Menu />
-          </Button>
+          {/* 移动端：Drawer 按钮 + 抽屉同根（官方 anatomy：Drawer 根下首个
+              子元素为触发按钮，press 上下文才能触达；Backdrop 经 Portal
+              渲染到 body，包裹不影响顶栏布局） */}
+          <Drawer state={mobileMenu}>
+            <Button
+              isIconOnly
+              aria-label={t("layout.header.openSidebar")}
+              className="md:hidden"
+              size="sm"
+              variant="ghost"
+            >
+              <Menu />
+            </Button>
+            <Drawer.Backdrop
+              className="md:hidden"
+              isOpen={mobileMenu.isOpen}
+              onOpenChange={mobileMenu.setOpen}
+            >
+              <Drawer.Content placement="left">
+                <Drawer.Dialog className="h-full w-64 p-0">
+                  <AppSidebar collapsed={false} onNavigate={mobileMenu.close} />
+                </Drawer.Dialog>
+              </Drawer.Content>
+            </Drawer.Backdrop>
+          </Drawer>
 
           {/* 桌面端：折叠 / 展开按钮 */}
           <Button
