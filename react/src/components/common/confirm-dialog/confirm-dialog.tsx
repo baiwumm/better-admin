@@ -101,7 +101,11 @@ export function ConfirmDialog({
                 value={keywordInput}
                 onChange={setKeywordInput}
               >
-                <Input autoComplete="off" placeholder={confirmKeyword} />
+                <Input
+                  autoComplete="off"
+                  placeholder={confirmKeyword}
+                  variant="secondary"
+                />
                 <Description>
                   {keywordLabel ??
                     t("common.confirmDialog.keywordHint", {

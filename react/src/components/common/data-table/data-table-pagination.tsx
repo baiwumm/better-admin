@@ -42,7 +42,8 @@ export interface DataTablePaginationProps<TData extends RowData> {
 }
 
 /**
- * 表格底部分页条：总数文案 + pageSize 档位选择 + 页码（带省略号）+ 上下页。
+ * 表格底部分页条（三列布局，所有服务端分页列表共用）：
+ * 左侧范围总数（第 X - Y 条，共 Z 条）、中间页码（带省略号）、右侧 pageSize 档位。
  * 服务端分页语义：page 从 1 开始（请求参数），TanStack pageIndex 从 0 开始。
  */
 export function DataTablePagination<TData extends RowData>({
@@ -55,23 +56,71 @@ export function DataTablePagination<TData extends RowData>({
   const { pageIndex, pageSize } = table.state.pagination;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const currentPage = pageIndex + 1;
+  // 范围总数：空数据时按 0 展示，末页不满按实际条数截断
+  const rangeStart = total === 0 ? 0 : pageIndex * pageSize + 1;
+  const rangeEnd = Math.min((pageIndex + 1) * pageSize, total);
 
   return (
     <div
       className={
         className ??
-        "mt-3 flex flex-wrap items-center justify-between gap-3 px-1"
+        "mt-3 grid grid-cols-1 items-center gap-3 px-1 sm:grid-cols-[1fr_auto_1fr]"
       }
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center">
         <Pagination size="sm">
           <Pagination.Summary>
-            {t("common.datatable.total", { total })}
+            {t("common.datatable.rangeTotal", {
+              end: rangeEnd,
+              start: rangeStart,
+              total,
+            })}
           </Pagination.Summary>
         </Pagination>
+      </div>
+
+      <div className="flex items-center justify-start sm:justify-center">
+        <Pagination size="sm">
+          <Pagination.Content>
+            <Pagination.Item>
+              <Pagination.Previous
+                isDisabled={!table.getCanPreviousPage()}
+                onPress={() => table.previousPage()}
+              >
+                <Pagination.PreviousIcon />
+              </Pagination.Previous>
+            </Pagination.Item>
+            {getPageItems(currentPage, pageCount).map((item, index) =>
+              item === "ellipsis" ? (
+                <Pagination.Item key={`ellipsis-${index}`}>
+                  <Pagination.Ellipsis />
+                </Pagination.Item>
+              ) : (
+                <Pagination.Item key={item}>
+                  <Pagination.Link
+                    isActive={item === currentPage}
+                    onPress={() => table.setPageIndex(item - 1)}
+                  >
+                    {item}
+                  </Pagination.Link>
+                </Pagination.Item>
+              ),
+            )}
+            <Pagination.Item>
+              <Pagination.Next
+                isDisabled={!table.getCanNextPage()}
+                onPress={() => table.nextPage()}
+              >
+                <Pagination.NextIcon />
+              </Pagination.Next>
+            </Pagination.Item>
+          </Pagination.Content>
+        </Pagination>
+      </div>
+
+      <div className="flex items-center justify-start sm:justify-end">
         <Select
           aria-label={t("common.datatable.pageSizeLabel")}
-          className="w-28"
           value={String(pageSize)}
           variant="secondary"
           onChange={(value) => {
@@ -101,43 +150,6 @@ export function DataTablePagination<TData extends RowData>({
           </Select.Popover>
         </Select>
       </div>
-
-      <Pagination size="sm">
-        <Pagination.Content>
-          <Pagination.Item>
-            <Pagination.Previous
-              isDisabled={!table.getCanPreviousPage()}
-              onPress={() => table.previousPage()}
-            >
-              <Pagination.PreviousIcon />
-            </Pagination.Previous>
-          </Pagination.Item>
-          {getPageItems(currentPage, pageCount).map((item, index) =>
-            item === "ellipsis" ? (
-              <Pagination.Item key={`ellipsis-${index}`}>
-                <Pagination.Ellipsis />
-              </Pagination.Item>
-            ) : (
-              <Pagination.Item key={item}>
-                <Pagination.Link
-                  isActive={item === currentPage}
-                  onPress={() => table.setPageIndex(item - 1)}
-                >
-                  {item}
-                </Pagination.Link>
-              </Pagination.Item>
-            ),
-          )}
-          <Pagination.Item>
-            <Pagination.Next
-              isDisabled={!table.getCanNextPage()}
-              onPress={() => table.nextPage()}
-            >
-              <Pagination.NextIcon />
-            </Pagination.Next>
-          </Pagination.Item>
-        </Pagination.Content>
-      </Pagination>
     </div>
   );
 }
