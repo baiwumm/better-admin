@@ -9,7 +9,7 @@ import {
   cn,
   type Selection,
 } from "@heroui/react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ArrowUpRight } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 
 import { type MenuNode } from "@/lib/api-types";
@@ -188,6 +188,12 @@ function CollapsedSubLevel({
                   size={16}
                 />
                 <span className="truncate">{getMenuLabel(child, t)}</span>
+                {child.to?.startsWith("https://") && (
+                  <ArrowUpRight
+                    aria-hidden
+                    className="size-3.5 shrink-0 text-muted"
+                  />
+                )}
               </div>
             </ListBox.Item>
           ))}

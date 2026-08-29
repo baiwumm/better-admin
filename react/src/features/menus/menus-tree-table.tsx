@@ -15,7 +15,6 @@ import { DynamicIcon } from "lucide-react/dynamic";
 import { memo, useMemo } from "react";
 import {
   ChevronRight,
-  ExternalLink,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -232,9 +231,6 @@ export function useMenusTableColumns({
               type="body-sm"
             >
               {node.to ?? "—"}
-              {node.to?.startsWith("https://") && (
-                <ExternalLink aria-hidden className="size-3.5" />
-              )}
             </Typography>
           );
         },

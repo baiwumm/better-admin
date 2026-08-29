@@ -8,7 +8,7 @@ import {
   cn,
   type Selection,
 } from "@heroui/react";
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 
 import { type MenuNode } from "@/lib/api-types";
@@ -198,7 +198,15 @@ function MenuLevel({
                   name={child.icon as IconName}
                   size={16}
                 />
-                <span className="truncate">{getMenuLabel(child, t)}</span>
+                <span className="flex-1 truncate">
+                  {getMenuLabel(child, t)}
+                </span>
+                {child.to?.startsWith("https://") && (
+                  <ArrowUpRight
+                    aria-hidden
+                    className="size-3.5 shrink-0 text-muted"
+                  />
+                )}
               </div>
             </ListBox.Item>
           ))}
@@ -250,7 +258,7 @@ function SidebarLeaf({
         {getMenuLabel(item, t)}
       </Label>
       {item.to?.startsWith("https://") && (
-        <ExternalLink aria-hidden className="size-3.5 shrink-0 text-muted" />
+        <ArrowUpRight aria-hidden className="size-3.5 shrink-0 text-muted" />
       )}
     </Button>
   );
