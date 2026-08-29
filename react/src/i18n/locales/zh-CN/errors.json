@@ -12,6 +12,12 @@
   "errors.forbidden.title": "禁止访问",
   "errors.notFound.description": "你访问的页面不存在或已被移除，请检查地址是否正确。",
   "errors.notFound.title": "页面不存在",
+  "errors.roles.inUse": "该角色已关联用户，无法删除",
+  "errors.roles.codeExists": "角色 code 已存在",
+  "errors.roles.nameExists": "角色名称已存在",
+  "errors.roles.notFound": "角色不存在",
+  "errors.roles.superAdminProtected": "超级管理员为系统内置角色，其授权不可修改",
+  "errors.roles.invalidOperation": "请求包含非法参数",
   "errors.serverError.description": "页面出错了，请刷新重试；若问题持续存在，请联系管理员。",
   "errors.serverError.title": "出错了"
 }

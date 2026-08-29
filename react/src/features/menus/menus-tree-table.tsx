@@ -300,7 +300,7 @@ export function useMenusTableColumns({
         id: "sort",
         enableSorting: false,
         meta: { align: "center" },
-        header: t("features.menus.column.sort"),
+        header: t("common.column.sort"),
         cell: ({ row }) => <Chip>{(row.original as MenuNode).sort}</Chip>,
       },
       {

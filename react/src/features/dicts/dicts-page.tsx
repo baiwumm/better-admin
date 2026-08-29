@@ -8,6 +8,7 @@ import {
   Label,
   SearchField,
   Skeleton,
+  Spinner,
   Surface,
   Typography,
   cn,
@@ -310,7 +311,7 @@ export function DictsPage() {
         id: "sort",
         enableSorting: false,
         meta: { align: "center" },
-        header: t("features.dicts.column.sort"),
+        header: t("common.column.sort"),
         cell: ({ row }) => <Chip size="sm">{row.original.sort}</Chip>,
       },
       {
@@ -548,12 +549,24 @@ export function DictsPage() {
               </SearchField.Group>
             </SearchField>
             <Button
-              isDisabled={!itemSearchDirty}
+              isDisabled={!itemSearchDirty || itemsQuery.isFetching}
+              isPending={itemsQuery.isFetching}
               size="sm"
               onPress={applyItemSearch}
             >
-              <Search className="size-4" />
-              {t("common.datatable.search")}
+              {({ isPending }) =>
+                isPending ? (
+                  <>
+                    <Spinner color="current" size="sm" />
+                    {t("common.datatable.search")}
+                  </>
+                ) : (
+                  <>
+                    <Search className="size-4" />
+                    {t("common.datatable.search")}
+                  </>
+                )
+              }
             </Button>
             <Button
               isDisabled={!canResetItems}
