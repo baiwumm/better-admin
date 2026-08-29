@@ -36,7 +36,9 @@ function toastViewTransitionName(key: string): string {
 function findToastElement(key: string): HTMLElement | null {
   const name = toastViewTransitionName(key);
 
-  for (const el of document.querySelectorAll<HTMLElement>('[data-slot="toast"]')) {
+  for (const el of document.querySelectorAll<HTMLElement>(
+    '[data-slot="toast"]',
+  )) {
     if (el.style.getPropertyValue("view-transition-name") === name) return el;
   }
 
