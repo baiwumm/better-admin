@@ -194,7 +194,7 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
             <AlertDialog.Footer>
               <Button
                 isDisabled={isLoggingOut}
-                variant="ghost"
+                variant="tertiary"
                 onPress={exitDialog.close}
               >
                 {t("common.cancel")}

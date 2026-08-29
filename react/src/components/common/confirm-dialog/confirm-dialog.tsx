@@ -112,7 +112,7 @@ export function ConfirmDialog({
             )}
           </AlertDialog.Body>
           <AlertDialog.Footer>
-            <Button isDisabled={busy} variant="ghost" onPress={state.close}>
+            <Button isDisabled={busy} variant="tertiary" onPress={state.close}>
               {cancelText ?? t("common.cancel")}
             </Button>
             <Button
