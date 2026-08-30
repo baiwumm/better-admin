@@ -18,6 +18,7 @@ export {
 } from "./data-table-view-options";
 export { DataTableFilterSelect } from "./data-table-filters";
 export type { DataTableFilterOption } from "./data-table-filters";
+export { DataTableSearchReset } from "./data-table-search-reset";
 export { DataTableBulkActions } from "./data-table-bulk-actions";
 export {
   DataTableSelectAll,

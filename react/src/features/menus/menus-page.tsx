@@ -7,7 +7,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Plus, RotateCcw, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useCallback, useState } from "react";
 
 import {
@@ -24,6 +24,7 @@ import {
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog";
 import {
+  DataTableSearchReset,
   DataTableToolbar,
   buildColumnSettingKey,
 } from "@/components/common/data-table";
@@ -160,35 +161,13 @@ export function MenusPage() {
             <SearchField.ClearButton />
           </SearchField.Group>
         </SearchField>
-        <Button
-          isDisabled={!searchDirty || isFetching}
-          isPending={isFetching}
-          size="sm"
-          onPress={applySearch}
-        >
-          {({ isPending }) =>
-            isPending ? (
-              <>
-                <Spinner color="current" size="sm" />
-                {t("common.datatable.search")}
-              </>
-            ) : (
-              <>
-                <Search className="size-4" />
-                {t("common.datatable.search")}
-              </>
-            )
-          }
-        </Button>
-        <Button
-          isDisabled={!canReset || isFetching}
-          size="sm"
-          variant="tertiary"
-          onPress={resetSearch}
-        >
-          <RotateCcw className="size-4" />
-          {t("common.datatable.reset")}
-        </Button>
+        <DataTableSearchReset
+          canReset={canReset}
+          isFetching={isFetching}
+          searchDirty={searchDirty}
+          onReset={resetSearch}
+          onSearch={applySearch}
+        />
         {canAdd && (
           <Button
             size="sm"

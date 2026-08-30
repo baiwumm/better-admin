@@ -4,13 +4,13 @@ import type { PermissionItem } from "@/lib/api-types";
 
 import { Typography } from "@heroui/react";
 import { useTable } from "@tanstack/react-table";
-import { RotateCcw, Search } from "lucide-react";
 import { DynamicIcon } from "lucide-react/dynamic";
 import { useMemo, useState } from "react";
-import { Button, SearchField } from "@heroui/react";
+import { SearchField } from "@heroui/react";
 
 import { DataTable } from "@/components/common/data-table";
 import {
+  DataTableSearchReset,
   DataTableToolbar,
   buildColumnSettingKey,
 } from "@/components/common/data-table";
@@ -57,7 +57,7 @@ export function PermissionsPage() {
     setSearch("");
   };
 
-  // 按位掩码值升序展示（SEARCH=1 → SETTINGS_UPDATE=128），排序不进入表格交互
+  // 按位掩码值升序展示（SEARCH=1 → GRANT=256），排序不进入表格交互
   const items = useMemo<PermissionRow[]>(
     () =>
       (data ?? [])
@@ -158,14 +158,13 @@ export function PermissionsPage() {
             <SearchField.ClearButton />
           </SearchField.Group>
         </SearchField>
-        <Button size="sm" onPress={applySearch}>
-          <Search />
-          {t("common.datatable.search")}
-        </Button>
-        <Button size="sm" variant="tertiary" onPress={resetSearch}>
-          <RotateCcw />
-          {t("common.datatable.reset")}
-        </Button>
+        {/* 纯本地过滤：无请求态，搜索/重置恒可点 */}
+        <DataTableSearchReset
+          canReset
+          searchDirty
+          onReset={resetSearch}
+          onSearch={applySearch}
+        />
       </DataTableToolbar>
       <DataTable
         aria-label={t("menu.pageTitle.permissions")}

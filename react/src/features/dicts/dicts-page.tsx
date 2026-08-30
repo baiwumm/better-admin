@@ -8,7 +8,6 @@ import {
   Label,
   SearchField,
   Skeleton,
-  Spinner,
   Surface,
   Typography,
   cn,
@@ -21,15 +20,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useTable } from "@tanstack/react-table";
-import {
-  Inbox,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  RotateCcw,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { Inbox, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 import {
@@ -53,6 +44,7 @@ import {
 import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog";
 import { DataTable } from "@/components/common/data-table";
 import {
+  DataTableSearchReset,
   DataTableToolbar,
   buildColumnSettingKey,
 } from "@/components/common/data-table";
@@ -548,35 +540,13 @@ export function DictsPage() {
                 <SearchField.ClearButton />
               </SearchField.Group>
             </SearchField>
-            <Button
-              isDisabled={!itemSearchDirty || itemsQuery.isFetching}
-              isPending={itemsQuery.isFetching}
-              size="sm"
-              onPress={applyItemSearch}
-            >
-              {({ isPending }) =>
-                isPending ? (
-                  <>
-                    <Spinner color="current" size="sm" />
-                    {t("common.datatable.search")}
-                  </>
-                ) : (
-                  <>
-                    <Search className="size-4" />
-                    {t("common.datatable.search")}
-                  </>
-                )
-              }
-            </Button>
-            <Button
-              isDisabled={!canResetItems}
-              size="sm"
-              variant="tertiary"
-              onPress={resetItemSearch}
-            >
-              <RotateCcw className="size-4" />
-              {t("common.datatable.reset")}
-            </Button>
+            <DataTableSearchReset
+              canReset={canResetItems}
+              isFetching={itemsQuery.isFetching}
+              searchDirty={itemSearchDirty}
+              onReset={resetItemSearch}
+              onSearch={applyItemSearch}
+            />
             {canAdd && (
               <Button
                 isDisabled={!activeType}

@@ -5,6 +5,19 @@
 
 ---
 
+### 契约 v1.4.4 GRANT 权限位 + React 搜索/重置按钮位掩码门控（2026-08-30）
+
+- **契约 v1.4.4：新增 `GRANT`(256) 权限点（菜单授权）**：`PUT /roles/:id/menus` 权限要求由 EDIT 收敛为 GRANT（`roles.controller`）；此前授权入口复用 EDIT 位，无法与「编辑角色资料」分离授权。seed 仅角色管理菜单声明 GRANT 位（`rolesMenuBits`，授权动作只存在于角色页）。
+  - **存量库迁移**：seed 为 `onConflictDoNothing`，真实库角色管理菜单行的 `menus.permissions` 需经 `nest/scripts/migrate-menus-add-grant-bit.ts` 幂等补录（`permissions | 256`）；super_admin 的 -1n 全量位自动覆盖新位，无需改数据。
+  - **行为变更**：已有非超管角色需重新授予 GRANT 位才会重新出现授权入口（原靠 EDIT 位可见）。
+- **React 搜索/重置按钮补齐位掩码门控**：落实 v1.3 约定——`RESET` 位本就是「前端重置按钮显隐位（纯前端，不挂后端守卫）」，此前一直闲置。搜索按钮消费 SEARCH 位（与后端列表接口 `@Permissions('SEARCH')` 对齐；无 SEARCH 位的用户列表 403，该门控为显隐形式对齐）、重置按钮消费 RESET 位。
+  - 新增共享组件 `DataTableSearchReset`（`components/common/data-table/`）：内置 SEARCH/RESET 门控（两都缺失整体不渲染），`searchDirty/canReset/isFetching/onSearch/onReset` 由页面传入；roles / menus / dicts（字典项栏）/ permissions（纯本地过滤，恒可点）四页接入，删除各页重复的 Button+Spinner 三元渲染。统一行为：请求进行中重置按钮同时禁用（menus 原有语义推广到 roles/dicts）。
+  - 角色管理授权入口改 `useHasPermissionKey("GRANT")`；启用/停用维持 EDIT 位判断（`canToggle = canEdit`，未变化）。
+- **顺手清理**：zh/en 语言包移除 v1.3 已废弃的 `features.permissions.items.SETTINGS_UPDATE` 残留键；`permissions-page` 位掩码升序注释「SETTINGS_UPDATE=128」修正为实际枚举。
+- **文档同步**：openapi.yaml v1.4.4、database-design.md v0.5（§1.2 枚举表 + 变更记录）、openapi-design.md v0.5。
+- **跨栈待办（记录在案，暂不实施）**：Vue / Next / Nuxt 的角色模块授权入口与搜索/重置按钮门控、`GET /permissions` 新增的 GRANT 点，待各自阶段同步。
+- **验证**：nest `tsc/build/lint` 与 openapi.yaml（pnpm dlx js-yaml）通过；react `tsc --noEmit`/`lint`/`build`/`test`(61) 全绿。
+
 ### 契约 v1.4.2/v1.4.3 + React 角色管理上线（2026-08-30）
 
 - **后端**：`GET /roles` 新增 `enabled` 状态筛选参数（v1.4.2）；super_admin 角色保护（v1.4.3）——`PUT /roles/{id}/menus` 与 `DELETE /roles/{id}` 对 `code === 'super_admin'` 返回 403 `SUPER_ADMIN_ROLE_PROTECTED`。

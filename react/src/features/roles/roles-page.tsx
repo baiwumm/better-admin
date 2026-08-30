@@ -9,7 +9,6 @@ import {
   Dropdown,
   Label,
   SearchField,
-  Spinner,
   Typography,
   toast,
   useOverlayState,
@@ -20,8 +19,6 @@ import {
   Pencil,
   Plus,
   Power,
-  RotateCcw,
-  Search,
   ShieldCheck,
   Trash2,
 } from "lucide-react";
@@ -40,6 +37,7 @@ import { DataTable } from "@/components/common/data-table";
 import {
   DataTableFilterSelect,
   DataTablePagination,
+  DataTableSearchReset,
   DataTableToolbar,
   buildColumnSettingKey,
 } from "@/components/common/data-table";
@@ -60,7 +58,8 @@ import { useAuthStore } from "@/stores/auth-store";
  *   useListQuery 装配请求与 queryKey；
  * - 状态切换走 PUT /roles/:id 的 enabled 字段（EDIT 位），下拉里快捷开关；
  * - 删除为强确认（输入角色 code），已关联用户由后端 409 ROLE_IN_USE 拦截；
- * - 菜单授权为右侧 Drawer（父子联动语义见 role-grant-drawer.tsx）；
+ * - 菜单授权为右侧 Drawer（父子联动语义见 role-grant-drawer.tsx），
+ *   入口由独立 GRANT 位控制（契约 v1.4.4，后端 PUT /roles/:id/menus 同步守卫）；
  *   保存后失效导航菜单缓存：后端 /menus 实时计算 userPermissions，
  *   若改的是当前用户自己的角色，侧边栏与按钮权限立即生效。
  */
@@ -77,6 +76,8 @@ export function RolesPage() {
   const canAdd = useHasPermissionKey("ADD");
   const canEdit = useHasPermissionKey("EDIT");
   const canDelete = useHasPermissionKey("DELETE");
+  // 菜单授权独立位（契约 v1.4.4）：不复用 EDIT，由 GRANT 位单独控制授权入口
+  const canGrant = useHasPermissionKey("GRANT");
 
   // ---------------- 列表（服务端分页 + 筛选） ----------------
   const page = useRolesListStore((s) => s.page);
@@ -285,11 +286,11 @@ export function RolesPage() {
           // 授权/删除/状态切换均不可用（后端亦有 403 SUPER_ADMIN_ROLE_PROTECTED 兜底）；
           // 编辑保留——name/description 无权限语义
           const isSuperAdmin = row.original.code === SUPER_ADMIN_ROLE_CODE;
-          const canGrant = canEdit && !isSuperAdmin;
+          const canGrantRow = canGrant && !isSuperAdmin;
           const canToggle = canEdit && !isSuperAdmin;
           const canDeleteRow = canDelete && !isSuperAdmin;
 
-          if (!canEdit && !canDeleteRow) return null;
+          if (!canGrantRow && !canEdit && !canDeleteRow) return null;
 
           return (
             <Dropdown>
@@ -317,7 +318,7 @@ export function RolesPage() {
                     }
                   }}
                 >
-                  {canGrant && (
+                  {canGrantRow && (
                     <Dropdown.Item
                       id="grant"
                       textValue={t("features.roles.action.grant")}
@@ -374,7 +375,16 @@ export function RolesPage() {
         },
       },
     ],
-    [t, canEdit, canDelete, openForm, grantDrawer, deleteDialog, toggleStatus],
+    [
+      t,
+      canEdit,
+      canDelete,
+      canGrant,
+      openForm,
+      grantDrawer,
+      deleteDialog,
+      toggleStatus,
+    ],
   );
 
   const total = pagination.total;
@@ -433,35 +443,13 @@ export function RolesPage() {
           value={filters.enabled}
           onChange={(value) => setFilters({ enabled: value })}
         />
-        <Button
-          isDisabled={!searchDirty || isFetching}
-          isPending={isFetching}
-          size="sm"
-          onPress={applySearch}
-        >
-          {({ isPending }) =>
-            isPending ? (
-              <>
-                <Spinner color="current" size="sm" />
-                {t("common.datatable.search")}
-              </>
-            ) : (
-              <>
-                <Search className="size-4" />
-                {t("common.datatable.search")}
-              </>
-            )
-          }
-        </Button>
-        <Button
-          isDisabled={!searchDirty && search === "" && filters.enabled === null}
-          size="sm"
-          variant="tertiary"
-          onPress={resetFilters}
-        >
-          <RotateCcw className="size-4" />
-          {t("common.datatable.reset")}
-        </Button>
+        <DataTableSearchReset
+          canReset={searchDirty || search !== "" || filters.enabled !== null}
+          isFetching={isFetching}
+          searchDirty={searchDirty}
+          onReset={resetFilters}
+          onSearch={applySearch}
+        />
         {canAdd && (
           <Button
             size="sm"
