@@ -177,7 +177,7 @@ function CollapsedSubLevel({
           {leaves.map((child) => (
             <ListBox.Item
               key={child.to ?? child.id}
-              className="px-3 py-2 text-sm text-muted data-[selected=true]:text-foreground data-[hovered=true]:text-foreground"
+              className="px-3 py-2 text-sm text-muted data-[selected=true]:bg-default data-[selected=true]:text-foreground data-[hovered=true]:text-foreground"
               id={child.to ?? child.id}
               textValue={getMenuLabel(child, t)}
             >
