@@ -15,6 +15,14 @@ import { create } from "zustand";
 export interface ListState<Filters extends Record<string, unknown>> {
   page: number;
   pageSize: number;
+  /**
+   * 条件代际号：搜索提交 / 筛选变更 / 重置时 +1，翻页 / pageSize / 排序不变。
+   * 纳入 queryKey 后，条件重构必然产生全新 key（无缓存可回放），
+   * 由 keepPreviousData 保住旧条件结果直到新数据返回（消除 stale 缓存闪回）；
+   * 数据导航（翻页/排序）仍可命中目标 key 缓存加速。
+   * 旧代际缓存条目无 observer、无性能影响，由 gcTime 自动回收，无需清理。
+   */
+  epoch: number;
   /** 搜索关键字（由工具栏输入，提交后写入；默认空串不参与请求） */
   search: string;
   /** 服务端排序（TanStack SortingState 单列排序语义） */
@@ -51,23 +59,49 @@ export function createListStore<Filters extends Record<string, unknown>>(
   return create<ListState<Filters>>()((set) => ({
     page: 1,
     pageSize: 10,
+    epoch: 0,
     search: "",
     sorting: [],
     filters: { ...defaultFilters },
 
     setPage: (page) => set({ page }),
     setPageSize: (pageSize) => set({ pageSize, page: 1 }),
-    setSearch: (search) => set({ search, page: 1 }),
+    setSearch: (search) =>
+      set((state) =>
+        state.search === search
+          ? state
+          : { search, page: 1, epoch: state.epoch + 1 },
+      ),
     setSorting: (sorting) => set({ sorting }),
     setFilters: (patch) =>
-      set((state) => ({ filters: { ...state.filters, ...patch }, page: 1 })),
-    reset: () =>
-      set({
+      set((state) => ({
+        filters: { ...state.filters, ...patch },
         page: 1,
-        pageSize: 10,
-        search: "",
-        sorting: [],
-        filters: { ...defaultFilters },
+        epoch: state.epoch + 1,
+      })),
+    reset: () =>
+      set((state) => {
+        const nextFilters = { ...defaultFilters };
+
+        // 已处于初始态时同值幂等：不 bump epoch、不触发重新请求
+        if (
+          state.page === 1 &&
+          state.pageSize === 10 &&
+          state.search === "" &&
+          state.sorting.length === 0 &&
+          JSON.stringify(state.filters) === JSON.stringify(nextFilters)
+        ) {
+          return state;
+        }
+
+        return {
+          page: 1,
+          pageSize: 10,
+          search: "",
+          sorting: [],
+          filters: nextFilters,
+          epoch: state.epoch + 1,
+        };
       }),
   }));
 }

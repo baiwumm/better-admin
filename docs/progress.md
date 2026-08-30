@@ -5,6 +5,14 @@
 
 ---
 
+### 列表缓存展示策略：条件代际号 epoch，消除重置 / 搜索时的缓存闪回（2026-08-30）
+
+- **问题**：列表 queryKey 全字段驱动 + React Query SWR 语义——重置 / 搜索回退到已有缓存的 key 时，旧数据被**同步回放**（stale-while-revalidate），表格先闪回旧数据、接口才开始加载；且全局 `staleTime: 60s` 内重置甚至不发请求。`keepPreviousData` 只在新 key 无任何数据时兜底，有缓存时轮不到它；`staleTime` 只控制是否 refetch、不控制是否展示缓存，纯配置无解。
+- **方案（评审通过的设计文档 v1.1，机制沉淀见 [`mechanisms.md`](mechanisms.md) §4）**：`createListStore` 新增单调递增 `epoch`（条件代际号）并入 queryKey（prefix 之后、其余字段之前）。**条件重构**（搜索提交 / 筛选变更 / 重置）使 epoch +1 → key 必然全新 → 无缓存可回放 → `keepPreviousData` 保住旧条件结果直到新数据一次性切换（无闪回）；**数据导航**（翻页 / pageSize / 排序 / 页面切换返回）不变 epoch，目标 key 仍命中缓存加速。三个 bump action 均同值幂等跳过；`staleTime: 60s`「60 秒内重置不发请求」的边界随 epoch 结构性消除。
+- **实现**：`use-list-query.ts` 抽出 `buildListQueryKey` 导出函数（hook 与单测共用）；对外返回字段名保持 `isLoading`（映射 `query.isPending`，v5 术语，页面层零改动）。改动仅两个通用文件（约 13 行）+ 测试，`data-table.tsx` / `query-client.ts` / 页面层均不动；前缀式 `invalidateQueries` 兼容（命中所有 epoch，仅当前 epoch active）；缓存碎片由 gcTime 自然回收，无需清理。覆盖所有 `useListQuery` 列表（当前 users / roles）。
+- **测试**：新增 `use-list-query.test.ts`（不同 epoch key 隔离、同 epoch 翻页/排序区分、前缀失效命中、**慢请求返回后不覆盖新请求**的 per-key 隔离集成用例）；`create-list-store.test.ts` 补 epoch 递增 / 幂等不 bump / 翻页排序不 bump 用例。tsc / eslint / test(68) / build 全绿。
+- **待人工验证（浏览器级，需登录态）**：重置无闪回、翻页排序缓存加速、60 秒内重置必发请求、连续条件变更慢请求不覆盖——key 契约与竞态语义已由单测覆盖，页面观感待登录后核验。
+
 ### 抽取共享 SortField 组件收敛「排序」字段（2026-08-30）
 
 - 新增 `components/common/sort-field/sort-field.tsx`：`SortField`（Label + HeroUI NumberField 步进组合，默认 0-999、`Number.isFinite` 回退、secondary variant）+ `sortFieldSchema`（`z.number().int().min(0).max(999)`，zod 规则单点维护）。

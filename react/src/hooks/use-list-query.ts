@@ -12,7 +12,50 @@ import { fetchApiList } from "@/lib/api-client";
  *
  * queryKey 说明（硬约定）：必须包含 store 中全部影响列表的字段，
  * 任一字段变化 → key 变化 → 自动重新请求；缓存按字段组合隔离。
+ *
+ * epoch 说明（硬约定）：必须放在 prefix 之后、其余字段之前。
+ * 搜索提交 / 筛选变更 / 重置会使 epoch +1（见 create-list-store），
+ * 条件重构因此必然产生全新 key——无缓存可回放，由 keepPreviousData
+ * 保住旧条件结果直到新数据返回（消除 stale 缓存闪回）；翻页 / 排序 /
+ * pageSize 不变 epoch，目标 key 仍可命中缓存加速。
  */
+/**
+ * 构建列表页 queryKey（供 useListQuery 与单测共用）。
+ *
+ * 硬约定：epoch 必须在 prefix 之后、其余字段之前——搜索提交 / 筛选变更 /
+ * 重置使 epoch +1（见 create-list-store），条件重构因此必然产生全新 key，
+ * 无缓存可回放，由 keepPreviousData 保住旧条件结果直到新数据返回（消除
+ * stale 缓存闪回）；翻页 / 排序 / pageSize 不变 epoch，目标 key 仍可命中
+ * 缓存加速。key 同时包含全部影响列表结果的字段，按字段组合隔离缓存
+ * （filters/extraParams 为对象——React Query 稳定哈希）。
+ */
+export function buildListQueryKey<
+  TFilters extends Record<string, unknown>,
+>(options: {
+  queryKeyPrefix: readonly unknown[];
+  epoch: number;
+  page: number;
+  pageSize: number;
+  search: string;
+  sortField: string;
+  sortOrder: string;
+  filters: TFilters;
+  extraParams?: ListQueryParams | null;
+}): readonly unknown[] {
+  return [
+    ...options.queryKeyPrefix,
+    "list",
+    options.epoch,
+    options.page,
+    options.pageSize,
+    options.search,
+    options.sortField,
+    options.sortOrder,
+    options.filters,
+    options.extraParams ?? null,
+  ];
+}
+
 export function useListQuery<
   TData,
   Filters extends Record<string, unknown>,
@@ -32,6 +75,7 @@ export function useListQuery<
 
   const page = store((s) => s.page);
   const pageSize = store((s) => s.pageSize);
+  const epoch = store((s) => s.epoch);
   const search = store((s) => s.search);
   const sorting = store((s) => s.sorting);
   const filters = store((s) => s.filters);
@@ -54,18 +98,17 @@ export function useListQuery<
   };
 
   const query = useQuery({
-    // key 含全部影响列表结果的字段（filters/extraParams 为对象——React Query 稳定哈希）
-    queryKey: [
-      ...queryKeyPrefix,
-      "list",
+    queryKey: buildListQueryKey({
+      queryKeyPrefix,
+      epoch,
       page,
       pageSize,
       search,
       sortField,
       sortOrder,
       filters,
-      extraParams ?? null,
-    ],
+      extraParams: extraParams ?? null,
+    }),
     queryFn: () => fetchApiList<TData>(path, params),
     placeholderData: keepPreviousData,
   });

@@ -1,9 +1,9 @@
-# 机制梳理：权限点请求 / 标签页保活 / 菜单可见性与超管
+# 机制梳理：权限点请求 / 标签页保活 / 菜单可见性与超管 / 列表缓存展示策略
 
-> 本文沉淀三个高频疑问的机制结论，供开发与排查快速查阅。
+> 本文沉淀高频疑问的机制结论，供开发与排查快速查阅。
 > 相关设计文档：`nest/docs/database-design.md`（§1.1 超管全量位、§1.5 菜单可见性）、
 > `docs/progress.md`（keepAlive 路由缓存 + 过渡动画重构条目）、`nest/openapi/openapi.yaml`（API Contract）。
-> 更新日期：2026-08-29（基于当前代码实现梳理，代码为准）。
+> 更新日期：2026-08-30（基于当前代码实现梳理，代码为准）。
 
 ---
 
@@ -73,3 +73,63 @@
   对超管无效。验证方式：造一个绑定普通角色（如种子里的 `admin` 角色，授权位为
   `menuFullBits` 具体组合）的测试账号，未授权菜单不可见，授权后可见。
 - 前端另有 `filterHiddenMenus` 过滤 `hideInMenu` 显示属性，与授权过滤是两层，互不参与。
+
+## 4. 列表缓存展示策略：条件代际号 epoch（React 端）
+
+**结论：列表查询的 queryKey 中含一个单调递增的 `epoch`（条件代际号）——「条件重构」
+（搜索提交 / 筛选变更 / 重置）使 epoch +1，key 必然全新、无缓存可回放，由
+`keepPreviousData` 保住旧条件结果直到新数据返回（消除重置 / 搜索时的 stale 缓存
+闪回）；「数据导航」（翻页 / pageSize / 排序 / 页面切换返回）不变 epoch，目标 key
+仍可命中缓存加速。**
+
+### 4.1 问题背景（为什么需要 epoch）
+
+- `use-list-query.ts` 的 queryKey 含全部影响列表结果的字段；React Query 对
+  「key 变化但缓存已有该 key 数据」的行为是 stale-while-revalidate：**同步回放缓存
+  （无论新旧）+ 后台 refetch**。
+- 后果：搜索 B 后点重置（回到默认条件 A），若 A 的缓存条目还在（gcTime 5 分钟内），
+  表格**立即**闪回旧 A，接口才开始加载；且全局 `staleTime: 60_000` 内重置甚至不发请求。
+- `placeholderData: keepPreviousData` 对此无能为力——placeholder 只在**新 key 无任何
+  数据**时兜底，有缓存时轮不到它。`staleTime` 只控制是否 refetch，**不控制是否展示
+  缓存**，纯配置无法解决。
+
+### 4.2 实现契约（硬约定）
+
+- `create-list-store.ts`：`ListState.epoch` 初始 0；`setSearch` / `setFilters` / `reset`
+  三个 action 递增（**同值幂等跳过**：重复提交相同搜索词、对已是初始态的 store 调
+  reset 不 bump、不发请求）；`setPage` / `setPageSize` / `setSorting` 不递增。
+- `use-list-query.ts`：导出 `buildListQueryKey`（hook 与单测共用），**epoch 位于
+  prefix 之后、其余字段之前**。改 key 结构时必须同步该函数与
+  `hooks/__tests__/use-list-query.test.ts` 的契约测试。
+- 缓存失效兼容：各 feature 增删改后的 `invalidateQueries({ queryKey: ["roles"] })`
+  为前缀匹配，命中所有 epoch 的 key；同时只有当前 epoch 的 query 处于 active，
+  失效后仅 refetch 当前视图。
+- 缓存碎片无需处理：同一时刻仅一个 active key，旧 epoch 条目无 observer、无渲染 /
+  网络成本（KB 级静态对象），由 gcTime（5 分钟）自动回收。
+
+### 4.3 各操作 UX 规则
+
+| 操作 | 保留旧数据？ | 允许展示目标缓存？ | 强制请求？ |
+| --- | --- | --- | --- |
+| 首次加载 | — | 否（无缓存） | 是 |
+| 分页 / 排序 / pageSize | 是（无缓存时 keepPreviousData） | 是（fresh 直接展示；stale 回放 + 后台刷新） | 否（fresh 期间零请求） |
+| 搜索 / 筛选 / 重置 | 是（保持上一条件结果直到返回） | 否（epoch 隔离） | 是 |
+| 手动刷新（refetch） | 是 | —（即当前 key） | 是 |
+| 页面切换返回 | 是（keepAlive 实例存活则原样保留） | 是（条件未变，epoch 不变，同数据导航策略） | 否（stale 时后台刷新） |
+
+- Loading 三态（v5 术语）：`isPending`＝当前 key 从未有过数据（空表 + 全量 Spinner）；
+  `isPlaceholderData`＝keepPreviousData 生效中（旧数据 + 半透明遮罩）；
+  `isFetching && !isPlaceholderData`＝后台刷新（当前数据 + 半透明遮罩）。
+  `use-list-query.ts` 对外返回字段名保持 `isLoading`（页面层以该名解构），实现映射
+  `query.isPending`（查询始终 enabled，二者等价）。
+- 「页面切换返回」不是闪回：闪回的定义是**展示结果与当前查询条件不匹配**；返回时
+  条件未变，展示的缓存即当前条件对应的数据。列表状态存于 feature 内 zustand store
+  （非 URL），专为按 fullPath 分池的 keepAlive 实例设计（见 §2 与 store 头注释）。
+- 竞态：由 React Query per-key 隔离保证——条件连续变更时，慢响应只写入自己 key 的
+  缓存条目，不影响当前视图；`use-list-query.test.ts` 有显式用例覆盖。
+- 边界定义：搜索 / 筛选 / 重置＝**条件重构**（强制新请求）；翻页 / 排序 / pageSize /
+  页面返回＝**数据导航**（允许缓存加速）。重复搜索同一词永远重新请求，属预期行为；
+  未来若要「重复搜索秒出」，可叠加工具栏 hover 时 `queryClient.ensureQueryData` 预热
+  （独立增量，未实现）。
+- 收益范围：所有使用 `useListQuery` 的列表（当前 users / roles，后续模块迁移即得）；
+  dicts / menus 为各自独立查询（tree/detail 场景），不在该链路上。

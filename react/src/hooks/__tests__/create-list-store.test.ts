@@ -18,6 +18,7 @@ describe("createListStore", () => {
     expect(state.search).toBe("");
     expect(state.sorting).toEqual([]);
     expect(state.filters).toEqual({ status: null, roleId: null });
+    expect(state.epoch).toBe(0);
   });
 
   it("setPage 直接生效", () => {
@@ -36,6 +37,56 @@ describe("createListStore", () => {
 
     expect(useStore.getState().pageSize).toBe(20);
     expect(useStore.getState().page).toBe(1);
+  });
+
+  it("setSearch / setFilters / reset 使 epoch 递增", () => {
+    const useStore = createListStore<{ status: string | null }>({
+      status: null,
+    });
+
+    useStore.getState().setSearch("admin");
+    expect(useStore.getState().epoch).toBe(1);
+
+    useStore.getState().setFilters({ status: "active" });
+    expect(useStore.getState().epoch).toBe(2);
+
+    useStore.getState().reset();
+    expect(useStore.getState().epoch).toBe(3);
+  });
+
+  it("setPage / setPageSize / setSorting 不影响 epoch", () => {
+    const useStore = createListStore<{ status: string | null }>({
+      status: null,
+    });
+
+    useStore.getState().setSearch("admin");
+    const { epoch } = useStore.getState();
+
+    useStore.getState().setPage(3);
+    useStore.getState().setPageSize(20);
+    useStore.getState().setSorting([{ desc: true, id: "createdAt" }]);
+
+    expect(useStore.getState().epoch).toBe(epoch);
+  });
+
+  it("同值调用幂等：不 bump epoch", () => {
+    const useStore = createListStore<{ status: string | null }>({
+      status: null,
+    });
+
+    // 重复提交相同搜索词
+    useStore.getState().setSearch("admin");
+    const epochAfterFirst = useStore.getState().epoch;
+
+    useStore.getState().setSearch("admin");
+    expect(useStore.getState().epoch).toBe(epochAfterFirst);
+
+    // 对已是初始态的 store 调 reset（search 回 "" 也是同值场景）
+    useStore.getState().reset();
+    const epochAfterReset = useStore.getState().epoch;
+
+    useStore.getState().reset();
+    expect(useStore.getState().epoch).toBe(epochAfterReset);
   });
 
   it("setSearch / setFilters 均重置回第 1 页", () => {
