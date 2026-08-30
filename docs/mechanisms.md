@@ -133,3 +133,37 @@
   （独立增量，未实现）。
 - 收益范围：所有使用 `useListQuery` 的列表（当前 users / roles，后续模块迁移即得）；
   dicts / menus 为各自独立查询（tree/detail 场景），不在该链路上。
+
+## 5. 用户写操作保护：本人 / admin / super_admin 三层规则（NestJS 端，契约 v1.4.6）
+
+**结论：用户的删除 / 批量删 / 停用 / 重置密码 / 编辑停用在 `users.service.ts` 统一过
+`assertTargetOperable` 保护，规则顺序＝本人（400 SELF_OPERATION_FORBIDDEN）→ 内置
+admin（403 ADMIN_USER_PROTECTED）→ super_admin 绑定用户（403
+SUPER_ADMIN_USER_PROTECTED）；前端只做入口隐藏止损，后端为契约级强制校验。**
+
+- **判据实现**（`nest/src/modules/users/users.service.ts`）：
+  1. 本人：`target.id === operatorId`（`operatorId` 来自 JWT，前端传什么都不算数）；
+  2. 内置 admin：`target.username === 'admin'`（seed 固定创建，模块内常量
+     `ADMIN_USERNAME`）；
+  3. super_admin 绑定：`filterSuperAdminIds` —— `user_roles` inner join `roles`
+     where `roles.code = 'super_admin'` 的**直接绑定查询**。
+- **关键边界：绑定查询 ≠ 聚合权限位。** §3 的反向推论（把普通角色配成全量位，
+  绑定它的用户在接口鉴权 / 菜单可见性中等同超管）在用户写保护中**不成立**：
+  保护判据只认 `roles.code === 'super_admin'` 的直接绑定，不认聚合位。即「全量位
+  普通角色」的用户可以删除/停用/重置普通用户与"伪超管"，但不是保护豁免主体。
+  两套判据并存是有意为之：接口鉴权回答「能不能做」，保护规则回答「对谁不能做」。
+- **豁免安全性**：操作者自身绑定 super_admin 时可操作其他 super_admin 用户
+  （`assertTargetOperable` 内二次查询操作者绑定）。豁免不会锁死系统——admin 用户
+  受规则 2 绝对保护删不掉，超管账号数量不可能归零。前端以
+  `AuthUser.roles.includes('super_admin')` 同口径对齐（登录响应 roles 为角色 code
+  列表，`auth.service.ts`）。
+- **启用不受保护约束**：三层规则仅在「危险方向」生效——停用（`updateStatus` 仅
+  status=disabled 时校验）、删除、重置密码；启用任何用户（包括自己、admin、
+  super_admin 用户）不校验。前端行操作据此按目标状态分别判定按钮显隐，而非整行
+  隐藏停用/启用。
+- **批量全有全无**：`batchRemove` 先做存在性校验（INVALID_OPERATION），再
+  `assertBatchOperable`——任一目标命中规则即整体拒绝，错误码取最高优先级命中项。
+- **编辑旁路已关闭**：`PUT /users/{id}` 的 DTO 含 `status`，目标为受保护用户且
+  请求 `status=disabled` 时同权拦截（编辑邮箱/昵称/角色不受限）。
+  已知未拦点：`roleIds` 全量替换可摘除 super_admin 绑定（摘绑定不锁死系统，
+  见 progress.md v1.4.6 条目待办）。

@@ -189,6 +189,9 @@ RBAC 采用位掩码（见 database-design.md §1）。API Contract 层面约定
 | INVALID_CREDENTIALS | 401 | 用户名或密码错误 |
 | REFRESH_TOKEN_INVALID | 401 | refreshToken 无效 |
 | INVALID_OPERATION | 400 | 批量删除时部分 ID 无效、或跨租户/越权操作等业务拒绝 |
+| SELF_OPERATION_FORBIDDEN | 400 | 用户写操作保护（v1.4.6）：不能操作当前登录用户本人 |
+| ADMIN_USER_PROTECTED | 403 | 用户写操作保护（v1.4.6）：内置 admin 用户不可删除/停用/重置密码 |
+| SUPER_ADMIN_USER_PROTECTED | 403 | 用户写操作保护（v1.4.6）：super_admin 绑定用户不可删除/停用/重置密码（操作者同为超管豁免） |
 
 ---
 
@@ -325,3 +328,4 @@ paths:
 | 2026-08-28 | v0.4 | 契约 v1.4：菜单 `MenuNode` / `MenuCreateRequest` / `MenuUpdateRequest` 移除 `target` 字段（`menus.target` 列删除，外链打开方式由前端按 `to` 是否外链推导）。与 database-design.md v0.4 对齐。 |
 | 2026-08-30 | v0.5 | 契约 v1.4.4：新增 `GRANT`(256) 权限点；`PUT /roles/:id/menus` 权限要求由 EDIT 收敛为 GRANT（菜单授权独立位）。与 database-design.md v0.5 对齐。 |
 | 2026-08-30 | v0.6 | 契约 v1.4.5：用户关联角色数量上限——`UserCreateRequest` / `UserUpdateRequest` 的 `roleIds` 增加 `maxItems: 5`（超限 400 VALIDATION_ERROR），NestJS DTO `@ArrayMaxSize(5)` 同步。 |
+| 2026-08-30 | v0.7 | 契约 v1.4.6：用户写操作保护——`DELETE /users/{id}`、`DELETE /users`、`PUT /users/{id}/status`、`POST /users/{id}/reset-password` 新增 `SELF_OPERATION_FORBIDDEN`(400) / `ADMIN_USER_PROTECTED`(403) / `SUPER_ADMIN_USER_PROTECTED`(403)；`PUT /users/{id}` 补充两个 403（关闭编辑表单停用受保护用户的旁路）。机制结论见 docs/mechanisms.md §5。 |

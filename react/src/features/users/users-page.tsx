@@ -62,8 +62,9 @@ import { useAuthStore } from "@/stores/auth-store";
  *   由 useListQuery 装配请求与 queryKey；status 筛选刷新后丢失为既定行为
  *   （与角色管理一致，见方案确认记录）；
  * - username 创建后锁定；编辑不含密码，改密走重置密码弹窗；
- * - 自我保护（前端止损，后端契约无此校验）：当前登录用户本人不可被
- *   勾选/删除/停用/重置密码入口隐藏删除与停用；
+ * - 写操作保护（v1.4.6，前后端双层）：本人/内置 admin/绑定 super_admin
+ *   的用户不可被删除/停用/重置密码（操作者为 super_admin 时豁免第三条），
+ *   后端为契约级强制校验，前端隐藏入口止损；
  * - 批量状态切换无后端批量端点：Promise.allSettled 逐行调用，
  *   部分成功语义（成功 X 失败 Y），不回滚已成功的行。
  */
@@ -77,6 +78,25 @@ export function UsersPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const currentUserId = useAuthStore((state) => state.user?.id);
+  // 规则 3 豁免：当前登录用户自身为 super_admin 时可操作其他 super_admin 用户
+  const currentUserIsSuperAdmin = useAuthStore((state) =>
+    state.user?.roles.includes("super_admin") ?? false,
+  );
+
+  /**
+   * 目标用户是否受写操作保护（删除/停用/重置密码入口隐藏条件，v1.4.6）：
+   * 本人、内置 admin 用户、绑定 super_admin 角色的用户
+   * （操作者自身为 super_admin 时豁免最后一条，与后端校验对齐）。
+   */
+  const isProtectedUser = useCallback(
+    (user: User) =>
+      user.id === currentUserId ||
+      user.username === "admin" ||
+      (user.roles.some((r) => r.code === "super_admin") &&
+        !currentUserIsSuperAdmin),
+    [currentUserId, currentUserIsSuperAdmin],
+  );
+
   const canAdd = useHasPermissionKey("ADD");
   const canEdit = useHasPermissionKey("EDIT");
   const canDelete = useHasPermissionKey("DELETE");
@@ -301,8 +321,12 @@ export function UsersPage() {
         meta: { align: "center" },
         header: t("common.actions"),
         cell: ({ row }) => {
-          // 自我保护（前端止损，后端契约无此校验）：本人不显示删除/停用
-          const isSelf = row.original.id === currentUserId;
+          // 写操作保护（v1.4.6，后端强制校验 + 前端隐藏入口止损）：
+          // 受保护用户隐藏删除与重置密码；停用/启用按目标状态分别判定——
+          // 启用不受保护约束（后端仅拦停用），已停用的受保护用户可被启用
+          const isProtected = isProtectedUser(row.original);
+          const canToggle =
+            canEdit && !(isProtected && row.original.status === "active");
           const nextStatus: UserStatus =
             row.original.status === "active" ? "disabled" : "active";
 
@@ -326,14 +350,14 @@ export function UsersPage() {
                       setResetTarget(row.original);
                       resetPwdDialog.open();
                     }
-                    if (key === "toggle" && canEdit && !isSelf) {
+                    if (key === "toggle" && canToggle) {
                       setStatusTarget({
                         users: [row.original],
                         next: nextStatus,
                       });
                       statusDialog.open();
                     }
-                    if (key === "delete" && canDelete && !isSelf) {
+                    if (key === "delete" && canDelete && !isProtected) {
                       setDeleteTarget(row.original);
                       deleteDialog.open();
                     }
@@ -345,7 +369,7 @@ export function UsersPage() {
                       <Label>{t("common.edit")}</Label>
                     </Dropdown.Item>
                   )}
-                  {canResetPassword && (
+                  {canResetPassword && !isProtected && (
                     <Dropdown.Item
                       id="reset-password"
                       textValue={t("features.users.action.resetPassword")}
@@ -354,7 +378,7 @@ export function UsersPage() {
                       <Label>{t("features.users.action.resetPassword")}</Label>
                     </Dropdown.Item>
                   )}
-                  {canEdit && !isSelf && (
+                  {canToggle && (
                     <Dropdown.Item
                       id="toggle"
                       textValue={t(
@@ -379,7 +403,7 @@ export function UsersPage() {
                       </Label>
                     </Dropdown.Item>
                   )}
-                  {canDelete && !isSelf && (
+                  {canDelete && !isProtected && (
                     <Dropdown.Item
                       id="delete"
                       textValue={t("common.delete")}
@@ -401,7 +425,7 @@ export function UsersPage() {
       canEdit,
       canDelete,
       canResetPassword,
-      currentUserId,
+      isProtectedUser,
       openForm,
       resetPwdDialog,
       deleteDialog,
@@ -415,8 +439,8 @@ export function UsersPage() {
     data,
     features: appTableFeatures,
     getRowId: (row) => row.id,
-    // 自我保护：当前登录用户本人不可被勾选（从源头排除批量删除/停用自己）
-    enableRowSelection: (row) => row.original.id !== currentUserId,
+    // 写操作保护：受保护用户不可被勾选（从源头排除批量删除/停用命中，v1.4.6）
+    enableRowSelection: (row) => !isProtectedUser(row.original),
     // 服务端分页 + 服务端排序：状态由列表 store 驱动（受控），仅取数
     manualPagination: true,
     manualSorting: true,

@@ -132,6 +132,21 @@ export function getUserErrorMessage(error: unknown): string {
         "errors.users.invalidOperation",
         "所选用户包含无效项，请刷新列表后重试",
       );
+    case "SELF_OPERATION_FORBIDDEN":
+      return getErrorMessage(
+        "errors.users.selfOperationForbidden",
+        "不能操作当前登录用户",
+      );
+    case "ADMIN_USER_PROTECTED":
+      return getErrorMessage(
+        "errors.users.adminProtected",
+        "系统内置管理员账号不可操作",
+      );
+    case "SUPER_ADMIN_USER_PROTECTED":
+      return getErrorMessage(
+        "errors.users.superAdminProtected",
+        "该用户绑定了超级管理员角色，不可操作",
+      );
     default:
       return error instanceof Error ? error.message : String(error);
   }

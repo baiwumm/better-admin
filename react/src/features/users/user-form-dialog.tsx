@@ -33,6 +33,7 @@ import {
 import { PasswordField } from "./password-field";
 
 import { useTranslation } from "@/i18n";
+import { useAuthStore } from "@/stores/auth-store";
 
 /**
  * 用户新增/编辑弹窗（react-hook-form + zod + HeroUI Form）。
@@ -150,6 +151,20 @@ interface UserFormProps {
 function UserForm({ mode, user, onDone, onSaved }: UserFormProps) {
   const { t } = useTranslation();
   const isEdit = mode === "edit";
+  const currentUserId = useAuthStore((state) => state.user?.id);
+  const currentUserIsSuperAdmin = useAuthStore((state) =>
+    state.user?.roles.includes("super_admin") ?? false,
+  );
+
+  // v1.4.6 保护：编辑受保护用户时锁定状态开关（后端拒绝停用请求，前端禁用入口）；
+  // 操作者自身为 super_admin 时豁免 super_admin 角色规则，与列表页口径一致
+  const isStatusLocked =
+    isEdit &&
+    user !== null &&
+    (user.id === currentUserId ||
+      user.username === "admin" ||
+      (user.roles.some((r) => r.code === "super_admin") &&
+        !currentUserIsSuperAdmin));
 
   const formSchema = useMemo(() => buildUserFormSchema(isEdit), [isEdit]);
   const { control, handleSubmit } = useForm<UserFormValues>({
@@ -361,6 +376,7 @@ function UserForm({ mode, user, onDone, onSaved }: UserFormProps) {
               <Switch
                 aria-label={t("features.users.form.status")}
                 isSelected={isActive}
+                isDisabled={isStatusLocked}
                 onChange={(selected) =>
                   field.onChange(selected ? "active" : "disabled")
                 }

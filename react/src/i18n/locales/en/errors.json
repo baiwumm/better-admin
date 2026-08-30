@@ -18,6 +18,9 @@
   "errors.roles.notFound": "Role not found",
   "errors.roles.superAdminProtected": "Super admin is a system built-in role and its permissions cannot be modified",
   "errors.roles.invalidOperation": "Request contains invalid parameters",
+  "errors.users.adminProtected": "System built-in admin account is protected",
+  "errors.users.selfOperationForbidden": "Cannot operate on current user",
+  "errors.users.superAdminProtected": "This user is bound to super_admin role and cannot be operated",
   "errors.serverError.description": "Something went wrong on the page. Please refresh and try again; contact an administrator if the problem persists.",
   "errors.serverError.title": "Something Went Wrong"
 }

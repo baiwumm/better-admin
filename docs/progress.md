@@ -5,6 +5,15 @@
 
 ---
 
+### 用户写操作保护：本人 / 内置 admin / super_admin 绑定用户（契约 v1.4.6）（2026-08-30）
+
+- **问题**：用户模块写操作此前完全裸奔——持有 `user:delete` 的任意管理员可删除/停用/重置密码 admin 用户或任意 super_admin 绑定用户；前端仅有「不能操作自己」的按钮止损（后端契约无此校验），普通管理员登录后 admin 行的删除入口即出现。效果等同绕过角色侧 `SUPER_ADMIN_ROLE_PROTECTED` 保护（删号/重置密码/停用 = 变相清空超管授权）。
+- **契约 v1.4.6**（`nest/openapi/openapi.yaml`）：`DELETE /users/{id}`、`DELETE /users`、`PUT /users/{id}/status`、`POST /users/{id}/reset-password` 新增 `400 SELF_OPERATION_FORBIDDEN`、`403 ADMIN_USER_PROTECTED`、`403 SUPER_ADMIN_USER_PROTECTED`；`PUT /users/{id}` 补充两个 403（关闭「编辑表单改 status 停用受保护用户」的旁路）。
+- **后端**（`nest/src/modules/users/users.service.ts`）：新增 `assertTargetOperable` / `assertBatchOperable` / `filterSuperAdminIds`，规则顺序：本人（400）→ 内置 admin（403）→ super_admin 绑定用户（403，操作者自身也是 super_admin 时豁免；admin 用户受规则 2 绝对保护，超管账号不可能被删光，豁免不会锁死系统）。super_admin 绑定判据为 `user_roles → roles.code` 直接绑定查询（非聚合权限位，边界见 mechanisms.md §5）。批量删沿用全有全无语义，任一目标命中即整体拒绝。`remove` / `batchRemove` / `updateStatus`（仅 disabled 时）/ `resetPassword` / `update`（仅 dto.status=disabled 时）五处接入。
+- **前端**（React）：`users-page.tsx` 以 `isProtectedUser`（本人 ∨ username=admin ∨ 绑定 super_admin 且操作者非超管）统一行操作隐藏口径——删除/重置密码整项隐藏，停用/启用按目标状态分别判定（已停用的受保护用户可被启用，与后端「启用不受限」对齐）；`enableRowSelection` 同口径排除勾选（封堵批量入口）；`user-form-dialog.tsx` 编辑受保护用户时锁定状态开关（`isDisabled`）。`getUserErrorMessage` 新增三个错误码映射，i18n 键正确落入双语 `errors.json`（`errors.users.*` 此前在语言包中无键、一直走中文 fallback，属既有缺口，本期新键已规范落地，存量五键待后续补）。
+- **验证**：openapi YAML 解析通过（v1.4.6）；nest / react tsc、eslint、react build + test(68)、nest build 全绿；只读脚本验证 `filterSuperAdminIds` 同款 join 在真实数据上正确识别 admin 绑定（test/test1 未绑定）。**待人工验证（需登录态）**：普通管理员删除/停用/重置密码自己、admin、super_admin 用户的拦截路径与前端入口隐藏观感。
+- **已知限制**：`PUT /users/{id}` 的 `roleIds` 全量替换仍可摘除 super_admin 绑定（摘绑定不锁死系统，本期不拦，记录待办）；Vue / Next / Nuxt 未开发用户模块，后续实现直接跟上 v1.4.6。
+
 ### 列表缓存展示策略：条件代际号 epoch，消除重置 / 搜索时的缓存闪回（2026-08-30）
 
 - **问题**：列表 queryKey 全字段驱动 + React Query SWR 语义——重置 / 搜索回退到已有缓存的 key 时，旧数据被**同步回放**（stale-while-revalidate），表格先闪回旧数据、接口才开始加载；且全局 `staleTime: 60s` 内重置甚至不发请求。`keepPreviousData` 只在新 key 无任何数据时兜底，有缓存时轮不到它；`staleTime` 只控制是否 refetch、不控制是否展示缓存，纯配置无解。

@@ -18,6 +18,9 @@
   "errors.roles.notFound": "角色不存在",
   "errors.roles.superAdminProtected": "超级管理员为系统内置角色，其授权不可修改",
   "errors.roles.invalidOperation": "请求包含非法参数",
+  "errors.users.adminProtected": "系统内置管理员账号不可操作",
+  "errors.users.selfOperationForbidden": "不能操作当前登录用户",
+  "errors.users.superAdminProtected": "该用户绑定了超级管理员角色，不可操作",
   "errors.serverError.description": "页面出错了，请刷新重试；若问题持续存在，请联系管理员。",
   "errors.serverError.title": "出错了"
 }

@@ -17,8 +17,13 @@ info:
     v1.4.4 新增 GRANT(256) 权限点（菜单授权）；PUT /roles/{id}/menus 权限要求由 EDIT
     收敛为 GRANT（角色管理菜单声明位同步补录，见 nest/scripts/migrate-menus-add-grant-bit.ts）；
     v1.4.5 用户关联角色数量上限：UserCreateRequest / UserUpdateRequest 的 roleIds
-    maxItems=5（超限 400 VALIDATION_ERROR）。
-  version: 1.4.5
+    maxItems=5（超限 400 VALIDATION_ERROR）；
+    v1.4.6 用户写操作保护：DELETE /users/{id}、DELETE /users、PUT /users/{id}/status、
+    POST /users/{id}/reset-password 对当前登录用户本人返回 400 SELF_OPERATION_FORBIDDEN，
+    对内置 admin 用户返回 403 ADMIN_USER_PROTECTED，对绑定 super_admin 角色的用户返回
+    403 SUPER_ADMIN_USER_PROTECTED（操作者本人为 super_admin 时豁免）；
+    PUT /users/{id} 对受保护用户请求停用（status=disabled）返回同样 403。
+  version: 1.4.6
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -855,18 +860,42 @@ paths:
                     type: object
                     nullable: true
         '400':
-          description: 部分 ID 无效或越权
+          description: |
+            部分 ID 无效或越权（INVALID_OPERATION）；或列表包含当前登录用户本人（SELF_OPERATION_FORBIDDEN，v1.4.6）。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              example:
-                code: INVALID_OPERATION
-                message: 部分用户 ID 无效或无权限操作
+              examples:
+                invalidOperation:
+                  value:
+                    code: INVALID_OPERATION
+                    message: 部分用户 ID 无效或无权限操作
+                selfOperation:
+                  value:
+                    code: SELF_OPERATION_FORBIDDEN
+                    message: 不能操作当前登录用户
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          description: 无权限（FORBIDDEN）；或列表包含受保护用户（v1.4.6）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                forbidden:
+                  value:
+                    code: FORBIDDEN
+                    message: 无权限
+                adminProtected:
+                  value:
+                    code: ADMIN_USER_PROTECTED
+                    message: 系统内置管理员账号不可操作
+                superAdminProtected:
+                  value:
+                    code: SUPER_ADMIN_USER_PROTECTED
+                    message: 该用户绑定了超级管理员角色，不可操作
 
   /users/{id}:
     parameters:
@@ -918,6 +947,21 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: 请求停用受保护用户（v1.4.6；status 非 disabled 不受影响）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                adminProtected:
+                  value:
+                    code: ADMIN_USER_PROTECTED
+                    message: 系统内置管理员账号不可操作
+                superAdminProtected:
+                  value:
+                    code: SUPER_ADMIN_USER_PROTECTED
+                    message: 该用户绑定了超级管理员角色，不可操作
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
@@ -936,8 +980,32 @@ paths:
                   data:
                     type: object
                     nullable: true
+        '400':
+          description: 不能操作当前登录用户本人（v1.4.6）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: SELF_OPERATION_FORBIDDEN
+                message: 不能操作当前登录用户
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: 目标为受保护用户（v1.4.6）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                adminProtected:
+                  value:
+                    code: ADMIN_USER_PROTECTED
+                    message: 系统内置管理员账号不可操作
+                superAdminProtected:
+                  value:
+                    code: SUPER_ADMIN_USER_PROTECTED
+                    message: 该用户绑定了超级管理员角色，不可操作
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -969,10 +1037,36 @@ paths:
                   data:
                     type: object
                     nullable: true
+        '400':
+          description: 不能重置当前登录用户本人的密码（v1.4.6；本人改密走 Auth 模块）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: SELF_OPERATION_FORBIDDEN
+                message: 不能操作当前登录用户
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          description: 无权限（FORBIDDEN）；或目标为受保护用户（v1.4.6）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                forbidden:
+                  value:
+                    code: FORBIDDEN
+                    message: 无权限
+                adminProtected:
+                  value:
+                    code: ADMIN_USER_PROTECTED
+                    message: 系统内置管理员账号不可操作
+                superAdminProtected:
+                  value:
+                    code: SUPER_ADMIN_USER_PROTECTED
+                    message: 该用户绑定了超级管理员角色，不可操作
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -990,8 +1084,8 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/StatusUpdateRequest'
+              schema:
+                $ref: '#/components/schemas/StatusUpdateRequest'
       responses:
         '200':
           description: 成功
@@ -1003,8 +1097,32 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/User'
+        '400':
+          description: 不能停用当前登录用户本人（v1.4.6；启用自己允许）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: SELF_OPERATION_FORBIDDEN
+                message: 不能操作当前登录用户
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: 停用受保护用户（v1.4.6；启用不受限）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                adminProtected:
+                  value:
+                    code: ADMIN_USER_PROTECTED
+                    message: 系统内置管理员账号不可操作
+                superAdminProtected:
+                  value:
+                    code: SUPER_ADMIN_USER_PROTECTED
+                    message: 该用户绑定了超级管理员角色，不可操作
         '404':
           $ref: '#/components/responses/NotFound'
 

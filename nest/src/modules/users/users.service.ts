@@ -1,12 +1,14 @@
 import {
-  ConflictException,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { users, userRoles, roles, logs, refreshTokens } from '../../db/schema';
+import { SUPER_ADMIN_ROLE_CODE } from '../../db/schema/permissions.enum';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/user-create.dto';
 import { UpdateUserDto } from './dto/user-update.dto';
@@ -43,6 +45,9 @@ const SORTABLE = new Set([
   'updatedAt',
 ]);
 
+/** 内置管理员用户名（seed 固定创建，见 src/db/seed.ts） */
+const ADMIN_USERNAME = 'admin';
+
 function toView(row: typeof users.$inferSelect): Omit<UserView, 'roles'> {
   // tokenVersion 为内部会话撤销用的版本号，不对外暴露
   const {
@@ -56,6 +61,92 @@ function toView(row: typeof users.$inferSelect): Omit<UserView, 'roles'> {
 
 @Injectable()
 export class UsersService {
+  /**
+   * v1.4.6 用户写操作保护（删除/停用/重置密码共用），对齐角色侧
+   * SUPER_ADMIN_ROLE_PROTECTED（roles.service）：
+   * 1. 不能操作当前登录用户本人 → 400 SELF_OPERATION_FORBIDDEN
+   * 2. 内置 admin 用户 → 403 ADMIN_USER_PROTECTED
+   * 3. 绑定 super_admin 角色的用户 → 403 SUPER_ADMIN_USER_PROTECTED；
+   *    操作者本人也是 super_admin 时豁免（admin 用户受规则 2 绝对保护，
+   *    超管账号不可能被删光，豁免不会锁死系统）
+   */
+  private async assertTargetOperable(
+    target: { id: string; username: string },
+    operatorId: string | null,
+  ) {
+    if (operatorId && target.id === operatorId) {
+      throw new BadRequestException({
+        code: 'SELF_OPERATION_FORBIDDEN',
+        message: '不能操作当前登录用户',
+      });
+    }
+    if (target.username === ADMIN_USERNAME) {
+      throw new ForbiddenException({
+        code: 'ADMIN_USER_PROTECTED',
+        message: '系统内置管理员账号不可操作',
+      });
+    }
+    const targetBound = await this.filterSuperAdminIds([target.id]);
+    if (targetBound.size > 0) {
+      const operatorBound =
+        operatorId && (await this.filterSuperAdminIds([operatorId])).size > 0;
+      if (!operatorBound) {
+        throw new ForbiddenException({
+          code: 'SUPER_ADMIN_USER_PROTECTED',
+          message: '该用户绑定了超级管理员角色，不可操作',
+        });
+      }
+    }
+  }
+
+  /** 批量版保护校验：任一目标命中规则即整体拒绝（与批量删的全有全无语义一致） */
+  private async assertBatchOperable(
+    targets: { id: string; username: string }[],
+    operatorId: string | null,
+  ) {
+    if (operatorId && targets.some((t) => t.id === operatorId)) {
+      throw new BadRequestException({
+        code: 'SELF_OPERATION_FORBIDDEN',
+        message: '不能操作当前登录用户',
+      });
+    }
+    if (targets.some((t) => t.username === ADMIN_USERNAME)) {
+      throw new ForbiddenException({
+        code: 'ADMIN_USER_PROTECTED',
+        message: '系统内置管理员账号不可操作',
+      });
+    }
+    const superAdminIds = await this.filterSuperAdminIds(
+      targets.map((t) => t.id),
+    );
+    if (superAdminIds.size > 0) {
+      const operatorBound =
+        operatorId && (await this.filterSuperAdminIds([operatorId])).size > 0;
+      if (!operatorBound) {
+        throw new ForbiddenException({
+          code: 'SUPER_ADMIN_USER_PROTECTED',
+          message: '该用户绑定了超级管理员角色，不可操作',
+        });
+      }
+    }
+  }
+
+  /** 查询 userIds 中绑定了 super_admin 角色的用户 id 集合（user_roles → roles） */
+  private async filterSuperAdminIds(userIds: string[]): Promise<Set<string>> {
+    if (userIds.length === 0) return new Set();
+    const rows = await db
+      .select({ userId: userRoles.userId })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(
+        and(
+          inArray(userRoles.userId, userIds),
+          eq(roles.code, SUPER_ADMIN_ROLE_CODE),
+        ),
+      );
+    return new Set(rows.map((r) => r.userId));
+  }
+
   /** 捕获唯一索引冲突，转换为业务 409 错误 */
   private handleUniqueError(err: any): never {
     // drizzle 0.45 将 pg 错误包装为 DrizzleQueryError，原始错误的 constraint 挂在 cause 上
@@ -260,6 +351,12 @@ export class UsersService {
       });
     }
 
+    // v1.4.6 保护：编辑接口请求停用受保护用户时与 /status 端点同权拦截
+    //（编辑邮箱/昵称等资料不受限）；super_admin 角色绑定变更（roleIds）暂不限制
+    if (dto.status === 'disabled') {
+      await this.assertTargetOperable(existing, operatorId);
+    }
+
     // roleIds 为 undefined 表示「未修改角色」；为数组（含空数组）表示「全量替换」
     if (dto.roleIds !== undefined) {
       await this.assertValidRoleIds(dto.roleIds);
@@ -313,6 +410,7 @@ export class UsersService {
         message: '用户不存在',
       });
     }
+    await this.assertTargetOperable(existing, operatorId);
     await db
       .update(users)
       .set({ deletedAt: new Date() })
@@ -331,7 +429,7 @@ export class UsersService {
     }
     // 仅对「当前存在且未软删」的 ID 生效
     const existing = await db
-      .select({ id: users.id })
+      .select({ id: users.id, username: users.username })
       .from(users)
       .where(and(isNull(users.deletedAt), sql`${users.id} IN ${ids}`));
 
@@ -343,6 +441,9 @@ export class UsersService {
         message: '部分用户 ID 无效或无权限操作',
       });
     }
+
+    // v1.4.6 保护：任一目标命中规则即整体拒绝（全有全无）
+    await this.assertBatchOperable(existing, operatorId);
 
     await db
       .update(users)
@@ -362,6 +463,8 @@ export class UsersService {
         message: '用户不存在',
       });
     }
+    // v1.4.6 保护：不能重置自己/受保护用户的密码（本人改密走 Auth 模块接口）
+    await this.assertTargetOperable(existing, operatorId);
     const passwordHash = await bcrypt.hash(newPassword, 10);
     // 同步 bump tokenVersion：该用户全部存量 access/refresh token 立即失效（强制重登）
     await db
@@ -389,6 +492,10 @@ export class UsersService {
         code: 'USER_NOT_FOUND',
         message: '用户不存在',
       });
+    }
+    // v1.4.6 保护：不能停用自己/受保护用户（启用自己允许，故仅在 disabled 时校验）
+    if (status === 'disabled') {
+      await this.assertTargetOperable(existing, operatorId);
     }
     // 封禁时 bump tokenVersion 并清空托管会话：已登录设备即刻全端下线；
     // 解封不 bump（恢复账号无需追加撤销）。
