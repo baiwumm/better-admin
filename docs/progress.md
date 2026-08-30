@@ -5,6 +5,11 @@
 
 ---
 
+### 抽取共享 SortField 组件收敛「排序」字段（2026-08-30）
+
+- 新增 `components/common/sort-field/sort-field.tsx`：`SortField`（Label + HeroUI NumberField 步进组合，默认 0-999、`Number.isFinite` 回退、secondary variant）+ `sortFieldSchema`（`z.number().int().min(0).max(999)`，zod 规则单点维护）。
+- 角色 / 字典项 / 菜单三处表单的排序字段（各约 22 行逐行等价 JSX + 重复 schema 片段）等价替换为一行 `<SortField>` + `sort: sortFieldSchema` 引用；菜单表单顺带移除未再使用的 `NumberField` 导入。行为零变化，无新增依赖。
+
 ### 用户管理验收调整 + 契约 v1.4.5 角色关联数上限（2026-08-30）
 
 - **契约 v1.4.5：用户最多关联 5 个角色**：`UserCreateRequest` / `UserUpdateRequest` 的 `roleIds` 增加 `maxItems: 5`（超限 400 `VALIDATION_ERROR`）；NestJS 两个用户 DTO 加 `@ArrayMaxSize(5)`；前端表单 zod `max(5)` + 角色 Select 内联错误（`features.users.form.rolesMax`）。openapi-design.md v0.6。无数据库改动；Vue / Next / Nuxt 尚未开发用户模块，后续实现直接跟上。

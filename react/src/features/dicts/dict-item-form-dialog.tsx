@@ -11,7 +11,6 @@ import {
   Input,
   Label,
   Modal,
-  NumberField,
   Spinner,
   Switch,
   TextField,
@@ -27,6 +26,10 @@ import {
   updateDictItem,
 } from "./dict-api";
 
+import {
+  SortField,
+  sortFieldSchema,
+} from "@/components/common/sort-field/sort-field";
 import { useTranslation } from "@/i18n";
 
 /**
@@ -64,7 +67,7 @@ const itemFormSchema = z.object({
     .trim()
     .max(100)
     .refine((value) => value === "" || I18N_KEY_PATTERN.test(value)),
-  sort: z.number().int().min(0).max(999),
+  sort: sortFieldSchema,
   enabled: z.boolean(),
 });
 
@@ -254,27 +257,10 @@ function ItemForm({ mode, typeCode, item, onDone, onSaved }: ItemFormProps) {
         )}
       />
 
-      <div className="flex flex-col gap-1">
-        <Label>{t("common.column.sort")}</Label>
-        <NumberField
-          aria-label={t("common.column.sort")}
-          maxValue={999}
-          minValue={0}
-          value={watch("sort")}
-          variant="secondary"
-          onChange={(value) =>
-            setValue("sort", Number.isFinite(value) ? value : 0, {
-              shouldValidate: true,
-            })
-          }
-        >
-          <NumberField.Group>
-            <NumberField.DecrementButton />
-            <NumberField.Input className="w-32" />
-            <NumberField.IncrementButton />
-          </NumberField.Group>
-        </NumberField>
-      </div>
+      <SortField
+        value={watch("sort")}
+        onChange={(value) => setValue("sort", value, { shouldValidate: true })}
+      />
 
       <Controller
         control={control}

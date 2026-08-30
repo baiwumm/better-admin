@@ -10,7 +10,6 @@ import {
   Input,
   Label,
   Modal,
-  NumberField,
   Spinner,
   Switch,
   TextArea,
@@ -23,6 +22,10 @@ import { z } from "zod";
 
 import { createRole, getRoleErrorMessage, updateRole } from "./role-api";
 
+import {
+  SortField,
+  sortFieldSchema,
+} from "@/components/common/sort-field/sort-field";
 import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
 import { useTranslation } from "@/i18n";
 
@@ -56,7 +59,7 @@ const roleFormSchema = z.object({
   code: z.string().trim().min(1).max(50).regex(CODE_PATTERN),
   name: z.string().trim().min(1).max(50),
   description: z.string().trim().max(200),
-  sort: z.number().int().min(0).max(999),
+  sort: sortFieldSchema,
   enabled: z.boolean(),
 });
 
@@ -254,27 +257,10 @@ function RoleForm({ mode, role, onDone, onSaved }: RoleFormProps) {
         )}
       />
 
-      <div className="flex flex-col gap-1">
-        <Label>{t("common.column.sort")}</Label>
-        <NumberField
-          aria-label={t("common.column.sort")}
-          maxValue={999}
-          minValue={0}
-          value={watch("sort")}
-          variant="secondary"
-          onChange={(value) =>
-            setValue("sort", Number.isFinite(value) ? value : 0, {
-              shouldValidate: true,
-            })
-          }
-        >
-          <NumberField.Group>
-            <NumberField.DecrementButton />
-            <NumberField.Input className="w-32" />
-            <NumberField.IncrementButton />
-          </NumberField.Group>
-        </NumberField>
-      </div>
+      <SortField
+        value={watch("sort")}
+        onChange={(value) => setValue("sort", value, { shouldValidate: true })}
+      />
 
       <Controller
         control={control}

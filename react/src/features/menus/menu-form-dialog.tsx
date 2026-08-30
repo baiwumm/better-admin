@@ -13,7 +13,6 @@ import {
   Label,
   ListBox,
   Modal,
-  NumberField,
   Select,
   Spinner,
   Switch,
@@ -32,6 +31,10 @@ import {
   flattenParentOptions,
 } from "./menu-tree-utils";
 
+import {
+  SortField,
+  sortFieldSchema,
+} from "@/components/common/sort-field/sort-field";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useTranslation } from "@/i18n";
 
@@ -79,7 +82,7 @@ const menuFormSchema = z.object({
       (value) =>
         value === "" || value.startsWith("/") || value.startsWith("https://"),
     ),
-  sort: z.number().int().min(0).max(999),
+  sort: sortFieldSchema,
   keepAlive: z.boolean(),
   hideInMenu: z.boolean(),
   enabled: z.boolean(),
@@ -522,27 +525,10 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
         </Select>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <Label>{t("common.column.sort")}</Label>
-        <NumberField
-          aria-label={t("common.column.sort")}
-          maxValue={999}
-          minValue={0}
-          value={values.sort}
-          variant="secondary"
-          onChange={(value) =>
-            setValue("sort", Number.isFinite(value) ? value : 0, {
-              shouldValidate: true,
-            })
-          }
-        >
-          <NumberField.Group>
-            <NumberField.DecrementButton />
-            <NumberField.Input className="w-32" />
-            <NumberField.IncrementButton />
-          </NumberField.Group>
-        </NumberField>
-      </div>
+      <SortField
+        value={values.sort}
+        onChange={(value) => setValue("sort", value, { shouldValidate: true })}
+      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <SwitchRow
