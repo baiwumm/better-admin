@@ -4,9 +4,15 @@ import { persist } from "zustand/middleware";
 import { type AuthUser, type LoginResponse } from "@/lib/api-types";
 import { fetchApi, bindAuthSnapshot } from "@/lib/api-client";
 import { fetchMenus } from "@/lib/menu-fetch";
-import { MENUS_QUERY_KEY } from "@/hooks/use-menus";
 import { queryClient } from "@/lib/query-client";
+import { MENUS_QUERY_KEY } from "@/hooks/use-menus";
 import { useTabsStore } from "@/stores/tabs-store";
+
+/**
+ * 当前用户快照（/auth/me）查询 key。定义在 auth-store（下层）供
+ * use-auth-sync 引用，避免 store ↔ hook 循环依赖。
+ */
+export const AUTH_ME_QUERY_KEY = ["auth", "me"] as const;
 
 interface AuthState {
   user: AuthUser | null;
@@ -33,6 +39,8 @@ interface AuthState {
     accessToken: string;
     refreshToken?: string | null;
   }) => void;
+  /** 覆盖当前用户快照（useAuthSync 的 /auth/me 同步通道，保持 permissions 新鲜）。 */
+  setUser: (user: AuthUser) => void;
   /** 清空会话（refresh 失败 / 主动退出统一入口）。 */
   clearSession: () => void;
   resetAuth: () => void;
@@ -110,6 +118,10 @@ export const useAuthStore = create<AuthState>()(
         }));
       },
 
+      setUser: (user) => {
+        set({ user });
+      },
+
       clearSession: () => {
         set({
           user: null,
@@ -118,8 +130,10 @@ export const useAuthStore = create<AuthState>()(
           rememberMe: false,
           isAuthenticated: false,
         });
-        // 会话结束同时清空多标签页（标签属于用户级 UI 态，不跨会话残留）。
+        // 会话结束同时清空多标签页（标签属于用户级 UI 态，不跨会话残留）
+        // 与用户快照缓存（防止换账号登录后命中上一账号的 /auth/me 缓存）。
         useTabsStore.getState().resetTabs();
+        queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY });
       },
 
       resetAuth: () => {
@@ -130,6 +144,7 @@ export const useAuthStore = create<AuthState>()(
           rememberMe: false,
           isAuthenticated: false,
         });
+        queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY });
       },
     }),
     {

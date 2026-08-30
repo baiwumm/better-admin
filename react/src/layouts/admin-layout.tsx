@@ -13,6 +13,7 @@ import { TagsBar } from "./components/tags-bar";
 import { ForbiddenErrorPage } from "@/components/common/error-pages/forbidden-error";
 import { ErrorContent } from "@/components/common/error-content/error-content";
 import { MENUS_QUERY_KEY, useMenus } from "@/hooks/use-menus";
+import { useAuthSync } from "@/hooks/use-auth-sync";
 import { useTranslation } from "@/i18n";
 import { type MenuNode } from "@/lib/api-types";
 import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
@@ -91,6 +92,10 @@ export function AdminLayout() {
   const { data: menuTree, isLoading, isError } = useMenus();
   const { pathname } = useLocation();
 
+  // 当前用户快照同步：挂载时请求 /auth/me 覆盖登录时快照，
+  // 使管理员修改角色授权后「刷新页面生效」（机制见 docs/mechanisms.md §6）。
+  useAuthSync();
+
   // 可达路径集合：由菜单树派生，仅菜单变化时重算
   const allowedPaths = useMemo(
     () =>
@@ -138,7 +143,7 @@ export function AdminLayout() {
             自身子树内，不波及右侧布局树；
           - transform-gpu 提升为独立合成层，重绘范围进一步隔离。 */}
       <aside
-        className={`hidden shrink-0 transform-gpu flex-col overflow-hidden border-r border-separator transition-[width] duration-200 ease-out [contain:layout_paint_style] md:flex ${collapsed ? "w-16" : "w-64"}`}
+        className={`hidden shrink-0 transform-gpu flex-col overflow-hidden border-r border-separator transition-[width] duration-200 ease-out contain-[layout_paint_style] md:flex ${collapsed ? "w-16" : "w-64"}`}
       >
         <AppSidebar collapsed={collapsed} />
       </aside>

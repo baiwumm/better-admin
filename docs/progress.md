@@ -5,6 +5,13 @@
 
 ---
 
+### 前端权限快照同步：挂载时 /auth/me，权限变更「刷新页面生效」（2026-08-30）
+
+- **问题**：管理员修改角色授权后，在线用户的前端仍显示旧权限，须退出重登才更新。排查结论：后端每请求实时聚合（`jwt.strategy` / `GET /menus` / `PermissionsGuard`），**安全上无越权可能**；缺口纯在前端——`user.permissions` 仅登录时计算并持久化，代码中无任何登录后的刷新通道，重新登录是唯一重算时机。
+- **方案（评审选定 A，否决聚焦自愈的 B）**：新增 `useAuthSync`（`hooks/use-auth-sync.ts`），`AdminLayout` 挂载时请求已存在的 `GET /auth/me`（后端实时聚合、契约零改动），用返回值经 `setUser` 覆盖 auth-store 快照。生效语义收敛为「刷新页面生效」：F5 / 首次进入即最新，SPA 会话内不额外发请求。菜单树本就来自实时接口、F5 后缓存重建即新，无需改动。
+- **实现细节**：`setUser` 加入 auth-store；`clearSession` / `resetAuth` 时 `removeQueries` 清理 `/auth/me` 缓存（防换账号命中上一账号快照）；`AUTH_ME_QUERY_KEY` 定义在 auth-store（下层）供 hook 引用，避免 store ↔ hook 循环依赖。被否决的 B（窗口聚焦 refetch）与演进路径（权限版本号、推送）记录在 [`mechanisms.md`](mechanisms.md) §6。
+- **验证**：react tsc / eslint / test(68) / build 全绿；nest 零改动。**待人工验证（需登录态）**：管理员改授权 → 普通用户 F5 后按钮/菜单立即对齐，无需重登。
+
 ### 登录鉴权加固：停用拦截 + 软删除过滤 + 幽灵权限修复（契约 v1.4.7）（2026-08-30）
 
 - **问题（排查实锤）**：① 停用用户仍可登录——`validateCredentials` 只校验密码，全链路无 `status` 检查；② 「部分权限角色却看到全量菜单/按钮」根因不在权限过滤算法（OR 聚合 / 菜单可见性过滤 / 前端位判定链路均正确），而在数据层：username 部分唯一索引（`deleted_at IS NULL`）允许同名新旧用户共存，登录查询**不过滤 `deleted_at`**，实测命中软删除旧行——该幽灵用户仍绑定 super_admin（聚合位 -1n），登录即超管全量。只读 SQL 复现：`findFirst limit 1` 命中已删除的 test1（super_admin + admin），而非存活的停用行。

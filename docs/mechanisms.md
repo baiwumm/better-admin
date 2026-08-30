@@ -167,3 +167,31 @@ SUPER_ADMIN_USER_PROTECTED）；前端只做入口隐藏止损，后端为契约
   请求 `status=disabled` 时同权拦截（编辑邮箱/昵称/角色不受限）。
   已知未拦点：`roleIds` 全量替换可摘除 super_admin 绑定（摘绑定不锁死系统，
   见 progress.md v1.4.6 条目待办）。
+
+## 6. 前端权限快照与同步机制：登录快照 + 挂载时 /auth/me（React 端）
+
+**结论：权限有「服务端实时」与「前端快照」两层——服务端每请求实时聚合、永远权威；
+前端快照（user.permissions / 菜单缓存）只决定渲染。快照的生效语义是「刷新页面
+生效」：AdminLayout 挂载时请求 GET /auth/me 覆盖登录快照，SPA 会话内不再同步。**
+
+- **服务端实时层**：`jwt.strategy` 每请求经 `loadUserWithPermissions` 实时聚合
+  `user_roles → role_menus` 权限位；`GET /menus` 每次现算可见性；`PermissionsGuard`
+  按实时位拦截。因此**前端快照过期只造成 UI 展示滞后，永远不会越权**——点了
+  已无权的按钮会被 403 拒绝。
+- **前端快照层**（两份独立快照，更新时机不同）：
+  1. `user.permissions`（按钮门控 `useHasPermissionKey` 的唯一依据）：登录响应
+     计算一次，zustand persist 落 localStorage。**同步通道只有 `useAuthSync`**——
+     `AdminLayout` 挂载时请求 `/auth/me`（后端实时聚合，契约已存在），用返回值
+     覆盖 auth-store 的 user（`setUser`）。F5 / 首次进入即最新；SPA 会话内
+     （不刷新）保持登录时的值，属接受的权衡（会话内不额外发请求）。
+  2. 菜单树（`useMenus`，queryKey `["menus"]`，staleTime 60s）：数据本身来自
+     后端实时接口，F5 后 React Query 缓存重建即重取最新；SPA 会话内由
+     staleTime 控制陈旧窗口，管理员保存角色授权弹窗时会 invalidate 操作者
+     自己的菜单缓存。
+- **缓存卫生**：`clearSession` / `resetAuth` 时 `removeQueries(AUTH_ME_QUERY_KEY)`，
+  防止换账号登录后命中上一账号的快照缓存。`AUTH_ME_QUERY_KEY` 定义在
+  auth-store（下层）供 `use-auth-sync` 引用，避免 store ↔ hook 循环依赖。
+- **设计取舍**：管理后台权限变更为低频事件，未采用推送（WebSocket/SSE）或
+  权限版本号探测等「在线即时生效」方案；如未来需要即时生效语义，演进路径为
+  权限版本号（API 响应携带版本，前端发现变化重拉 /auth/me + invalidate menus），
+  无需引入长连接。
