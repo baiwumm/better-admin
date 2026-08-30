@@ -1,0 +1,56 @@
+/* Toast 进出场动画（纯 CSS 承担，无 view-transition 伪元素）。
+   门控已把 HeroUI toast 的根级 VT 降级直跑，toast 自身不再有 VT 滑动；
+   入场随元素挂载播放，退场由 lib/toast-animation.ts 延迟移除播放。
+   方向与 HeroUI 原本的 toast-slide-top-in/out 一致，但为小幅度位移 + 淡入淡出，
+   不滑出视口、不产生「浮顶」观感。 */
+
+.toast--top:not([data-hidden="true"]) {
+  animation: toast-enter-top 220ms ease-out;
+}
+
+.toast--bottom:not([data-hidden="true"]) {
+  animation: toast-enter-bottom 220ms ease-out;
+}
+
+@keyframes toast-enter-top {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-enter-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-exit-top {
+  to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes toast-exit-bottom {
+  to {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast--top:not([data-hidden="true"]),
+  .toast--bottom:not([data-hidden="true"]) {
+    animation: none;
+  }
+}

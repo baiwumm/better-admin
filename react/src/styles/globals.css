@@ -13,6 +13,9 @@
 /* 路由过渡动画（页面切换）预设 */
 @import './route-transitions.css';
 
+/* 主题切换 View Transition（clip-path 揭示动画） */
+@import './theme-transition.css';
+
 /* 色彩模式（正常 / 灰色 / 色弱）滤镜 */
 @import './color-vision.css';
 
@@ -21,6 +24,14 @@
 
 /* 登录页专属样式（品牌区视觉 + 入场动效） */
 @import './sign-in.css';
+
+/* Toast 进出场动画 */
+@import './toast.css';
+
+/* 错误页专属动效与质感 */
+@import './error-page.css';
+
+/* ── 以下为全局共用基底（其余特性样式见各按功能命名的文件，经上方 @import 聚合）── */
 
 @custom-variant dark (&:is(.dark *));
 
@@ -50,81 +61,14 @@
   }
 }
 
-/* 禁用 ViewTransition 默认 cross-fade，改用显式声明：
-   - 路由过渡（route-transitions.css）只在 html[data-route-vt]（路由/刷新 VT 门控）
-     激活时对 main-content 组声明动画，未激活时保持直切；
-     面包屑不绑定 view-transition-name，随 root 组瞬间替换，无独立快照组；
-   - 主题切换（transition-direction.ts 的 runViewTransition）通过
-     html[data-theme-transition] 激活 clip-path 揭示——带独立 view-transition-name
-     的区域（main-content）在主题 VT 启动前会被临时 inline 摘名
-     （见 transition-direction.ts 的 data-vt-name 标记），统一并入单组 root 揭示，
-     避免其快照组静止叠放遮挡动画；下方 main-content 规则作为兜底保留。 */
-::view-transition-old(root),
-::view-transition-new(root),
-::view-transition-old(main-content),
-::view-transition-new(main-content) {
-  animation: none;
-  mix-blend-mode: normal;
+/* 错误页（error-pages/）专属动效与质感 */
+
+/* 内容层入场：小幅上浮 + 淡入（error-page-shell 消费） */
+.error-page-enter {
+  animation: error-page-enter 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* 主题切换：新画面（root + main-content）自 --tt-from 方向揭示展开，
-   旧画面保持静止被覆盖；时长/缓动与旧实现一致 */
-html[data-theme-transition]::view-transition-new(root),
-html[data-theme-transition]::view-transition-new(main-content) {
-  animation: theme-reveal 700ms ease-in-out both;
-}
-
-/* 主题切换 VT 期间：带独立 view-transition-name 的区域（main-content，
-   见 admin-layout 的 data-vt-name 标记）临时并入
-   root 组统一揭示——否则其快照组会叠放在 root 组之上静止遮挡揭示动画。
-   纯 CSS 属性驱动（随 data-theme-transition 同步生效/撤销），不经过 JS inline
-   style，避免 React 渲染 / 组件透传 / CSSOM 兼容等时序干扰。 */
-html[data-theme-transition] [data-vt-name] {
-  view-transition-name: none !important;
-}
-
-@keyframes theme-reveal {
-  from {
-    clip-path: var(--tt-from, inset(0 100% 0 0));
-  }
-  to {
-    clip-path: inset(0 0 0 0);
-  }
-}
-
-/* 尊重系统「减弱动态效果」：主题切换直接呈现 */
-@media (prefers-reduced-motion: reduce) {
-  html[data-theme-transition]::view-transition-new(root),
-  html[data-theme-transition]::view-transition-new(main-content) {
-    animation: none;
-  }
-}
-
-/* ── Toast 进出场动画（门控已把 HeroUI toast 的根级 VT 降级直跑，
-   toast 自身不再有 VT 滑动；这里用纯 CSS 承担进出场：入场随元素挂载播放，
-   退场由 lib/toast-animation.ts 延迟移除播放。方向与 HeroUI 原本的
-   toast-slide-top-in/out 一致，但为小幅度位移 + 淡入淡出，不滑出视口、
-   不产生「浮顶」观感，也不产生任何 view-transition 伪元素。── */
-.toast--top:not([data-hidden="true"]) {
-  animation: toast-enter-top 220ms ease-out;
-}
-
-.toast--bottom:not([data-hidden="true"]) {
-  animation: toast-enter-bottom 220ms ease-out;
-}
-
-@keyframes toast-enter-top {
-  from {
-    opacity: 0;
-    transform: translateY(-16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes toast-enter-bottom {
+@keyframes error-page-enter {
   from {
     opacity: 0;
     transform: translateY(16px);
@@ -135,23 +79,39 @@ html[data-theme-transition] [data-vt-name] {
   }
 }
 
-@keyframes toast-exit-top {
-  to {
-    opacity: 0;
-    transform: translateY(-12px);
+@media (prefers-reduced-motion: reduce) {
+  .error-page-enter {
+    animation: none;
   }
 }
 
-@keyframes toast-exit-bottom {
-  to {
-    opacity: 0;
-    transform: translateY(12px);
-  }
+/* 按钮悬停「水平流光」：高光斜条自左向右扫过（错误页操作按钮消费） */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-130%) skewX(-12deg);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.35),
+    transparent
+  );
+  transition: transform 600ms ease;
+  pointer-events: none;
+}
+
+.btn-shine:hover::after {
+  transform: translateX(130%) skewX(-12deg);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .toast--top:not([data-hidden="true"]),
-  .toast--bottom:not([data-hidden="true"]) {
-    animation: none;
+  .btn-shine::after {
+    display: none;
   }
 }
