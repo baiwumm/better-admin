@@ -140,10 +140,12 @@ function startRouteVt(update: () => void) {
  * 统一由 AdminLayout 的 <main> 滚动（滚动条贴合主体区边缘）；页面位置
  * 不做保活——每次切换完成后显式回到顶部。
  *
- * == 异常态（loading / 菜单校验失败 / 403）==
+ * == 异常态（loading / 菜单校验失败）==
  * AdminLayout 以 overlay prop 传入异常内容：实例池保持挂载（全部转
  * hidden 保活状态），overlay 渲染于其上——异常恢复后原页面状态无损，
  * 不再像旧实现那样整树卸载销毁保活。
+ * （无权访问 403 自 2026-08-30 起改为 replace 跳转独立 /403 页，
+ * 不再走 overlay；跳转过渡帧以 loading 覆盖层兜底。）
  *
  * 其它行为：
  * - 快速连续导航：新 VT 会 skip 未完成的旧 VT（ready 的 AbortError 已

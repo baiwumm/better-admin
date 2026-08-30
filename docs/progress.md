@@ -5,6 +5,16 @@
 
 ---
 
+### 错误页改为独立跳转页：403 / 404 / 500 统一 replace 跳转（2026-08-30）
+
+- **背景**：错误页（`ErrorPageShell` 毛玻璃卡片 + 巨字光晕）样式按**独立全屏页**重新设计后，admin-layout 把 403 组件直显在主体区的旧方案观感不符（卡片挤在内容区、与全屏设计稿差异大），评审决策改为统一跳转独立路由页。
+- **设计决策变更（v2，推翻原记录）**：原决策「无权访问时 URL 不变、主体区直显 403、侧边栏保留」废弃；新决策为 **403 / 404 / 500 一律 replace 跳转独立页**（`/403` `/404` `/500`，均位于 admin 布局之外、全屏渲染）。后果已确认接受：离开布局即无侧边栏 / 顶栏 / 多标签页，返回靠错误页按钮或浏览器后退（replace 保证后退不回到无权路径）。
+- **实现**（React）：
+  - `admin-layout.tsx`：无权分支改为菜单就绪后在 effect 中 `navigate({ to: "/403", replace: true })`；过渡帧沿用 loading 覆盖层避免无权内容闪现；**跳转前撤销 TagsBar 已误登记的无权路径标签**（TagsBar 的 `openPath` effect 子组件先执行，会先把当前路径入栈）；loading / 菜单校验失败仍走 overlay（KeepAliveOutlet 池保持挂载），仅 403 移出。
+  - `routes/__root.tsx`：`notFoundComponent` / `errorComponent` 由直挂组件改为跳转中转组件（`NotFoundRedirect` / `ServerErrorRedirect`），replace 跳转 `/404` / `/500`，带循环守卫（目标页自身触发时直接渲染）。`/500` 路由页已存在（阶段1 i18n 提交中创建），本次补齐入口。
+  - 500 重试语义保留：出错 URL 经 history state（`from`）随跳转携带，`GeneralErrorPage` 的「重试」优先回原 URL 重新渲染（错误边界随路由卸载重置），直接访问 `/500` 时退化为整页刷新。`HistoryState` 为空接口且 `@tanstack/history` 非直接依赖无法模块扩充，读写两端以 `HistoryState` 断言 / `ErrorRedirectState`（`router.ts`）收窄。
+- **验证**：react tsc / eslint（改动文件全净，users 模块 3 个存量警告不属本次）/ test(68) / build 全绿。**待人工验证（需登录态）**：普通用户直输无权 URL → 跳 /403 且标签无残留；错误 URL 404 跳转；渲染异常跳 /500 后「重试」回原页。
+
 ### 前端权限快照同步：挂载时 /auth/me，权限变更「刷新页面生效」（2026-08-30）
 
 - **问题**：管理员修改角色授权后，在线用户的前端仍显示旧权限，须退出重登才更新。排查结论：后端每请求实时聚合（`jwt.strategy` / `GET /menus` / `PermissionsGuard`），**安全上无越权可能**；缺口纯在前端——`user.permissions` 仅登录时计算并持久化，代码中无任何登录后的刷新通道，重新登录是唯一重算时机。

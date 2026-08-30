@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { Button, Spinner, Typography } from "@heroui/react";
 
 import { AppHeader } from "./components/app-header";
@@ -10,7 +10,6 @@ import { AppSidebar } from "./components/app-sidebar";
 import { KeepAliveOutlet } from "./components/keep-alive-outlet";
 import { TagsBar } from "./components/tags-bar";
 
-import { ForbiddenErrorPage } from "@/components/common/error-pages/forbidden-error";
 import { ErrorContent } from "@/components/common/error-content/error-content";
 import { MENUS_QUERY_KEY, useMenus } from "@/hooks/use-menus";
 import { useAuthSync } from "@/hooks/use-auth-sync";
@@ -20,6 +19,7 @@ import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
 import { collectMenuPaths } from "@/lib/menu-utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
+import { useTabsStore } from "@/stores/tabs-store";
 
 /** 登录即可访问的白名单路径集合（Set 查找 O(1)，模块级只建一次）。 */
 const LOGIN_REQUIRED_SET = new Set<string>(LOGIN_REQUIRED_PATHS);
@@ -79,9 +79,11 @@ const ErrorOverlay = memo(function ErrorOverlay() {
  * - 白名单（/ 与 /account）：登录即可访问，直接渲染内容。
  * - 菜单未就绪/加载中：主体区显示「正在校验权限…」覆盖层（侧边栏照常）。
  * - 菜单加载失败：主体区提示失败，不误跳 403。
- * - 菜单就绪 + 路径不在用户可见菜单树：主体区渲染 403 无权限页
- *   （方案 X：URL 不变；侧边栏保留，可直接切换其它菜单离开）。
- * - 异常态统一以 overlay 传入 KeepAliveOutlet：实例池保持挂载不销毁保活。
+ * - 菜单就绪 + 路径不在用户可见菜单树：跳转独立 /403 无权限页
+ *   （设计决策 v2：错误页样式按独立全屏页设计，不再主体区直显；
+ *   replace 跳转避免后退回到无权路径，误登记的标签页随跳转撤销）。
+ * - 异常态（loading / 菜单校验失败）统一以 overlay 传入 KeepAliveOutlet：
+ *   实例池保持挂载不销毁保活。
  * - 菜单就绪 + 路径在菜单树：渲染内容。
  */
 export function AdminLayout() {
@@ -91,6 +93,7 @@ export function AdminLayout() {
   const showTabs = useDesignThemeStore((s) => s.showTabs);
   const { data: menuTree, isLoading, isError } = useMenus();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
 
   // 当前用户快照同步：挂载时请求 /auth/me 覆盖登录时快照，
   // 使管理员修改角色授权后「刷新页面生效」（机制见 docs/mechanisms.md §6）。
@@ -103,30 +106,44 @@ export function AdminLayout() {
     [menuTree],
   );
 
-  // 未登录双保险（beforeLoad 已保证，正常不会到这）
-  if (!isAuthenticated) return null;
-
   // 白名单：登录即可访问，不参与菜单权限校验
   const isWhitelisted = LOGIN_REQUIRED_SET.has(pathname);
 
-  // 主体区异常态覆盖层（loading / 校验失败 / 403）：
+  // 无权访问（菜单就绪后判定）：跳转独立 /403 页。
+  // 设计决策 v2（2026-08-30，推翻原「URL 不变、主体区直显 403」方案）：
+  // 错误页样式按独立全屏页设计，主体区直显观感不符，改为 replace 跳转
+  // （后退不回到无权路径）。跳转完成前的过渡帧以 loading 覆盖层兜底，
+  // 避免无权页面内容闪现。
+  const forbidden =
+    isAuthenticated &&
+    !isLoading &&
+    !isError &&
+    menuTree !== undefined &&
+    !isWhitelisted &&
+    !allowedPaths.has(pathname);
+
+  useEffect(() => {
+    if (!forbidden) return;
+    // TagsBar 的 openPath effect（子组件先于本 effect 执行）已把当前
+    // 无权路径登记为标签页，跳转 /403 前先撤销，避免残留僵尸标签。
+    useTabsStore.getState().closePath(pathname, pathname);
+    void navigate({ to: "/403", replace: true });
+  }, [forbidden, navigate, pathname]);
+
+  // 未登录双保险（beforeLoad 已保证，正常不会到这）
+  if (!isAuthenticated) return null;
+
+  // 主体区异常态覆盖层（loading / 校验失败）：
   // overlay 非空时 KeepAliveOutlet 实例池保持挂载（全部转 hidden 保活），
   // 异常内容渲染于其上——恢复后原页面状态无损，不再销毁保活。
   let overlay: ReactNode = null;
 
-  if (isLoading || (menuTree === undefined && !isError)) {
-    // 菜单未就绪（首次请求中，且无旧数据）→ loading
+  if (isLoading || (menuTree === undefined && !isError) || forbidden) {
+    // 菜单未就绪（首次请求中，且无旧数据）或正在跳转 /403 → loading
     overlay = <LoadingOverlay />;
   } else if (isError) {
     // 加载失败：提示失败，不误跳 403
     overlay = <ErrorOverlay />;
-  } else {
-    // 菜单已就绪：非白名单路径做权限校验
-    const forbidden = !isWhitelisted && !allowedPaths.has(pathname);
-
-    // 无权限：主体区替换为 403（URL 不变，避免闪跳；侧边栏保留，
-    // 用户可直接切换其它菜单离开）
-    if (forbidden) overlay = <ForbiddenErrorPage />;
   }
 
   // 业务页：KeepAliveOutlet 统一承担路由呈现（实例池保活）、路由过渡
