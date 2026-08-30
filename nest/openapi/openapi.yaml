@@ -23,7 +23,11 @@ info:
     对内置 admin 用户返回 403 ADMIN_USER_PROTECTED，对绑定 super_admin 角色的用户返回
     403 SUPER_ADMIN_USER_PROTECTED（操作者本人为 super_admin 时豁免）；
     PUT /users/{id} 对受保护用户请求停用（status=disabled）返回同样 403。
-  version: 1.4.6
+    v1.4.7 登录鉴权加固：POST /auth/login 对停用用户返回 401 USER_DISABLED；
+    用户名查询过滤 deleted_at（软删除用户不可登录，命中失败表现为 INVALID_CREDENTIALS）；
+    每请求鉴权对软删除/停用用户返回 401；DELETE /users、DELETE /users/{id}
+    软删除时同步清理该用户的 user_roles 与 refresh_tokens。
+  version: 1.4.7
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -654,7 +658,22 @@ paths:
                   data:
                     $ref: '#/components/schemas/LoginResponse'
         '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: >
+            用户名或密码错误（INVALID_CREDENTIALS，含软删除用户命中失败）；
+            或账号已停用（USER_DISABLED，v1.4.7，停用用户拒绝新登录）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidCredentials:
+                  value:
+                    code: INVALID_CREDENTIALS
+                    message: 用户名或密码错误
+                userDisabled:
+                  value:
+                    code: USER_DISABLED
+                    message: 账号已停用，请联系管理员
 
   /auth/logout:
     post:

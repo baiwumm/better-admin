@@ -5,6 +5,16 @@
 
 ---
 
+### 登录鉴权加固：停用拦截 + 软删除过滤 + 幽灵权限修复（契约 v1.4.7）（2026-08-30）
+
+- **问题（排查实锤）**：① 停用用户仍可登录——`validateCredentials` 只校验密码，全链路无 `status` 检查；② 「部分权限角色却看到全量菜单/按钮」根因不在权限过滤算法（OR 聚合 / 菜单可见性过滤 / 前端位判定链路均正确），而在数据层：username 部分唯一索引（`deleted_at IS NULL`）允许同名新旧用户共存，登录查询**不过滤 `deleted_at`**，实测命中软删除旧行——该幽灵用户仍绑定 super_admin（聚合位 -1n），登录即超管全量。只读 SQL 复现：`findFirst limit 1` 命中已删除的 test1（super_admin + admin），而非存活的停用行。
+- **契约 v1.4.7**（`nest/openapi/openapi.yaml`）：`POST /auth/login` 401 细化为 `INVALID_CREDENTIALS`（含软删除命中失败）+ `USER_DISABLED`（停用拒绝新登录）；每请求鉴权对软删除/停用用户返回 401；软删除同步清理 `user_roles` / `refresh_tokens`。openapi-design.md v0.8。
+- **后端**：`validateCredentials` 加 `isNull(users.deletedAt)`；`login()` 停用用户抛 `USER_DISABLED`；`loadUserWithPermissions` 过滤软删除行 + 停用返回 null（登录视图 / 每请求 JWT validate / refresh 三链路统一拦截，覆盖「编辑接口直接改 status 不递增 tokenVersion」的旁路）；`users.service` 的 `remove` / `batchRemove` 改事务内软删除 + 清理角色绑定与托管会话（防同名幽灵绑定复发）。
+- **前端（React）**：零改动——登录页 catch 直接展示 `ApiClientError.message`（透传后端中文 message，「账号已停用，请联系管理员」自动生效）。
+- **数据修复**：一次性清理存量软删除用户（26 个）的残留 `user_roles` 5 行（含幽灵 test1 的 super_admin 绑定）与 `refresh_tokens` 1 行，复核归零。
+- **验证**：nest / react tsc、eslint 全绿（nest 无测试文件）；停用的存活 test1 登录现返回 401 `USER_DISABLED`（数据面推演）。**待人工验证（需登录态）**：停用账号登录提示、软删除同名场景、停用用户存量 token 每请求 401。
+- **已知限制 / 待办**：`roles.enabled` 仍不参与权限聚合（既有待评估项）；前端 `hasPermission`（要求全部位命中）与后端同名函数（任一位命中）多权限位语义不一致，当前均为单权限点使用，属潜伏问题；Vue / Next / Nuxt 登录模块后续实现直接跟上 v1.4.7。
+
 ### 用户写操作保护：本人 / 内置 admin / super_admin 绑定用户（契约 v1.4.6）（2026-08-30）
 
 - **问题**：用户模块写操作此前完全裸奔——持有 `user:delete` 的任意管理员可删除/停用/重置密码 admin 用户或任意 super_admin 绑定用户；前端仅有「不能操作自己」的按钮止损（后端契约无此校验），普通管理员登录后 admin 行的删除入口即出现。效果等同绕过角色侧 `SUPER_ADMIN_ROLE_PROTECTED` 保护（删号/重置密码/停用 = 变相清空超管授权）。

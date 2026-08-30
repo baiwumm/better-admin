@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createHash } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { db } from '../db/client';
 import { users, userRoles, roleMenus, roles, logs, refreshTokens } from '../db/schema';
 import { normalizePermissionBits } from '../db/schema/permissions.enum';
@@ -56,10 +56,13 @@ export class AuthService {
    * 实现「改密码/封禁后全端强制下线」，且不增加额外查询。
    */
   async loadUserWithPermissions(userId: string, expectedVer?: number): Promise<AuthUser | null> {
+    // 软删除用户不可再通过任何鉴权链路（登录/每请求/refresh 均走本方法）
     const user = await db.query.users.findFirst({
-      where: eq(users.id, userId),
+      where: and(eq(users.id, userId), isNull(users.deletedAt)),
     });
     if (!user) return null;
+    // 停用用户每请求拒绝：覆盖「编辑接口直接改 status」不递增 tokenVersion 的路径
+    if (user.status === 'disabled') return null;
     if (expectedVer !== undefined && (expectedVer ?? 0) !== user.tokenVersion) {
       return null;
     }
@@ -82,10 +85,12 @@ export class AuthService {
     };
   }
 
-  /** 校验用户名/密码，返回不含密码的用户记录 */
+  /** 校验用户名/密码，返回不含密码的用户记录（仅未软删除用户可命中） */
   async validateCredentials(username: string, password: string) {
     const user = await db.query.users.findFirst({
-      where: eq(users.username, username),
+      // username 为部分唯一索引（deleted_at IS NULL），必须过滤软删除行，
+      // 否则同名新用户存在时可能命中已删除的旧行（幽灵用户登录）
+      where: and(eq(users.username, username), isNull(users.deletedAt)),
     });
     if (!user) return null;
     const ok = await bcrypt.compare(password, user.passwordHash);
@@ -152,6 +157,13 @@ export class AuthService {
       throw new UnauthorizedException({
         code: 'INVALID_CREDENTIALS',
         message: '用户名或密码错误',
+      });
+    }
+    // 停用用户拒绝新登录（v1.4.7）：存量会话由 /status 停用时的 tokenVersion 递增踢下线
+    if (user.status === 'disabled') {
+      throw new UnauthorizedException({
+        code: 'USER_DISABLED',
+        message: '账号已停用，请联系管理员',
       });
     }
 

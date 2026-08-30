@@ -411,10 +411,13 @@ export class UsersService {
       });
     }
     await this.assertTargetOperable(existing, operatorId);
-    await db
-      .update(users)
-      .set({ deletedAt: new Date() })
-      .where(eq(users.id, id));
+    // 软删除同时清理角色绑定与托管会话：username 部分唯一索引（deleted_at IS NULL）
+    // 允许同名新用户复用该名字，残留绑定会导致登录聚合误取幽灵用户的权限
+    await db.transaction(async (tx) => {
+      await tx.update(users).set({ deletedAt: new Date() }).where(eq(users.id, id));
+      await tx.delete(userRoles).where(eq(userRoles.userId, id));
+      await tx.delete(refreshTokens).where(eq(refreshTokens.userId, id));
+    });
     await this.writeLog('user.delete', operatorId, { id });
     return null;
   }
@@ -445,10 +448,15 @@ export class UsersService {
     // v1.4.6 保护：任一目标命中规则即整体拒绝（全有全无）
     await this.assertBatchOperable(existing, operatorId);
 
-    await db
-      .update(users)
-      .set({ deletedAt: new Date() })
-      .where(and(isNull(users.deletedAt), sql`${users.id} IN ${ids}`));
+    // 同 remove：软删除 + 清理角色绑定与托管会话（事务原子）
+    await db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ deletedAt: new Date() })
+        .where(and(isNull(users.deletedAt), sql`${users.id} IN ${ids}`));
+      await tx.delete(userRoles).where(sql`${userRoles.userId} IN ${ids}`);
+      await tx.delete(refreshTokens).where(sql`${refreshTokens.userId} IN ${ids}`);
+    });
     await this.writeLog('user.batch_delete', operatorId, { ids });
     return null;
   }

@@ -186,7 +186,8 @@ RBAC 采用位掩码（见 database-design.md §1）。API Contract 层面约定
 | LOG_NOT_FOUND | 404 | 日志不存在 |
 | USERNAME_EXISTS | 409 | 用户名已存在 |
 | EMAIL_EXISTS | 409 | 邮箱已存在 |
-| INVALID_CREDENTIALS | 401 | 用户名或密码错误 |
+| INVALID_CREDENTIALS | 401 | 用户名或密码错误（含软删除用户命中失败） |
+| USER_DISABLED | 401 | 登录鉴权加固（v1.4.7）：停用用户拒绝新登录 |
 | REFRESH_TOKEN_INVALID | 401 | refreshToken 无效 |
 | INVALID_OPERATION | 400 | 批量删除时部分 ID 无效、或跨租户/越权操作等业务拒绝 |
 | SELF_OPERATION_FORBIDDEN | 400 | 用户写操作保护（v1.4.6）：不能操作当前登录用户本人 |
@@ -329,3 +330,4 @@ paths:
 | 2026-08-30 | v0.5 | 契约 v1.4.4：新增 `GRANT`(256) 权限点；`PUT /roles/:id/menus` 权限要求由 EDIT 收敛为 GRANT（菜单授权独立位）。与 database-design.md v0.5 对齐。 |
 | 2026-08-30 | v0.6 | 契约 v1.4.5：用户关联角色数量上限——`UserCreateRequest` / `UserUpdateRequest` 的 `roleIds` 增加 `maxItems: 5`（超限 400 VALIDATION_ERROR），NestJS DTO `@ArrayMaxSize(5)` 同步。 |
 | 2026-08-30 | v0.7 | 契约 v1.4.6：用户写操作保护——`DELETE /users/{id}`、`DELETE /users`、`PUT /users/{id}/status`、`POST /users/{id}/reset-password` 新增 `SELF_OPERATION_FORBIDDEN`(400) / `ADMIN_USER_PROTECTED`(403) / `SUPER_ADMIN_USER_PROTECTED`(403)；`PUT /users/{id}` 补充两个 403（关闭编辑表单停用受保护用户的旁路）。机制结论见 docs/mechanisms.md §5。 |
+| 2026-08-30 | v0.8 | 契约 v1.4.7：登录鉴权加固——`POST /auth/login` 新增 `USER_DISABLED`(401)（停用用户拒绝新登录）；用户名查询过滤 `deleted_at`（软删除用户不可登录）；每请求鉴权对软删除/停用用户返回 401；用户软删除时同步清理 `user_roles` 与 `refresh_tokens`。 |
