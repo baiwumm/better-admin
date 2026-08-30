@@ -101,6 +101,9 @@ async function seed() {
     Permissions.RESET.bits |
     Permissions.RESET_PASSWORD.bits;
 
+  // 菜单授权（GRANT）仅角色管理页使用：只有角色管理菜单声明该位
+  const rolesMenuBits = menuFullBits | Permissions.GRANT.bits;
+
   await db
     .insert(menus)
     .values([
@@ -135,7 +138,7 @@ async function seed() {
         parentId: mSystem,
         sort: 1,
         enabled: true,
-        permissions: menuFullBits,
+        permissions: rolesMenuBits,
       },
       {
         id: mPermissions,

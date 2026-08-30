@@ -85,7 +85,7 @@ RBAC 采用位掩码（见 database-design.md §1）。API Contract 层面约定
   ```
 - 后端 `@Permissions('ADD')` 装饰器读取该约定，做位掩码 `&` 校验。
 - Contract 中列出每个端点所需权限，前端据此预判按钮可用性（与 `menus.permissions` 同源）。
-- `PERMISSIONS` 枚举（与 database-design.md §1.2 一致）含：`SEARCH`(1) / `ADD`(2) / `EDIT`(4) / `DELETE`(8) / `BATCH_DELETE`(16) / `ADD_CHILD`(32) / `RESET`(64) / `RESET_PASSWORD`(128)，共 **8 个权限点**（v0.3 移除 `SETTINGS_UPDATE`、新增 `RESET_PASSWORD`；`RESET` 为前端「重置」按钮显隐位，`RESET_PASSWORD` 守卫重置密码端点）。
+- `PERMISSIONS` 枚举（与 database-design.md §1.2 一致）含：`SEARCH`(1) / `ADD`(2) / `EDIT`(4) / `DELETE`(8) / `BATCH_DELETE`(16) / `ADD_CHILD`(32) / `RESET`(64) / `RESET_PASSWORD`(128) / `GRANT`(256)，共 **9 个权限点**（v0.3 移除 `SETTINGS_UPDATE`、新增 `RESET_PASSWORD`；`RESET` 为前端「重置」按钮显隐位，`RESET_PASSWORD` 守卫重置密码端点；v0.5 新增 `GRANT` 守卫 `PUT /roles/:id/menus`，原为 EDIT）。
 
 ---
 
@@ -323,3 +323,4 @@ paths:
 | 2026-08-21 | v0.2 | 契约优化：批量删改 DELETE /users?ids=、logout 强制鉴权记日志、settings 写接口改 SETTINGS_UPDATE（§2 枚举同步）、新增 INVALID_OPERATION(400) 错误码。与 database-design.md v0.2 对齐。仅方案，未开发。 |
 | 2026-08-28 | v0.3 | 契约 v1.3：新增 `GET /api/menus/tree` 管理全量菜单树（SEARCH 位）；移除 Settings 模块全部端点与 `SETTINGS_UPDATE` 权限位；新增 `RESET_PASSWORD` 位并接管重置密码端点守卫；`GET /api/menus/tree` 支持 search/order 参数，`menus.to` 唯一与格式校验（MENU_TO_EXISTS / MENU_TO_INVALID）。与 database-design.md v0.3 对齐。 |
 | 2026-08-28 | v0.4 | 契约 v1.4：菜单 `MenuNode` / `MenuCreateRequest` / `MenuUpdateRequest` 移除 `target` 字段（`menus.target` 列删除，外链打开方式由前端按 `to` 是否外链推导）。与 database-design.md v0.4 对齐。 |
+| 2026-08-30 | v0.5 | 契约 v1.4.4：新增 `GRANT`(256) 权限点；`PUT /roles/:id/menus` 权限要求由 EDIT 收敛为 GRANT（菜单授权独立位）。与 database-design.md v0.5 对齐。 |

@@ -13,8 +13,10 @@ info:
     v1.4.1 补录 DELETE /dict/types/{code} 的 409 响应声明（DICT_TYPE_IN_USE，实现已有、文档补齐）；
     v1.4.2 GET /roles 新增 enabled 状态筛选参数（缺省返回全部）；
     v1.4.3 系统内置角色保护：PUT /roles/{id}/menus 与 DELETE /roles/{id} 对 super_admin
-    返回 403 SUPER_ADMIN_ROLE_PROTECTED（其 role_menus 授权为全量权限载体，禁止修改/删除）。
-  version: 1.4.3
+    返回 403 SUPER_ADMIN_ROLE_PROTECTED（其 role_menus 授权为全量权限载体，禁止修改/删除）；
+    v1.4.4 新增 GRANT(256) 权限点（菜单授权）；PUT /roles/{id}/menus 权限要求由 EDIT
+    收敛为 GRANT（角色管理菜单声明位同步补录，见 nest/scripts/migrate-menus-add-grant-bit.ts）。
+  version: 1.4.4
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -1187,8 +1189,8 @@ paths:
           $ref: '#/components/responses/NotFound'
     put:
       tags: [Roles]
-      summary: 更新角色菜单授权
-      x-permission: EDIT
+      summary: 更新角色菜单授权（v1.4.4 起要求 GRANT 位，原为 EDIT）
+      x-permission: GRANT
       requestBody:
         required: true
         content:

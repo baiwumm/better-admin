@@ -69,9 +69,9 @@ export class RolesController {
     return this.rolesService.update(id, dto, this.operatorId(req));
   }
 
-  /** PUT /api/roles/:id/menus */
+  /** PUT /api/roles/:id/menus — 菜单授权独立位（v1.4.4），不复用 EDIT */
   @Put(':id/menus')
-  @Permissions('EDIT')
+  @Permissions('GRANT')
   updateMenus(
     @Param('id') id: string,
     @Body() dto: RoleMenusUpdateDto,

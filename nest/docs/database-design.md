@@ -52,6 +52,7 @@
 | ADD_CHILD | addChild | 32 | lucide:git-branch-plus | 新增子级 |
 | RESET | reset | 64 | lucide:rotate-ccw | 重置（前端「重置」按钮显隐，纯前端位） |
 | RESET_PASSWORD | resetPassword | 128 | lucide:key-round | 重置密码（守卫 `POST /users/:id/reset-password`） |
+| GRANT | grant | 256 | lucide:shield-check | 菜单授权（v1.4.4，守卫 `PUT /roles/:id/menus`；仅角色管理菜单声明该位） |
 
 ### 1.3 权限判定链路
 
@@ -334,6 +335,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 | 日期 | 版本 | 说明 |
 | --- | --- | --- |
+| 2026-08-30 | v0.5 | 契约 v1.4.4：新增 `GRANT`(256) 权限点（菜单授权，守卫 `PUT /roles/:id/menus`，原为 EDIT）；仅角色管理菜单声明该位，存量库经 `nest/scripts/migrate-menus-add-grant-bit.ts` 幂等补录；super_admin 全量位自动覆盖，无需迁移数据。权限点共 9 个。 |
 | 2026-08-28 | v0.4 | 契约 v1.4：`menus.target` 列移除（真实库已 DROP COLUMN），外链打开方式由前端按 `to` 是否外链推导，菜单字段与权限位无其它变化。 |
 | 2026-08-21 | v0.1 | Phase 2 数据库设计方案：位掩码 RBAC、9 张表（无 i18n 表）、日志 4 类型、设置预置、字典、纯前端 i18n 约定。仅文档，未开发。 |
 | 2026-08-21 | v0.2 | 六项关键改进：超级管理员全量位(`9223372036854775807`)、主键 `nanoid(12)` 强制服务端生成、users 软删部分唯一索引、新增 `SETTINGS_UPDATE` 独立位、日志自动清理策略、字典/菜单 i18n 管理规范。仅文档，未开发。 |
