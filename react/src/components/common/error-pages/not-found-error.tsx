@@ -14,6 +14,7 @@ export function NotFoundErrorPage() {
       icon={<FileQuestion className="size-7" />}
       status="404"
       title={t("errors.notFound.title")}
+      tone="primary"
     />
   );
 }

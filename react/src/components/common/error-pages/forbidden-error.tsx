@@ -14,6 +14,7 @@ export function ForbiddenErrorPage() {
       icon={<Ban className="size-7" />}
       status="403"
       title={t("errors.forbidden.title")}
+      tone="danger"
     />
   );
 }

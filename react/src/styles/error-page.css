@@ -1,0 +1,54 @@
+/* 错误页（error-pages/）专属动效与质感 */
+
+/* 内容层入场：小幅上浮 + 淡入（error-page-shell 消费） */
+.error-page-enter {
+  animation: error-page-enter 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes error-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .error-page-enter {
+    animation: none;
+  }
+}
+
+/* 按钮悬停「水平流光」：高光斜条自左向右扫过（错误页操作按钮消费） */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-130%) skewX(-12deg);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.35),
+    transparent
+  );
+  transition: transform 600ms ease;
+  pointer-events: none;
+}
+
+.btn-shine:hover::after {
+  transform: translateX(130%) skewX(-12deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-shine::after {
+    display: none;
+  }
+}

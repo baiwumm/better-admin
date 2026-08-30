@@ -5,6 +5,19 @@
 
 ---
 
+### 错误页重设计（巨字光晕 → 毛玻璃卡片）+ globals.css 按特性拆分（2026-08-30）
+
+- **403/404/500 错误页重设计**（`components/common/error-pages/`，方向经用户确认）：
+  - 构图：描边空心状态码巨字（约缩小 85%，tone 色 40% 透明描边）在流内以负 margin 压进毛玻璃卡片顶边，重叠区经 `bg-surface/70~80 + backdrop-blur-xl` 呈现「穿透若隐若现」；文案/图标章/按钮全收进卡片，1px 渐变描边（透明 → tone 色，外层 `p-px` 渐变底 + 内层收 1px 圆角实现）。
+  - 情绪色调：403 danger / 404 primary / 500 warning，光斑、图标章、巨字描边、卡片描边、插画同色联动。
+  - 线稿插画 `error-page-glyph.tsx`：内联 SVG 单色线条（tone 色 50% 透明），403 小锁 / 404 失焦指南针（虚线外环）/ 500 破碎齿轮，巨字右侧空白区，仅 lg+ 屏宽渲染。
+  - 光斑几何化：大圆光晕 + 圆环（粗描边）+ 三角（clip-path）× blur；点阵纹理保留。
+  - 微交互：内容层入场 `.error-page-enter`（上浮淡入）；按钮悬停水平流光 `.btn-shine`（白色高光斜条扫过）；均尊重 `prefers-reduced-motion`。
+  - 操作区分化：403/404 默认「返回上一页（router.history.back）+ 返回首页」（新增 `common.goBack` zh/en）；500 为「重试（整页刷新）+ 返回首页」。
+  - 坑：巨字若整体绝对定位在卡片 z 层之后会被毛玻璃完全遮蔽，必须与卡片流内重叠才能透出；亮色模式卡片不透明度需 80%（70% 会被光晕染蓝、正文对比度不足）。
+- **globals.css 按特性拆分**（纯移动，无行为变更）：`theme-transition.css`（主题切换 VT 揭示）、`toast.css`（Toast 进出场）、`error-page.css`（错误页动效 + 流光）独立成文件；`globals.css` 只留共用基底（Tailwind/HeroUI 引入、`@custom-variant dark`、`:root` 基础 token、`@layer base`）+ `@import` 聚合，入口仍只有 `main.tsx` 引 globals。
+- **验证**：tsc / lint / test(61) / build 全绿；403/404/500 暗色与亮色浏览器实测截图确认。
+
 ### 契约 v1.4.4 GRANT 权限位 + React 搜索/重置按钮位掩码门控（2026-08-30）
 
 - **契约 v1.4.4：新增 `GRANT`(256) 权限点（菜单授权）**：`PUT /roles/:id/menus` 权限要求由 EDIT 收敛为 GRANT（`roles.controller`）；此前授权入口复用 EDIT 位，无法与「编辑角色资料」分离授权。seed 仅角色管理菜单声明 GRANT 位（`rolesMenuBits`，授权动作只存在于角色页）。
