@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   IsArray,
   IsEmail,
   IsIn,
@@ -30,9 +31,10 @@ export class CreateUserDto {
   @IsIn(['active', 'disabled'])
   status?: 'active' | 'disabled' = 'active';
 
-  /** 关联角色 id 列表（用户 → 角色，多对多）。不传或空数组表示无角色。 */
+  /** 关联角色 id 列表（用户 → 角色，多对多）。不传或空数组表示无角色。最多 5 个。 */
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(5)
   @IsString({ each: true })
   roleIds?: string[];
 }

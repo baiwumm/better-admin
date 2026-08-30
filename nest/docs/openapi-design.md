@@ -324,3 +324,4 @@ paths:
 | 2026-08-28 | v0.3 | 契约 v1.3：新增 `GET /api/menus/tree` 管理全量菜单树（SEARCH 位）；移除 Settings 模块全部端点与 `SETTINGS_UPDATE` 权限位；新增 `RESET_PASSWORD` 位并接管重置密码端点守卫；`GET /api/menus/tree` 支持 search/order 参数，`menus.to` 唯一与格式校验（MENU_TO_EXISTS / MENU_TO_INVALID）。与 database-design.md v0.3 对齐。 |
 | 2026-08-28 | v0.4 | 契约 v1.4：菜单 `MenuNode` / `MenuCreateRequest` / `MenuUpdateRequest` 移除 `target` 字段（`menus.target` 列删除，外链打开方式由前端按 `to` 是否外链推导）。与 database-design.md v0.4 对齐。 |
 | 2026-08-30 | v0.5 | 契约 v1.4.4：新增 `GRANT`(256) 权限点；`PUT /roles/:id/menus` 权限要求由 EDIT 收敛为 GRANT（菜单授权独立位）。与 database-design.md v0.5 对齐。 |
+| 2026-08-30 | v0.6 | 契约 v1.4.5：用户关联角色数量上限——`UserCreateRequest` / `UserUpdateRequest` 的 `roleIds` 增加 `maxItems: 5`（超限 400 VALIDATION_ERROR），NestJS DTO `@ArrayMaxSize(5)` 同步。 |

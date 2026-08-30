@@ -15,8 +15,10 @@ info:
     v1.4.3 系统内置角色保护：PUT /roles/{id}/menus 与 DELETE /roles/{id} 对 super_admin
     返回 403 SUPER_ADMIN_ROLE_PROTECTED（其 role_menus 授权为全量权限载体，禁止修改/删除）；
     v1.4.4 新增 GRANT(256) 权限点（菜单授权）；PUT /roles/{id}/menus 权限要求由 EDIT
-    收敛为 GRANT（角色管理菜单声明位同步补录，见 nest/scripts/migrate-menus-add-grant-bit.ts）。
-  version: 1.4.4
+    收敛为 GRANT（角色管理菜单声明位同步补录，见 nest/scripts/migrate-menus-add-grant-bit.ts）；
+    v1.4.5 用户关联角色数量上限：UserCreateRequest / UserUpdateRequest 的 roleIds
+    maxItems=5（超限 400 VALIDATION_ERROR）。
+  version: 1.4.5
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -211,7 +213,8 @@ components:
           default: active
         roleIds:
           type: array
-          description: 关联角色 id 列表（用户 → 角色，多对多）。不传或空数组表示无角色。
+          maxItems: 5
+          description: 关联角色 id 列表（用户 → 角色，多对多）。不传或空数组表示无角色。最多 5 个（v1.4.5，超限 400 VALIDATION_ERROR）。
           items:
             type: string
 
@@ -230,7 +233,8 @@ components:
           enum: [active, disabled]
         roleIds:
           type: array
-          description: 关联角色 id 列表（全量替换：传空数组或不传即清空该用户所有角色关联）。
+          maxItems: 5
+          description: 关联角色 id 列表（全量替换：传空数组或不传即清空该用户所有角色关联）。最多 5 个（v1.4.5，超限 400 VALIDATION_ERROR）。
           items:
             type: string
 
