@@ -28,6 +28,11 @@ export interface ConfirmDialogProps {
   cancelText?: string;
   /** 危险操作样式（红色按钮 + danger 图标） */
   destructive?: boolean;
+  /**
+   * 非 destructive 场景的图标语义色（如「启用」用 accent）；
+   * destructive 时不生效（恒为 danger）。
+   */
+  iconStatus?: "accent" | "success" | "warning";
   /** 外部 pending 状态（如父组件自身发起请求） */
   isLoading?: boolean;
   /**
@@ -54,6 +59,7 @@ export function ConfirmDialog({
   confirmText,
   cancelText,
   destructive = false,
+  iconStatus,
   isLoading = false,
   confirmKeyword,
   keywordLabel,
@@ -89,7 +95,11 @@ export function ConfirmDialog({
       <AlertDialog.Container placement="center">
         <AlertDialog.Dialog className="sm:max-w-100">
           <AlertDialog.Header>
-            {destructive && <AlertDialog.Icon status="danger" />}
+            {destructive ? (
+              <AlertDialog.Icon status="danger" />
+            ) : iconStatus ? (
+              <AlertDialog.Icon status={iconStatus} />
+            ) : null}
             <AlertDialog.Heading>{title}</AlertDialog.Heading>
           </AlertDialog.Header>
           <AlertDialog.Body>

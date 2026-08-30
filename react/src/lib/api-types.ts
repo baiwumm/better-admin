@@ -115,21 +115,27 @@ export interface User {
   updatedAt: string;
 }
 
-/** 创建用户请求体 */
+/** 创建用户请求体（契约 v1.4.4：username 创建后不可变更） */
 export interface CreateUserInput {
   username: string;
   email: string;
   password: string;
   displayName: string;
+  status?: UserStatus;
   roleIds: string[];
 }
 
-/** 更新用户请求体（password 可选，不改密码则不下发） */
+/**
+ * 更新用户请求体（契约 v1.4.4：不含 username/password——
+ * 用户名创建后锁定，改密走 POST /users/:id/reset-password）。
+ * roleIds 传数组（含空数组）为全量替换语义，缺省表示不修改。
+ */
 export interface UpdateUserInput {
-  email: string;
-  displayName: string;
-  roleIds: string[];
-  password?: string;
+  email?: string;
+  displayName?: string;
+  avatar?: string | null;
+  status?: UserStatus;
+  roleIds?: string[];
 }
 
 /** 角色实体（/roles） */

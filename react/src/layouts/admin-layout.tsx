@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 
 import { memo, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "@tanstack/react-router";
-import { Spinner, Typography } from "@heroui/react";
+import { Button, Spinner, Typography } from "@heroui/react";
 
 import { AppHeader } from "./components/app-header";
 import { AppSidebar } from "./components/app-sidebar";
@@ -10,7 +11,8 @@ import { KeepAliveOutlet } from "./components/keep-alive-outlet";
 import { TagsBar } from "./components/tags-bar";
 
 import { ForbiddenErrorPage } from "@/components/common/error-pages/forbidden-error";
-import { useMenus } from "@/hooks/use-menus";
+import { ErrorContent } from "@/components/common/error-content/error-content";
+import { MENUS_QUERY_KEY, useMenus } from "@/hooks/use-menus";
 import { useTranslation } from "@/i18n";
 import { type MenuNode } from "@/lib/api-types";
 import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
@@ -36,14 +38,31 @@ const LoadingOverlay = memo(function LoadingOverlay() {
   );
 });
 
+/** 菜单加载失败覆盖层：区分背景的全尺寸容器 + ErrorContent + 重试按钮 */
 const ErrorOverlay = memo(function ErrorOverlay() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
 
   return (
-    <div className="flex h-full min-h-[50vh] flex-col items-center justify-center gap-3 text-muted">
-      <Typography className="text-sm" color="muted" type="body-sm">
-        {t("layout.overlay.permissionCheckFailed")}
-      </Typography>
+    <div className="flex h-full min-h-[50vh] flex-col items-center justify-center rounded-2xl border border-separator bg-surface">
+      <ErrorContent
+        action={
+          <Button
+            size="sm"
+            variant="outline"
+            onPress={() => {
+              void queryClient.refetchQueries({
+                queryKey: MENUS_QUERY_KEY,
+                exact: true,
+              });
+            }}
+          >
+            {t("common.retry")}
+          </Button>
+        }
+        description={t("layout.overlay.permissionCheckFailedDesc")}
+        title={t("layout.overlay.permissionCheckFailed")}
+      />
     </div>
   );
 });

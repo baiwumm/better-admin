@@ -255,9 +255,9 @@ function ItemForm({ mode, typeCode, item, onDone, onSaved }: ItemFormProps) {
       />
 
       <div className="flex flex-col gap-1">
-        <Label>{t("features.dicts.form.sort")}</Label>
+        <Label>{t("common.column.sort")}</Label>
         <NumberField
-          aria-label={t("features.dicts.form.sort")}
+          aria-label={t("common.column.sort")}
           maxValue={999}
           minValue={0}
           value={watch("sort")}

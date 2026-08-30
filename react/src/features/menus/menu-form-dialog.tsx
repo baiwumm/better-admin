@@ -523,9 +523,9 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
       </div>
 
       <div className="flex flex-col gap-1">
-        <Label>{t("features.menus.form.sort")}</Label>
+        <Label>{t("common.column.sort")}</Label>
         <NumberField
-          aria-label={t("features.menus.form.sort")}
+          aria-label={t("common.column.sort")}
           maxValue={999}
           minValue={0}
           value={values.sort}

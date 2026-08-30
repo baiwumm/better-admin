@@ -1,5 +1,5 @@
-import type { RowData } from "@tanstack/react-table";
-import type { AppRow, AppTable } from "./table-types";
+import type { RowData, Table } from "@tanstack/react-table";
+import type { AppRow, AppTableFeatures } from "./table-types";
 
 import { Checkbox } from "@heroui/react";
 
@@ -22,20 +22,30 @@ import { useTranslation } from "@/i18n";
  * 不启用 HeroUI Table 原生 selectionMode（保留行点击给业务行为）。
  */
 
+/**
+ * 列定义 header 上下文中的 table 为 TanStack core Table（不含 React 绑定层
+ * 的 store/Subscribe/FlexRender），故此处收窄为 core Table 类型；
+ * useTable 实例（ReactTable）天然可赋值给 core Table。
+ */
+type SelectionTable<TData extends RowData> = Table<AppTableFeatures, TData>;
+
 export function DataTableSelectAll<TData extends RowData>({
   table,
 }: {
-  table: AppTable<TData>;
+  table: SelectionTable<TData>;
 }) {
   const { t } = useTranslation();
   const allSelected = table.getIsAllRowsSelected();
   const someSelected = table.getIsSomeRowsSelected();
 
   return (
+    // HeroUI Table（react-aria）上下文内 Checkbox 必须声明 selection slot，
+    // 否则运行时抛 "A slot prop is required. Valid slot names are 'selection'"
     <Checkbox
       aria-label={t("common.datatable.selectAll")}
       isIndeterminate={someSelected && !allSelected}
       isSelected={allSelected}
+      slot="selection"
       onChange={(checked) => table.toggleAllRowsSelected(checked)}
     >
       <Checkbox.Content>
@@ -55,10 +65,13 @@ export function DataTableSelectRow<TData extends RowData>({
   const { t } = useTranslation();
 
   return (
+    // 同上：Table 上下文内必须声明 selection slot；行内用 secondary 弱化样式
     <Checkbox
       aria-label={t("common.datatable.selectRow")}
       isDisabled={!row.getCanSelect()}
       isSelected={row.getIsSelected()}
+      slot="selection"
+      variant="secondary"
       onChange={(checked) => row.toggleSelected(checked)}
     >
       <Checkbox.Content>

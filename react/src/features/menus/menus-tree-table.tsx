@@ -9,6 +9,7 @@ import {
   Chip,
   Dropdown,
   Label,
+  Tooltip,
   Typography,
 } from "@heroui/react";
 import { DynamicIcon } from "lucide-react/dynamic";
@@ -236,9 +237,11 @@ export function useMenusTableColumns({
         },
       },
       {
-        // 按钮权限位：首个显示「图标 + 中文名」，其余以 +N 汇总；无则显示 -
+        // 按钮权限位：样式与用户管理「角色」列一致——最多展示 2 个 Chip
+        //（图标 + 中文名），剩余以 +N 聚合（悬停 Tooltip 显示全量）；无则显示 —
         id: "permissions",
         enableSorting: false,
+        meta: { align: "center" },
         header: t("features.menus.column.permissions"),
         cell: ({ row }) => {
           const node = row.original as MenuNode;
@@ -256,29 +259,40 @@ export function useMenusTableColumns({
             );
           }
 
-          const [first, ...rest] = granted;
+          const visiblePermissions = granted.slice(0, 2);
+          const extraCount = granted.length - visiblePermissions.length;
 
           return (
-            <span className="flex items-center gap-1.5">
-              <Chip size="sm">
-                <span className="flex items-center gap-1">
-                  {first.icon ? (
-                    <DynamicIcon
-                      aria-hidden
-                      className="text-muted"
-                      name={first.icon as IconName}
-                      size={14}
-                    />
-                  ) : null}
-                  {first.displayName}
-                </span>
-              </Chip>
-              {rest.length > 0 && (
-                <Typography color="muted" type="body-xs">
-                  +{rest.length}
-                </Typography>
+            <div className="flex flex-wrap items-center justify-center gap-1">
+              {visiblePermissions.map((perm) => (
+                <Chip key={perm.displayName} size="sm">
+                  <span className="flex items-center gap-1">
+                    {perm.icon ? (
+                      <DynamicIcon
+                        aria-hidden
+                        className="text-muted"
+                        name={perm.icon as IconName}
+                        size={14}
+                      />
+                    ) : null}
+                    {perm.displayName}
+                  </span>
+                </Chip>
+              ))}
+              {extraCount > 0 && (
+                <Tooltip delay={0}>
+                  <Tooltip.Trigger
+                    aria-label={t("features.menus.permissionsMore")}
+                  >
+                    <Chip size="sm">+{extraCount}</Chip>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    {granted.map((perm) => perm.displayName).join("、")}
+                    <Tooltip.Arrow />
+                  </Tooltip.Content>
+                </Tooltip>
               )}
-            </span>
+            </div>
           );
         },
       },

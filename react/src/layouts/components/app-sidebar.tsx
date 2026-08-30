@@ -25,6 +25,7 @@ import {
 } from "@/components/common/brand-icons";
 import { useMenus } from "@/hooks/use-menus";
 import { filterHiddenMenus } from "@/lib/permission";
+import { CONSOLE_MENU_NODE } from "@/lib/menu-fetch";
 import { ENV } from "@/lib/env";
 import { useTranslation } from "@/i18n";
 
@@ -249,9 +250,13 @@ function SidebarLinks({ collapsed }: { collapsed?: boolean }) {
  * - 菜单过多时由中间 nav 区域滚动（flex-1 + overflow-y-auto），上下区块固定
  */
 export function AppSidebar({ collapsed, onNavigate }: AppSidebarProps) {
-  // 当前用户可见菜单树（权限过滤后）；侧边栏再剔除 hideInMenu 隐藏节点
-  const { data: menuTree, isLoading } = useMenus();
-  const items = filterHiddenMenus(menuTree ?? []);
+  // 当前用户可见菜单树（权限过滤后）；侧边栏再剔除 hideInMenu 隐藏节点。
+  // 接口加载失败时回退为仅「控制台」：该节点为前端固定注入（登录即可见，
+  // 不依赖后端下发），不应因 /menus 失败而连控制台入口一起消失。
+  const { data: menuTree, isError, isLoading } = useMenus();
+  const items = filterHiddenMenus(
+    isError ? [CONSOLE_MENU_NODE] : (menuTree ?? []),
+  );
 
   return (
     /* 内容层宽度瞬切（不加过渡）：外层 aside 负责 width 动画并裁剪溢出，

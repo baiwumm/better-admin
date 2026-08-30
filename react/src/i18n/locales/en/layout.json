@@ -10,7 +10,7 @@
   "layout.header.collapseSidebar": "Collapse sidebar",
   "layout.header.expandSidebar": "Expand sidebar",
   "layout.header.openSidebar": "Open sidebar",
-  "layout.overlay.permissionCheckFailed": "Permission check failed. Please refresh and try again.",
+  "layout.overlay.permissionCheckFailed": "Failed to load permissions",
   "layout.overlay.verifyingPermission": "Verifying permissions…",
   "layout.prefs.ariaHint": " description",
   "layout.prefs.colorVision.colorWeak": "Color-weak",
@@ -96,5 +96,6 @@
   "layout.user.signOutFailed": "Sign out failed. Please try again later.",
   "layout.user.signOutTitle": "Sign out?",
   "layout.user.signedOut": "Signed out",
-  "layout.user.signingOut": "Signing out…"
+  "layout.user.signingOut": "Signing out…",
+  "layout.overlay.permissionCheckFailedDesc": "The menu request failed. Check your network and retry; contact an administrator if the problem persists."
 }

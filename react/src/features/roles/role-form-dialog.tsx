@@ -255,9 +255,9 @@ function RoleForm({ mode, role, onDone, onSaved }: RoleFormProps) {
       />
 
       <div className="flex flex-col gap-1">
-        <Label>{t("features.roles.form.sort")}</Label>
+        <Label>{t("common.column.sort")}</Label>
         <NumberField
-          aria-label={t("features.roles.form.sort")}
+          aria-label={t("common.column.sort")}
           maxValue={999}
           minValue={0}
           value={watch("sort")}

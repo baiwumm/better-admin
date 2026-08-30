@@ -10,7 +10,7 @@
   "layout.header.collapseSidebar": "折叠侧边栏",
   "layout.header.expandSidebar": "展开侧边栏",
   "layout.header.openSidebar": "打开侧边栏",
-  "layout.overlay.permissionCheckFailed": "权限校验失败，请刷新重试",
+  "layout.overlay.permissionCheckFailed": "权限数据加载失败",
   "layout.overlay.verifyingPermission": "正在校验权限…",
   "layout.prefs.ariaHint": "说明",
   "layout.prefs.colorVision.colorWeak": "色弱模式",
@@ -96,5 +96,6 @@
   "layout.user.signOutFailed": "退出失败，请稍后重试",
   "layout.user.signOutTitle": "确认退出登录？",
   "layout.user.signedOut": "已退出登录",
-  "layout.user.signingOut": "退出中…"
+  "layout.user.signingOut": "退出中…",
+  "layout.overlay.permissionCheckFailedDesc": "菜单接口请求失败，请检查网络后重试；若持续失败请联系管理员。"
 }

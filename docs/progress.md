@@ -5,6 +5,35 @@
 
 ---
 
+### 用户管理验收调整 + 契约 v1.4.5 角色关联数上限（2026-08-30）
+
+- **契约 v1.4.5：用户最多关联 5 个角色**：`UserCreateRequest` / `UserUpdateRequest` 的 `roleIds` 增加 `maxItems: 5`（超限 400 `VALIDATION_ERROR`）；NestJS 两个用户 DTO 加 `@ArrayMaxSize(5)`；前端表单 zod `max(5)` + 角色 Select 内联错误（`features.users.form.rolesMax`）。openapi-design.md v0.6。无数据库改动；Vue / Next / Nuxt 尚未开发用户模块，后续实现直接跟上。
+- **功能修复（用户管理验收发现）**：
+  - 编辑保存无反应：新建/编辑共用 zod schema 时，编辑态仍校验未渲染的空串 `password`（min(6) 失败），resolver 在未注册字段报错致 `handleSubmit` 静默失败——改为 `buildUserFormSchema(isEdit)` 按模式构建（superRefine 跳过编辑态密码校验）；
+  - 表格行选择 Checkbox 运行时抛 `A slot prop is required`：react-aria Table 上下文内 Checkbox 必须声明 `slot="selection"`（HeroUI Table 文档明示）；共享桥接件 `data-table-select-cell.tsx` 补上，同时 table 参数类型由 React 绑定层 `AppTable` 收窄为 core `Table`（header 上下文提供的是 core 类型，原签名与文档示例矛盾）。
+- **UI 调整（验收反馈）**：
+  - 批量操作条重写为胶囊 ActionBar 风格：Chip 计数徽章 + 竖分隔线（`self-center` 覆盖 `separator--vertical` 自带的 `self-stretch`）+ 操作插槽 + X 清空；进场自底部淡入上滑、退场向下淡出滑出（延迟卸载 200ms，`motion-reduce:transition-none`）；页面按钮启用/停用改 ghost、删除改 `danger-soft`；
+  - 行 Checkbox `variant="secondary"`（表头保持默认）；表单密码框 InputGroup `variant="secondary"`（variant 挂 InputGroup 根）；
+  - 启用用户弹窗加 `AlertDialog.Icon status="accent"`：ConfirmDialog 新增可选 `iconStatus`（destructive 时恒为 danger 并忽略该值），向后兼容；
+  - 用户「角色」列与菜单「权限按钮」列统一：表头居中 + 最多 2 个 Chip + `+N` 聚合；`+N` 的 Tooltip 必须用 `Tooltip.Trigger` 包裹（Chip 为非交互元素，直接作 Tooltip 子元素无触发语义）。
+- **布局健壮性**：`/api/menus` 加载失败由一行灰字改为区分背景卡片（`bg-surface` + border 圆角，垂直居中）内的 `ErrorContent` + 重试按钮（`refetchQueries` MENUS_QUERY_KEY）；侧边栏失败时回退为仅「控制台」节点（前端固定注入，本就不依赖接口）。
+- **i18n 收敛**：`sort` 字段文案统一走 `common.column.sort`，删除 `features.roles/dicts/menus.form.sort` 三个独立键（roles/dicts/menus 三处表单同步改引用）；搜索占位缩短；新增 `rolesMax` / `rolesMore` / `permissionsMore` / `permissionCheckFailedDesc`。已全量扫描 `t()` 字面量与语言包差集，无缺失键。
+- **验证**：前后端 tsc / eslint / react build / test(61) / openapi YAML 校验全绿。
+
+### React 用户管理上线（真实业务替换 keepAlive Mock 页）（2026-08-30）
+
+- **`src/features/users/`**（users-page / user-api / user-form-dialog / user-reset-password-dialog / password-field），完全对齐角色管理四件套模式：`createListStore + useListQuery`（page/pageSize/search/status/sort/order 服务端分页排序，status 筛选入内存 store 兼容 keepAlive）、HeroUI `useOverlayState` 管理全部浮层。
+  - 列表列：多选框（`DataTableSelectAll/SelectRow` 首个消费方）+ 用户名/姓名/邮箱/状态/角色/创建时间；username/displayName/email/status/createdAt 服务端排序（`manualSorting: true`，排序列 id 对齐后端 SORTABLE 白名单）；角色列 Chip 组。
+  - CRUD：新建（username/email/初始密码+确认/displayName/启用开关/角色多选）；编辑 username 禁用且无密码字段（改密走重置密码，契约不含 password）；删除强确认（输入用户名）、批量删除强确认（输入 DELETE，后端 `INVALID_OPERATION` 整体拦截）；启用/停用走确认弹窗（停用为 destructive，提示全端下线）；重置密码弹窗（新密码+确认，成功提示全部会话失效）；角色多选用 HeroUI `Select selectionMode="multiple"` 受控用法。
+  - 批量状态切换（首个批量场景）：后端无批量端点，前端 `Promise.allSettled` 逐行调 `PUT /users/:id/status`，部分成功不回滚，toast「成功 X 失败 Y」+ 透出首个失败原因；批量删除为单接口事务，无此问题。
+  - 角色下拉选项：`GET /roles` pageSize DTO 白名单上限 50（传更大值 400），`fetchRoleOptions` 超 50 按页续拉拼全，仅取 `enabled=true`。
+- **权限位门控**：ADD/EDIT/DELETE/BATCH_DELETE/RESET_PASSWORD 五位（`useHasPermissionKey`，位值由 /permissions 下发）；SEARCH/RESET 由 `DataTableSearchReset` 内置。
+- **自我保护（前端止损，与用户确认的口径）**：后端对「操作者本人」无任何拦截（status/delete/reset-password 均可作用于本人，契约如此不改）；前端 `enableRowSelection` 禁止勾选自己 + 行操作对本人隐藏删除/停用（重置密码保留）。
+- **共享件调整**：`data-table-select-cell.tsx` 的 table 参数类型由 `AppTable`（React 绑定层）收窄为 core `Table<AppTableFeatures, TData>`——列 header 上下文提供的是 core Table，此前签名与文档示例用法自相矛盾（纯类型修正，行为不变）。
+- **类型对齐**：`api-types.ts` 的 `CreateUserInput`/`UpdateUserInput` 对齐契约 v1.4.4（后者去掉遗留的 `password?` 字段，新增 `status/avatar?`，注释标明 roleIds 全量替换语义）。
+- **i18n**：zh/en 新增 `features.users.*`（65 键）与 `errors.users.*`（5 键，USERNAME_EXISTS/EMAIL_EXISTS/USER_NOT_FOUND/VALIDATION_ERROR/INVALID_OPERATION）；删除 `common.demo.users.*` 全部 11 个 Mock 键。菜单键 `menu.users`/`menu.pageTitle.users` 后端既有，零改动。
+- **验证**：tsc / lint / test(61，含 locales 键位一致性) / build 全绿。
+
 ### 错误页重设计（巨字光晕 → 毛玻璃卡片）+ globals.css 按特性拆分（2026-08-30）
 
 - **403/404/500 错误页重设计**（`components/common/error-pages/`，方向经用户确认）：
