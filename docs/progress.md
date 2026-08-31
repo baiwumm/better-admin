@@ -5,6 +5,16 @@
 
 ---
 
+### 我的账户模块上线：头像裁剪上传 + 资料 / 邮箱 / 密码自助修改（契约 v1.5.0）（2026-08-31）
+
+- **范围**：React 端「我的账户」（`/account` 非菜单路由，占位替换为真实页面）；配套契约 v1.5.0（Nest 先行）+ users 表新增 3 列 + Supabase Storage 头像上传（AGENTS §5 首次豁免：Storage 仅用于用户头像，服务端持密钥中转，浏览器不接触密钥、不用 RLS）。方案经用户逐项确认：Storage 中转、改邮箱需当前密码、新增 `phone` / `tags` / `lastLoginAt`、接受 `react-easy-crop` 与 `@supabase/supabase-js` 两个新依赖。
+- **契约 v1.5.0**（`nest/openapi/openapi.yaml`，YAML 解析通过）：新增 Account tag 与 5 个自助端点——`GET/PUT /account/profile`（displayName / phone / tags，tags 服务端 trim、去空、去重，≤10 个×20 字符）、`PUT /account/email`（需 currentPassword，冲突 409 `EMAIL_EXISTS`）、`PUT /account/password`（需 currentPassword，成功后 tokenVersion+1 + 清空托管 refreshToken，全端强制下线）、`POST /account/avatar`（multipart，白名单 webp/png/jpeg、≤2MB，`AVATAR_FILE_INVALID` / `AVATAR_FILE_TOO_LARGE` / `AVATAR_UPLOAD_FAILED`）。AuthUser 视图新增 `avatar / phone / tags`；`GET /auth/me` 的 data 契约由 `LoginResponse` 纠偏为 `AuthUser`（实现一直如此）；管理端 User 视图补 phone / tags 只读展示。Account 模块仅挂 `AuthGuard('jwt')` 不走 PermissionsGuard（自助操作不依赖权限位）。
+- **Supabase 新 API key 体系**：使用 `sb_secret_`（Secret key，非 JWT），环境变量 `SUPABASE_URL` + `SUPABASE_SECRET_KEY`（`.env.example` 已补说明；旧 service_role JWT key 2026 年底废弃）。关键约束：新 key 只能走 `apikey` 请求头（`Authorization: Bearer` 会被当 JWT 拒绝）；supabase-js 同时设置两者（值相等时允许）故天然兼容。bucket `avatars`（public read）由 `pnpm storage:init`（`nest/scripts/init-storage.ts`，幂等）创建，已执行。头像文件名 `{userId}.{ext}` 同名覆盖（每用户一张），返回 URL 带时间戳查询参数穿透缓存。
+- **后端**（`nest/src/account/`）：`AccountService`（profile 读写 / email / password / avatar）+ `AvatarStorageService`（类型白名单与大小校验、upsert 上传、URL 拼时间戳）；邮箱唯一性复用部分唯一索引冲突转译（同 users.service 模式）；`auth.service.login` 成功后写 `lastLoginAt`。DB 迁移 `drizzle/0005_*.sql`（users 加 `phone` / `tags text[]` / `last_login_at`，全部可空增量列）已对 Supabase 库执行。
+- **前端**（`react/src/features/account/`）：页面 max-w-2xl 居中五卡布局（头像 / 基本信息 / 修改邮箱 / 修改密码 / 账号信息只读：角色 chips、状态、注册时间、最近登录）。头像裁剪弹窗 `react-easy-crop`（缩放 Slider + ±90° 旋转）→ canvas 合成 256×256 WebP（`crop-image.ts`，toBlob 不支持 webp 时自动回退 PNG）→ FormData 上传；裁剪产出已实测为 webp。`TagInput` 自定义组件（HeroUI 无 TagInput；回车添加、Backspace 删除末项、Chip 可移除、内联超限提示）。保存 / 头像更新后经 `setQueryData` + `setUser` 同步详情缓存与 auth-store 快照（侧边栏头像与名称即时刷新）；改密码成功后 `clearSession()` + 整页跳 `/sign-in`。i18n 键 `features.account.*` / `errors.account.*`（zh-CN / en 双语，locales 测试通过）；i18next 插值必须用 `{{var}}` 双花括号（首版单花括号导致 aria-label 原样输出，已修）。
+- **验证**：nest tsc / eslint 全绿；react tsc / eslint / test(68) / build 全绿。后端 curl 冒烟：profile 读写（tags 3→2 去重）、email / password 错密码 `CURRENT_PASSWORD_INCORRECT`、头像上传（URL 公开可访问、类型与超限 400）。浏览器联调（IAB evaluate 注入 File 绕过原生文件选择器）：登录 → 页面渲染 → 标签添加保存并刷新持久 → 旋转 + 裁剪上传成功且侧边栏头像即时同步 → 改邮箱错密码 toast 正确。**待人工验证（需登录态）**：真实头像上传全流程、改邮箱全量成功路径、改密码后重新登录（本会话即刻失效）。
+- **同步待办**：Vue / Next / Nuxt 后续实现 account 模块直接跟上 v1.5.0（含 AuthUser 三字段与 `lastLoginAt`）；Render 部署需补 `SUPABASE_URL` / `SUPABASE_SECRET_KEY` 两个环境变量并执行 `pnpm storage:init`（或手动建 bucket）。
+
 ### 日志管理模块上线：操作人摘要 + 批量删除 + 字典驱动类型（契约 v1.4.8）（2026-08-31）
 
 - **范围**：React 端最后一个待迁移业务模块「日志管理」（`/settings/logs` 路由占位替换为真实页面）；配套契约 v1.4.8（Nest 先行）。需求对齐结论：详情用 Drawer、需批量删除、类型走字典管理、操作人列「头像 + 名称 + 邮箱」。

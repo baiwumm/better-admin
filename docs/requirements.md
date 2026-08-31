@@ -288,7 +288,8 @@ Supabase 在本项目中主要作为：
 - Supabase Auth
 - Supabase Row Level Security
 - Supabase Edge Functions
-- Supabase Storage
+
+**Storage 例外（v1.5.0）**：用户头像允许使用 Supabase Storage（公开读 bucket `avatars`）。上传由服务端持有密钥中转完成，浏览器端不接触 Storage 密钥，不使用 Storage RLS 策略；API 密钥使用新体系 Secret key（`sb_secret_` 前缀）。
 
 数据库按照普通 PostgreSQL 使用。
 
@@ -645,6 +646,16 @@ Next.js 和 Nuxt.js 虽然采用各自的 Server API，但需要尽量遵循相�
 - 登录日志
 - API 日志
 - 错误日志
+
+## 10.8 我的账户
+
+当前登录用户的自助管理页（非菜单路由，无需权限位，仅要求登录）：
+
+- 头像：上传前支持裁剪、缩放、旋转；服务端中转写入 Supabase Storage，每用户一张，同名覆盖
+- 基本信息：修改显示名称、电话；维护个人标签（增删，最多 10 个）
+- 修改邮箱：需验证当前密码，新邮箱全站唯一
+- 修改密码：需验证当前密码；成功后所有登录会话失效，需重新登录
+- 账号信息（只读）：用户名、角色、账号状态、注册时间、最近登录时间
 
 ---
 
