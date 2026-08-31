@@ -24,5 +24,11 @@
   "errors.users.selfOperationForbidden": "不能操作当前登录用户",
   "errors.users.superAdminProtected": "该用户绑定了超级管理员角色，不可操作",
   "errors.serverError.description": "页面出错了，请刷新重试；若问题持续存在，请联系管理员。",
-  "errors.serverError.title": "出错了"
+  "errors.serverError.title": "出错了",
+  "errors.account.currentPasswordIncorrect": "当前密码不正确",
+  "errors.account.emailExists": "邮箱已被占用",
+  "errors.account.avatarInvalid": "头像文件类型不支持，仅支持 webp / png / jpeg",
+  "errors.account.avatarTooLarge": "头像文件不能超过 2MB",
+  "errors.account.avatarUploadFailed": "头像上传失败，请稍后重试",
+  "errors.account.validation": "请求参数不合法，请检查表单后重试"
 }

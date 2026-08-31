@@ -32,6 +32,12 @@ export interface AuthUser {
   displayName: string;
   /** 用户邮箱（契约 v1.4.8：前端统一用户信息展示，侧边栏次行） */
   email: string;
+  /** 头像 URL（契约 v1.5.0：侧边栏 / 我的账户展示） */
+  avatar: string | null;
+  /** 电话（契约 v1.5.0） */
+  phone: string | null;
+  /** 个人标签（契约 v1.5.0，用户在「我的账户」自助维护） */
+  tags: string[];
   roles: string[];
   /**
    * bigint 位掩码（超级管理员全量为 9223372036854775807）。
@@ -127,8 +133,7 @@ export interface CreateUserInput {
   roleIds: string[];
 }
 
-/**
- * 更新用户请求体（契约 v1.4.4：不含 username/password——
+/** 更新用户请求体（契约 v1.4.4：不含 username/password——
  * 用户名创建后锁定，改密走 POST /users/:id/reset-password）。
  * roleIds 传数组（含空数组）为全量替换语义，缺省表示不修改。
  */
@@ -138,6 +143,49 @@ export interface UpdateUserInput {
   avatar?: string | null;
   status?: UserStatus;
   roleIds?: string[];
+}
+
+/* ---------------------------------------------------------------------------
+ * 我的账户（契约 v1.5.0，/account/* 自助接口）
+ * ------------------------------------------------------------------------- */
+
+/** 我的账户详情（GET /account/profile） */
+export interface AccountProfile {
+  id: string;
+  username: string;
+  email: string;
+  displayName: string;
+  avatar: string | null;
+  phone: string | null;
+  /** 个人标签（自助维护，最多 10 个、每个 ≤20 字符，服务端去重） */
+  tags: string[];
+  status: UserStatus;
+  roles: UserRoleSummary[];
+  createdAt: string;
+  updatedAt: string;
+  /** 最近一次登录成功时间（从未登录为 null） */
+  lastLoginAt: string | null;
+}
+
+/** PUT /account/profile 请求体（字段缺省表示不修改） */
+export interface UpdateAccountProfileInput {
+  displayName?: string;
+  /** null 表示清空 */
+  phone?: string | null;
+  /** 全量替换（空数组清空） */
+  tags?: string[];
+}
+
+/** PUT /account/email 请求体（需当前密码确认） */
+export interface UpdateAccountEmailInput {
+  email: string;
+  currentPassword: string;
+}
+
+/** PUT /account/password 请求体（成功后全端强制下线，需重新登录） */
+export interface UpdateAccountPasswordInput {
+  currentPassword: string;
+  newPassword: string;
 }
 
 /** 角色实体（/roles） */

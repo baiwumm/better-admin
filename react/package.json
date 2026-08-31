@@ -37,6 +37,7 @@
     "lucide-react": "^1.33.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-easy-crop": "^6.2.3",
     "react-hook-form": "^7.86.0",
     "react-i18next": "^17.0.12",
     "react-router-dom": "6.23.0",

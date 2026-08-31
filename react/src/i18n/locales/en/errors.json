@@ -24,5 +24,11 @@
   "errors.users.selfOperationForbidden": "Cannot operate on current user",
   "errors.users.superAdminProtected": "This user is bound to super_admin role and cannot be operated",
   "errors.serverError.description": "Something went wrong on the page. Please refresh and try again; contact an administrator if the problem persists.",
-  "errors.serverError.title": "Something Went Wrong"
+  "errors.serverError.title": "Something Went Wrong",
+  "errors.account.currentPasswordIncorrect": "Current password is incorrect",
+  "errors.account.emailExists": "Email is already taken",
+  "errors.account.avatarInvalid": "Unsupported avatar type. webp / png / jpeg only",
+  "errors.account.avatarTooLarge": "Avatar must not exceed 2MB",
+  "errors.account.avatarUploadFailed": "Avatar upload failed. Please try again later",
+  "errors.account.validation": "Invalid request. Please check the form and retry"
 }
