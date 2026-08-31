@@ -44,6 +44,7 @@ export function FullscreenButton() {
           ? t("layout.fullscreen.exit")
           : t("layout.fullscreen.enter")
       }
+      size="sm"
       variant="ghost"
       onPress={toggleFullscreen}
     >
