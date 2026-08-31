@@ -121,6 +121,7 @@ export function DataTablePagination<TData extends RowData>({
       <div className="flex items-center justify-start sm:justify-end">
         <Select
           aria-label={t("common.datatable.pageSizeLabel")}
+          className="min-w-30"
           value={String(pageSize)}
           variant="secondary"
           onChange={(value) => {
