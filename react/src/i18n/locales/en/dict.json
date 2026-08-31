@@ -1,0 +1,6 @@
+{
+  "dict.log_type.operation": "Operation log",
+  "dict.log_type.login": "Login log",
+  "dict.log_type.api": "API log",
+  "dict.log_type.error": "Error log"
+}

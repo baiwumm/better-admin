@@ -14,6 +14,8 @@ export interface AuthUser {
   id: string;
   username: string;
   displayName: string;
+  /** 用户邮箱（v1.4.8：前端统一用户信息展示） */
+  email: string;
   roles: string[]; // 角色 code 列表
   /** 聚合权限位（bigint 全量位，super_admin 为 -1n）。以字符串返回避免 JSON 精度丢失。 */
   permissions: string;
@@ -79,6 +81,8 @@ export class AuthService {
       id: user.id,
       username: user.username,
       displayName: user.displayName,
+      // v1.4.8：视图补充邮箱（前端统一用户信息展示，侧边栏次行）
+      email: user.email,
       roles: roleRows.map((r) => r.code),
       // 对外输出正数全量位（-1n → 9223372036854775807），避免前端符号歧义
       permissions: normalizePermissionBits(permissions).toString(),

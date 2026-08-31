@@ -27,7 +27,11 @@ info:
     用户名查询过滤 deleted_at（软删除用户不可登录，命中失败表现为 INVALID_CREDENTIALS）；
     每请求鉴权对软删除/停用用户返回 401；DELETE /users、DELETE /users/{id}
     软删除时同步清理该用户的 user_roles 与 refresh_tokens。
-  version: 1.4.7
+    v1.4.8 日志模块增强：Log schema 新增操作人摘要字段 username / displayName / email / avatar
+    （GET /logs 与 GET /logs/{id} left join users 返回；用户不存在时为 null）；
+    新增 DELETE /logs?ids= 批量删除日志（BATCH_DELETE 权限，任一 ID 无效整体 400 INVALID_OPERATION）；
+    登录 / 每请求鉴权共用用户视图（LoginResponse.user 与 GET /auth/me）新增 email 字段。
+  version: 1.4.8
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -138,6 +142,9 @@ components:
               type: string
             displayName:
               type: string
+            email:
+              type: string
+              description: 用户邮箱（v1.4.8 新增，前端统一用户信息展示使用）
             roles:
               type: array
               items:
@@ -578,6 +585,19 @@ components:
           type: string
           enum: [operation, login, api, error]
         userId:
+          type: string
+          nullable: true
+        # v1.4.8：操作人摘要（left join users；日志产生时用户已删除/不存在则为 null）
+        username:
+          type: string
+          nullable: true
+        displayName:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        avatar:
           type: string
           nullable: true
         action:
@@ -1839,6 +1859,45 @@ paths:
                       $ref: '#/components/schemas/Log'
                   pagination:
                     $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      tags: [Logs]
+      summary: 批量删除日志（逗号分隔 ID 列表，v1.4.8）
+      description: >
+        通过 Query 参数 ids 传递逗号分隔的日志 ID 列表（如 ?ids=id1,id2,id3）进行批量删除。
+        语义与 DELETE /users?ids= 对齐：任一 ID 无效即整体拒绝（400 INVALID_OPERATION），全有全无。
+      x-permission: BATCH_DELETE
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 逗号分隔的日志 ID 列表
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '400':
+          description: 部分 ID 无效（INVALID_OPERATION）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: INVALID_OPERATION
+                message: 部分日志 ID 无效
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

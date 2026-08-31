@@ -5,6 +5,18 @@
 
 ---
 
+### 日志管理模块上线：操作人摘要 + 批量删除 + 字典驱动类型（契约 v1.4.8）（2026-08-31）
+
+- **范围**：React 端最后一个待迁移业务模块「日志管理」（`/settings/logs` 路由占位替换为真实页面）；配套契约 v1.4.8（Nest 先行）。需求对齐结论：详情用 Drawer、需批量删除、类型走字典管理、操作人列「头像 + 名称 + 邮箱」。
+- **事实修正（调研发现）**：① `operation` 类型并非预留空枚举——users / roles / menus / dict 四模块的写操作均以 `type='operation'` 私有 `writeLog` 记日志（各模块重复实现同一模式），四类日志都有真实数据；② AGENTS §4.6 迁移表中「日志管理对应 `/react-shadcn` `logs/` 源」与实际不符——`/react-shadcn` **无日志页实现**（仅侧边栏菜单项与 api 类型），本期按用户管理页风格新设计，表格已同步修正。
+- **契约 v1.4.8**（`nest/openapi/openapi.yaml`，YAML 解析通过）：Log schema 新增操作人摘要 `username / displayName / email / avatar`（均可空）；新增 `DELETE /logs?ids=` 批量删除（`BATCH_DELETE` 权限，任一 ID 无效整体 400 `INVALID_OPERATION`，全有全无语义对齐 `DELETE /users?ids=`）；登录 / 每请求鉴权共用用户视图（`LoginResponse.user` 与 `GET /auth/me`）新增 `email` 字段（评审要求侧边栏统一展示邮箱，此前 AuthUser 无邮箱、次行展示的是用户名）。
+- **后端**（`nest/src/modules/logs/`）：`logs.service` 列表 / 详情 left join users 返回操作人摘要（**软删除用户仍回显**——日志是历史记录，`user_id` 仅在硬删时经 FK `set null` 置空）；`batchRemove` 全有全无校验；`remove` / `batchRemove` 补写 operation 日志（`log.delete` / `log.batch_delete`，沿用各业务模块私有 `writeLog` 惯例）；controller 增加 `operatorId(req)` 取操作者（对齐 users.controller）。`auth.service` 用户视图（`AuthUser`）补充 `email`。
+- **日志定时清理**（评审确认：全部类型统一保留 30 天，每日北京时间 03:00）：新增 `LogCleanupService`（`@nestjs/schedule` v12，`ScheduleModule.forRoot()` 挂 AppModule），分批删除（批 1000 条，先取 ID 再 `inArray` 删，`logs_created_idx` 支撑扫描），成功写一条 operation 日志（`log.cleanup`，系统任务无操作人 userId=null 属预期）。环境变量：`LOG_CLEANUP_ENABLED`（默认开）/ `LOG_CLEANUP_CRON`（默认 `0 3 * * *`，TZ 固定 Asia/Shanghai）/ `LOG_RETENTION_DAYS`（默认 30，非法值回退），已补 `.env.example`。契约零改动、不新增 API 端点。**待人工验证**：临时改 `LOG_CLEANUP_CRON` 观察执行日志与 `log.cleanup` operation 记录。
+- **前端——UserInfo 通用组件**（`components/common/user-info/`）：统一「左侧 Avatar（有 avatar 用图片，否则名称首字 fallback）+ 右侧名称（displayName 缺省回退 username）+ 下方邮箱小字」格式；`user` 传 null 显示占位符 —；subtitle 支持 email（默认，缺省回退 username）/ username（侧边栏，AuthUser 无邮箱）。侧边栏底部用户区触发器展开态与弹层头部已替换复用（折叠态保留独立头像），日志操作人列与详情抽屉同用。
+- **前端——features/logs**：完全对齐用户管理页模式（`createListStore` + `useListQuery` + DataTable Toolbar/BulkActions + `useOverlayState` + ConfirmDialog）。差异点：列表固定 `created_at` 倒序（后端不支持排序参数）**无排序交互**；无新增入口（系统自动写入，只读 + 人工清理）；列序为操作人在类型前（评审调整）；类型筛选与类型 Chip 显示名以**字典管理 `log_type` 为真源**（value 限于契约四枚举，字典项 i18nKey 翻译优先回退 label）；字典不可用（当前用户无字典 SEARCH 位 / 加载失败）时**静默降级**内置 `dict.log_type.*` 文案——为此新建 `i18n/locales/{zh-CN,en}/dict.json` 并注册进 `config.ts`（`log_type` 与 `user_status` 的 DB i18nKey 此前均无前端语言包键）；详情 Drawer 直接复用列表行数据（列表/详情同构，免二次请求）；批量删除 ConfirmDialog 沿用 keyword=`DELETE` 强确认；**单条 / 批量删除成功后均 `table.resetRowSelection()`**（删除后行不在当前页但勾选 state 残留旧行 ID，表头全选框会误判保持勾选——评审反馈修复）。
+- **验证**：nest tsc / eslint 全绿；react tsc / eslint / test(68，含 i18n 双语键对齐) / build 全绿。**待人工验证（需登录态）**：四类日志筛选与字典文案、操作人头像列、详情抽屉、单条/批量删除、`BATCH_DELETE` 位缺失时按钮隐藏（存量库注意先执行 `nest/scripts/migrate-menus-add-grant-bit.ts` 补 GRANT 位）。
+- **同步待办**：Vue / Next / Nuxt 后续实现日志模块直接跟上 v1.4.8；`GET /logs` 的 `search` 仅匹配 action、不支持按操作人搜索，如需扩展再评估契约。
+
 ### 错误页改为独立跳转页：403 / 404 / 500 统一 replace 跳转（2026-08-30）
 
 - **背景**：错误页（`ErrorPageShell` 毛玻璃卡片 + 巨字光晕）样式按**独立全屏页**重新设计后，admin-layout 把 403 组件直显在主体区的旧方案观感不符（卡片挤在内容区、与全屏设计稿差异大），评审决策改为统一跳转独立路由页。

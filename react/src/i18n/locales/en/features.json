@@ -221,5 +221,22 @@
   "features.users.resetPassword.saving": "Resetting…",
   "features.users.resetPassword.success": "Password reset. All sessions of this user have been invalidated.",
   "features.users.rolesMore": "View all roles",
-  "features.menus.permissionsMore": "View all permissions"
+  "features.menus.permissionsMore": "View all permissions",
+  "features.logs.searchPlaceholder": "Search action",
+  "features.logs.filter.all": "All types",
+  "features.logs.column.type": "Type",
+  "features.logs.column.operator": "Operator",
+  "features.logs.column.action": "Action",
+  "features.logs.column.ip": "IP",
+  "features.logs.action.detail": "Details",
+  "features.logs.bulk.delete": "Delete selected logs",
+  "features.logs.detail.title": "Log details",
+  "features.logs.detail.userAgent": "User-Agent",
+  "features.logs.detail.extra": "Extra info",
+  "features.logs.message.deleteSuccess": "Log deleted",
+  "features.logs.message.deleteTitle": "Delete log",
+  "features.logs.message.deleteDesc": "Delete this log entry? This action cannot be undone.",
+  "features.logs.message.batchDeleteTitle": "Delete selected logs",
+  "features.logs.message.batchDeleteDesc": "Delete {{count}} selected log entries? This action cannot be undone.",
+  "features.logs.message.batchDeleteKeyword": "Type DELETE to confirm"
 }

@@ -8,6 +8,8 @@
   "errors.dict.typeCodeExists": "字典类型 code 已存在",
   "errors.dict.typeInUse": "该字典类型下仍有字典项，无法删除",
   "errors.dict.typeNotFound": "字典类型不存在",
+  "errors.logs.invalidOperation": "部分日志 ID 无效",
+  "errors.logs.notFound": "日志不存在",
   "errors.forbidden.description": "你没有执行该操作的权限，如有疑问请联系管理员。",
   "errors.forbidden.title": "禁止访问",
   "errors.notFound.description": "你访问的页面不存在或已被移除，请检查地址是否正确。",

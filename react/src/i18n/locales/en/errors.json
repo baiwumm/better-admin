@@ -8,6 +8,8 @@
   "errors.dict.typeCodeExists": "Dict type code already exists",
   "errors.dict.typeInUse": "This dict type still has items and cannot be deleted",
   "errors.dict.typeNotFound": "Dict type not found",
+  "errors.logs.invalidOperation": "Some log IDs are invalid",
+  "errors.logs.notFound": "Log not found",
   "errors.forbidden.description": "You do not have permission to perform this action. Contact an administrator if you have questions.",
   "errors.forbidden.title": "Access Denied",
   "errors.notFound.description": "The page you are looking for does not exist or has been removed. Please check the address.",

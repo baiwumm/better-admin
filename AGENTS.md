@@ -97,7 +97,7 @@ better-admin/
 | 权限管理 | `permissions/` | ✅ 已上线（2026-08-28） |
 | 菜单管理 | `menus/` | ✅ 已上线（2026-08-29） |
 | 系统设置 | `settings/` | — 模块已移除（契约 v1.3），无迁移计划 |
-| 日志管理 | `logs/` | 🔲 待迁移 |
+| 日志管理 | —（`/react-shadcn` 无日志页实现，按用户管理页风格新设计） | ✅ 已上线（2026-08-31，契约 v1.4.8） |
 | 认证 | `auth/` / 登录登出 | ✅ 已上线（2026-08-27，含记住我 / 会话真撤销） |
 
 > 字典管理不在此表（`/react-shadcn` 无对应源，为新增模块）；各阶段明细见 [`docs/progress.md`](docs/progress.md)。
@@ -523,8 +523,8 @@ Phase 7  统一测试 → 部署全部版本
 
 > 阶段性进度记录已全部移至 [`docs/progress.md`](docs/progress.md)（按时间倒序），本节只保留当前快照；阶段由用户明确安排后再推进。
 
-- **当前阶段**：React 端业务模块迁移推进中（React + NestJS 全栈阶段）。已完成：React Hero UI 迁移启动、NestJS + PostgreSQL 后端（契约 v1.4.7），React 端登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理均已上线，用户写操作保护（本人 / admin / super_admin 三层，契约 v1.4.6）与登录鉴权加固（停用拦截 `USER_DISABLED` / 软删除过滤，契约 v1.4.7）已生效。
-- **当前待办（记录在案）**：日志管理、概览 Dashboard 仍待迁移；`roles.enabled` 参与权限聚合待评估；`PUT /users/{id}` 的 `roleIds` 可摘除 super_admin 绑定（v1.4.6 已知未拦点，评估是否限制）；前端 `hasPermission`（全部位命中）与后端同名函数（任一位命中）多权限位语义待对齐；存量库需执行 `nest/scripts/migrate-menus-add-grant-bit.ts` 补录角色管理菜单 GRANT 声明位（v1.4.4）。
+- **当前阶段**：React 端业务模块迁移推进中（React + NestJS 全栈阶段）。已完成：React Hero UI 迁移启动、NestJS + PostgreSQL 后端（契约 v1.4.8），React 端登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理均已上线（含用户写操作保护 v1.4.6、登录鉴权加固 v1.4.7、日志操作人摘要与批量删除 v1.4.8）；`UserInfo` 通用用户信息展示组件已沉淀（侧边栏与日志操作人列复用）。
+- **当前待办（记录在案）**：概览 Dashboard 仍待迁移；`roles.enabled` 参与权限聚合待评估；`PUT /users/{id}` 的 `roleIds` 可摘除 super_admin 绑定（v1.4.6 已知未拦点，评估是否限制）；前端 `hasPermission`（全部位命中）与后端同名函数（任一位命中）多权限位语义待对齐；存量库需执行 `nest/scripts/migrate-menus-add-grant-bit.ts` 补录角色管理菜单 GRANT 声明位（v1.4.4）。
 - **super_admin 保护设计依据（重要，勿推翻）**：超管的"全量权限"不是代码身份判定，而是 seed 写入 role_menus 的 -1n 全量位经登录/每请求实时 OR 聚合而来（`auth.service.aggregatePermissions`）；PermissionsGuard 与菜单可见性的"超管免检"分支判据都是聚合值。清空其授权 = 全后台立即 403 且无自助恢复手段，故 `PUT /roles/{id}/menus` 与 `DELETE /roles/{id}` 对 `code === 'super_admin'` 必须返回 403 `SUPER_ADMIN_ROLE_PROTECTED`（详细背景见 progress.md 契约 v1.4.2/v1.4.3 条目）。
 
 ---

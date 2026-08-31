@@ -10,13 +10,13 @@ import {
   Label,
   Separator,
   Spinner,
-  Typography,
   toast,
   useOverlayState,
 } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDown, LogOut, IdCard } from "lucide-react";
 
+import { UserInfo } from "@/components/common/user-info/user-info";
 import { useTranslation } from "@/i18n";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -24,15 +24,13 @@ type SidebarUserProps = {
   collapsed?: boolean;
 };
 
-/** 未登录兜底展示（正常流程下登录后才进入 AdminLayout；名称经 i18n 取词）。 */
-const fallbackUser = {
-  email: "",
-  avatar: "",
-};
+/** 折叠态独立头像的兜底图（登录用户无 avatar 时走首字 fallback）。 */
+const fallbackAvatar = "";
 
 /**
  * 侧边栏底部用户区：头像 + 名称/邮箱（折叠态仅显示头像）。
- * 使用 Hero UI Dropdown 实现用户菜单：
+ * 展开态与弹层头部统一走 UserInfo 组件展示（契约 v1.4.8 起 AuthUser 含 email，
+ * 次行展示邮箱）。使用 Hero UI Dropdown 实现用户菜单：
  * - 我的账户 → 跳转 /account
  * - 退出登录 → 弹 AlertDialog 二次确认，确认后调用后端 /auth/logout，
  *   成功才清本地会话并跳登录页；失败则 toast 错误提示、不退出。
@@ -48,8 +46,9 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
   const { t } = useTranslation();
 
   const displayName = user?.displayName ?? t("layout.user.notSignedIn");
-  const email = user?.username ?? fallbackUser.email;
   const initials = displayName.slice(0, 1);
+  // 未登录兜底（正常流程下登录后才进入 AdminLayout）
+  const sidebarUser = user ?? { username: t("layout.user.notSignedIn") };
 
   const handleAction = (key: Key) => {
     switch (key) {
@@ -101,58 +100,28 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
             collapsed && "w-auto justify-center px-2",
           )}
         >
-          <Avatar className="shrink-0" color="accent" size="sm" variant="soft">
-            <Avatar.Image alt={displayName} src={fallbackUser.avatar} />
-            <Avatar.Fallback>{initials}</Avatar.Fallback>
-          </Avatar>
-          {!collapsed && (
+          {collapsed ? (
+            <Avatar
+              className="shrink-0"
+              color="accent"
+              size="sm"
+              variant="soft"
+            >
+              <Avatar.Image alt={displayName} src={fallbackAvatar} />
+              <Avatar.Fallback>{initials}</Avatar.Fallback>
+            </Avatar>
+          ) : (
             <>
-              <div className="min-w-0 flex-1 leading-tight">
-                <Typography
-                  className="truncate leading-tight font-semibold"
-                  type="body-sm"
-                >
-                  {displayName}
-                </Typography>
-                <Typography
-                  className="truncate leading-tight"
-                  color="muted"
-                  type="body-xs"
-                >
-                  {email}
-                </Typography>
-              </div>
+              <UserInfo className="min-w-0 flex-1" user={sidebarUser} />
               <ChevronsUpDown className="size-4 shrink-0 text-muted" />
             </>
           )}
         </Dropdown.Trigger>
 
         <Dropdown.Popover className="min-w-56">
-          {/* 弹层头部：用户信息 */}
+          {/* 弹层头部：用户信息（与触发器同构，统一走 UserInfo） */}
           <div className="px-3 pt-3 pb-1">
-            <div className="flex items-center gap-2">
-              <Avatar size="sm">
-                <Avatar.Image alt={displayName} src={fallbackUser.avatar} />
-                <Avatar.Fallback className="bg-default text-foreground">
-                  {initials}
-                </Avatar.Fallback>
-              </Avatar>
-              <div className="min-w-0 flex-1 leading-snug">
-                <Typography
-                  className="truncate leading-snug font-medium"
-                  type="body-sm"
-                >
-                  {displayName}
-                </Typography>
-                <Typography
-                  className="truncate leading-snug"
-                  color="muted"
-                  type="body-xs"
-                >
-                  {email}
-                </Typography>
-              </div>
-            </div>
+            <UserInfo user={sidebarUser} />
           </div>
 
           <Separator />

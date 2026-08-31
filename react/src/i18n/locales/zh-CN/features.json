@@ -221,5 +221,22 @@
   "features.users.resetPassword.saving": "重置中…",
   "features.users.resetPassword.success": "密码已重置，该用户全部会话已失效",
   "features.users.rolesMore": "查看全部角色",
-  "features.menus.permissionsMore": "查看全部权限"
+  "features.menus.permissionsMore": "查看全部权限",
+  "features.logs.searchPlaceholder": "搜索动作",
+  "features.logs.filter.all": "全部类型",
+  "features.logs.column.type": "类型",
+  "features.logs.column.operator": "操作人",
+  "features.logs.column.action": "动作",
+  "features.logs.column.ip": "IP",
+  "features.logs.action.detail": "详情",
+  "features.logs.bulk.delete": "删除选中日志",
+  "features.logs.detail.title": "日志详情",
+  "features.logs.detail.userAgent": "User-Agent",
+  "features.logs.detail.extra": "附加信息",
+  "features.logs.message.deleteSuccess": "日志已删除",
+  "features.logs.message.deleteTitle": "删除日志",
+  "features.logs.message.deleteDesc": "确定删除该条日志吗？该操作不可恢复。",
+  "features.logs.message.batchDeleteTitle": "批量删除日志",
+  "features.logs.message.batchDeleteDesc": "确定删除选中的 {{count}} 条日志吗？该操作不可恢复。",
+  "features.logs.message.batchDeleteKeyword": "输入 DELETE 确认"
 }

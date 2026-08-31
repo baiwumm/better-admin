@@ -30,6 +30,8 @@ export interface AuthUser {
   id: string;
   username: string;
   displayName: string;
+  /** 用户邮箱（契约 v1.4.8：前端统一用户信息展示，侧边栏次行） */
+  email: string;
   roles: string[];
   /**
    * bigint 位掩码（超级管理员全量为 9223372036854775807）。
@@ -196,11 +198,16 @@ export interface DictItem {
 /** 日志类型（logs.type，对应页面 4 个 Tab） */
 export type LogType = "operation" | "login" | "api" | "error";
 
-/** 日志实体（/logs，列表与详情同构） */
+/** 日志实体（/logs，列表与详情同构；v1.4.8 起带操作人摘要） */
 export interface Log {
   id: string;
   type: LogType;
   userId: string | null;
+  /** 操作人摘要（left join users；用户不存在时为 null） */
+  username: string | null;
+  displayName: string | null;
+  email: string | null;
+  avatar: string | null;
   action: string;
   ip: string | null;
   userAgent: string | null;

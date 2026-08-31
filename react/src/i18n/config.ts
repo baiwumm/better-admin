@@ -2,12 +2,14 @@ import { createInstance } from "i18next";
 
 import authEn from "./locales/en/auth.json";
 import commonEn from "./locales/en/common.json";
+import dictEn from "./locales/en/dict.json";
 import errorsEn from "./locales/en/errors.json";
 import featuresEn from "./locales/en/features.json";
 import layoutEn from "./locales/en/layout.json";
 import menuEn from "./locales/en/menu.json";
 import authZh from "./locales/zh-CN/auth.json";
 import commonZh from "./locales/zh-CN/common.json";
+import dictZh from "./locales/zh-CN/dict.json";
 import errorsZh from "./locales/zh-CN/errors.json";
 import featuresZh from "./locales/zh-CN/features.json";
 import layoutZh from "./locales/zh-CN/layout.json";
@@ -42,6 +44,7 @@ const resources = {
     translation: {
       ...authEn,
       ...commonEn,
+      ...dictEn,
       ...errorsEn,
       ...featuresEn,
       ...layoutEn,
@@ -52,6 +55,7 @@ const resources = {
     translation: {
       ...authZh,
       ...commonZh,
+      ...dictZh,
       ...errorsZh,
       ...featuresZh,
       ...layoutZh,
