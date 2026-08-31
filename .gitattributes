@@ -1,0 +1,20 @@
+# 统一换行符：仓库与工作区一律 LF（Prettier 默认 endOfLine: lf），
+# 覆盖各开发者本地的 core.autocrlf 配置（Windows Git 安装默认 true，
+# 检出转 CRLF 会导致 eslint-prettier 全线报 Delete ␍）。
+* text=auto eol=lf
+
+# 二进制文件显式排除，防止文本换行转换破坏内容
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+*.pdf binary
+*.zip binary
+*.gz binary
