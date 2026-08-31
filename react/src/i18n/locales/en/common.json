@@ -32,6 +32,7 @@
   "common.password.show": "Show password",
   "common.password.hide": "Hide password",
   "common.language.current": "Current language",
+  "common.language.choose": "Choose a Language",
   "common.language.en": "English",
   "common.language.label": "Language",
   "common.language.switch": "Switch language",

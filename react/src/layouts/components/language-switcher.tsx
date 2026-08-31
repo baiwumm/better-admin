@@ -1,5 +1,5 @@
-import { Dropdown, Label, Button } from "@heroui/react";
-import { Check, Languages } from "lucide-react";
+import { Dropdown, Header, Label, Button } from "@heroui/react";
+import { Languages } from "lucide-react";
 
 import { useTranslation, type Language } from "@/i18n";
 import { useLanguageStore } from "@/stores/language-store";
@@ -13,6 +13,11 @@ const LANGUAGE_OPTIONS: readonly { labelKey: string; value: Language }[] = [
 /**
  * 语言切换器：Header 右侧的图标按钮（偏好设置左侧），下拉选择 简体中文 / English。
  * 切换经 language-store 持久化并联动 i18next 与 html lang，URL 不变，刷新后保持。
+ *
+ * 选中态用 Menu 受控单选（selectionMode="single" + selectedKeys）驱动官方
+ * Dropdown.ItemIndicator 渲染勾选，语言项归入 Dropdown.Section 并以 Header
+ * 标题分区；默认 toggle 行为下点击已选项产生的空选由 onSelectionChange
+ * 守卫忽略（受控 selectedKeys 保证勾选始终与当前语言一致）。
  *
  * Dropdown.Trigger 内部是 react-aria 裸 Button（不接受 HeroUI 的 variant props），
  * 视觉上用 buttonVariants({ variant: "ghost", isIconOnly: true }) 对齐顶栏其它图标按钮。
@@ -33,21 +38,29 @@ export function LanguageSwitcher() {
         <Languages />
       </Button>
       <Dropdown.Popover className="min-w-40">
-        <Dropdown.Menu onAction={(key) => setLanguage(key as Language)}>
-          {LANGUAGE_OPTIONS.map(({ labelKey, value }) => {
-            const label = t(labelKey);
+        <Dropdown.Menu
+          selectedKeys={[language]}
+          selectionMode="single"
+          onSelectionChange={(keys) => {
+            if (keys === "all") return;
+            const key = [...keys][0];
 
-            return (
-              <Dropdown.Item key={value} id={value} textValue={label}>
-                <span className="flex w-full items-center gap-2">
-                  <span className="flex size-4 shrink-0 items-center justify-center">
-                    {language === value ? <Check className="size-4" /> : null}
-                  </span>
+            if (typeof key === "string") setLanguage(key as Language);
+          }}
+        >
+          <Dropdown.Section>
+            <Header>{t("common.language.choose")}</Header>
+            {LANGUAGE_OPTIONS.map(({ labelKey, value }) => {
+              const label = t(labelKey);
+
+              return (
+                <Dropdown.Item key={value} id={value} textValue={label}>
+                  <Dropdown.ItemIndicator />
                   <Label>{label}</Label>
-                </span>
-              </Dropdown.Item>
-            );
-          })}
+                </Dropdown.Item>
+              );
+            })}
+          </Dropdown.Section>
         </Dropdown.Menu>
       </Dropdown.Popover>
     </Dropdown>

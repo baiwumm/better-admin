@@ -32,6 +32,7 @@
   "common.password.show": "显示密码",
   "common.password.hide": "隐藏密码",
   "common.language.current": "当前语言",
+  "common.language.choose": "选择语言",
   "common.language.en": "English",
   "common.language.label": "语言",
   "common.language.switch": "切换语言",
