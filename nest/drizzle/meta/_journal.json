@@ -36,6 +36,13 @@
       "when": 1787926401727,
       "tag": "0004_damp_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788160970952,
+      "tag": "0005_past_lake",
+      "breakpoints": true
     }
   ]
 }

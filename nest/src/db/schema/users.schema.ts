@@ -19,6 +19,15 @@ export const users = pgTable(
     passwordHash: text('password_hash').notNull(),
     displayName: text('display_name').notNull(),
     avatar: text('avatar'),
+    /** 电话（v1.5.0，可空；自助修改走 Account 模块） */
+    phone: text('phone'),
+    /**
+     * 个人标签（v1.5.0，text[] 可空；用户在「我的账户」自助维护，
+     * 服务端逐项 trim、去重，单项 1-20 字符、最多 10 个）
+     */
+    tags: text('tags').array(),
+    /** 最近一次登录成功时间（v1.5.0，登录成功时写入；从未登录为 null） */
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
     status: text('status').notNull().default('active'),
     /**
      * 令牌版本号：签发 JWT 时写入 payload（ver claim）。

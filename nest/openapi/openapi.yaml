@@ -31,7 +31,18 @@ info:
     （GET /logs 与 GET /logs/{id} left join users 返回；用户不存在时为 null）；
     新增 DELETE /logs?ids= 批量删除日志（BATCH_DELETE 权限，任一 ID 无效整体 400 INVALID_OPERATION）；
     登录 / 每请求鉴权共用用户视图（LoginResponse.user 与 GET /auth/me）新增 email 字段。
-  version: 1.4.8
+    v1.5.0 我的账户（Account，自助模块，仅 AuthGuard 不走 PermissionsGuard）：
+    新增 GET/PUT /account/profile（displayName / phone / tags 自助修改）、PUT /account/email
+    （需 currentPassword 确认，邮箱冲突 409 EMAIL_EXISTS）、PUT /account/password
+    （需 currentPassword，成功后 tokenVersion+1 全端强制下线）、POST /account/avatar
+    （multipart 头像上传，服务端中转写入 Supabase Storage，bucket avatars public read，
+    文件名 {userId}.{ext} 同名覆盖，URL 带时间戳查询参数防缓存）；
+    users 表新增 phone / tags（text[]，可空）/ last_login_at（登录成功时写入）列；
+    AuthUser 视图（LoginResponse.user 与 GET /auth/me）新增 avatar / phone / tags，
+    并将 GET /auth/me 的 data 契约由 LoginResponse 纠偏为 AuthUser（实现一直如此）；
+    管理端 User 视图补充 phone / tags 只读展示。错误码新增 CURRENT_PASSWORD_INCORRECT、
+    AVATAR_FILE_INVALID、AVATAR_FILE_TOO_LARGE。
+  version: 1.5.0
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -42,6 +53,8 @@ servers:
 tags:
   - name: Auth
     description: 认证（登录/登出/刷新/当前用户）
+  - name: Account
+    description: 我的账户（当前登录用户自助接口：资料 / 邮箱 / 密码 / 头像）
   - name: Permissions
     description: 权限点字典
   - name: Users
@@ -125,6 +138,43 @@ components:
           type: string
           description: 可选。传入则仅撤销本设备托管的 refreshToken 会话；缺省撤销该用户全部设备会话。
 
+    # 认证用户视图（v1.5.0 由 LoginResponse.user 内联定义抽为独立 schema，
+    # 供 LoginResponse.user 与 GET /auth/me 的 data 共用）
+    AuthUser:
+      type: object
+      required: [id, username, displayName, email, roles, permissions]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+          description: 用户邮箱（v1.4.8 新增，前端统一用户信息展示使用）
+        avatar:
+          type: string
+          nullable: true
+          description: 头像 URL（v1.5.0 新增；自助上传后指向 Supabase Storage 公开地址）
+        phone:
+          type: string
+          nullable: true
+          description: 电话（v1.5.0 新增）
+        tags:
+          type: array
+          description: 个人标签（v1.5.0 新增，用户在「我的账户」自助维护，最多 10 个、每个 ≤20 字符）
+          items:
+            type: string
+        roles:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: integer
+          description: 用户全部权限位聚合（超级管理员为全1掩码，普通角色为实际位聚合值）
+          example: 9223372036854775807
+
     LoginResponse:
       type: object
       required: [accessToken, refreshToken, user]
@@ -134,25 +184,7 @@ components:
         refreshToken:
           type: string
         user:
-          type: object
-          properties:
-            id:
-              type: string
-            username:
-              type: string
-            displayName:
-              type: string
-            email:
-              type: string
-              description: 用户邮箱（v1.4.8 新增，前端统一用户信息展示使用）
-            roles:
-              type: array
-              items:
-                type: string
-            permissions:
-              type: integer
-              description: 用户全部权限位聚合（超级管理员为全1掩码，普通角色为实际位聚合值）
-              example: 9223372036854775807
+          $ref: '#/components/schemas/AuthUser'
 
     # ---------- Permissions ----------
     PermissionItem:
@@ -186,6 +218,15 @@ components:
         avatar:
           type: string
           nullable: true
+        phone:
+          type: string
+          nullable: true
+          description: 电话（v1.5.0 新增，管理端只读展示；自助修改走 PUT /account/profile）
+        tags:
+          type: array
+          description: 个人标签（v1.5.0 新增，管理端只读展示；自助维护走 PUT /account/profile）
+          items:
+            type: string
         status:
           type: string
           enum: [active, disabled]
@@ -268,6 +309,109 @@ components:
         status:
           type: string
           enum: [active, disabled]
+
+    # ---------- Account（v1.5.0 我的账户自助接口） ----------
+    AccountProfile:
+      type: object
+      required: [id, username, email, displayName, status, roles, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+          description: 登录名（只读，不可自助修改）
+        email:
+          type: string
+        displayName:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          description: 个人标签（自助维护，最多 10 个、每个去首尾空格后 1-20 字符、自动去重）
+          items:
+            type: string
+        status:
+          type: string
+          enum: [active, disabled]
+          description: 账号状态（只读）
+        roles:
+          type: array
+          description: 关联角色（只读，user_roles → roles 联查）
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              code:
+                type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 最近一次登录成功时间（v1.5.0 新增列，登录成功时写入；从未登录过为 null）
+
+    AccountProfileUpdateRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 50
+        phone:
+          type: string
+          nullable: true
+          maxLength: 20
+          description: 电话，可空；允许 + 前缀与数字、空格、短横线
+        tags:
+          type: array
+          maxItems: 10
+          description: 个人标签全量替换；服务端逐项 trim、去重，单项 1-20 字符
+          items:
+            type: string
+            maxLength: 20
+
+    AccountEmailUpdateRequest:
+      type: object
+      required: [email, currentPassword]
+      properties:
+        email:
+          type: string
+          format: email
+        currentPassword:
+          type: string
+          description: 当前密码确认（错误 400 CURRENT_PASSWORD_INCORRECT）
+
+    AccountPasswordUpdateRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 6
+          description: 新密码（≥6 位，与 ResetPasswordRequest 一致）
+
+    AccountAvatarResponse:
+      type: object
+      required: [avatar]
+      properties:
+        avatar:
+          type: string
+          description: 头像公开访问 URL（带缓存穿透时间戳查询参数）
 
     # ---------- Roles ----------
     Role:
@@ -767,9 +911,210 @@ paths:
                 required: [data]
                 properties:
                   data:
-                    $ref: '#/components/schemas/LoginResponse'
+                    $ref: '#/components/schemas/AuthUser'
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  # ===================== Account =====================
+  /account/profile:
+    get:
+      tags: [Account]
+      summary: 我的账户详情
+      security:
+        - bearerAuth: []
+      x-permission: NONE
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccountProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags: [Account]
+      summary: 修改基本信息（displayName / phone / tags）
+      security:
+        - bearerAuth: []
+      x-permission: NONE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountProfileUpdateRequest'
+      responses:
+        '200':
+          description: 修改成功，返回最新账户详情
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccountProfile'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /account/email:
+    put:
+      tags: [Account]
+      summary: 修改邮箱（需当前密码确认）
+      security:
+        - bearerAuth: []
+      x-permission: NONE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountEmailUpdateRequest'
+      responses:
+        '200':
+          description: 修改成功，返回最新账户详情
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccountProfile'
+        '400':
+          description: >
+            当前密码错误（CURRENT_PASSWORD_INCORRECT）；或参数校验失败（VALIDATION_ERROR）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                currentPasswordIncorrect:
+                  value:
+                    code: CURRENT_PASSWORD_INCORRECT
+                    message: 当前密码不正确
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: 邮箱已被其他未删除用户占用（EMAIL_EXISTS）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: EMAIL_EXISTS
+                message: 邮箱已存在
+
+  /account/password:
+    put:
+      tags: [Account]
+      summary: 修改密码（需当前密码确认；成功后全端强制下线）
+      description: >
+        校验当前密码后写入新密码，并递增 tokenVersion、撤销该用户全部托管 refreshToken：
+        所有已登录设备（含本设备当前会话）立即失效，客户端须引导重新登录。
+      security:
+        - bearerAuth: []
+      x-permission: NONE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountPasswordUpdateRequest'
+      responses:
+        '200':
+          description: 修改成功（data 为 null；当前会话已失效，须重新登录）
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: string
+                    nullable: true
+        '400':
+          description: >
+            当前密码错误（CURRENT_PASSWORD_INCORRECT）；或参数校验失败（VALIDATION_ERROR）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: CURRENT_PASSWORD_INCORRECT
+                message: 当前密码不正确
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /account/avatar:
+    post:
+      tags: [Account]
+      summary: 上传/更新头像（multipart，服务端中转写入 Supabase Storage）
+      description: >
+        图片经前端裁剪后上传（multipart/form-data，字段名 file）。服务端校验类型与大小：
+        仅允许 image/webp、image/png、image/jpeg，≤ 2MB（超限 400 AVATAR_FILE_TOO_LARGE，
+        类型非法 400 AVATAR_FILE_INVALID）。以 {userId}.{ext} 覆盖写入公开 bucket avatars，
+        每用户固定一张头像；返回的 avatar URL 带时间戳查询参数，天然穿透 CDN/浏览器缓存。
+      security:
+        - bearerAuth: []
+      x-permission: NONE
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 上传成功，返回最新头像 URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccountAvatarResponse'
+        '400':
+          description: >
+            未提供文件或文件为空（AVATAR_FILE_INVALID）；类型非法（AVATAR_FILE_INVALID）；
+            超过 2MB（AVATAR_FILE_TOO_LARGE）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                avatarInvalid:
+                  value:
+                    code: AVATAR_FILE_INVALID
+                    message: 头像文件类型不支持，仅支持 webp / png / jpeg
+                avatarTooLarge:
+                  value:
+                    code: AVATAR_FILE_TOO_LARGE
+                    message: 头像文件不能超过 2MB
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          description: Storage 写入失败（AVATAR_UPLOAD_FAILED）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: AVATAR_UPLOAD_FAILED
+                message: 头像上传失败，请稍后重试
 
   # ===================== Permissions =====================
   /permissions:

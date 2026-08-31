@@ -3,6 +3,7 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
+import { AccountModule } from './account/account.module';
 import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { MenusModule } from './modules/menus/menus.module';
@@ -24,6 +25,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     // 定时任务基础设施（当前唯一消费者：日志清理 LogCleanupService）
     ScheduleModule.forRoot(),
     AuthModule,
+    AccountModule,
     UsersModule,
     RolesModule,
     MenusModule,

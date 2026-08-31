@@ -12,7 +12,8 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "ts-node scripts/migrate.ts",
-    "db:seed": "ts-node src/db/seed.ts"
+    "db:seed": "ts-node src/db/seed.ts",
+    "storage:init": "ts-node scripts/init-storage.ts"
   },
   "dependencies": {
     "@nestjs/common": "11.2.1",
@@ -23,6 +24,7 @@
     "@nestjs/platform-express": "11.2.1",
     "@nestjs/schedule": "^12.0.1",
     "@nestjs/swagger": "^11.4.7",
+    "@supabase/supabase-js": "^2.112.4",
     "bcrypt": "6.0.0",
     "class-transformer": "0.5.1",
     "class-validator": "0.15.1",
@@ -41,6 +43,7 @@
     "@nestjs/schematics": "11.0.8",
     "@types/bcrypt": "6.0.0",
     "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
     "@types/node": "22.18.1",
     "@types/passport-jwt": "4.0.1",
     "@types/pg": "8.23.1",

@@ -16,6 +16,12 @@ export interface AuthUser {
   displayName: string;
   /** 用户邮箱（v1.4.8：前端统一用户信息展示） */
   email: string;
+  /** 头像 URL（v1.5.0：侧边栏 / 我的账户展示） */
+  avatar: string | null;
+  /** 电话（v1.5.0） */
+  phone: string | null;
+  /** 个人标签（v1.5.0，用户自助维护） */
+  tags: string[];
   roles: string[]; // 角色 code 列表
   /** 聚合权限位（bigint 全量位，super_admin 为 -1n）。以字符串返回避免 JSON 精度丢失。 */
   permissions: string;
@@ -83,6 +89,10 @@ export class AuthService {
       displayName: user.displayName,
       // v1.4.8：视图补充邮箱（前端统一用户信息展示，侧边栏次行）
       email: user.email,
+      // v1.5.0：头像 / 电话 / 个人标签（我的账户与侧边栏展示）
+      avatar: user.avatar,
+      phone: user.phone,
+      tags: user.tags ?? [],
       roles: roleRows.map((r) => r.code),
       // 对外输出正数全量位（-1n → 9223372036854775807），避免前端符号歧义
       permissions: normalizePermissionBits(permissions).toString(),
@@ -174,6 +184,8 @@ export class AuthService {
     const rememberMe = dto.rememberMe === true;
     const tokens = this.signTokens(user, rememberMe);
     await this.storeRefreshToken(user.id, tokens.refreshToken);
+    // v1.5.0：记录最近登录成功时间（我的账户展示 lastLoginAt）
+    await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
     const view = await this.loadUserWithPermissions(user.id);
 
     // 记录登录成功日志（含 IP / UA，便于审计）

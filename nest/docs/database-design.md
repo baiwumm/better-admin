@@ -112,7 +112,10 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | email | varchar(255) | NOT NULL | 邮箱（部分唯一索引，见下） |
 | password_hash | varchar(255) | NOT NULL | bcrypt 哈希，禁止明文 |
 | display_name | varchar(100) | NOT NULL | 展示名 |
-| avatar | varchar(512) | NULL | 头像 URL |
+| avatar | varchar(512) | NULL | 头像 URL（我的账户上传后指向 Supabase Storage 公开地址，带时间戳参数穿透缓存） |
+| phone | varchar(20) | NULL | 电话（v1.5.0，我的账户自助修改；`+` 前缀 + 数字/空格/短横线，4-20 位） |
+| tags | text[] | NULL | 个人标签（v1.5.0，我的账户自助维护；服务端 trim、去空、去重，≤10 个 × 20 字符） |
+| last_login_at | timestamptz | NULL | 最近一次登录成功时间（v1.5.0，登录成功时写入；从未登录为 NULL） |
 | status | varchar(20) | NOT NULL, DEFAULT 'active' | `active` / `disabled`（收进字典 `user_status`） |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | |
 | updated_at | timestamptz | NOT NULL, DEFAULT now() | |
