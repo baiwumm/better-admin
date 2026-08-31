@@ -1,5 +1,5 @@
-# Logs
-logs
+# Logs（锚定根目录：运行时日志，不忽略 src/features/logs 源码目录）
+/logs
 *.log
 npm-debug.log*
 yarn-debug.log*
