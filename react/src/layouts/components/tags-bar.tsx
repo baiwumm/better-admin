@@ -9,7 +9,7 @@ import {
   Skeleton,
   useOverlayState,
 } from "@heroui/react";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 import {
   ArrowLeftToLine,
   ArrowRightToLine,
@@ -28,6 +28,8 @@ import { useTranslation } from "@/i18n";
 import { getMenuLabel } from "@/lib/menu-i18n";
 import { type MenuNode } from "@/lib/api-types";
 import { collectMenuPaths, flattenLeafMenus } from "@/lib/menu-utils";
+import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
+import { buildRouteTitleKeyMap } from "@/lib/route-title";
 import { isPinnedTab } from "@/lib/tabs-model";
 import { useTabsStore } from "@/stores/tabs-store";
 
@@ -118,6 +120,7 @@ function useIsolatedClick(onClose: () => void) {
  */
 export function TagsBar() {
   const navigate = useNavigate();
+  const router = useRouter();
   const { pathname } = useLocation();
   const { data: menuTree } = useMenus();
   const { t } = useTranslation();
@@ -140,11 +143,25 @@ export function TagsBar() {
   }, [pathname, openPath]);
 
   // 菜单就绪 → 权限治理：清理恢复 / 权限变更后不可达的残留标签。
+  // 登录白名单路径（/ 与 /account）不属于菜单权限体系，登录即可达，
+  // 用户显式打开的标签不应被菜单加载后的治理误删。
   useEffect(() => {
     if (!menuTree) return;
 
-    pruneTabs(collectMenuPaths(menuTree as MenuNode[]));
+    pruneTabs(
+      new Set([
+        ...collectMenuPaths(menuTree as MenuNode[]),
+        ...LOGIN_REQUIRED_PATHS,
+      ]),
+    );
   }, [menuTree, pruneTabs]);
+
+  // 路由 staticData.titleKey 映射：非菜单路由（如登录白名单页 /account）
+  // 在菜单树中没有标题来源，回退到路由声明的 titleKey（与 useDocumentTitle 同源）。
+  const routeTitleKeyByPath = useMemo(
+    () => buildRouteTitleKeyMap(router),
+    [router],
+  );
 
   // 路径 → 标题 / 图标实时映射（菜单数据源；标题经 i18nKey 取词，语言切换即更新）。
   const liveMetaByPath = useMemo(() => {
@@ -437,10 +454,15 @@ export function TagsBar() {
           {paths.map((path) => {
             const live = liveMetaByPath.get(path);
             const cached = cachedMeta[path];
+            const routeTitleKey = routeTitleKeyByPath.get(path);
             const title =
               live?.title ??
               cached?.title ??
-              (isPinnedTab(path) ? t("menu.pageTitle.console") : null);
+              (routeTitleKey !== undefined
+                ? t(routeTitleKey)
+                : isPinnedTab(path)
+                  ? t("menu.pageTitle.console")
+                  : null);
             const icon = live?.icon ?? cached?.icon;
             const active = path === pathname;
             const pinned = isPinnedTab(path);

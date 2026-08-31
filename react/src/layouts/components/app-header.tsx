@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useLocation } from "@tanstack/react-router";
+import { useEffect, useMemo } from "react";
+import { useLocation, useRouter } from "@tanstack/react-router";
 import {
   Breadcrumbs,
   Button,
@@ -21,7 +21,7 @@ import { useTranslation } from "@/i18n";
 import { getMenuLabel } from "@/lib/menu-i18n";
 import { filterHiddenMenus } from "@/lib/permission";
 import { findActivePath, getBreadcrumbNodes } from "@/lib/menu-utils";
-import { type MenuNode } from "@/lib/api-types";
+import { buildRouteTitleKeyMap } from "@/lib/route-title";
 import { useDisplayedPathStore } from "@/stores/displayed-path-store";
 
 type AppHeaderProps = {
@@ -72,12 +72,31 @@ export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [searchSetOpen, searchState.isOpen]);
 
-  // 从可见菜单树解析出当前路由对应的面包屑节点链（含图标与名称）。
-  const crumbs: MenuNode[] = (() => {
-    const tree = filterHiddenMenus(menuTree ?? []);
-    const activePath = findActivePath(tree, committedPath || pathname);
+  // 路由标题兜底映射与菜单数据无关，仅在路由器实例变化时重建。
+  const router = useRouter();
+  const routeTitleKeyByPath = useMemo(
+    () => buildRouteTitleKeyMap(router),
+    [router],
+  );
 
-    return activePath.length > 0 ? getBreadcrumbNodes(tree, activePath) : [];
+  // 从可见菜单树解析出当前路由对应的面包屑节点链（含图标与名称）；
+  // 非菜单路由（如登录白名单页 /account）在菜单树中无匹配，回退为单级
+  // 面包屑，标题取路由 staticData.titleKey（与标签栏、useDocumentTitle 同源）。
+  const crumbs = (() => {
+    const tree = filterHiddenMenus(menuTree ?? []);
+    const target = committedPath || pathname;
+    const activePath = findActivePath(tree, target);
+
+    if (activePath.length > 0) {
+      return getBreadcrumbNodes(tree, activePath).map((node) => ({
+        id: node.id,
+        label: getMenuLabel(node, t),
+      }));
+    }
+
+    const titleKey = routeTitleKeyByPath.get(target);
+
+    return titleKey ? [{ id: target, label: t(titleKey) }] : [];
   })();
 
   return (
@@ -140,7 +159,7 @@ export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
               <Breadcrumbs className="min-w-0">
                 {crumbs.map((item) => (
                   <Breadcrumbs.Item key={item.id} className="min-w-0">
-                    {getMenuLabel(item, t)}
+                    {item.label}
                   </Breadcrumbs.Item>
                 ))}
               </Breadcrumbs>
