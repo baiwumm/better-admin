@@ -32,7 +32,9 @@ import {
   cn,
 } from "@heroui/react";
 import { GripVertical, RotateCcw, Settings2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { useFlipReorder } from "./use-flip-reorder";
 
 import { useTranslation } from "@/i18n";
 
@@ -145,6 +147,13 @@ export function DataTableViewOptions<TData extends RowData>({
    */
   const [defaultOrderIds] = useState<string[]>(hideableIds);
   const [hasRestored, setHasRestored] = useState(false);
+  // FLIP 动画单次触发开关：仅「重置」置真，拖拽结束的重排交给 dnd-kit 动画
+  const shouldAnimateFlip = useRef(false);
+  // 面板行重排 FLIP 动画：顺序变化时对列表行做垂直位移过渡（重置回默认等）
+  const flipContainerRef = useFlipReorder(
+    orderIds.join("\u0000"),
+    shouldAnimateFlip,
+  );
 
   // 挂载时恢复持久化的列设置（仅一次）：隐藏列 + 顺序
   useEffect(() => {
@@ -231,12 +240,14 @@ export function DataTableViewOptions<TData extends RowData>({
 
     const next = arrayMove(orderIds, oldIndex, newIndex);
 
+    shouldAnimateFlip.current = false;
     setOrderIds(next);
     table.setColumnOrder(mergeColumnOrder(allLeafIds, next, isHideable));
   };
 
   const resetColumns = () => {
     // 用挂载时固化的默认顺序还原面板；表格侧以空 columnOrder 回到定义顺序
+    shouldAnimateFlip.current = true;
     setOrderIds(defaultOrderIds);
     table.setColumnVisibility({});
     table.setColumnOrder([]);
@@ -296,7 +307,10 @@ export function DataTableViewOptions<TData extends RowData>({
               items={orderIds}
               strategy={verticalListSortingStrategy}
             >
-              <div className="flex max-h-80 flex-col gap-1 overflow-y-auto">
+              <div
+                ref={flipContainerRef}
+                className="flex max-h-80 flex-col gap-1 overflow-y-auto"
+              >
                 {orderIds.map((id) => (
                   <SortableColumnRow
                     key={id}
@@ -307,6 +321,7 @@ export function DataTableViewOptions<TData extends RowData>({
                     dragLabel={t("common.datatable.columnDrag", {
                       column: columnLabel(id),
                     })}
+                    flipId={id}
                     id={id}
                     isVisible={table.getColumn(id)?.getIsVisible() ?? true}
                     label={columnLabel(id)}
@@ -326,6 +341,8 @@ export function DataTableViewOptions<TData extends RowData>({
 
 interface SortableColumnRowProps {
   id: string;
+  /** FLIP 动画行标识（useFlipReorder 按此定位行元素） */
+  flipId: string;
   label: string;
   isVisible: boolean;
   /** 是否允许切换可见性（最后一列可见时禁止取消勾选） */
@@ -338,6 +355,7 @@ interface SortableColumnRowProps {
 /** 面板内的单行：拖拽手柄 + 可见性勾选 + 列名 */
 function SortableColumnRow({
   id,
+  flipId,
   label,
   isVisible,
   canToggle,
@@ -360,6 +378,7 @@ function SortableColumnRow({
         "flex items-center gap-1 rounded-3xl",
         isDragging && "z-10 bg-default shadow-md",
       )}
+      data-flip-id={flipId}
       style={{ transform: CSS.Translate.toString(transform), transition }}
     >
       <Button
