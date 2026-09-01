@@ -5,6 +5,15 @@
 
 ---
 
+### 组织中心阶段 2：岗位管理 + 人员通讯录 + 用户关联闭环（契约 v1.6.0 补充）（2026-09-01）
+
+- **范围**：阶段 1 契约中的岗位 5 接口与通讯录 1 接口全量实现；另扩 **用户管理关联编辑**（阶段 2 范围扩展，实现通讯录数据闭环——PRD 4.3 用户表组织字段的使用入口即用户管理，无此入口通讯录永远无数据）：`UserCreateRequest` / `UserUpdateRequest` 新增 `deptId`（须存在且启用，400 `DEPT_NOT_FOUND`）/ `employeeNo` / `entryDate`（YYYY-MM-DD）/ `employmentStatus` / `postIds`（user_posts 全量替换，须存在且启用，最多 20 个）/ `mainPostId`（须在 postIds 中，400 `VALIDATION_ERROR`）；管理端 User 视图新增 `deptId / deptName / employeeNo / entryDate / employmentStatus（存量 NULL 按 employed 输出）/ posts（主岗标记）`；用户软删同步清理 user_posts。契约以 v1.6.0 补充注记记录（YAML 校验通过）。
+- **后端（`nest/src/modules/org/`）**：`PostsService`（分页列表含下级组织筛选（递归 CTE 两步查询）/ keyword / category / status；同组织岗位名唯一 409 `POST_NAME_EXISTS`；删除校验在职人数 `POST_HAS_ACTIVE_USERS`（message 携带人数）并软删 + 清理 user_posts；`/org/posts/:id/members` 在职人数穿透）；`DirectoryService`（`employmentStatus` 缺省 employed、递归组织筛选、displayName/employeeNo/username 三字段模糊搜索；deptPath 全量内存拼链、主岗 join 单次装载）。共享 helper `org-views.ts`：`buildDeptPathMap` / `collectDeptSubtreeIds` / `loadDirectoryExtras` / `toDirectoryEntryView` / `assertValidDeptId`（组织中心与用户模块共用校验）/ `assertValidPostIds`。
+- **前端（`react/src/features/org/`）**：岗位管理页（组织筛选 DeptTreeSelect + 类别/状态 FilterSelect + 关键词 + 服务端分页 DataTable；「在职人数」列点击打开成员穿透抽屉（一次拉 50 名，数量级小不做分页 UI）；表单 toast.promise）；人员通讯录页（左树右表：树点击即筛选组织及下级、FilterX 清除、`employmentStatus` 缺省筛选在职；列：人员（UserInfo）/工号/组织路径/主岗/手机/邮箱/入职日期/在职 Chip）；共享组件 `DeptTreeSelect`（平铺缩进树下拉，组织表单与用户表单复用）。用户管理编辑弹窗新增「所属组织 / 关联岗位（多选）/ 主岗（选项限定已选岗位，天然满足约束）/ 工号 / 入职日期 / 在职状态」六项，用户列表加「所属组织」列。
+- **菜单 seed**：「组织管理」sort 0、「岗位管理」（briefcase，/org/posts）sort 1、「人员通讯录」（book-user，/org/directory）sort 2；`migrate-menus-add-org.ts` 扩展为按 i18nKey 幂等补录三个子菜单，存量库已执行（旧两条跳过、新两条插入 + super_admin 授权）。
+- **验证**：nest tsc / eslint / build 全绿；react tsc / eslint / build 全绿（routeTree 注册 /org/posts、/org/directory）。后端冒烟：登录 → 通讯录（默认全 employed 3 人 / resigned 0 / all 3 / deptId 筛选 0——用户未挂组织符合预期）→ 岗位创建 201 → 同组织重名 409 → 按组织筛选 → members 空穿透 → 删除软删后列表清空 → User 视图新字段输出正常。**待人工验证**：浏览器走通「用户编辑挂组织/岗位 → 通讯录/在职人数/主岗展示」全链路、岗位删除的在职人员 409 拦截。
+- **同步待办**：阶段 3（公告 + notifications 站内信 + 顶栏铃铛）→ 阶段 4（架构图谱 ECharts + 通讯录 Excel 导出）；Vue / Next / Nuxt 跟上 v1.6.0（含用户关联六字段与 org 模块）。
+
 ### 组织中心阶段 1：契约 v1.6.0 + 建表迁移 0007 + 组织管理前后端（2026-09-01）
 
 - **范围**：新模块「组织中心」阶段 1 落地——契约先行（v1.6.0，阶段 1/2 接口一次性定义）、迁移 0007 一次建全 8 张新表 + users 扩展、NestJS 组织管理（depts）、React 组织管理页、菜单 seed 与 i18n。方案经用户评审：5 项决策确认（users 表扩展四字段、岗位不接入权限聚合、富文本选 Tiptap、ECharts+xlsx 阶段 4 引入、模块名保留）；模块显示名最终定为「组织中心」（原 PRD 名「组织与权限中心」太长，调整 i18n `menu.org` 文案 + seed label，菜单结构与路由不变）。
