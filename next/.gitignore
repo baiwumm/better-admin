@@ -27,6 +27,9 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# drizzle-kit pull 暂存目录（迁移 SQL/meta 不进仓库，真源在 nest/drizzle/）
+.drizzle-scratch/
+
 # vercel
 .vercel
 

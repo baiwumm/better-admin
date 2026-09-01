@@ -4,30 +4,38 @@
 	"type": "module",
 	"private": true,
 	"author": "baiwumm",
-  "homepage": "https://next.baiwumm.com",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/baiwumm/better-admin.git",
-    "directory": "next"
-  },
-  "bugs": {
-    "url": "https://github.com/baiwumm/better-admin/issues"
-  },
+	"homepage": "https://next.baiwumm.com",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/baiwumm/better-admin.git",
+		"directory": "next"
+	},
+	"bugs": {
+		"url": "https://github.com/baiwumm/better-admin/issues"
+	},
 	"scripts": {
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"lint": "eslint --fix"
+		"lint": "eslint --fix",
+		"db:pull": "drizzle-kit pull --config=drizzle.config.ts && node scripts/sync-pulled-schema.mjs",
+		"check-locales": "node scripts/check-locales.mjs"
 	},
 	"dependencies": {
 		"@heroui/react": "3.2.4",
 		"@heroui/styles": "3.2.4",
+		"@tanstack/react-query": "^5.102.8",
 		"clsx": "2.1.1",
+		"drizzle-orm": "^0.45.2",
+		"i18next": "^26.4.0",
 		"intl-messageformat": "10.7.16",
+		"lucide-react": "^1.37.0",
 		"next": "16.2.6",
-		"next-themes": "0.4.6",
+		"postgres": "^3.4.9",
 		"react": "19.2.6",
-		"react-dom": "19.2.6"
+		"react-dom": "19.2.6",
+		"react-i18next": "^17.0.12",
+		"zustand": "^5.0.15"
 	},
 	"devDependencies": {
 		"@eslint/compat": "1.2.8",
@@ -40,6 +48,8 @@
 		"@types/react-dom": "19.2.3",
 		"@typescript-eslint/eslint-plugin": "8.34.1",
 		"@typescript-eslint/parser": "8.34.1",
+		"dotenv": "^17.4.2",
+		"drizzle-kit": "^0.31.10",
 		"eslint": "9.25.1",
 		"eslint-config-next": "16.2.0",
 		"eslint-config-prettier": "10.1.5",
@@ -51,6 +61,7 @@
 		"eslint-plugin-react-hooks": "5.2.0",
 		"eslint-plugin-unused-imports": "4.1.4",
 		"globals": "16.0.0",
+		"pg": "^8.23.0",
 		"postcss": "8.5.6",
 		"prettier": "3.5.3",
 		"tailwind-variants": "3.3.0",

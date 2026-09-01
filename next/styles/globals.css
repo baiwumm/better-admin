@@ -1,9 +1,49 @@
 @import "tailwindcss";
 @import "@heroui/styles";
 
+/* 自托管字体（Maple Mono CN 子集 @font-face） */
+@import './fonts.css';
+
+/* 项目级 Design Tokens（唯一来源；最后加载且未分层 → 级联优先于上述 Hero 变量） */
+@import './theme.css';
+
+/* 圆角偏好（html[data-radius] 覆盖 --radius / --field-radius） */
+@import './radius.css';
+
+/* 主题切换 View Transition（clip-path 揭示动画） */
+@import './theme-transition.css';
+
+/* 色彩模式（正常 / 灰色 / 色弱）滤镜 */
+@import './color-vision.css';
+
+/* 错误页专属动效与质感 */
+@import './error-page.css';
+
+/* ── 以下为全局共用基底（其余特性样式见各按功能命名的文件，经上方 @import 聚合）── */
+
 @custom-variant dark (&:is(.dark *));
 
-@theme {
-	--font-sans: "font", sans-serif;
-	--font-mono: "monospace", monospace;
+:root {
+  /* Border Radius */
+  --radius: 0.5rem;
+  --field-radius: 0.75rem;
+
+  /* Font Family（自托管 Maple Mono CN 子集，见 fonts.css） */
+  --font-sans: 'Maple Mono CN', system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+  --chart-1: oklch(from var(--accent) calc(l - 0.24) c h);
+  --chart-2: oklch(from var(--accent) calc(l - 0.12) c h);
+  --chart-3: var(--accent);
+  --chart-4: oklch(from var(--accent) calc(l + 0.12) c h);
+  --chart-5: oklch(from var(--accent) calc(l + 0.24) c h);
+
+  view-transition-name: root;
+}
+
+@layer base {
+
+  html,
+  body {
+    @apply bg-background text-foreground;
+  }
 }

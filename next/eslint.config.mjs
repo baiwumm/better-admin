@@ -8,6 +8,7 @@ import jsxA11Y from "eslint-plugin-jsx-a11y";
 import prettier from "eslint-plugin-prettier";
 import globals from "globals";
 import tsParser from "@typescript-eslint/parser";
+import nextPlugin from "@next/eslint-plugin-next";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import js from "@eslint/js";
@@ -43,13 +44,17 @@ export default defineConfig([globalIgnores([
     "!**/react-shim.js",
     "!**/tsup.config.ts",
 ]), {
-    extends: fixupConfigRules(compat.extends(
-        "plugin:react/recommended",
-        "plugin:prettier/recommended",
-        "plugin:react-hooks/recommended",
-        "plugin:jsx-a11y/recommended",
-        "plugin:@next/next/recommended",
-    )),
+    extends: [
+        ...fixupConfigRules(compat.extends(
+            "plugin:react/recommended",
+            "plugin:prettier/recommended",
+            "plugin:react-hooks/recommended",
+            "plugin:jsx-a11y/recommended",
+        )),
+        // Next 16 起插件仅提供 flat config（legacy 格式被 eslintrc 校验器拒绝），
+        // 经 fixup 适配后并入
+        ...fixupConfigRules(nextPlugin.configs.recommended),
+    ],
 
     plugins: {
         react: fixupPluginRules(react),

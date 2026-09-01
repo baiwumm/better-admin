@@ -1,0 +1,22 @@
+/* 圆角偏好（html[data-radius] 覆盖 HeroUI 派生圆角体系）
+   HeroUI v3 的整条圆角刻度（--radius-xs … --radius-4xl、--field-radius）
+   均由基准变量 --radius 派生（calc(var(--radius) * N)），覆盖基准即可
+   全站生效（按钮 / 卡片 / 输入框 / 表格容器 / 弹窗等）。
+   medium 为默认档：不设属性，沿用 globals.css :root 的原始值
+   （0.5rem / 0.75rem），首访与重置均落在默认档。
+   注意：rounded-full 的圆形件（头像 / Chip / Switch 手柄）不走该刻度，
+   不受圆角档位影响，属预期行为。 */
+html[data-radius="none"] {
+  --radius: 0rem;
+  --field-radius: 0rem;
+}
+
+html[data-radius="small"] {
+  --radius: 0.25rem;
+  --field-radius: 0.375rem;
+}
+
+html[data-radius="large"] {
+  --radius: 0.75rem;
+  --field-radius: 1.125rem;
+}

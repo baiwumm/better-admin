@@ -1,0 +1,14 @@
+/* 色彩模式（偏好设置）：html[data-color-vision] 属性驱动，见 design-theme-store.ts。
+   仅作用于视觉呈现，不改变任何组件变量与交互逻辑；
+   默认「正常模式」无属性，无需样式。 */
+
+/* 灰色模式：整体去色 */
+html[data-color-vision='grayscale'] {
+  filter: grayscale(100%);
+}
+
+/* 色弱模式：SVG feColorMatrix 近似红绿色弱（绿色敏感度下降）的补色矩阵，
+   滤镜节点定义在根目录 index.html 的内联 <svg> 中（隐藏尺寸） */
+html[data-color-vision='color-weak'] {
+  filter: url('#better-admin-color-weak');
+}
