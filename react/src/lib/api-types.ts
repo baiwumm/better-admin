@@ -288,3 +288,76 @@ export interface Log {
   detail: unknown;
   createdAt: string;
 }
+
+/* ---------------------------------------------------------------------------
+ * 组织中心（契约 v1.6.0 阶段 1/2，/org/*）
+ * ------------------------------------------------------------------------- */
+
+/** 组织状态（depts.status / posts.status） */
+export type DeptStatus = "enabled" | "disabled";
+
+/** 组织实体（/org/depts，含联查摘要） */
+export interface Dept {
+  id: string;
+  parentId: string | null;
+  name: string;
+  code: string | null;
+  leaderId: string | null;
+  /** 负责人姓名（left join 未删除 users.display_name） */
+  leaderName: string | null;
+  /** 同级排序号，数字越大越靠前 */
+  sort: number;
+  status: DeptStatus;
+  childCount: number;
+  postCount: number;
+  userCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 组织树节点（/org/depts/tree） */
+export interface DeptTreeNode {
+  id: string;
+  parentId: string | null;
+  name: string;
+  code: string | null;
+  /** 负责人用户 ID（契约 v1.6.0 补充；编辑弹窗回显负责人需要） */
+  leaderId: string | null;
+  leaderName: string | null;
+  sort: number;
+  status: DeptStatus;
+  children: DeptTreeNode[];
+}
+
+/** 创建组织请求体（parentId 为 null 表示顶级组织） */
+export interface DeptCreateInput {
+  name: string;
+  code?: string | null;
+  parentId?: string | null;
+  leaderId?: string | null;
+  sort?: number;
+  status?: DeptStatus;
+}
+
+/** 更新组织请求体（parentId 语义：缺省不改；null 移为顶级；非 null 移到该组织下） */
+export interface DeptUpdateInput {
+  name?: string;
+  code?: string | null;
+  parentId?: string | null;
+  leaderId?: string | null;
+  sort?: number;
+  status?: DeptStatus;
+}
+
+/** 拖拽排序单项（PATCH /org/depts/sort） */
+export interface DeptSortItem {
+  id: string;
+  parentId?: string | null;
+  sort?: number;
+}
+
+/** 岗位类别（posts.category，阶段 2 使用） */
+export type PostCategory = "management" | "professional" | "production";
+
+/** 在职状态（users.employment_status，契约 v1.6.0；与账号启停 status 正交） */
+export type EmploymentStatus = "employed" | "resigned";

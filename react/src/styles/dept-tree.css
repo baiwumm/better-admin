@@ -1,0 +1,29 @@
+/* 组织树展开/收起动效（组件：features/org/dept-tree.tsx） */
+
+/* 子树入场：展开挂载时轻微下移淡入；收起为直接卸载（保持按需挂载的渲染性能，
+   5000 节点量级下不做常驻挂载的高度过渡） */
+@keyframes dept-tree-expand-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dept-tree__children {
+  /* 与顶层容器（Surface flex flex-col gap-3）一致的纵向间距，层级观感统一 */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: dept-tree-expand-in 160ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dept-tree__children {
+    animation: none;
+  }
+}

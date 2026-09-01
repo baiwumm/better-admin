@@ -1,5 +1,6 @@
 import type { RowData } from "@tanstack/react-table";
 import type { ColumnVisibilityState } from "@tanstack/react-table";
+import type { ComponentProps } from "react";
 import type { DragEndEvent } from "@dnd-kit/core";
 import type { AppTable } from "./table-types";
 
@@ -109,16 +110,22 @@ function mergeColumnOrder(
   return allIds.map((id) => (isHideable(id) ? (queue.shift() ?? id) : id));
 }
 
+/** 面板内可见性 Checkbox 的 variant（跟随 HeroUI Checkbox 定义，默认不传） */
+type CheckboxVariant = ComponentProps<typeof Checkbox>["variant"];
+
 export interface DataTableViewOptionsProps<TData extends RowData> {
   table: AppTable<TData>;
   /** 持久化 key（buildColumnSettingKey 生成）；不传则不持久化 */
   storageKey?: string;
+  /** 可见性 Checkbox 的 variant（如 "secondary"；缺省为组件默认样式） */
+  checkboxVariant?: CheckboxVariant;
   className?: string;
 }
 
 export function DataTableViewOptions<TData extends RowData>({
   table,
   storageKey,
+  checkboxVariant,
   className,
 }: DataTableViewOptionsProps<TData>) {
   const { t } = useTranslation();
@@ -318,6 +325,7 @@ export function DataTableViewOptions<TData extends RowData>({
                       !(table.getColumn(id)?.getIsVisible() ?? true) ||
                       visibleCount > 1
                     }
+                    checkboxVariant={checkboxVariant}
                     dragLabel={t("common.datatable.columnDrag", {
                       column: columnLabel(id),
                     })}
@@ -347,6 +355,8 @@ interface SortableColumnRowProps {
   isVisible: boolean;
   /** 是否允许切换可见性（最后一列可见时禁止取消勾选） */
   canToggle: boolean;
+  /** 可见性 Checkbox 的 variant */
+  checkboxVariant?: CheckboxVariant;
   onVisibleChange: (visible: boolean) => void;
   /** 无障碍：拖拽手柄描述（含列名） */
   dragLabel: string;
@@ -359,6 +369,7 @@ function SortableColumnRow({
   label,
   isVisible,
   canToggle,
+  checkboxVariant,
   onVisibleChange,
   dragLabel,
 }: SortableColumnRowProps) {
@@ -396,6 +407,7 @@ function SortableColumnRow({
         aria-label={label}
         isDisabled={!canToggle}
         isSelected={isVisible}
+        variant={checkboxVariant}
         onChange={onVisibleChange}
       >
         <Checkbox.Content>
