@@ -22,6 +22,12 @@ export interface AuthUser {
   phone: string | null;
   /** 个人标签（v1.5.0，用户自助维护） */
   tags: string[];
+  /** 个人网站裸域名（v1.5.3 只读；展示前缀 https:// 由前端拼接） */
+  website: string | null;
+  /** GitHub 用户名裸值（v1.5.3 只读） */
+  githubUsername: string | null;
+  /** X（Twitter）用户名裸值（v1.5.3 只读） */
+  xUsername: string | null;
   roles: string[]; // 角色 code 列表
   /** 聚合权限位（bigint 全量位，super_admin 为 -1n）。以字符串返回避免 JSON 精度丢失。 */
   permissions: string;
@@ -93,6 +99,10 @@ export class AuthService {
       avatar: user.avatar,
       phone: user.phone,
       tags: user.tags ?? [],
+      // v1.5.3：个人链接三字段（侧边栏「个人链接」菜单），只读裸值
+      website: user.website,
+      githubUsername: user.githubUsername,
+      xUsername: user.xUsername,
       roles: roleRows.map((r) => r.code),
       // 对外输出正数全量位（-1n → 9223372036854775807），避免前端符号歧义
       permissions: normalizePermissionBits(permissions).toString(),

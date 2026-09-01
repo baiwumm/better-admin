@@ -50,7 +50,10 @@ info:
     展示 URL 前缀（https:// 、https://github.com/ 、https://x.com/）由前端统一拼接；
     管理端 User 视图自动透出三个只读字段（toView 剩余字段展开，语义为个人链接，
     仅管理端展示用）。
-  version: 1.5.2
+    v1.5.3 AuthUser 视图（LoginResponse.user 与 GET /auth/me）新增
+    website / githubUsername / xUsername 三个只读字段：侧边栏「个人链接」菜单
+    与用户名区展示需要登录态快照携带（均为可空裸值，前缀由前端拼接）。
+  version: 1.5.3
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -172,6 +175,18 @@ components:
         tags:
           type: array
           description: 个人标签（v1.5.0 新增，用户在「我的账户」自助维护，最多 10 个、每个 ≤20 字符）
+        website:
+          type: string
+          nullable: true
+          description: 个人网站裸域名（v1.5.3 新增只读；展示时前端拼 https:// 前缀）
+        githubUsername:
+          type: string
+          nullable: true
+          description: GitHub 用户名裸值（v1.5.3 新增只读；展示时前端拼 https://github.com/ 前缀）
+        xUsername:
+          type: string
+          nullable: true
+          description: X（Twitter）用户名裸值（v1.5.3 新增只读；展示时前端拼 https://x.com/ 前缀）
           items:
             type: string
         roles:
