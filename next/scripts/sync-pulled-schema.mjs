@@ -21,6 +21,9 @@ for (const file of ["schema.ts", "relations.ts"]) {
   }
 
   let content = readFileSync(src, "utf8");
+  // 修复 drizzle-kit 内省的命名怪癖：i18n_key 列被生成为 i18NKey（N 界错误大写），
+  // 与 Nest 端 schema 的 i18nKey 属性名对齐（DB 列名 i18n_key 不变）
+  content = content.replaceAll("i18NKey", "i18nKey");
   // 修复 drizzle-kit 序列化器对空字符串默认值的输出缺陷
   // （如 posts.rank 的 ''::text 被写成 default(')，是未闭合的字面量）
   content = content.replaceAll(".default(')", ".default('')");

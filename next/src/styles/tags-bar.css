@@ -1,0 +1,29 @@
+/* 多标签页栏动效
+ *
+ * - 新标签进场：淡入 + 顺导航方向的轻微位移（--rt-dir-x 由
+ *   route-transitions.css 维护，后退时自动反转）；仅挂载时播放一次。
+ * - 激活态切换的平滑过渡由 HeroUI Button 自带的 transition 承担，
+ *   此处不重复声明。
+ * - prefers-reduced-motion：全部关闭。
+ */
+
+@keyframes tab-enter {
+  from {
+    opacity: 0;
+    transform: translateX(calc(10px * var(--rt-dir-x, 1)));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+[data-tab-enter="true"] {
+  animation: tab-enter 220ms var(--rt-ease, ease-out) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-tab-enter="true"] {
+    animation: none;
+  }
+}

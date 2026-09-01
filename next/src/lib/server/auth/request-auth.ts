@@ -52,26 +52,26 @@ export async function getAuthUser(
 }
 
 /**
- * RSC 版会话有效性检查（无需 Request 参数）：
- * 从 next/headers 的语言无关 Cookie 存储读取 access token 并走同一条
- * 验签 + token_version 校验链。供 (auth) 布局的反向守卫（已登录访问
- * 登录页 → 回首页）使用。
+ * RSC 版会话获取（无需 Request 参数）：
+ * 从 next/headers 的 Cookie 存储读取 access token 并走同一条
+ * 验签 + token_version 校验链。供 RSC 布局（(auth) 反向守卫、
+ * (authenticated) 会话与菜单注入）使用。
+ *
+ * @returns 当前用户视图；未认证/令牌失效返回 null
  */
-export async function isServerSessionValid(): Promise<boolean> {
+export async function getSessionUser(): Promise<AuthUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
 
-  if (!token) return false;
+  if (!token) return null;
 
   try {
     const payload = await verifyToken(token, "access");
 
-    if (payload.type !== "access") return false;
+    if (payload.type !== "access") return null;
 
-    const user = await loadUserWithPermissions(payload.sub, payload.ver);
-
-    return user != null;
+    return await loadUserWithPermissions(payload.sub, payload.ver);
   } catch {
-    return false;
+    return null;
   }
 }

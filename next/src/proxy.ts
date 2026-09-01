@@ -1,13 +1,18 @@
+import type { AuthUser } from "@/lib/api-types";
+
 import { NextResponse, type NextRequest } from "next/server";
 
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/auth-cookies";
 import { verifyToken } from "@/lib/server/auth/tokens";
-import { loadUserWithPermissions } from "@/lib/server/auth/session";
-import { refresh } from "@/lib/server/auth/session";
+import { loadUserWithPermissions, refresh } from "@/lib/server/auth/session";
 import { setAuthCookies } from "@/lib/server/auth/cookies";
+import { filterAccessibleMenus } from "@/lib/permission";
+import { collectMenuPaths } from "@/lib/menu-utils";
+import { findMenuTree } from "@/lib/server/menus-service";
+import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
 
 /**
- * 全站守卫（对齐方案 §架构要点 3 / 修正七）：
+ * 全站守卫（对齐方案 §架构要点 2/3 / 修正七）：
  *
  * Node.js runtime（需查库，Edge 无法使用 postgres 驱动）。每个页面请求：
  * 1. access Cookie 存在 → jose 验签 → `ver` claim 与 users.token_version
@@ -15,15 +20,21 @@ import { setAuthCookies } from "@/lib/server/auth/cookies";
  * 2. access 缺失/过期/ver 不一致 → 尝试用 refresh Cookie 静默轮换续期
  *    （等价 React 端 api-client 的 401 自动刷新，保证 1h 后浏览不被踢出；
  *    轮换成功则把新 Cookie 写回响应并放行）；
- * 3. 仍无有效会话 → 受保护页面 redirect /sign-in?redirect=<原路径>；
+ * 3. 菜单路径 403 门卫（方案 §架构要点 2，N2 落地）：路径不在当前用户
+ *    可见菜单树（collectMenuPaths）且不在登录白名单 → redirect /403
+ *    （等价 React 版 admin-layout 的布局级门卫，上移到服务端统一执行）；
+ * 4. 仍无有效会话 → 受保护页面 redirect /sign-in?redirect=<原路径>；
  *    已登录访问 /sign-in → redirect /（等价 React 版 (auth) beforeLoad 反向守卫）。
  *
- * /api/* 不走本 middleware（Route Handler 自行双源鉴权，401 由客户端
+ * /api/* 不走本 proxy（Route Handler 自行双源鉴权，401 由客户端
  * api-client 的刷新去重流程处理）；403/404/500 与静态资源无需会话。
  */
 
 /** 登录页与错误页无需会话（等价 React 版 LOGIN_REQUIRED_PATHS + 错误页）。 */
 const PUBLIC_PATHS = new Set(["/sign-in", "/403", "/404", "/500"]);
+
+/** 登录即可访问的白名单路径集合（Set 查找 O(1)，模块级只建一次）。 */
+const LOGIN_REQUIRED_SET = new Set<string>(LOGIN_REQUIRED_PATHS);
 
 function buildSignInRedirect(request: NextRequest): NextResponse {
   const { pathname, search } = request.nextUrl;
@@ -39,23 +50,21 @@ function buildSignInRedirect(request: NextRequest): NextResponse {
   );
 }
 
-/** 校验 access 会话（验签 + token_version 实时比对），有效返回 true。 */
-async function hasValidAccessSession(request: NextRequest): Promise<boolean> {
+/** 校验 access 会话（验签 + token_version 实时比对），有效返回用户视图。 */
+async function getSessionUser(request: NextRequest): Promise<AuthUser | null> {
   const token = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
 
-  if (!token) return false;
+  if (!token) return null;
 
   try {
     const payload = await verifyToken(token, "access");
 
-    if (payload.type !== "access") return false;
+    if (payload.type !== "access") return null;
 
     // ver claim 与数据库实时值比对（旧 token 无 ver 视为 0，必然不一致）
-    const user = await loadUserWithPermissions(payload.sub, payload.ver);
-
-    return user !== null;
+    return await loadUserWithPermissions(payload.sub, payload.ver);
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -74,30 +83,62 @@ async function trySilentRefresh(
   }
 }
 
+/**
+ * 菜单路径 403 门卫：当前路径是否在「登录白名单 ∪ 用户可见菜单树」内。
+ * 服务端过滤（filterAccessibleMenus）后再取可达路径集合——与注入侧边栏的
+ * 树同源同规则，客户端不做二次判定（方案修正二）。
+ */
+async function isPathAllowed(
+  user: AuthUser,
+  pathname: string,
+): Promise<boolean> {
+  if (LOGIN_REQUIRED_SET.has(pathname)) return true;
+
+  const tree = filterAccessibleMenus(await findMenuTree(user));
+  const allowedPaths = collectMenuPaths(tree);
+
+  return allowedPaths.has(pathname);
+}
+
 /** Next 16 的 proxy 约定（原 middleware；每请求守卫入口）。 */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isPublicPath = PUBLIC_PATHS.has(pathname);
 
-  if (await hasValidAccessSession(request)) {
+  let user = await getSessionUser(request);
+  let rotated: { accessToken: string; refreshToken: string } | null = null;
+
+  // access 无效：尝试 refresh 静默轮换（成功则续期并重建会话）
+  if (!user) {
+    rotated = await trySilentRefresh(request);
+
+    if (rotated) {
+      try {
+        const payload = await verifyToken(rotated.accessToken, "access");
+
+        if (payload.type === "access") {
+          user = await loadUserWithPermissions(payload.sub, payload.ver);
+        }
+      } catch {
+        user = null;
+      }
+    }
+  }
+
+  if (user) {
     // 已登录访问登录页 → 回首页（等价 React 版 (auth)/route.tsx beforeLoad）
-    if (isPublicPath && pathname === "/sign-in") {
+    if (pathname === "/sign-in") {
       return NextResponse.redirect(new URL("/", request.url));
     }
 
-    return NextResponse.next();
-  }
+    // 菜单路径 403 门卫（登录页/错误页不在 matcher 白名单时由 PUBLIC_PATHS 兜底）
+    if (!isPublicPath && !(await isPathAllowed(user, pathname))) {
+      return NextResponse.redirect(new URL("/403", request.url));
+    }
 
-  // access 无效：尝试 refresh 静默轮换（成功则放行并回写新 Cookie）
-  const rotated = await trySilentRefresh(request);
+    const response = NextResponse.next();
 
-  if (rotated) {
-    const response =
-      pathname === "/sign-in"
-        ? NextResponse.redirect(new URL("/", request.url))
-        : NextResponse.next();
-
-    setAuthCookies(response, rotated);
+    if (rotated) setAuthCookies(response, rotated);
 
     return response;
   }

@@ -16,6 +16,12 @@
 /* 色彩模式（正常 / 灰色 / 色弱）滤镜 */
 @import './color-vision.css';
 
+/* 多标签页栏动效 */
+@import './tags-bar.css';
+
+/* Toast 进出场动画 */
+@import './toast.css';
+
 /* 错误页专属动效与质感 */
 @import './error-page.css';
 

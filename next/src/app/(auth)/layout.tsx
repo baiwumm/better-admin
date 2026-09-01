@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { AuthPageShell } from "./auth-page-shell";
 
-import { isServerSessionValid } from "@/lib/server/auth/request-auth";
+import { getSessionUser } from "@/lib/server/auth/request-auth";
 import { ENV } from "@/lib/env";
 
 /** 品牌区 4 个特性 chip（多技术栈 + 关键能力；labelKey 在壳内经 t() 取词） */
@@ -25,7 +25,7 @@ export default async function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  if (await isServerSessionValid()) {
+  if (await getSessionUser()) {
     redirect("/");
   }
 

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { i18n, isLanguage, type Language } from "@/i18n/config";
+import { useTabsStore } from "@/stores/tabs-store";
 
 const LANGUAGE_KEY = "better-admin-language";
 const LANGUAGE_COOKIE = "better-admin-language";
@@ -64,8 +65,9 @@ export const useLanguageStore = create<LanguageState>()((set) => ({
     writeLanguageToStorage(valid);
     void i18n.changeLanguage(valid);
     document.documentElement.lang = valid;
-    // 多标签页缓存的是上一语言的标题快照，切换后需作废；
-    // 待 tabs-store（N2 布局期）落地后接入 clearTabsCache 联动
+    // 多标签页缓存的是上一语言的标题快照，切换后作废：
+    // 标签列表保留，tags-bar 回退实时菜单名称（已是新语言）渲染
+    useTabsStore.getState().clearTabsCache();
   },
 }));
 
