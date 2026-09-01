@@ -89,6 +89,9 @@ async function seed() {
   const mMenus = nanoid();
   const mDicts = nanoid();
   const mLogs = nanoid();
+  // 组织中心（v1.6.0 阶段 1：组织管理；阶段 2 追加岗位 / 通讯录）
+  const mOrg = nanoid();
+  const mDepts = nanoid();
 
   // 菜单声明可用按钮位（全量位：搜索/新增/编辑/删除/批量删/新增子级/重置/重置密码）
   const menuFullBits =
@@ -184,6 +187,28 @@ async function seed() {
         enabled: true,
         permissions: menuFullBits,
       },
+      {
+        id: mOrg,
+        label: '组织中心',
+        i18nKey: 'menu.org',
+        icon: 'building-2',
+        to: '',
+        parentId: null,
+        sort: 2,
+        enabled: true,
+        permissions: 0n,
+      },
+      {
+        id: mDepts,
+        label: '组织管理',
+        i18nKey: 'menu.depts',
+        icon: 'network',
+        to: '/org/depts',
+        parentId: mOrg,
+        sort: 0,
+        enabled: true,
+        permissions: menuFullBits,
+      },
     ])
     .onConflictDoNothing();
 
@@ -198,6 +223,8 @@ async function seed() {
     mMenus,
     mDicts,
     mLogs,
+    mOrg,
+    mDepts,
   ];
   await db
     .insert(roleMenus)

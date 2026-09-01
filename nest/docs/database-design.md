@@ -93,7 +93,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 ---
 
-## 2. 表清单（9 张，无 i18n 表）
+## 2. 表清单（17 张，无 i18n 表）
 
 > 通用约定：
 > - 所有表主键 `id` 为 `text`（与参考模型一致，实现简单、无 uuid 生成依赖）。
@@ -119,6 +119,10 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | website | text | NULL | 个人网站裸域名（v1.5.2，如 baidu.com，可带路径，不带协议；展示前缀 `https://` 由前端拼接） |
 | github_username | text | NULL | GitHub 用户名裸值（v1.5.2，如 baiwumm；展示前缀 `https://github.com/` 由前端拼接） |
 | x_username | text | NULL | X（Twitter）用户名裸值（v1.5.2，如 baiwumm；展示前缀 `https://x.com/` 由前端拼接） |
+| dept_id | text | NULL, FK→depts.id | 所属组织（v1.6.0，向前兼容可空；组织删除受服务级校验阻断，此处 ON DELETE SET NULL 兜底） |
+| employee_no | text | NULL | 工号（v1.6.0，人员通讯录展示 / 搜索用） |
+| employment_status | text | NULL | 在职状态（v1.6.0：`employed` / `resigned`；NULL 视为在职，与账号启停 `status` 正交） |
+| entry_date | date | NULL | 入职日期（v1.6.0，人员通讯录展示用） |
 | status | varchar(20) | NOT NULL, DEFAULT 'active' | `active` / `disabled`（收进字典 `user_status`） |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | |
 | updated_at | timestamptz | NOT NULL, DEFAULT now() | |
@@ -247,6 +251,112 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 > **日志自动清理策略**：日志表只增不删（无软删），长期运行会膨胀。生产环境建议通过 **`pg_cron`**（数据库侧定时任务）或应用层 **`@Cron()`**（NestJS 定时任务）定期清理：保留期原计划读 `settings.system.logRetentionDays`（settings 已于 v0.3 移除，启用时另行引入配置载体），删除 `created_at` 早于 `now() - interval 'N days'` 的过期日志。清理任务本身应记录到 `error`/`operation` 日志以便追溯，避免静默丢失审计数据。
 
+### 2.10 `depts`（组织，v1.6.0 组织中心）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | text | PK | 组织 ID（服务端 `nanoid(12)`） |
+| parent_id | text | NULL, FK→depts.id | 父级组织；NULL = 顶级（集团）。无限级树，ON DELETE RESTRICT（删除由服务级三级校验阻断） |
+| name | varchar(100) | NOT NULL | 组织名称，部分唯一索引 `depts_name_unique_active`（未删除间） |
+| code | varchar(50) | NULL | 组织编码，部分唯一索引 `depts_code_unique_active`（未删除间；NULL 不约束） |
+| leader_id | text | NULL, FK→users.id | 负责人，ON DELETE SET NULL |
+| sort | int | NOT NULL, DEFAULT 0 | 同级排序号，数字越大越靠前 |
+| status | varchar(20) | NOT NULL, DEFAULT 'enabled' | `enabled` / `disabled`；停用后不可作为新数据的上级组织 / 岗位所属组织 |
+| created_at / updated_at / deleted_at | timestamptz | | 通用约定；软删除 |
+
+索引：`depts_parent_idx (parent_id)`、`depts_leader_idx (leader_id)`。负责人姓名由查询 left join users（过滤未删除）得出，不冗余存储。
+
+### 2.11 `posts`（岗位，v1.6.0）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | text | PK | 岗位 ID |
+| dept_id | text | NOT NULL, FK→depts.id | 所属组织，ON DELETE RESTRICT（组织删除前须先移除岗位） |
+| name | varchar(100) | NOT NULL | 岗位名称；部分唯一索引 `posts_dept_name_unique_active (dept_id, name)`（未删除间） |
+| category | varchar(20) | NOT NULL, DEFAULT 'management' | 岗位类别：`management` 管理岗 / `professional` 专业岗 / `production` 生产岗 |
+| rank | varchar(20) | NOT NULL, DEFAULT '' | 岗位职级（P1-P10 / M1-M5），空串表示未设置 |
+| status | varchar(20) | NOT NULL, DEFAULT 'enabled' | `enabled` / `disabled` |
+| created_at / updated_at / deleted_at | timestamptz | | 通用约定；软删除（服务层软删岗位时同步清理 user_posts 关联） |
+
+> **架构决策**：岗位仅作组织数据（通讯录展示、公告推送范围），**不参与权限聚合**——RBAC 仍为 用户↔角色↔菜单位掩码（§1），与 PRD「岗位为权限分配最小单元」的偏离经用户评审确认（progress.md 契约 v1.6.0 条目）。
+
+### 2.12 `user_posts`（用户 ↔ 岗位，v1.6.0）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | text | PK | |
+| user_id | text | NOT NULL, FK→users.id | ON DELETE CASCADE |
+| post_id | text | NOT NULL, FK→posts.id | ON DELETE CASCADE（岗位物理删除兜底；软删由服务层清理） |
+| is_main | boolean | NOT NULL, DEFAULT false | 是否主岗（通讯录展示、公告推送范围；`true` 至多一条由业务层保证） |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | |
+
+约束：UNIQUE `(user_id, post_id)`；索引 `user_posts_user_idx`、`user_posts_post_idx`。
+
+### 2.13 `notices`（公告，v1.6.0 建表，阶段 3 实现业务）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | text | PK | |
+| title | varchar(200) | NOT NULL | 公告标题 |
+| content | text | NOT NULL | 富文本内容（Tiptap HTML，渲染端须消毒防 XSS） |
+| publisher_id | text | NULL, FK→users.id | 发布人，ON DELETE SET NULL |
+| is_top | boolean | NOT NULL, DEFAULT false | 置顶 |
+| status | varchar(20) | NOT NULL, DEFAULT 'draft' | `draft` / `published` / `withdrawn` |
+| publish_time | timestamptz | NOT NULL | 发布时间（支持定时发布） |
+| created_at / updated_at / deleted_at | timestamptz | | 通用约定；软删除 |
+
+索引：`notices_publish_scan_idx (status, publish_time)`（定时发布扫描）、`notices_publisher_idx`。
+
+### 2.14 `notice_scopes`（公告范围，v1.6.0 建表，阶段 3 实现）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | text | PK | |
+| notice_id | text | NOT NULL, FK→notices.id | ON DELETE CASCADE |
+| scope_type | varchar(20) | NOT NULL | `dept` 按组织 / `post` 按岗位 / `user` 按具体人员；同一公告多行取并集 |
+| target_id | text | NOT NULL | 组织 ID / 岗位 ID / 用户 ID |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | |
+
+索引：`notice_scopes_notice_idx (notice_id)`、`notice_scopes_target_idx (scope_type, target_id)`。**只存范围记录不按人展开**，可见人群与已读率由查询期递归 CTE 动态解析（组织范围含下级）。
+
+### 2.15 `notice_read_records`（公告阅读记录，v1.6.0 建表，阶段 3 实现）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | text | PK | |
+| notice_id | text | NOT NULL, FK→notices.id | ON DELETE CASCADE |
+| user_id | text | NOT NULL, FK→users.id | ON DELETE CASCADE |
+| read_at | timestamptz | NOT NULL, DEFAULT now() | 首次阅读时间（仅新增不更新，唯一约束保证只记首次） |
+| ip_address | varchar(50) | NOT NULL, DEFAULT '' | 阅读时 IP |
+
+约束：UNIQUE `(notice_id, user_id)`；索引 `notice_read_records_notice_idx`。阅读记录不可篡改（append-only，不提供编辑接口）；用户离职后保留历史。
+
+### 2.16 `notice_remind_logs`（公告催办记录，v1.6.0 建表，阶段 3 实现）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | text | PK | |
+| notice_id | text | NOT NULL, FK→notices.id | ON DELETE CASCADE |
+| reminded_by | text | NOT NULL, FK→users.id | 催办操作人，ON DELETE CASCADE |
+| reminded_at | timestamptz | NOT NULL, DEFAULT now() | |
+
+索引：`notice_remind_logs_notice_idx (notice_id, reminded_at)`。用于「24 小时内不可重复催办」限制与催办历史追溯。
+
+### 2.17 `notifications`（站内信，v1.6.0 建表，阶段 3 实现）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | text | PK | |
+| recipient_id | text | NOT NULL, FK→users.id | 收件人，ON DELETE CASCADE |
+| type | varchar(30) | NOT NULL, DEFAULT 'system' | 预留：`notice_remind` 公告催办 / `notice_publish` 新公告 / `system` 系统消息 |
+| title | varchar(200) | NOT NULL | |
+| content | text | NULL | |
+| link | text | NULL | 点击跳转的前端路由 |
+| read_at | timestamptz | NULL | 已读时间；NULL = 未读 |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | |
+
+索引：`notifications_recipient_idx (recipient_id, read_at)`。**顶栏铃铛的数据源**（未读数 = read_at IS NULL 计数）。
+
 ---
 
 ## 3. 日志类型定义（`logs.type`）
@@ -341,6 +451,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 | 日期 | 版本 | 说明 |
 | --- | --- | --- |
+| 2026-09-01 | v0.6 | 契约 v1.6.0（组织中心阶段 1/2）：迁移 0007 新增 8 张表——`depts` / `posts` / `user_posts` / `notices` / `notice_scopes` / `notice_read_records` / `notice_remind_logs` / `notifications`（后 5 张阶段 3 实现业务）；`users` 表新增 `dept_id` / `employee_no` / `employment_status` / `entry_date` 四个可空列（向前兼容）。组织/岗位软删 + 部分唯一索引；depts↔users 循环外键以 AnyPgColumn 惰性回调声明；岗位不参与权限聚合（架构决策）。存量库需执行 `pnpm db:migrate`（0007）与 `nest/scripts/migrate-menus-add-org.ts`（菜单补录）。 |
 | 2026-08-30 | v0.5 | 契约 v1.4.4：新增 `GRANT`(256) 权限点（菜单授权，守卫 `PUT /roles/:id/menus`，原为 EDIT）；仅角色管理菜单声明该位，存量库经 `nest/scripts/migrate-menus-add-grant-bit.ts` 幂等补录；super_admin 全量位自动覆盖，无需迁移数据。权限点共 9 个。 |
 | 2026-08-28 | v0.4 | 契约 v1.4：`menus.target` 列移除（真实库已 DROP COLUMN），外链打开方式由前端按 `to` 是否外链推导，菜单字段与权限位无其它变化。 |
 | 2026-08-21 | v0.1 | Phase 2 数据库设计方案：位掩码 RBAC、9 张表（无 i18n 表）、日志 4 类型、设置预置、字典、纯前端 i18n 约定。仅文档，未开发。 |

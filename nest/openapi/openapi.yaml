@@ -53,7 +53,19 @@ info:
     v1.5.3 AuthUser 视图（LoginResponse.user 与 GET /auth/me）新增
     website / githubUsername / xUsername 三个只读字段：侧边栏「个人链接」菜单
     与用户名区展示需要登录态快照携带（均为可空裸值，前缀由前端拼接）。
-  version: 1.5.3
+    v1.6.0 组织中心（阶段 1/2）：新增 Depts / Posts / Directory 三个模块——
+    组织管理（GET /org/depts/tree 全量树、GET/POST /org/depts、GET/PUT/DELETE /org/depts/{id}、
+    PATCH /org/depts/sort 拖拽排序）、岗位管理（GET/POST /org/posts、GET/PUT/DELETE /org/posts/{id}、
+    GET /org/posts/{id}/members 在职人数穿透）、人员通讯录（GET /org/directory，组织筛选递归含下级，
+    employmentStatus 缺省 employed，离职人员默认不展示）；
+    users 表新增 dept_id / employee_no / employment_status / entry_date 四个可空列（向前兼容）；
+    组织与岗位均为软删除（deleted_at），唯一性校验仅针对未删除记录（部分唯一索引）；
+    组织删除三级校验（DEPT_HAS_CHILDREN / DEPT_HAS_POSTS / DEPT_HAS_ACTIVE_USERS，按序阻断）、
+    父级变更防环 DEPT_PARENT_INVALID；岗位仅作组织数据（通讯录展示 / 公告推送范围），
+    不参与权限聚合；公告管理 / 架构图谱 / notifications 属阶段 3/4，另行追加。
+    v1.6.0 补充：DeptTreeNode 新增 leaderId（可空）——编辑组织弹窗回显负责人需要，
+    组织树查询本就联查该列，无额外查询。
+  version: 1.6.0
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -78,6 +90,12 @@ tags:
     description: 字典管理
   - name: Logs
     description: 日志（operation/login/api/error）
+  - name: Depts
+    description: 组织管理（树形组织架构 CRUD + 拖拽排序，v1.6.0）
+  - name: Posts
+    description: 岗位管理（组织下的岗位 CRUD + 在职人员穿透，v1.6.0）
+  - name: Directory
+    description: 人员通讯录（全员视图，组织筛选 + 关键词搜索，v1.6.0）
 
 security:
   - bearerAuth: []
@@ -828,6 +846,294 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    # ---------- 组织中心（v1.6.0 阶段 1/2） ----------
+    Dept:
+      type: object
+      required: [id, name, sort, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          description: 组织 ID（nanoid）
+        parentId:
+          type: string
+          nullable: true
+          description: 父级组织 ID，顶级（集团）为 null
+        name:
+          type: string
+          description: 组织名称（未删除记录间唯一）
+        code:
+          type: string
+          nullable: true
+          description: 组织编码（未删除记录间唯一，如 DEPT-001）
+        leaderId:
+          type: string
+          nullable: true
+          description: 负责人用户 ID
+        leaderName:
+          type: string
+          nullable: true
+          description: 负责人姓名（left join users.display_name，用户已删除时为 null）
+        sort:
+          type: integer
+          description: 同级排序号，数字越大越靠前
+        status:
+          type: string
+          enum: [enabled, disabled]
+          description: 状态；停用后不可被关联为新数据的上级组织 / 岗位所属组织
+        childCount:
+          type: integer
+          description: 直接下级组织数量（未删除）
+        postCount:
+          type: integer
+          description: 该组织直接关联的岗位数量（未删除）
+        userCount:
+          type: integer
+          description: 该组织直接关联的在职人员数量（删除校验第 3 步口径；因第 1 步已阻断存在下级组织的删除，直接计数与「含下级」语义等价）
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DeptTreeNode:
+      type: object
+      required: [id, name, sort, status, children]
+      properties:
+        id:
+          type: string
+        parentId:
+          type: string
+          nullable: true
+        name:
+          type: string
+        code:
+          type: string
+          nullable: true
+        leaderId:
+          type: string
+          nullable: true
+          description: 负责人用户 ID（v1.6.0 补充；编辑组织弹窗回显负责人需要）
+        leaderName:
+          type: string
+          nullable: true
+          description: 负责人姓名（节点浮窗 / 图谱展示用）
+        sort:
+          type: integer
+        status:
+          type: string
+          enum: [enabled, disabled]
+          description: 含停用组织（前端可置灰展示），不做停用过滤
+        children:
+          type: array
+          description: 下级组织节点（同级按 sort 降序有序）
+          items:
+            $ref: '#/components/schemas/DeptTreeNode'
+
+    DeptCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: 组织名称（未删除记录间唯一）
+        code:
+          type: string
+          maxLength: 50
+          description: 组织编码（未删除记录间唯一）
+        parentId:
+          type: string
+          nullable: true
+          description: 父级组织 ID；null 表示创建顶级组织
+        leaderId:
+          type: string
+          nullable: true
+          description: 负责人用户 ID
+        sort:
+          type: integer
+          default: 0
+          description: 同级排序号，数字越大越靠前
+        status:
+          type: string
+          enum: [enabled, disabled]
+          default: enabled
+
+    DeptUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        code:
+          type: string
+          maxLength: 50
+        parentId:
+          type: string
+          nullable: true
+          description: 变更父级（支持拖拽跨级移动）；不允许移动到自身或自身后代组织下（400 DEPT_PARENT_INVALID）
+        leaderId:
+          type: string
+          nullable: true
+        sort:
+          type: integer
+        status:
+          type: string
+          enum: [enabled, disabled]
+
+    DeptSortRequest:
+      type: object
+      required: [items]
+      description: 拖拽排序（含同级调序与跨级移动，前端整批提交受影响节点）
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [id]
+            properties:
+              id:
+                type: string
+                description: 组织 ID
+              parentId:
+                type: string
+                nullable: true
+                description: 移动后的父级组织 ID；null 表示顶级
+              sort:
+                type: integer
+                description: 移动后的同级排序号
+
+    Post:
+      type: object
+      required: [id, deptId, name, category, status, userCount, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        deptId:
+          type: string
+          description: 所属组织 ID
+        deptPath:
+          type: string
+          description: 所属组织完整路径，如「集团/技术研发中心/前端开发部」
+        name:
+          type: string
+          description: 岗位名称
+        category:
+          type: string
+          enum: [management, professional, production]
+          description: 岗位类别（1 管理岗 / 2 专业岗 / 3 生产岗）
+        rank:
+          type: string
+          description: 岗位职级（P1-P10 / M1-M5），可为空字符串
+        status:
+          type: string
+          enum: [enabled, disabled]
+        userCount:
+          type: integer
+          description: 该岗位在职人数（穿透查看入口）
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PostCreateRequest:
+      type: object
+      required: [name, deptId, category]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: 岗位名称（同一组织下未删除记录间唯一）
+        deptId:
+          type: string
+          description: 所属组织 ID（组织须存在且启用）
+        category:
+          type: string
+          enum: [management, professional, production]
+        rank:
+          type: string
+          maxLength: 20
+          description: 岗位职级，如 P5 / M2
+        status:
+          type: string
+          enum: [enabled, disabled]
+          default: enabled
+
+    PostUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        deptId:
+          type: string
+          description: 调整所属组织（组织须存在且启用）
+        category:
+          type: string
+          enum: [management, professional, production]
+        rank:
+          type: string
+          maxLength: 20
+        status:
+          type: string
+          enum: [enabled, disabled]
+
+    DirectoryEntry:
+      type: object
+      required: [id, username, displayName, employmentStatus]
+      properties:
+        id:
+          type: string
+          description: 用户 ID（users.id）
+        username:
+          type: string
+          description: 登录名
+        displayName:
+          type: string
+          description: 姓名
+        avatar:
+          type: string
+          nullable: true
+          description: 头像 URL
+        employeeNo:
+          type: string
+          nullable: true
+          description: 工号（users.employee_no，v1.6.0 迁移新增字段）
+        deptId:
+          type: string
+          nullable: true
+          description: 所属组织 ID（users.dept_id，未分配组织时为 null）
+        deptPath:
+          type: string
+          nullable: true
+          description: 所属组织完整路径，如「集团/技术部/前端组」
+        mainPostId:
+          type: string
+          nullable: true
+          description: 主岗 ID（user_post.is_main=1 的岗位；无主岗时为 null）
+        mainPostName:
+          type: string
+          nullable: true
+          description: 主岗名称
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        entryDate:
+          type: string
+          format: date
+          nullable: true
+          description: 入职日期（users.entry_date，v1.6.0 迁移新增字段）
+        employmentStatus:
+          type: string
+          enum: [employed, resigned]
+          description: 在职状态（users.employment_status，v1.6.0 迁移新增字段；与账号启停 status 正交，存量 null 值按 employed 输出）
 
   responses:
     Unauthorized:
@@ -2386,3 +2692,658 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+
+  # ===================== 组织中心（v1.6.0 阶段 1/2） =====================
+  /org/depts/tree:
+    get:
+      tags: [Depts]
+      summary: 组织树（全量）
+      description: >
+        返回完整组织树（仅未删除组织，含停用组织，前端可置灰）。
+        供组织管理左树、组织树选择器（岗位 / 公告范围）、人员通讯录组织筛选共用；
+        架构图谱接口（含岗位列表的节点扩展）属阶段 4，另行追加。
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    description: 顶级组织节点数组（顶级可多个，按 sort 降序）
+                    items:
+                      $ref: '#/components/schemas/DeptTreeNode'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /org/depts:
+    get:
+      tags: [Depts]
+      summary: 组织列表（分页）
+      description: 组织管理页右侧子组织列表与关键词搜索用；传 parentId 时返回其直接下级组织。
+      x-permission: SEARCH
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+        - name: parentId
+          in: query
+          description: 传则返回该组织的直接下级组织（不含更深层级）
+          schema: { type: string }
+        - name: keyword
+          in: query
+          description: 组织名称 / 编码模糊搜索
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [enabled, disabled] }
+        - name: sort
+          in: query
+          schema: { type: string }
+        - name: order
+          in: query
+          schema: { type: string, enum: [asc, desc] }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Dept'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Depts]
+      summary: 新增组织
+      x-permission: ADD
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeptCreateRequest'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Dept'
+        '400':
+          description: 父级组织不存在或已停用（DEPT_PARENT_INVALID）；或负责人不存在（USER_NOT_FOUND）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                parentInvalid:
+                  value:
+                    code: DEPT_PARENT_INVALID
+                    message: 上级组织不存在或已停用
+                leaderNotFound:
+                  value:
+                    code: USER_NOT_FOUND
+                    message: 负责人不存在
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: 组织名称或编码已存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                nameExists:
+                  value:
+                    code: DEPT_NAME_EXISTS
+                    message: 组织名称已存在
+                codeExists:
+                  value:
+                    code: DEPT_CODE_EXISTS
+                    message: 组织编码已存在
+
+  /org/depts/sort:
+    patch:
+      tags: [Depts]
+      summary: 组织拖拽排序（同级调序 / 跨级移动）
+      description: >
+        前端拖拽结束后整批提交受影响节点（id + 移动后 parentId + sort），
+        服务端在事务内逐项校验并落库；任一 ID 无效整体失败。
+      x-permission: EDIT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeptSortRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '400':
+          description: 任一组织 ID 无效（INVALID_OPERATION）；或目标父级不合法（DEPT_PARENT_INVALID）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidOperation:
+                  value:
+                    code: INVALID_OPERATION
+                    message: 部分组织 ID 无效
+                parentInvalid:
+                  value:
+                    code: DEPT_PARENT_INVALID
+                    message: 目标上级组织不合法
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /org/depts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Depts]
+      summary: 组织详情
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Dept'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: 组织不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: DEPT_NOT_FOUND
+                message: 组织不存在
+    put:
+      tags: [Depts]
+      summary: 编辑组织
+      x-permission: EDIT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeptUpdateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Dept'
+        '400':
+          description: 父级为自身或自身后代（DEPT_PARENT_INVALID，防环）；或父级组织不存在 / 已停用（同码）；或负责人不存在（USER_NOT_FOUND）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                parentInvalid:
+                  value:
+                    code: DEPT_PARENT_INVALID
+                    message: 上级组织不合法（不可移动到自身或自身下级组织下）
+                leaderNotFound:
+                  value:
+                    code: USER_NOT_FOUND
+                    message: 负责人不存在
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 组织不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: DEPT_NOT_FOUND
+                message: 组织不存在
+        '409':
+          description: 组织名称或编码已存在（与其他未删除组织冲突）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                nameExists:
+                  value:
+                    code: DEPT_NAME_EXISTS
+                    message: 组织名称已存在
+                codeExists:
+                  value:
+                    code: DEPT_CODE_EXISTS
+                    message: 组织编码已存在
+    delete:
+      tags: [Depts]
+      summary: 删除组织（软删）
+      description: >
+        软删除（deleted_at 置位）。按顺序执行三级删除校验，任一命中即阻断：
+        第 1 步存在下级组织 → 409 DEPT_HAS_CHILDREN；
+        第 2 步存在岗位 → 409 DEPT_HAS_POSTS；
+        第 3 步存在在职人员 → 409 DEPT_HAS_ACTIVE_USERS。
+        校验通过后仍需前端二次确认弹窗。敏感操作，记录操作日志。
+      x-permission: DELETE
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 组织不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: DEPT_NOT_FOUND
+                message: 组织不存在
+        '409':
+          description: 删除校验未通过
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                hasChildren:
+                  value:
+                    code: DEPT_HAS_CHILDREN
+                    message: 该组织下存在下级组织，请先删除下级组织
+                hasPosts:
+                  value:
+                    code: DEPT_HAS_POSTS
+                    message: 该组织下存在岗位，请先移除该组织下的岗位
+                hasActiveUsers:
+                  value:
+                    code: DEPT_HAS_ACTIVE_USERS
+                    message: 该组织下存在在职人员，请先调岗或离职处理
+
+  /org/posts:
+    get:
+      tags: [Posts]
+      summary: 岗位列表（分页）
+      x-permission: SEARCH
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+        - name: deptId
+          in: query
+          description: 按所属组织筛选（含其全部下级组织的岗位）
+          schema: { type: string }
+        - name: keyword
+          in: query
+          description: 岗位名称模糊搜索
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string, enum: [management, professional, production] }
+        - name: status
+          in: query
+          schema: { type: string, enum: [enabled, disabled] }
+        - name: sort
+          in: query
+          schema: { type: string }
+        - name: order
+          in: query
+          schema: { type: string, enum: [asc, desc] }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Post'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Posts]
+      summary: 新增岗位
+      x-permission: ADD
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCreateRequest'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Post'
+        '400':
+          description: 所属组织不存在或已停用（DEPT_NOT_FOUND）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: DEPT_NOT_FOUND
+                message: 所属组织不存在或已停用
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: 同一组织下岗位名称已存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: POST_NAME_EXISTS
+                message: 该组织下岗位名称已存在
+
+  /org/posts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Posts]
+      summary: 岗位详情
+      x-permission: SEARCH
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Post'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: 岗位不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: POST_NOT_FOUND
+                message: 岗位不存在
+    put:
+      tags: [Posts]
+      summary: 编辑岗位
+      x-permission: EDIT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostUpdateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Post'
+        '400':
+          description: 所属组织不存在或已停用（DEPT_NOT_FOUND）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: DEPT_NOT_FOUND
+                message: 所属组织不存在或已停用
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 岗位不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: POST_NOT_FOUND
+                message: 岗位不存在
+        '409':
+          description: 同一组织下岗位名称已存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: POST_NAME_EXISTS
+                message: 该组织下岗位名称已存在
+    delete:
+      tags: [Posts]
+      summary: 删除岗位（软删）
+      description: >
+        软删除（deleted_at 置位），并同步删除该岗位的 user_post 关联记录。
+        删除前校验在职人员：存在 → 409 POST_HAS_ACTIVE_USERS（message 携带人数）。
+        校验通过后仍需前端二次确认弹窗。敏感操作，记录操作日志。
+      x-permission: DELETE
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 岗位不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: POST_NOT_FOUND
+                message: 岗位不存在
+        '409':
+          description: 该岗位下存在在职人员
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: POST_HAS_ACTIVE_USERS
+                message: 该岗位下存在 3 名在职人员，请先调岗或离职处理
+
+  /org/posts/{id}/members:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Posts]
+      summary: 岗位在职人员名单（在职人数穿透）
+      description: 仅返回在职（employment_status=employed）且未删除的用户；点击岗位列表「在职人数」时调用。
+      x-permission: SEARCH
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DirectoryEntry'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 岗位不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: POST_NOT_FOUND
+                message: 岗位不存在
+
+  /org/directory:
+    get:
+      tags: [Directory]
+      summary: 人员通讯录（分页）
+      description: >
+        全员视图：users（含 v1.6.0 迁移扩展字段）× depts（组织路径递归拼接）× user_posts × posts 联查，
+        实时查询无缓存。组织筛选含所选组织的全部下级组织人员（递归 CTE）；
+        在职状态缺省仅返回在职人员（employmentStatus=employed），可显式传 resigned / all。
+        Excel 导出属阶段 4，另行追加。
+      x-permission: SEARCH
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+        - name: deptId
+          in: query
+          description: 按组织筛选（该组织及全部下级组织的人员）
+          schema: { type: string }
+        - name: keyword
+          in: query
+          description: 姓名 / 工号 / 登录名模糊搜索
+          schema: { type: string }
+        - name: employmentStatus
+          in: query
+          description: 在职状态筛选；缺省 employed（离职人员默认不展示）
+          schema: { type: string, enum: [employed, resigned, all], default: employed }
+        - name: sort
+          in: query
+          schema: { type: string }
+        - name: order
+          in: query
+          schema: { type: string, enum: [asc, desc] }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DirectoryEntry'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'

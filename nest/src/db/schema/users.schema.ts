@@ -1,6 +1,15 @@
 import { nanoid } from 'nanoid';
-import { integer, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  date,
+  type AnyPgColumn,
+} from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { depts } from './org.schema';
 
 /**
  * users（用户表，详见 database-design.md §2.1）
@@ -37,6 +46,22 @@ export const users = pgTable(
     githubUsername: text('github_username'),
     /** X（Twitter）用户名裸值（v1.5.2，如 baiwumm）；展示前缀 https://x.com/ 由前端拼接 */
     xUsername: text('x_username'),
+    /**
+     * 所属组织 ID（v1.6.0，可空向前兼容；组织中心模块）。
+     * 与 depts.leader_id 形成循环引用，采用 AnyPgColumn 惰性回调声明外键。
+     */
+    deptId: text('dept_id').references((): AnyPgColumn => depts.id, {
+      onDelete: 'set null',
+    }),
+    /** 工号（v1.6.0，可空向前兼容；人员通讯录展示 / 搜索用） */
+    employeeNo: text('employee_no'),
+    /**
+     * 在职状态（v1.6.0，可空向前兼容；employed 在职 / resigned 离职）。
+     * 与账号启停 status（active/disabled）正交；存量 null 值按在职（employed）处理。
+     */
+    employmentStatus: text('employment_status'),
+    /** 入职日期（v1.6.0，可空向前兼容；人员通讯录展示用） */
+    entryDate: date('entry_date', { mode: 'string' }),
     status: text('status').notNull().default('active'),
     /**
      * 令牌版本号：签发 JWT 时写入 payload（ver claim）。

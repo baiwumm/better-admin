@@ -10,6 +10,7 @@ import { MenusModule } from './modules/menus/menus.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { DictModule } from './modules/dict/dict.module';
 import { LogsModule } from './modules/logs/logs.module';
+import { OrgModule } from './modules/org/org.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -32,6 +33,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     PermissionsModule,
     DictModule,
     LogsModule,
+    OrgModule,
   ],
   controllers: [],
   providers: [

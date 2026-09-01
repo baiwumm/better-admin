@@ -11,3 +11,5 @@ export * from './role_menus.schema';
 export * from './dict_types.schema';
 export * from './dict_items.schema';
 export * from './logs.schema';
+export * from './org.schema';
+export * from './notice.schema';

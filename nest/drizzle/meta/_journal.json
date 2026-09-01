@@ -50,6 +50,13 @@
       "when": 1788171572336,
       "tag": "0006_overrated_lockjaw",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788232155074,
+      "tag": "0007_smart_gorgon",
+      "breakpoints": true
     }
   ]
 }
