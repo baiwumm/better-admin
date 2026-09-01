@@ -162,8 +162,6 @@
   "features.users.bulk.disable": "Disable Selected",
   "features.users.bulk.delete": "Delete Selected",
   "features.users.column.username": "Username",
-  "features.users.column.displayName": "Display Name",
-  "features.users.column.email": "Email",
   "features.users.column.status": "Status",
   "features.users.column.roles": "Roles",
   "features.users.searchPlaceholder": "Search users",
@@ -321,5 +319,8 @@
   "features.account.links.websiteInvalid": "Invalid website. Example: baiwumm.com",
   "features.account.links.githubInvalid": "Invalid GitHub username (1-39 letters, digits or hyphens)",
   "features.account.links.xInvalid": "Invalid X username (4-15 letters, digits or underscores)",
-  "features.account.links.open": "Open in new tab"
+  "features.account.links.open": "Open in new tab",
+  "features.users.column.lastLoginAt": "Last sign-in",
+  "features.users.column.links": "Links",
+  "features.users.column.user": "User"
 }

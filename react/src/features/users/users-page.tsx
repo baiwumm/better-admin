@@ -15,6 +15,7 @@ import {
   useOverlayState,
 } from "@heroui/react";
 import {
+  Globe,
   KeyRound,
   MoreHorizontal,
   Pencil,
@@ -35,6 +36,8 @@ import {
 import { UserFormDialog, type UserFormMode } from "./user-form-dialog";
 import { UserResetPasswordDialog } from "./user-reset-password-dialog";
 
+import { buildProfileLinks, openExternalLink } from "@/lib/profile-links";
+import { GithubIcon, XIcon } from "@/lib/brand-icons";
 import { DataTable } from "@/components/common/data-table";
 import {
   DataTableBulkActions,
@@ -48,6 +51,7 @@ import {
 } from "@/components/common/data-table";
 import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog";
 import { appTableFeatures } from "@/components/common/data-table/table-types";
+import { UserInfo } from "@/components/common/user-info/user-info";
 import { useHasPermissionKey } from "@/hooks/use-permissions";
 import { createListStore } from "@/hooks/create-list-store";
 import { useListQuery } from "@/hooks/use-list-query";
@@ -79,8 +83,8 @@ export function UsersPage() {
   const queryClient = useQueryClient();
   const currentUserId = useAuthStore((state) => state.user?.id);
   // 规则 3 豁免：当前登录用户自身为 super_admin 时可操作其他 super_admin 用户
-  const currentUserIsSuperAdmin = useAuthStore((state) =>
-    state.user?.roles.includes("super_admin") ?? false,
+  const currentUserIsSuperAdmin = useAuthStore(
+    (state) => state.user?.roles.includes("super_admin") ?? false,
   );
 
   /**
@@ -219,27 +223,18 @@ export function UsersPage() {
         cell: ({ row }) => <DataTableSelectRow row={row} />,
       },
       {
+        // 用户信息合并列：头像 + 姓名 + 邮箱（UserInfo 统一组件）
+        id: "user",
+        enableSorting: false,
+        header: t("features.users.column.user"),
+        cell: ({ row }) => <UserInfo className="min-w-0" user={row.original} />,
+      },
+      {
         accessorKey: "username",
         header: t("features.users.column.username"),
         cell: ({ row }) => (
           <Typography className="font-medium" type="body-sm">
             {row.original.username}
-          </Typography>
-        ),
-      },
-      {
-        accessorKey: "displayName",
-        header: t("features.users.column.displayName"),
-        cell: ({ row }) => (
-          <Typography type="body-sm">{row.original.displayName}</Typography>
-        ),
-      },
-      {
-        accessorKey: "email",
-        header: t("features.users.column.email"),
-        cell: ({ row }) => (
-          <Typography color="muted" type="body-sm">
-            {row.original.email}
           </Typography>
         ),
       },
@@ -303,6 +298,69 @@ export function UsersPage() {
             </div>
           );
         },
+      },
+      {
+        id: "links",
+        enableSorting: false,
+        meta: { align: "center" },
+        header: t("features.users.column.links"),
+        cell: ({ row }) => {
+          const links = buildProfileLinks(row.original);
+
+          if (links.length === 0) {
+            return (
+              <Typography color="muted" type="body-sm">
+                —
+              </Typography>
+            );
+          }
+
+          const name = row.original.displayName || row.original.username;
+
+          return (
+            <div className="flex items-center justify-center gap-1">
+              {links.map((link) => (
+                <Tooltip key={link.key} delay={0}>
+                  <Tooltip.Trigger aria-label={`${name} ${t(link.labelKey)}`}>
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="ghost"
+                      onPress={() => openExternalLink(link.url)}
+                    >
+                      {link.key === "website" ? (
+                        // 主页用 lucide 通用图标；GitHub / X 为品牌图形走 Simple Icons
+                        <Globe className="size-4" />
+                      ) : link.key === "github" ? (
+                        <GithubIcon className="size-4" />
+                      ) : (
+                        <XIcon className="size-4" />
+                      )}
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    {t(link.labelKey)} · {link.url}
+                    <Tooltip.Arrow />
+                  </Tooltip.Content>
+                </Tooltip>
+              ))}
+            </div>
+          );
+        },
+      },
+      {
+        // 后端排序白名单不含 lastLoginAt，禁用排序避免静默回退 createdAt
+        accessorKey: "lastLoginAt",
+        enableSorting: false,
+        meta: { align: "center" },
+        header: t("features.users.column.lastLoginAt"),
+        cell: ({ row }) => (
+          <Typography color="muted" type="body-sm">
+            {row.original.lastLoginAt
+              ? new Date(row.original.lastLoginAt).toLocaleString()
+              : "—"}
+          </Typography>
+        ),
       },
       {
         accessorKey: "createdAt",

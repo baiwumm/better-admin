@@ -162,8 +162,6 @@
   "features.users.bulk.disable": "停用选中用户",
   "features.users.bulk.delete": "删除选中用户",
   "features.users.column.username": "用户名",
-  "features.users.column.displayName": "姓名",
-  "features.users.column.email": "邮箱",
   "features.users.column.status": "状态",
   "features.users.column.roles": "角色",
   "features.users.searchPlaceholder": "搜索用户",
@@ -321,5 +319,8 @@
   "features.account.links.websiteInvalid": "网站格式不正确，示例：baiwumm.com",
   "features.account.links.githubInvalid": "GitHub 用户名格式不正确（1-39 位字母数字或连字符）",
   "features.account.links.xInvalid": "X 用户名格式不正确（4-15 位字母数字或下划线）",
-  "features.account.links.open": "新窗口打开"
+  "features.account.links.open": "新窗口打开",
+  "features.users.column.lastLoginAt": "最近登录",
+  "features.users.column.links": "个人链接",
+  "features.users.column.user": "用户信息"
 }

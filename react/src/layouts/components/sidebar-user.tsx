@@ -14,10 +14,12 @@ import {
   useOverlayState,
 } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronsUpDown, LogOut, IdCard } from "lucide-react";
+import { ChevronsUpDown, Globe, IdCard, Link2, LogOut } from "lucide-react";
 
+import { GithubIcon, XIcon } from "@/lib/brand-icons";
 import { UserInfo } from "@/components/common/user-info/user-info";
 import { useTranslation } from "@/i18n";
+import { buildProfileLinks, openExternalLink } from "@/lib/profile-links";
 import { useAuthStore } from "@/stores/auth-store";
 
 type SidebarUserProps = {
@@ -49,6 +51,8 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
   const initials = displayName.slice(0, 1);
   // 未登录兜底（正常流程下登录后才进入 AdminLayout）
   const sidebarUser = user ?? { username: t("layout.user.notSignedIn") };
+  // 个人链接（契约 v1.5.3）：三个都未填写时整个子菜单不显示
+  const profileLinks = buildProfileLinks(user ?? {});
 
   const handleAction = (key: Key) => {
     switch (key) {
@@ -62,6 +66,13 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
       default:
         break;
     }
+  };
+
+  /** 子菜单点击：新窗口打开对应链接 */
+  const handleLinkAction = (key: Key) => {
+    const link = profileLinks.find((item) => item.key === key);
+
+    if (link) openExternalLink(link.url);
   };
 
   /** 确认退出：调后端 logout，成功后清会话并跳登录页；失败仅提示、保持登录。 */
@@ -131,6 +142,37 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
               <IdCard className="size-4 shrink-0 text-muted" />
               <Label>{t("layout.user.myAccount")}</Label>
             </Dropdown.Item>
+
+            {/* 个人链接子菜单：AuthUser 三个链接字段全空时整体隐藏 */}
+            {profileLinks.length > 0 ? (
+              <Dropdown.SubmenuTrigger>
+                <Dropdown.Item id="links" textValue={t("layout.user.myLinks")}>
+                  <Link2 className="size-4 shrink-0 text-muted" />
+                  <Label>{t("layout.user.myLinks")}</Label>
+                  <Dropdown.SubmenuIndicator />
+                </Dropdown.Item>
+                <Dropdown.Popover className="min-w-44">
+                  <Dropdown.Menu onAction={handleLinkAction}>
+                    {profileLinks.map((link) => (
+                      <Dropdown.Item
+                        key={link.key}
+                        id={link.key}
+                        textValue={t(link.labelKey)}
+                      >
+                        {link.key === "website" ? (
+                          <Globe className="size-4 shrink-0 text-muted" />
+                        ) : link.key === "github" ? (
+                          <GithubIcon className="size-4 shrink-0 text-muted" />
+                        ) : (
+                          <XIcon className="size-4 shrink-0 text-muted" />
+                        )}
+                        <Label>{t(link.labelKey)}</Label>
+                      </Dropdown.Item>
+                    ))}
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
+              </Dropdown.SubmenuTrigger>
+            ) : null}
 
             <Separator />
 

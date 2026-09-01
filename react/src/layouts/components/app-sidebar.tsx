@@ -22,7 +22,7 @@ import {
   TailwindIcon,
   TypeScriptIcon,
   ViteIcon,
-} from "@/components/common/brand-icons";
+} from "@/lib/brand-icons";
 import { useMenus } from "@/hooks/use-menus";
 import { filterHiddenMenus } from "@/lib/permission";
 import { CONSOLE_MENU_NODE } from "@/lib/menu-fetch";

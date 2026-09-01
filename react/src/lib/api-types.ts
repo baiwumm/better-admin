@@ -38,6 +38,12 @@ export interface AuthUser {
   phone: string | null;
   /** 个人标签（契约 v1.5.0，用户在「我的账户」自助维护） */
   tags: string[];
+  /** 个人网站裸域名（契约 v1.5.3 只读；展示前缀 https:// 由前端拼接） */
+  website: string | null;
+  /** GitHub 用户名裸值（契约 v1.5.3 只读） */
+  githubUsername: string | null;
+  /** X（Twitter）用户名裸值（契约 v1.5.3 只读） */
+  xUsername: string | null;
   roles: string[];
   /**
    * bigint 位掩码（超级管理员全量为 9223372036854775807）。
@@ -121,6 +127,14 @@ export interface User {
   roles: UserRoleSummary[];
   createdAt: string;
   updatedAt: string;
+  /** 最近一次登录成功时间（契约 v1.5.0；从未登录为 null） */
+  lastLoginAt: string | null;
+  /** 个人网站裸域名（契约 v1.5.2 只读；展示前缀 https:// 由前端拼接） */
+  website: string | null;
+  /** GitHub 用户名裸值（契约 v1.5.2 只读） */
+  githubUsername: string | null;
+  /** X（Twitter）用户名裸值（契约 v1.5.2 只读） */
+  xUsername: string | null;
 }
 
 /** 创建用户请求体（契约 v1.4.4：username 创建后不可变更） */

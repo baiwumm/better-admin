@@ -74,6 +74,9 @@ export function AccountPage() {
         avatar: updated.avatar,
         phone: updated.phone,
         tags: updated.tags,
+        website: updated.website,
+        githubUsername: updated.githubUsername,
+        xUsername: updated.xUsername,
       });
     }
   };

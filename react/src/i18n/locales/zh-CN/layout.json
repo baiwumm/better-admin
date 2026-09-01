@@ -97,5 +97,9 @@
   "layout.user.signOutTitle": "确认退出登录？",
   "layout.user.signedOut": "已退出登录",
   "layout.user.signingOut": "退出中…",
-  "layout.overlay.permissionCheckFailedDesc": "菜单接口请求失败，请检查网络后重试；若持续失败请联系管理员。"
+  "layout.overlay.permissionCheckFailedDesc": "菜单接口请求失败，请检查网络后重试；若持续失败请联系管理员。",
+  "layout.user.myLinks": "个人链接",
+  "layout.user.linkWebsite": "个人主页",
+  "layout.user.linkGitHub": "GitHub",
+  "layout.user.linkX": "X"
 }

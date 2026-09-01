@@ -97,5 +97,9 @@
   "layout.user.signOutTitle": "Sign out?",
   "layout.user.signedOut": "Signed out",
   "layout.user.signingOut": "Signing out…",
-  "layout.overlay.permissionCheckFailedDesc": "The menu request failed. Check your network and retry; contact an administrator if the problem persists."
+  "layout.overlay.permissionCheckFailedDesc": "The menu request failed. Check your network and retry; contact an administrator if the problem persists.",
+  "layout.user.myLinks": "Profile links",
+  "layout.user.linkWebsite": "Website",
+  "layout.user.linkGitHub": "GitHub",
+  "layout.user.linkX": "X"
 }

@@ -40,9 +40,13 @@ export function DataTableSelectAll<TData extends RowData>({
 
   return (
     // HeroUI Table（react-aria）上下文内 Checkbox 必须声明 selection slot，
-    // 否则运行时抛 "A slot prop is required. Valid slot names are 'selection'"
+    // 否则运行时抛 "A slot prop is required. Valid slot names are 'selection'"。
+    // RAC 会在 Table 上下文内给 header 的 selection checkbox 注入 isDisabled
+    // （行复选框不受影响），导致全选永远点不动——显式传 false 覆盖；
+    // 受保护行不可选由 enableRowSelection 控制，全选只选中可选行（部分选中呈半选态）。
     <Checkbox
       aria-label={t("common.datatable.selectAll")}
+      isDisabled={false}
       isIndeterminate={someSelected && !allSelected}
       isSelected={allSelected}
       slot="selection"
