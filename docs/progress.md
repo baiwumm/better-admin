@@ -5,6 +5,17 @@
 
 ---
 
+### 组织中心阶段 1：契约 v1.6.0 + 建表迁移 0007 + 组织管理前后端（2026-09-01）
+
+- **范围**：新模块「组织中心」阶段 1 落地——契约先行（v1.6.0，阶段 1/2 接口一次性定义）、迁移 0007 一次建全 8 张新表 + users 扩展、NestJS 组织管理（depts）、React 组织管理页、菜单 seed 与 i18n。方案经用户评审：5 项决策确认（users 表扩展四字段、岗位不接入权限聚合、富文本选 Tiptap、ECharts+xlsx 阶段 4 引入、模块名保留）；模块显示名最终定为「组织中心」（原 PRD 名「组织与权限中心」太长，调整 i18n `menu.org` 文案 + seed label，菜单结构与路由不变）。
+- **契约 v1.6.0**（openapi.yaml 合并自评审草案并删除草案文件，YAML 解析与全量 $ref 校验通过）：新增 Depts / Posts / Directory 三个 tag、14 个接口——`GET /org/depts/tree` 全量树、`GET/POST /org/depts`、`GET/PUT/DELETE /org/depts/{id}`、`PATCH /org/depts/sort`（拖拽整批提交）、岗位 5 个（阶段 2 实现）、`GET /org/directory`（阶段 2 实现）。新增 schema：Dept / DeptTreeNode / Post / DirectoryEntry 等 9 个。删除三级校验 409（`DEPT_HAS_CHILDREN` / `DEPT_HAS_POSTS` / `DEPT_HAS_ACTIVE_USERS`，按序阻断）、防环 `DEPT_PARENT_INVALID`（编辑父级不可为自身/自身后代，含批量排序的组合环检测）、`POST_NAME_EXISTS` / `POST_HAS_ACTIVE_USERS`。
+- **数据库（迁移 `drizzle/0007_*.sql`，17 张表）**：新增 `depts` / `posts` / `user_posts` / `notices` / `notice_scopes` / `notice_read_records` / `notice_remind_logs` / `notifications`（后 5 张阶段 3 实现业务）；users 新增 `dept_id` / `employee_no` / `employment_status`（NULL 视为在职）/ `entry_date` 四个可空列。depts↔users 循环外键用 Drizzle 官方 `AnyPgColumn` 惰性回调声明（depts.leader_id → users.id、users.dept_id → depts.id 双向 SET NULL/RESTRICT）。组织/岗位软删 + 部分唯一索引（软删后名称/编码可复用）。
+- **后端（`nest/src/modules/org/`）**：DeptsController/Service + 4 个 DTO，tree/sort 静态路由声明在 `:id` 之前防吞。删除三级校验、`loadCounts` 三条 group by 聚合避免 N+1、防环用全量父子映射走链检测（批量排序按「应用全部变更后」的最终状态判环）。操作日志 `dept.create/update/delete/sort`。注意：`GET /org/depts` 分页接口后端已实现但阶段 1 页面未消费（树派生数据源），阶段 2 岗位管理使用。
+- **前端（`react/src/features/org/`）**：左树右表布局（对齐 dicts-page 双栏模式）——左栏 `DeptTree` 递归树（展开态用 `Set | null` 表达、null = 全展开默认态；@dnd-kit 同级拖拽，嵌套 SortableContext 共享根部 DndContext，扁平 siblingMap 定位拖拽组，整组重编号 sort = len-1-idx 提交）；右栏选中组织详情卡 + 子组织 DataTable（数据全部由树派生，无第二请求）。`DeptFormDialog`：父级选择用平铺缩进 Select（HeroUI 无 Tree；编辑时自身/后代/停用组织禁选防环），负责人 Select 拉 /users（403 时禁用不阻塞表单）。`useOverlayState` 受控浮层；api-types 追加 Dept/DeptTreeNode 等 7 类型。
+- **菜单 seed**：「组织中心」顶级（building-2，sort 2）+「组织管理」子菜单（network，to=/org/depts，常规全量按钮位，无 GRANT）；seed.ts 同步更新。存量库幂等补录脚本 `nest/scripts/migrate-menus-add-org.ts`（按 i18nKey 查重 + super_admin 全量授权）。i18n `menu.org` / `menu.depts` / `menu.pageTitle.*` 与 `features.depts.*` / `errors.depts.*`（zh-CN/en）。
+- **验证**：nest tsc / eslint / build 全绿；react tsc / eslint / build 全绿（routeTree 已注册 /org/depts）。**待人工验证**：连接存量库执行 `pnpm db:migrate`（0007）+ `pnpm db:seed` 或 `nest/scripts/migrate-menus-add-org.ts` 后，登录侧边栏出现「组织中心」并完整走一遍组织 CRUD / 拖拽 / 删除校验。
+- **同步待办**：阶段 2（岗位管理 + 人员通讯录）→ 阶段 3（公告 + notifications + 顶栏铃铛）→ 阶段 4（架构图谱 ECharts + Excel 导出）；Vue / Next / Nuxt 后续实现组织模块时跟上 v1.6.0（users 表四字段为共享 Schema 变更，各栈建表/类型同步）。
+
 ### 个人链接消费端上线：用户管理列改版 + 侧边栏菜单（契约 v1.5.3）（2026-09-01）
 
 - **范围**：个人链接（v1.5.2）的首批消费端——用户管理表格展示与侧边栏用户菜单；契约 v1.5.3 为 AuthUser 补个人链接三字段。
