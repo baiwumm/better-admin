@@ -4,6 +4,16 @@
   "description": "Better Admin Phase 2 — NestJS + PostgreSQL (Drizzle ORM) API",
   "private": true,
   "type": "commonjs",
+  "author": "baiwumm",
+  "homepage": "https://nest.baiwumm.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baiwumm/better-admin.git",
+    "directory": "nest"
+  },
+  "bugs": {
+    "url": "https://github.com/baiwumm/better-admin/issues"
+  },
   "scripts": {
     "build": "tsc",
     "start": "nest start",
