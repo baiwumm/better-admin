@@ -5,7 +5,19 @@
 
 ---
 
-### 我的账户模块上线：头像裁剪上传 + 资料 / 邮箱 / 密码自助修改（契约 v1.5.0）（2026-08-31）
+### 我的账户验收调整 + 删除头像 + 个人链接（契约 v1.5.1 / v1.5.2）（2026-09-01）
+
+- **范围**：我的账户上线后两轮验收调整；契约 v1.5.1（DELETE /account/avatar）与 v1.5.2（个人链接三字段），users 表迁移 0005/0006 均已对 Supabase 执行。
+- **严重 bug 修复（裁剪偏移）**：`crop-image.ts` 的 `putImageData` 偏移量符号写反，保存头像与裁剪框区域不一致（只显示图片右下角）。已按 react-easy-crop 官方 safeArea 算法修正，并用「蓝底 + 中央黄色矩形」测试图实测裁剪一致性。
+- **契约 v1.5.1 删除头像**：`DELETE /account/avatar`——置空 `users.avatar` 并按现有 URL 尽力删除 Storage 对象（`AvatarStorageService.removeObject` 失败仅记日志不阻断），返回最新 AccountProfile；前端头像卡有头像时显示删除按钮（danger-soft），删除中按钮转 Spinner 并禁用「更换头像」。
+- **契约 v1.5.2 个人链接**：`AccountProfile` / `PUT /account/profile` 新增 `website`（裸域名，可带路径）/ `githubUsername` / `xUsername`（平台用户名裸值），存裸值、展示前缀（`https://`、`https://github.com/`、`https://x.com/`）由前端统一拼接——前缀规则变更零迁移。DTO 以 `@Transform` 自动剥离粘贴的完整链接前缀（X 兼容 twitter.com），剥离后空串归一 null（= 清空）；校验：域名（可带端口/路径）、GitHub 1-39 位、X 4-15 位。管理端 User 视图经 `toView` 剩余字段展开自动带出（契约补只读说明）；`AuthUser` 刻意不加（避免每请求快照变胖）。
+- **前端页面重构**：五卡拆分为独立组件（`features/account/cards/`：avatar / profile-form / profile-links / email-form / password / account-info），页面只剩数据加载 + Tabs 编排；Tabs 分「账号」（头像/基本信息/个人链接/账号信息）与「安全」（邮箱/密码）两组，带 lucide 图标；加载态由 Spinner 改为模拟卡片布局的骨架屏（HeroUI `Skeleton`）。
+- **新增组件**：`PasswordStrength`（新密码 5 档强度：长度 ≥8/≥12 + 大小写/数字/符号维度，<6 位直接极弱，未输入不渲染）；`ProfileLinksCard`（`InputGroup.Prefix` 固定前缀输入 + `Suffix` 预览按钮——点击按提交同款剥前缀规则拼 URL 新窗口打开，空值禁用）；所有密码框统一换共享 `PasswordInput`（内部 InputGroup 补 `variant="secondary"`）。
+- **Radix Avatar 状态残留 bug（重要机制结论）**：HeroUI Avatar 底层是 Radix Avatar，Fallback 显隐由 Root 内部记录的图片加载状态决定，`Avatar.Image` 卸载后状态残留 loaded → Fallback 永不显示（表现为删除头像后侧边栏不同步、需刷新）。修复：`UserInfo` 与头像卡的 Avatar 均加 `key={avatar ?? "fallback"}` 强制重建子树。已沉淀至 AGENTS §19；凡「avatar 从有值变 null」的场景都必须重建 Avatar 子树。
+- **其他修复**：i18next 插值必须 `{{var}}` 双花括号（首版单花括号致 aria-label 原样输出）；全部保存/更新按钮统一 `size="sm"`；`Card.Title` 统一加粗；裁剪弹窗上传按钮加 Upload 图标、上传中禁用「取消」。
+- **验证**：nest tsc / eslint 全绿；react tsc / eslint / test(68) / build 全绿；后端 curl 冒烟（链接剥前缀/部分更新保留/null 与空串清空/非法值 400、删除头像后 Storage 对象 404）。裁剪一致性、删除头像、骨架屏、密码强度、个人链接卡均经浏览器验收（用户自验通过）。**待人工验证**：存量库执行迁移 0005/0006 + `pnpm storage:init` 的部署步骤。
+- **同步待办**：Vue / Next / Nuxt 后续实现 account 模块跟上 v1.5.2（含 AuthUser `avatar/phone/tags` 与个人链接三字段）；个人链接的控制台展示随 Dashboard 迁移一并做。
+
 
 - **范围**：React 端「我的账户」（`/account` 非菜单路由，占位替换为真实页面）；配套契约 v1.5.0（Nest 先行）+ users 表新增 3 列 + Supabase Storage 头像上传（AGENTS §5 首次豁免：Storage 仅用于用户头像，服务端持密钥中转，浏览器不接触密钥、不用 RLS）。方案经用户逐项确认：Storage 中转、改邮箱需当前密码、新增 `phone` / `tags` / `lastLoginAt`、接受 `react-easy-crop` 与 `@supabase/supabase-js` 两个新依赖。
 - **契约 v1.5.0**（`nest/openapi/openapi.yaml`，YAML 解析通过）：新增 Account tag 与 5 个自助端点——`GET/PUT /account/profile`（displayName / phone / tags，tags 服务端 trim、去空、去重，≤10 个×20 字符）、`PUT /account/email`（需 currentPassword，冲突 409 `EMAIL_EXISTS`）、`PUT /account/password`（需 currentPassword，成功后 tokenVersion+1 + 清空托管 refreshToken，全端强制下线）、`POST /account/avatar`（multipart，白名单 webp/png/jpeg、≤2MB，`AVATAR_FILE_INVALID` / `AVATAR_FILE_TOO_LARGE` / `AVATAR_UPLOAD_FAILED`）。AuthUser 视图新增 `avatar / phone / tags`；`GET /auth/me` 的 data 契约由 `LoginResponse` 纠偏为 `AuthUser`（实现一直如此）；管理端 User 视图补 phone / tags 只读展示。Account 模块仅挂 `AuthGuard('jwt')` 不走 PermissionsGuard（自助操作不依赖权限位）。

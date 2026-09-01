@@ -524,8 +524,8 @@ Phase 7  统一测试 → 部署全部版本
 
 > 阶段性进度记录已全部移至 [`docs/progress.md`](docs/progress.md)（按时间倒序），本节只保留当前快照；阶段由用户明确安排后再推进。
 
-- **当前阶段**：React 端业务模块迁移推进中（React + NestJS 全栈阶段）。已完成：React Hero UI 迁移启动、NestJS + PostgreSQL 后端（契约 v1.5.0），React 端登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户均已上线（含用户写操作保护 v1.4.6、登录鉴权加固 v1.4.7、日志操作人摘要与批量删除 v1.4.8、我的账户与 Supabase Storage 头像上传 v1.5.0）；`UserInfo` 通用用户信息展示组件已沉淀（侧边栏与日志操作人列复用）。
-- **当前待办（记录在案）**：概览 Dashboard 仍待迁移；`roles.enabled` 参与权限聚合待评估；`PUT /users/{id}` 的 `roleIds` 可摘除 super_admin 绑定（v1.4.6 已知未拦点，评估是否限制）；前端 `hasPermission`（全部位命中）与后端同名函数（任一位命中）多权限位语义待对齐；存量库需执行 `nest/scripts/migrate-menus-add-grant-bit.ts` 补录角色管理菜单 GRANT 声明位（v1.4.4）；存量库需执行 `pnpm db:migrate`（v1.5.0 迁移 0005）并配置 `SUPABASE_URL` / `SUPABASE_SECRET_KEY` 后执行 `pnpm storage:init`；Vue / Next / Nuxt 后续实现 account 模块与 AuthUser `avatar / phone / tags` 字段直接跟上 v1.5.0。
+- **当前阶段**：React 端业务模块迁移推进中（React + NestJS 全栈阶段）。已完成：React Hero UI 迁移启动、NestJS + PostgreSQL 后端（契约 v1.5.2），React 端登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户均已上线（含用户写操作保护 v1.4.6、登录鉴权加固 v1.4.7、日志操作人摘要与批量删除 v1.4.8、我的账户与 Supabase Storage 头像上传 v1.5.0、删除头像 v1.5.1、个人链接三字段 v1.5.2）；`UserInfo` 通用用户信息展示组件已沉淀（侧边栏与日志操作人列复用，Avatar 需随 avatar 值重建子树以规避 Radix 状态残留）。
+- **当前待办（记录在案）**：概览 Dashboard 仍待迁移；`roles.enabled` 参与权限聚合待评估；`PUT /users/{id}` 的 `roleIds` 可摘除 super_admin 绑定（v1.4.6 已知未拦点，评估是否限制）；前端 `hasPermission`（全部位命中）与后端同名函数（任一位命中）多权限位语义待对齐；存量库需执行 `nest/scripts/migrate-menus-add-grant-bit.ts` 补录角色管理菜单 GRANT 声明位（v1.4.4）；存量库需执行 `pnpm db:migrate`（v1.5.0 迁移 0005、v1.5.2 迁移 0006）并配置 `SUPABASE_URL` / `SUPABASE_SECRET_KEY` 后执行 `pnpm storage:init`；Vue / Next / Nuxt 后续实现 account 模块与 AuthUser `avatar / phone / tags` 字段直接跟上 v1.5.0。
 - **super_admin 保护设计依据（重要，勿推翻）**：超管的"全量权限"不是代码身份判定，而是 seed 写入 role_menus 的 -1n 全量位经登录/每请求实时 OR 聚合而来（`auth.service.aggregatePermissions`）；PermissionsGuard 与菜单可见性的"超管免检"分支判据都是聚合值。清空其授权 = 全后台立即 403 且无自助恢复手段，故 `PUT /roles/{id}/menus` 与 `DELETE /roles/{id}` 对 `code === 'super_admin'` 必须返回 403 `SUPER_ADMIN_ROLE_PROTECTED`（详细背景见 progress.md 契约 v1.4.2/v1.4.3 条目）。
 
 ---
