@@ -7,8 +7,23 @@ import {
 } from '@nestjs/common';
 import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
-import { users, userRoles, roles, logs, refreshTokens } from '../../db/schema';
-import { SUPER_ADMIN_ROLE_CODE } from '../../db/schema/permissions.enum';
+import {
+  users,
+  userRoles,
+  roles,
+  logs,
+  refreshTokens,
+  userPosts,
+  posts,
+  depts,
+} from '../../db/schema';
+import {
+  SUPER_ADMIN_ROLE_CODE,
+} from '../../db/schema/permissions.enum';
+import {
+  assertValidDeptId,
+  assertValidPostIds,
+} from '../org/org-views';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/user-create.dto';
 import { UpdateUserDto } from './dto/user-update.dto';
@@ -19,6 +34,15 @@ export type UserRoleView = {
   id: string;
   name: string;
   code: string;
+};
+
+/** 用户关联的岗位视图（v1.6.0 组织中心；posts 表字段子集） */
+export type UserPostView = {
+  id: string;
+  name: string;
+  category: string;
+  /** 是否主岗 */
+  isMain: boolean;
 };
 
 /** 对外返回的用户视图（不含 passwordHash） */
@@ -38,11 +62,24 @@ export type UserView = {
   githubUsername: string | null;
   /** X（Twitter）用户名裸值（v1.5.2，管理端只读展示） */
   xUsername: string | null;
+  /** 所属组织 ID / 名称（v1.6.0 组织中心，可空） */
+  deptId: string | null;
+  deptName: string | null;
+  /** 工号（v1.6.0，可空） */
+  employeeNo: string | null;
+  /** 入职日期（v1.6.0，YYYY-MM-DD，可空） */
+  entryDate: string | null;
+  /** 在职状态（v1.6.0；存量 NULL 按在职输出） */
+  employmentStatus: 'employed' | 'resigned';
+  /** 性别（v1.6.0 阶段 2 补充；male 男 / female 女，null = 未设置） */
+  gender: 'male' | 'female' | null;
   status: string;
   createdAt: Date;
   updatedAt: Date;
   /** 用户关联的角色（多对多，经 user_roles 联查） */
   roles: UserRoleView[];
+  /** 用户关联的岗位（多对多 + 主岗标记，经 user_posts 联查） */
+  posts: UserPostView[];
 };
 
 const SORTABLE = new Set([
@@ -50,6 +87,9 @@ const SORTABLE = new Set([
   'username',
   'email',
   'displayName',
+  'employeeNo',
+  'entryDate',
+  'employmentStatus',
   'status',
   'createdAt',
   'updatedAt',
@@ -58,15 +98,25 @@ const SORTABLE = new Set([
 /** 内置管理员用户名（seed 固定创建，见 src/db/seed.ts） */
 const ADMIN_USERNAME = 'admin';
 
-function toView(row: typeof users.$inferSelect): Omit<UserView, 'roles'> {
-  // tokenVersion 为内部会话撤销用的版本号，不对外暴露
+function toView(
+  row: typeof users.$inferSelect,
+  extras?: { deptName: string | null; posts: UserPostView[] },
+): Omit<UserView, 'roles'> {
+  // tokenVersion 为内部会话撤销用的版本号，不对外暴露；
+  // 组织/岗位摘要由 extras 注入（deptName 联查、posts 列表）
   const {
     passwordHash: _omit,
     deletedAt: _d,
     tokenVersion: _tv,
     ...rest
   } = row;
-  return rest as Omit<UserView, 'roles'>;
+  return {
+    ...rest,
+    // 存量 employment_status 为 NULL 的按在职输出
+    employmentStatus: rest.employmentStatus === 'resigned' ? 'resigned' : 'employed',
+    deptName: extras?.deptName ?? null,
+    posts: extras?.posts ?? [],
+  } as Omit<UserView, 'roles'>;
 }
 
 @Injectable()
@@ -245,6 +295,88 @@ export class UsersService {
     }
   }
 
+  /** 批量查询 userIds 的岗位关联（user_posts → posts 未删除；v1.6.0 组织中心） */
+  private async loadPosts(
+    userIds: string[],
+  ): Promise<Map<string, UserPostView[]>> {
+    if (userIds.length === 0) return new Map();
+    const rows = await db
+      .select({
+        userId: userPosts.userId,
+        postId: posts.id,
+        postName: posts.name,
+        postCategory: posts.category,
+        isMain: userPosts.isMain,
+      })
+      .from(userPosts)
+      .innerJoin(
+        posts,
+        and(eq(userPosts.postId, posts.id), isNull(posts.deletedAt)),
+      )
+      .where(inArray(userPosts.userId, userIds))
+      .orderBy(desc(userPosts.isMain), asc(posts.name));
+
+    const map = new Map<string, UserPostView[]>();
+    for (const r of rows) {
+      const list = map.get(r.userId) ?? [];
+      list.push({
+        id: r.postId,
+        name: r.postName,
+        category: r.postCategory,
+        isMain: r.isMain,
+      });
+      map.set(r.userId, list);
+    }
+    return map;
+  }
+
+  /** 批量查询 userIds 的所属组织名称（users.dept_id → depts 未删除） */
+  private async loadDeptNames(
+    userIds: string[],
+  ): Promise<Map<string, string | null>> {
+    if (userIds.length === 0) return new Map();
+    const rows = await db
+      .select({ id: users.id, deptName: depts.name })
+      .from(users)
+      .leftJoin(
+        depts,
+        and(eq(users.deptId, depts.id), isNull(depts.deletedAt)),
+      )
+      .where(inArray(users.id, userIds));
+    const map = new Map<string, string | null>();
+    for (const r of rows) map.set(r.id, r.deptName ?? null);
+    return map;
+  }
+
+  /** 组织/岗位摘要批量装载（findAll / findOne / create / update 共用，避免 N+1） */
+  private async loadOrgExtras(userIds: string[]) {
+    const [postsMap, deptMap] = await Promise.all([
+      this.loadPosts(userIds),
+      this.loadDeptNames(userIds),
+    ]);
+    const map = new Map<
+      string,
+      { deptName: string | null; posts: UserPostView[] }
+    >();
+    for (const id of userIds) {
+      map.set(id, {
+        deptName: deptMap.get(id) ?? null,
+        posts: postsMap.get(id) ?? [],
+      });
+    }
+    return map;
+  }
+
+  /** 校验 mainPostId 必须在关联岗位列表中（v1.6.0；主岗至多一条由 isMain 唯一标记保证） */
+  private assertValidMainPost(mainPostId: string | null | undefined, postIds: string[]) {
+    if (mainPostId && !postIds.includes(mainPostId)) {
+      throw new BadRequestException({
+        code: 'VALIDATION_ERROR',
+        message: '主岗必须在关联岗位列表中',
+      });
+    }
+  }
+
   async findAll(query: UserQueryDto) {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 10;
@@ -279,12 +411,13 @@ export class UsersService {
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 
-    // 批量加载角色关联（一次查询，避免 N+1）
+    // 批量加载角色与组织/岗位摘要（各一次查询，避免 N+1）
     const rolesMap = await this.loadRoles(rows.map((r) => r.id));
+    const extras = await this.loadOrgExtras(rows.map((r) => r.id));
 
     return {
       data: rows.map((row) => ({
-        ...toView(row),
+        ...toView(row, extras.get(row.id)),
         roles: rolesMap.get(row.id) ?? [],
       })),
       pagination: { page, pageSize, total },
@@ -302,8 +435,9 @@ export class UsersService {
       });
     }
     const rolesMap = await this.loadRoles([id]);
+    const extras = await this.loadOrgExtras([id]);
     return {
-      ...toView(row),
+      ...toView(row, extras.get(id)),
       roles: rolesMap.get(id) ?? [],
     };
   }
@@ -313,9 +447,17 @@ export class UsersService {
     // 外键校验：角色 id 必须全部有效，避免外键报错（VALIDATION_ERROR）
     await this.assertValidRoleIds(roleIds);
 
+    // 组织中心关联校验（v1.6.0）：deptId 须存在且启用；postIds 全部有效；主岗须在 postIds 中
+    if (dto.deptId) {
+      await assertValidDeptId(dto.deptId);
+    }
+    const postIds = dto.postIds ?? [];
+    await assertValidPostIds(postIds);
+    this.assertValidMainPost(dto.mainPostId, postIds);
+
     const passwordHash = await bcrypt.hash(dto.password, 10);
     try {
-      // 用户创建与角色关联必须原子：db.transaction
+      // 用户创建与角色/岗位关联必须原子：db.transaction
       const created = await db.transaction(async (tx) => {
         const [row] = await tx
           .insert(users)
@@ -326,6 +468,11 @@ export class UsersService {
             displayName: dto.displayName,
             avatar: dto.avatar ?? null,
             status: dto.status ?? 'active',
+            deptId: dto.deptId ?? null,
+            employeeNo: dto.employeeNo ?? null,
+            entryDate: dto.entryDate ?? null,
+            employmentStatus: dto.employmentStatus ?? null,
+            gender: dto.gender ?? null,
           })
           .returning();
 
@@ -334,6 +481,15 @@ export class UsersService {
             .insert(userRoles)
             .values(roleIds.map((roleId) => ({ userId: row.id, roleId })));
         }
+        if (postIds.length > 0) {
+          await tx.insert(userPosts).values(
+            postIds.map((postId) => ({
+              userId: row.id,
+              postId,
+              isMain: postId === (dto.mainPostId ?? null),
+            })),
+          );
+        }
         return row;
       });
 
@@ -341,10 +497,16 @@ export class UsersService {
         id: created.id,
         username: created.username,
         roleIds,
+        deptId: created.deptId,
+        postIds,
       });
 
       const rolesMap = await this.loadRoles([created.id]);
-      return { ...toView(created), roles: rolesMap.get(created.id) ?? [] };
+      const extras = await this.loadOrgExtras([created.id]);
+      return {
+        ...toView(created, extras.get(created.id)),
+        roles: rolesMap.get(created.id) ?? [],
+      };
     } catch (err) {
       this.handleUniqueError(err);
     }
@@ -372,8 +534,17 @@ export class UsersService {
       await this.assertValidRoleIds(dto.roleIds);
     }
 
+    // 组织中心关联校验（v1.6.0）：postIds 全量替换语义同 roleIds；主岗须在列表中
+    if (dto.deptId) {
+      await assertValidDeptId(dto.deptId);
+    }
+    if (dto.postIds !== undefined) {
+      await assertValidPostIds(dto.postIds);
+      this.assertValidMainPost(dto.mainPostId, dto.postIds);
+    }
+
     try {
-      // 用户更新与角色关联全量替换必须原子：db.transaction
+      // 用户更新与角色/岗位关联全量替换必须原子：db.transaction
       const row = await db.transaction(async (tx) => {
         const [updated] = await tx
           .update(users)
@@ -382,6 +553,18 @@ export class UsersService {
             displayName: dto.displayName ?? existing.displayName,
             avatar: dto.avatar === undefined ? existing.avatar : dto.avatar,
             status: dto.status ?? existing.status,
+            deptId: dto.deptId === undefined ? existing.deptId : dto.deptId,
+            employeeNo:
+              dto.employeeNo === undefined
+                ? existing.employeeNo
+                : dto.employeeNo,
+            entryDate:
+              dto.entryDate === undefined ? existing.entryDate : dto.entryDate,
+            employmentStatus:
+              dto.employmentStatus === undefined
+                ? existing.employmentStatus
+                : dto.employmentStatus,
+            gender: dto.gender === undefined ? existing.gender : dto.gender,
           })
           .where(eq(users.id, id))
           .returning();
@@ -395,16 +578,35 @@ export class UsersService {
               .values(dto.roleIds.map((roleId) => ({ userId: id, roleId })));
           }
         }
+        if (dto.postIds !== undefined) {
+          // 全量替换：空数组即清空岗位；mainPostId 为空则全部 isMain=false
+          await tx.delete(userPosts).where(eq(userPosts.userId, id));
+          if (dto.postIds.length > 0) {
+            await tx.insert(userPosts).values(
+              dto.postIds.map((postId) => ({
+                userId: id,
+                postId,
+                isMain: postId === (dto.mainPostId ?? null),
+              })),
+            );
+          }
+        }
         return updated;
       });
 
       await this.writeLog('user.update', operatorId, {
         id,
         roleIds: dto.roleIds,
+        deptId: dto.deptId,
+        postIds: dto.postIds,
       });
 
       const rolesMap = await this.loadRoles([id]);
-      return { ...toView(row), roles: rolesMap.get(id) ?? [] };
+      const extras = await this.loadOrgExtras([id]);
+      return {
+        ...toView(row, extras.get(id)),
+        roles: rolesMap.get(id) ?? [],
+      };
     } catch (err) {
       this.handleUniqueError(err);
     }
@@ -421,11 +623,12 @@ export class UsersService {
       });
     }
     await this.assertTargetOperable(existing, operatorId);
-    // 软删除同时清理角色绑定与托管会话：username 部分唯一索引（deleted_at IS NULL）
+    // 软删除同时清理角色/岗位绑定与托管会话：username 部分唯一索引（deleted_at IS NULL）
     // 允许同名新用户复用该名字，残留绑定会导致登录聚合误取幽灵用户的权限
     await db.transaction(async (tx) => {
       await tx.update(users).set({ deletedAt: new Date() }).where(eq(users.id, id));
       await tx.delete(userRoles).where(eq(userRoles.userId, id));
+      await tx.delete(userPosts).where(eq(userPosts.userId, id));
       await tx.delete(refreshTokens).where(eq(refreshTokens.userId, id));
     });
     await this.writeLog('user.delete', operatorId, { id });
@@ -458,13 +661,14 @@ export class UsersService {
     // v1.4.6 保护：任一目标命中规则即整体拒绝（全有全无）
     await this.assertBatchOperable(existing, operatorId);
 
-    // 同 remove：软删除 + 清理角色绑定与托管会话（事务原子）
+    // 同 remove：软删除 + 清理角色/岗位绑定与托管会话（事务原子）
     await db.transaction(async (tx) => {
       await tx
         .update(users)
         .set({ deletedAt: new Date() })
         .where(and(isNull(users.deletedAt), sql`${users.id} IN ${ids}`));
       await tx.delete(userRoles).where(sql`${userRoles.userId} IN ${ids}`);
+      await tx.delete(userPosts).where(sql`${userPosts.userId} IN ${ids}`);
       await tx.delete(refreshTokens).where(sql`${refreshTokens.userId} IN ${ids}`);
     });
     await this.writeLog('user.batch_delete', operatorId, { ids });
@@ -529,6 +733,10 @@ export class UsersService {
     }
     await this.writeLog('user.status_update', operatorId, { id, status });
     const rolesMap = await this.loadRoles([id]);
-    return { ...toView(row), roles: rolesMap.get(id) ?? [] };
+    const extras = await this.loadOrgExtras([id]);
+    return {
+      ...toView(row, extras.get(id)),
+      roles: rolesMap.get(id) ?? [],
+    };
   }
 }

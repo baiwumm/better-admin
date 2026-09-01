@@ -65,6 +65,15 @@ info:
     不参与权限聚合；公告管理 / 架构图谱 / notifications 属阶段 3/4，另行追加。
     v1.6.0 补充：DeptTreeNode 新增 leaderId（可空）——编辑组织弹窗回显负责人需要，
     组织树查询本就联查该列，无额外查询。
+    v1.6.0 补充（阶段 2 用户关联闭环）：UserCreateRequest / UserUpdateRequest 新增
+    deptId（须存在且启用，否则 400 DEPT_NOT_FOUND）/ employeeNo / entryDate（YYYY-MM-DD）/
+    employmentStatus（employed|resigned）/ postIds（user_posts 全量替换，须存在且启用，最多 20 个）/
+    mainPostId（须在 postIds 中，否则 400 VALIDATION_ERROR）；
+    管理端 User 视图新增 deptId / deptName（left join depts）/ employeeNo / entryDate /
+    employmentStatus（存量 NULL 按 employed 输出）/ posts（user_posts → posts 联查，主岗标记）；
+    用户软删时同步清理 user_posts 关联。
+    v1.6.0 阶段 2 补充：users 表新增 gender 列（可空，male / female，null = 未设置，
+    迁移 0008）；UserCreateRequest / UserUpdateRequest / 管理端 User 视图新增 gender。
   version: 1.6.0
 
 servers:
@@ -283,6 +292,32 @@ components:
         status:
           type: string
           enum: [active, disabled]
+        deptId:
+          type: string
+          nullable: true
+          description: 所属组织 ID（v1.6.0 组织中心，可空；用户管理编辑维护）
+        deptName:
+          type: string
+          nullable: true
+          description: 所属组织名称（left join depts，组织已删除/未关联时为 null；管理端只读展示）
+        employeeNo:
+          type: string
+          nullable: true
+          description: 工号（v1.6.0，可空；人员通讯录展示 / 搜索用）
+        entryDate:
+          type: string
+          format: date
+          nullable: true
+          description: 入职日期（v1.6.0，可空）
+        employmentStatus:
+          type: string
+          enum: [employed, resigned]
+          description: 在职状态（v1.6.0；存量 employment_status 为 NULL 的按 employed 输出，与账号启停 status 正交）
+        gender:
+          type: string
+          nullable: true
+          enum: [male, female]
+          description: 性别（v1.6.0 阶段 2 补充；male 男 / female 女，null = 未设置）
         roles:
           type: array
           description: 用户关联的角色（user_roles → roles 联查）
@@ -295,6 +330,22 @@ components:
                 type: string
               code:
                 type: string
+        posts:
+          type: array
+          description: 用户关联的岗位（user_posts → posts 联查，主岗在前；v1.6.0 组织中心）
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              category:
+                type: string
+                enum: [management, professional, production]
+              isMain:
+                type: boolean
+                description: 是否主岗（至多一条；通讯录主岗展示与公告推送范围用）
         createdAt:
           type: string
           format: date-time
@@ -327,6 +378,40 @@ components:
           description: 关联角色 id 列表（用户 → 角色，多对多）。不传或空数组表示无角色。最多 5 个（v1.4.5，超限 400 VALIDATION_ERROR）。
           items:
             type: string
+        deptId:
+          type: string
+          nullable: true
+          description: 所属组织 ID（v1.6.0；须存在且启用，否则 400 DEPT_NOT_FOUND）
+        employeeNo:
+          type: string
+          nullable: true
+          maxLength: 50
+          description: 工号（v1.6.0，可空）
+        entryDate:
+          type: string
+          format: date
+          nullable: true
+          description: 入职日期（v1.6.0，YYYY-MM-DD，可空）
+        gender:
+          type: string
+          nullable: true
+          enum: [male, female]
+          description: 性别（v1.6.0 阶段 2 补充，可空；null = 未设置）
+        employmentStatus:
+          type: string
+          nullable: true
+          enum: [employed, resigned]
+          description: 在职状态（v1.6.0，可空；缺省 NULL 按在职处理）
+        postIds:
+          type: array
+          maxItems: 20
+          description: 关联岗位 id 列表（user_posts 全量替换，v1.6.0；不传或空数组表示无岗位。须存在且启用，最多 20 个，超限/无效 400 VALIDATION_ERROR）。
+          items:
+            type: string
+        mainPostId:
+          type: string
+          nullable: true
+          description: 主岗 ID（v1.6.0；须在 postIds 中，否则 400 VALIDATION_ERROR；不传表示无主岗）
 
     UserUpdateRequest:
       type: object
@@ -347,6 +432,40 @@ components:
           description: 关联角色 id 列表（全量替换：传空数组或不传即清空该用户所有角色关联）。最多 5 个（v1.4.5，超限 400 VALIDATION_ERROR）。
           items:
             type: string
+        deptId:
+          type: string
+          nullable: true
+          description: 所属组织 ID（v1.6.0；undefined 不修改 / null 清空；变更时须存在且启用，否则 400 DEPT_NOT_FOUND）
+        employeeNo:
+          type: string
+          nullable: true
+          maxLength: 50
+          description: 工号（v1.6.0；undefined 不修改 / null 清空）
+        entryDate:
+          type: string
+          format: date
+          nullable: true
+          description: 入职日期（v1.6.0，YYYY-MM-DD；undefined 不修改 / null 清空）
+        gender:
+          type: string
+          nullable: true
+          enum: [male, female]
+          description: 性别（v1.6.0 阶段 2 补充；undefined 不修改 / null 清空为未设置）
+        employmentStatus:
+          type: string
+          nullable: true
+          enum: [employed, resigned]
+          description: 在职状态（v1.6.0；undefined 不修改 / null 回到存量默认）
+        postIds:
+          type: array
+          maxItems: 20
+          description: 关联岗位 id 列表（user_posts 全量替换，v1.6.0：传空数组即清空、不传不修改。须存在且启用，最多 20 个，超限/无效 400 VALIDATION_ERROR）。
+          items:
+            type: string
+        mainPostId:
+          type: string
+          nullable: true
+          description: 主岗 ID（v1.6.0；须在 postIds 中，否则 400 VALIDATION_ERROR；不传表示无主岗）
 
     ResetPasswordRequest:
       type: object

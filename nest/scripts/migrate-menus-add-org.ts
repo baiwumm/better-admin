@@ -11,18 +11,44 @@ import {
 } from '../src/db/schema/permissions.enum';
 
 /**
- * 幂等迁移：存量库补录「组织中心」顶级菜单与「组织管理」子菜单
- * （契约 v1.6.0，阶段 1）。
+ * 幂等迁移：存量库补录「组织中心」顶级菜单与组织管理 / 岗位管理 / 人员通讯录子菜单
+ * （契约 v1.6.0，阶段 1 + 阶段 2）。
  *
- * 背景：seed 为 onConflictDoNothing，不会更新已初始化的库；存量库缺这两行
+ * 背景：seed 为 onConflictDoNothing，不会更新已初始化的库；存量库缺这几行
  * 菜单会导致侧边栏无「组织中心」入口（super_admin 亦然）。
  *
  * 行为（重复执行结果不变，幂等）：
  * 1. i18nKey='menu.org' 顶级菜单不存在则插入（sort=2，图标 building-2）；
- * 2. i18nKey='menu.depts' 子菜单不存在则插入（to=/org/depts，父级为上一步菜单，
- *    permissions = 常规菜单全量按钮位）；
- * 3. super_admin 角色对两个菜单补 role_menus 全量授权位（SUPER_ADMIN_BITS）。
+ * 2. i18nKey='menu.depts' / 'menu.posts' / 'menu.directory' 子菜单不存在则插入
+ *    （父级为上一步菜单，permissions = 常规菜单全量按钮位，无 GRANT）；
+ * 3. super_admin 角色对以上菜单补 role_menus 全量授权位（SUPER_ADMIN_BITS）。
  */
+
+/** 子菜单定义（与 seed.ts 一致；按 i18nKey 幂等） */
+const CHILD_MENUS = [
+  {
+    i18nKey: 'menu.depts',
+    label: '组织管理',
+    icon: 'network',
+    to: '/org/depts',
+    sort: 0,
+  },
+  {
+    i18nKey: 'menu.posts',
+    label: '岗位管理',
+    icon: 'briefcase',
+    to: '/org/posts',
+    sort: 1,
+  },
+  {
+    i18nKey: 'menu.directory',
+    label: '人员通讯录',
+    icon: 'book-user',
+    to: '/org/directory',
+    sort: 2,
+  },
+] as const;
+
 async function main() {
   // 与 seed.ts 一致的常规菜单全量按钮位（不含 GRANT）
   const menuFullBits =
@@ -60,26 +86,40 @@ async function main() {
     console.log(`[migrate-menus-add-org] 顶级菜单已存在(id=${orgMenu.id})，跳过。`);
   }
 
-  // 2. 子菜单：组织管理
-  const [deptsMenu] = await db
-    .select()
-    .from(menus)
-    .where(and(eq(menus.i18nKey, 'menu.depts'), eq(menus.parentId, orgMenu.id)));
-  if (!deptsMenu) {
-    await db.insert(menus).values({
-      id: nanoid(),
-      label: '组织管理',
-      i18nKey: 'menu.depts',
-      icon: 'network',
-      to: '/org/depts',
-      parentId: orgMenu.id,
-      sort: 0,
-      enabled: true,
-      permissions: menuFullBits,
-    });
-    console.log(`[migrate-menus-add-org] 已插入子菜单「组织管理」(parent=${orgMenu.id})。`);
-  } else {
-    console.log(`[migrate-menus-add-org] 子菜单「组织管理」已存在(id=${deptsMenu.id})，跳过。`);
+  // 2. 子菜单：组织管理 / 岗位管理 / 人员通讯录
+  const insertedMenuIds: string[] = [orgMenu.id];
+  for (const child of CHILD_MENUS) {
+    const [existing] = await db
+      .select({ id: menus.id })
+      .from(menus)
+      .where(
+        and(eq(menus.i18nKey, child.i18nKey), eq(menus.parentId, orgMenu.id)),
+      );
+    if (existing) {
+      console.log(
+        `[migrate-menus-add-org] 子菜单「${child.label}」已存在(id=${existing.id})，跳过。`,
+      );
+      insertedMenuIds.push(existing.id);
+      continue;
+    }
+    const [created] = await db
+      .insert(menus)
+      .values({
+        id: nanoid(),
+        label: child.label,
+        i18nKey: child.i18nKey,
+        icon: child.icon,
+        to: child.to,
+        parentId: orgMenu.id,
+        sort: child.sort,
+        enabled: true,
+        permissions: menuFullBits,
+      })
+      .returning({ id: menus.id });
+    console.log(
+      `[migrate-menus-add-org] 已插入子菜单「${child.label}」(id=${created.id})。`,
+    );
+    insertedMenuIds.push(created.id);
   }
 
   // 3. super_admin 全量授权
@@ -90,19 +130,11 @@ async function main() {
   if (!superAdminRole) {
     throw new Error('[migrate-menus-add-org] 未找到 super_admin 角色。');
   }
-  const [orgMenuFinal] = await db
-    .select({ id: menus.id })
-    .from(menus)
-    .where(eq(menus.i18nKey, 'menu.org'));
-  const [deptsMenuFinal] = await db
-    .select({ id: menus.id })
-    .from(menus)
-    .where(eq(menus.i18nKey, 'menu.depts'));
 
   await db
     .insert(roleMenus)
     .values(
-      [orgMenuFinal.id, deptsMenuFinal.id].map((menuId) => ({
+      insertedMenuIds.map((menuId) => ({
         roleId: superAdminRole.id,
         menuId,
         permissions: SUPER_ADMIN_BITS,

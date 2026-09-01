@@ -62,6 +62,8 @@ export const users = pgTable(
     employmentStatus: text('employment_status'),
     /** 入职日期（v1.6.0，可空向前兼容；人员通讯录展示用） */
     entryDate: date('entry_date', { mode: 'string' }),
+    /** 性别（v1.6.0 阶段 2 补充，可空向前兼容；male 男 / female 女，null = 未设置） */
+    gender: text('gender'),
     status: text('status').notNull().default('active'),
     /**
      * 令牌版本号：签发 JWT 时写入 payload（ver claim）。

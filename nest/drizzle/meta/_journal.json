@@ -57,6 +57,13 @@
       "when": 1788232155074,
       "tag": "0007_smart_gorgon",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788248065692,
+      "tag": "0008_robust_living_tribunal",
+      "breakpoints": true
     }
   ]
 }
