@@ -5,7 +5,17 @@
 
 ---
 
-### 我的账户验收调整 + 删除头像 + 个人链接（契约 v1.5.1 / v1.5.2）（2026-09-01）
+### 个人链接消费端上线：用户管理列改版 + 侧边栏菜单（契约 v1.5.3）（2026-09-01）
+
+- **范围**：个人链接（v1.5.2）的首批消费端——用户管理表格展示与侧边栏用户菜单；契约 v1.5.3 为 AuthUser 补个人链接三字段。
+- **契约 v1.5.3**：AuthUser（LoginResponse.user 与 GET /auth/me）新增 `website / githubUsername / xUsername` 只读裸值——侧边栏菜单需要登录态快照携带（v1.5.2 时「刻意不加」的决定因本需求翻转，三个可空短字符串成本可忽略）；管理端 User 契约补 `lastLoginAt` 与个人链接三字段说明（`toView` 剩余展开本就带出）。
+- **用户管理表格**：① 去掉独立的头像/姓名/邮箱三列，合并为「用户信息」列（复用 `UserInfo` 组件，头像 + 姓名 + 邮箱次行）；用户名列保留紧随其后；② 新增「最近登录」列（lastLoginAt，从未登录显示 —；**禁用排序**——后端 SORTABLE 白名单不含该列，开启会静默回退按 createdAt 排）；③ 新增「个人链接」列：主页（lucide Globe）/ GitHub / X 图标按钮，悬停 Tooltip 显示名称 + 完整 URL，点击新窗口打开（noopener），全空显示 —；列顺序调整为 用户信息 → 用户名 → 状态 → 角色 → 个人链接 → 最近登录 → 创建时间 → 操作。
+- **侧边栏用户菜单**：新增「个人链接」Submenu（Link2 触发项 + SubmenuIndicator），子项图标（Globe / Simple Icons Github/X）+ 名称，点击新窗口打开；三个链接全空时整个子菜单不渲染；「我的账户」保存个人链接后经 applyProfileUpdate 同步 auth-store，菜单即时生效。
+- **关键修复（表头全选失效）**：react-aria-components 会在 Table 上下文内给表头 selection 复选框注入 `isDisabled: true`（行复选框不受影响），全选永远点不动。修复：`DataTableSelectAll` 显式 `isDisabled={false}` 覆盖注入。实测：全选只选中可选行（受保护行由 enableRowSelection 排除）、再点取消、批量操作条联动均正常；「全部可选行已选」即呈勾选态（TanStack 语义）。
+- **结构调整**：`brand-icons.tsx` 由 `components/common/` 迁至 `lib/`（按用户要求），并按 Simple Icons 惯例补 `GithubIcon` / `XIcon`（lucide 新版已移除品牌图标）；新增共享工具 `lib/profile-links.ts`（裸值拼 URL + i18n labelKey + openExternalLink），用户表 / 侧边栏 / 将来控制台展示共用同一拼接规则。
+- **验证**：nest tsc 全绿、openapi YAML 校验通过；react tsc / eslint / test(68) / build 全绿；浏览器实测（独立 3002/5174 环境，验证后已清理）：表头全选/取消、新列布局、链接图标跳转。**待人工验证**：用户登录态下侧边栏菜单与表格展示。
+- **同步待办**：Vue / Next / Nuxt 跟进 v1.5.3（AuthUser 三字段）与用户管理/侧边栏展示。
+
 
 - **范围**：我的账户上线后两轮验收调整；契约 v1.5.1（DELETE /account/avatar）与 v1.5.2（个人链接三字段），users 表迁移 0005/0006 均已对 Supabase 执行。
 - **严重 bug 修复（裁剪偏移）**：`crop-image.ts` 的 `putImageData` 偏移量符号写反，保存头像与裁剪框区域不一致（只显示图片右下角）。已按 react-easy-crop 官方 safeArea 算法修正，并用「蓝底 + 中央黄色矩形」测试图实测裁剪一致性。
