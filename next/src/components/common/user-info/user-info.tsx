@@ -1,3 +1,5 @@
+"use client";
+
 import { Avatar, Typography, cn } from "@heroui/react";
 
 /**

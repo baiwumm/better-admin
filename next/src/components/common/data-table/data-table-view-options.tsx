@@ -1,0 +1,424 @@
+"use client";
+
+import type { RowData } from "@tanstack/react-table";
+import type { ColumnVisibilityState } from "@tanstack/react-table";
+import type { ComponentProps } from "react";
+import type { DragEndEvent } from "@dnd-kit/core";
+import type { AppTable } from "./table-types";
+
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  restrictToParentElement,
+  restrictToVerticalAxis,
+} from "@dnd-kit/modifiers";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  Button,
+  Checkbox,
+  Label,
+  Popover,
+  Typography,
+  cn,
+} from "@heroui/react";
+import { GripVertical, RotateCcw, Settings2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+import { useFlipReorder } from "./use-flip-reorder";
+
+import { useTranslation } from "@/i18n";
+
+/**
+ * 列设置面板：可见性勾选 + 拖拽排序（dnd-kit headless 逻辑 + HeroUI 渲染）。
+ * 拖拽经 modifiers 限制为纵向且不出列表容器（避免无限拖拽与溢出滚动条）。
+ *
+ * 参与面板的列 = 可隐藏列（`getCanHide()`）；功能性列（行选择、行操作等
+ * `enableHiding: false` 的列）不进面板，拖拽重排时保持默认位置（首/尾固定）。
+ *
+ * 持久化 storage key 规则：`column-setting:{userId}:{routePath}`
+ * （按用户 + 路由路径共享，不含查询参数），存 `{ hidden, order }`；
+ * 兼容 v1 旧格式（纯字符串数组，仅隐藏列）。
+ */
+
+export function buildColumnSettingKey(userId: string, routePath: string) {
+  return `column-setting:${userId}:${routePath}`;
+}
+
+/** 持久化结构：隐藏列 id + 可隐藏列的展示顺序 */
+interface ColumnSettingStore {
+  hidden: string[];
+  order: string[];
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
+}
+
+/** 读取持久化列设置（schema 校验 + v1 旧格式兼容） */
+function readColumnSetting(storageKey: string): ColumnSettingStore {
+  try {
+    const raw = localStorage.getItem(storageKey);
+
+    if (!raw) return { hidden: [], order: [] };
+
+    const parsed: unknown = JSON.parse(raw);
+
+    // v1 旧格式：字符串数组（仅隐藏列）
+    if (isStringArray(parsed)) return { hidden: parsed, order: [] };
+
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      "hidden" in parsed &&
+      "order" in parsed &&
+      isStringArray(parsed.hidden) &&
+      isStringArray(parsed.order)
+    ) {
+      return { hidden: parsed.hidden, order: parsed.order };
+    }
+
+    return { hidden: [], order: [] };
+  } catch {
+    return { hidden: [], order: [] };
+  }
+}
+
+/**
+ * 把面板内的可隐藏列顺序合并回全量 leaf 列顺序：
+ * 不可隐藏的功能性列保持原位，可隐藏列按面板顺序依次占据其默认槽位。
+ */
+function mergeColumnOrder(
+  allIds: string[],
+  hideableOrder: string[],
+  isHideable: (id: string) => boolean,
+): string[] {
+  const queue = [...hideableOrder];
+
+  return allIds.map((id) => (isHideable(id) ? (queue.shift() ?? id) : id));
+}
+
+/** 面板内可见性 Checkbox 的 variant（跟随 HeroUI Checkbox 定义，默认不传） */
+type CheckboxVariant = ComponentProps<typeof Checkbox>["variant"];
+
+export interface DataTableViewOptionsProps<TData extends RowData> {
+  table: AppTable<TData>;
+  /** 持久化 key（buildColumnSettingKey 生成）；不传则不持久化 */
+  storageKey?: string;
+  /** 可见性 Checkbox 的 variant（如 "secondary"；缺省为组件默认样式） */
+  checkboxVariant?: CheckboxVariant;
+  className?: string;
+}
+
+export function DataTableViewOptions<TData extends RowData>({
+  table,
+  storageKey,
+  checkboxVariant,
+  className,
+}: DataTableViewOptionsProps<TData>) {
+  const { t } = useTranslation();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const allLeafColumns = table.getAllLeafColumns();
+  const allLeafIds = allLeafColumns.map((column) => column.id);
+  const hideableColumns = allLeafColumns.filter((column) =>
+    column.getCanHide(),
+  );
+  const hideableIds = hideableColumns.map((column) => column.id);
+  const hideableIdSet = new Set(hideableIds);
+  const isHideable = (id: string) => hideableIdSet.has(id);
+
+  /** 面板内的列展示顺序（仅可隐藏列；初始化为列定义默认顺序） */
+  const [orderIds, setOrderIds] = useState<string[]>(hideableIds);
+  /**
+   * 默认顺序基线（挂载时固化为列定义顺序）：v9 的 getAllLeafColumns() 会
+   * 应用当前 columnOrder，拖拽后再取 hideableIds 得到的是拖拽后的顺序，
+   * 重置时不能用它回写面板，否则面板列表永远无法还原。
+   */
+  const [defaultOrderIds] = useState<string[]>(hideableIds);
+  const [hasRestored, setHasRestored] = useState(false);
+  // FLIP 动画单次触发开关：仅「重置」置真，拖拽结束的重排交给 dnd-kit 动画
+  const shouldAnimateFlip = useRef(false);
+  // 面板行重排 FLIP 动画：顺序变化时对列表行做垂直位移过渡（重置回默认等）
+  const flipContainerRef = useFlipReorder(
+    orderIds.join("\u0000"),
+    shouldAnimateFlip,
+  );
+
+  // 挂载时恢复持久化的列设置（仅一次）：隐藏列 + 顺序
+  useEffect(() => {
+    if (!storageKey || hideableColumns.length === 0) return;
+    const store = readColumnSetting(storageKey);
+
+    if (store.hidden.length > 0) {
+      const hiddenSet = new Set(store.hidden);
+      const visibility: ColumnVisibilityState = {};
+
+      for (const column of hideableColumns) {
+        visibility[column.id] = !hiddenSet.has(column.id);
+      }
+      table.setColumnVisibility(visibility);
+    }
+
+    if (store.order.length > 0) {
+      // 过滤掉列定义中已删除的 id；新增列按默认顺序追加到末尾
+      const valid = store.order.filter((id) => hideableIdSet.has(id));
+      const next = [
+        ...valid,
+        ...hideableIds.filter((id) => !valid.includes(id)),
+      ];
+
+      setOrderIds(next);
+      table.setColumnOrder(mergeColumnOrder(allLeafIds, next, isHideable));
+    }
+    setHasRestored(true);
+    // 仅挂载时恢复一次；依赖按 eslint 要求最小化
+  }, [storageKey]);
+
+  // 变更后持久化：全默认（无隐藏且顺序未调整）时不落存储
+  useEffect(() => {
+    if (!storageKey || !hasRestored || hideableColumns.length === 0) return;
+    const hidden = hideableColumns
+      .filter((column) => !column.getIsVisible())
+      .map((column) => column.id);
+    const orderChanged = orderIds.join("\u0000") !== hideableIds.join("\u0000");
+
+    try {
+      if (hidden.length === 0 && !orderChanged) {
+        localStorage.removeItem(storageKey);
+      } else {
+        const store: ColumnSettingStore = { hidden, order: orderIds };
+
+        localStorage.setItem(storageKey, JSON.stringify(store));
+      }
+    } catch {
+      // 存储不可用时忽略（列设置退化为会话内生效）
+    }
+  }, [
+    hasRestored,
+    storageKey,
+    orderIds.join("\u0000"),
+    JSON.stringify(table.state.columnVisibility),
+  ]);
+
+  if (hideableColumns.length === 0) return null;
+
+  const handleVisibleChange = (columnId: string, visible: boolean) => {
+    // 至少保留一列：已是唯一可见列时不允许取消勾选（UI 层同步禁用）
+    const visibleCount = hideableColumns.filter((c) => c.getIsVisible()).length;
+
+    if (!visible && visibleCount <= 1) return;
+
+    const visibility: ColumnVisibilityState = {};
+
+    for (const column of hideableColumns) {
+      visibility[column.id] =
+        column.id === columnId ? visible : column.getIsVisible();
+    }
+    table.setColumnVisibility(visibility);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = orderIds.indexOf(String(active.id));
+    const newIndex = orderIds.indexOf(String(over.id));
+
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const next = arrayMove(orderIds, oldIndex, newIndex);
+
+    shouldAnimateFlip.current = false;
+    setOrderIds(next);
+    table.setColumnOrder(mergeColumnOrder(allLeafIds, next, isHideable));
+  };
+
+  const resetColumns = () => {
+    // 用挂载时固化的默认顺序还原面板；表格侧以空 columnOrder 回到定义顺序
+    shouldAnimateFlip.current = true;
+    setOrderIds(defaultOrderIds);
+    table.setColumnVisibility({});
+    table.setColumnOrder([]);
+    if (storageKey) {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch {
+        // 忽略存储异常
+      }
+    }
+  };
+
+  // 当前可见的可隐藏列数（至少保留一列可见）
+  const visibleCount = hideableColumns.filter((c) => c.getIsVisible()).length;
+
+  const columnLabel = (id: string) => {
+    const column = table.getColumn(id);
+
+    if (!column) return id;
+    const header = column.columnDef.header;
+
+    return typeof header === "string" ? header : id;
+  };
+
+  return (
+    <Popover>
+      <Button className={className} size="sm" variant="outline">
+        <Settings2 />
+        {t("common.datatable.columnSettings")}
+      </Button>
+      <Popover.Content className="w-60">
+        <Popover.Dialog>
+          <div className="flex items-center justify-between">
+            <Popover.Heading className="text-sm font-semibold">
+              {t("common.datatable.columnSettings")}
+            </Popover.Heading>
+            <Button
+              isIconOnly
+              aria-label={t("common.datatable.resetColumns")}
+              size="sm"
+              variant="ghost"
+              onPress={resetColumns}
+            >
+              <RotateCcw className="text-muted" />
+            </Button>
+          </div>
+          <Typography className="pb-2" color="muted" type="body-xs">
+            {t("common.datatable.columnOrderHint")}
+          </Typography>
+          <DndContext
+            collisionDetection={closestCenter}
+            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+            sensors={sensors}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={orderIds}
+              strategy={verticalListSortingStrategy}
+            >
+              <div
+                ref={flipContainerRef}
+                className="flex max-h-80 flex-col gap-1 overflow-y-auto"
+              >
+                {orderIds.map((id) => (
+                  <SortableColumnRow
+                    key={id}
+                    canToggle={
+                      !(table.getColumn(id)?.getIsVisible() ?? true) ||
+                      visibleCount > 1
+                    }
+                    checkboxVariant={checkboxVariant}
+                    dragLabel={t("common.datatable.columnDrag", {
+                      column: columnLabel(id),
+                    })}
+                    flipId={id}
+                    id={id}
+                    isVisible={table.getColumn(id)?.getIsVisible() ?? true}
+                    label={columnLabel(id)}
+                    onVisibleChange={(visible) =>
+                      handleVisibleChange(id, visible)
+                    }
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
+  );
+}
+
+interface SortableColumnRowProps {
+  id: string;
+  /** FLIP 动画行标识（useFlipReorder 按此定位行元素） */
+  flipId: string;
+  label: string;
+  isVisible: boolean;
+  /** 是否允许切换可见性（最后一列可见时禁止取消勾选） */
+  canToggle: boolean;
+  /** 可见性 Checkbox 的 variant */
+  checkboxVariant?: CheckboxVariant;
+  onVisibleChange: (visible: boolean) => void;
+  /** 无障碍：拖拽手柄描述（含列名） */
+  dragLabel: string;
+}
+
+/** 面板内的单行：拖拽手柄 + 可见性勾选 + 列名 */
+function SortableColumnRow({
+  id,
+  flipId,
+  label,
+  isVisible,
+  canToggle,
+  checkboxVariant,
+  onVisibleChange,
+  dragLabel,
+}: SortableColumnRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex items-center gap-1 rounded-3xl",
+        isDragging && "z-10 bg-default shadow-md",
+      )}
+      data-flip-id={flipId}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+    >
+      <Button
+        {...attributes}
+        {...listeners}
+        isIconOnly
+        aria-label={dragLabel}
+        className="cursor-grab touch-none"
+        size="sm"
+        variant="ghost"
+      >
+        <GripVertical />
+      </Button>
+      <Checkbox
+        aria-label={label}
+        isDisabled={!canToggle}
+        isSelected={isVisible}
+        variant={checkboxVariant}
+        onChange={onVisibleChange}
+      >
+        <Checkbox.Content>
+          <Checkbox.Control>
+            <Checkbox.Indicator />
+          </Checkbox.Control>
+        </Checkbox.Content>
+      </Checkbox>
+      <Label className="flex-1 truncate text-sm">{label}</Label>
+    </div>
+  );
+}

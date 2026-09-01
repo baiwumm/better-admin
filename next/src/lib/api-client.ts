@@ -8,6 +8,9 @@ import {
 } from "@/lib/api-shared";
 import { getErrorMessage } from "@/i18n/config";
 
+// 转发共享基座导出：业务模块沿用 React 版的导入习惯（from "@/lib/api-client"）
+export { API_BASE, ApiClientError, parseEnvelope, type ApiErrorBody };
+
 /**
  * 统一 API 客户端（fetch 封装，Next 同源版）。
  *

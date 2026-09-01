@@ -115,26 +115,28 @@ export interface UserRoleSummary {
   code: string;
 }
 
-/** 用户实体（/users） */
+/** 用户实体（/users，字段按冻结契约 openapi.v1.6.0.frozen.yaml 裁剪：
+ * 不含 lastLoginAt/tokenVersion——前者是 Nest 运行时意外多带的字段、
+ * 后者不出现在契约；deptId/employeeNo 等阶段 2 字段待 N7 契约升级） */
 export interface User {
   id: string;
   username: string;
   email: string;
   displayName: string;
   avatar: string | null;
-  status: UserStatus;
-  tokenVersion: number;
-  roles: UserRoleSummary[];
-  createdAt: string;
-  updatedAt: string;
-  /** 最近一次登录成功时间（契约 v1.5.0；从未登录为 null） */
-  lastLoginAt: string | null;
+  phone: string | null;
+  /** 个人标签（契约 v1.5.0） */
+  tags: string[];
   /** 个人网站裸域名（契约 v1.5.2 只读；展示前缀 https:// 由前端拼接） */
   website: string | null;
   /** GitHub 用户名裸值（契约 v1.5.2 只读） */
   githubUsername: string | null;
   /** X（Twitter）用户名裸值（契约 v1.5.2 只读） */
   xUsername: string | null;
+  status: UserStatus;
+  roles: UserRoleSummary[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** 创建用户请求体（契约 v1.4.4：username 创建后不可变更） */
