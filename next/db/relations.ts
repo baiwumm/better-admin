@@ -1,9 +1,9 @@
 import { relations } from "drizzle-orm/relations";
 
 import {
+  menus,
   depts,
   users,
-  menus,
   dictTypes,
   dictItems,
   logs,
@@ -19,6 +19,18 @@ import {
   userRoles,
   roleMenus,
 } from "./schema";
+
+export const menusRelations = relations(menus, ({ one, many }) => ({
+  menu: one(menus, {
+    fields: [menus.parentId],
+    references: [menus.id],
+    relationName: "menus_parentId_menus_id",
+  }),
+  menus: many(menus, {
+    relationName: "menus_parentId_menus_id",
+  }),
+  roleMenus: many(roleMenus),
+}));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   dept: one(depts, {
@@ -57,18 +69,6 @@ export const deptsRelations = relations(depts, ({ one, many }) => ({
     relationName: "depts_parentId_depts_id",
   }),
   posts: many(posts),
-}));
-
-export const menusRelations = relations(menus, ({ one, many }) => ({
-  menu: one(menus, {
-    fields: [menus.parentId],
-    references: [menus.id],
-    relationName: "menus_parentId_menus_id",
-  }),
-  menus: many(menus, {
-    relationName: "menus_parentId_menus_id",
-  }),
-  roleMenus: many(roleMenus),
 }));
 
 export const dictItemsRelations = relations(dictItems, ({ one }) => ({

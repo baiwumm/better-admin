@@ -1,20 +1,65 @@
 import {
   pgTable,
-  type AnyPgColumn,
+  index,
   uniqueIndex,
   foreignKey,
   text,
-  timestamp,
   integer,
-  date,
-  index,
   boolean,
   bigint,
+  timestamp,
+  type AnyPgColumn,
+  date,
   unique,
   jsonb,
   primaryKey,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+
+export const menus = pgTable(
+  "menus",
+  {
+    id: text().primaryKey().notNull(),
+    label: text().notNull(),
+    i18NKey: text("i18n_key"),
+    icon: text().notNull(),
+    to: text(),
+    badge: text(),
+    parentId: text("parent_id"),
+    sort: integer().default(0).notNull(),
+    keepAlive: boolean("keep_alive").default(false).notNull(),
+    hideInMenu: boolean("hide_in_menu").default(false).notNull(),
+    enabled: boolean().default(true).notNull(),
+    defaultOpen: boolean("default_open").default(false).notNull(),
+    // You can use { mode: "bigint" } if numbers are exceeding js number limitations
+    permissions: bigint({ mode: "bigint" }).default(0n).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("menus_parent_idx").using(
+      "btree",
+      table.parentId.asc().nullsLast().op("text_ops"),
+    ),
+    index("menus_sort_idx").using(
+      "btree",
+      table.parentId.asc().nullsLast().op("text_ops"),
+      table.sort.asc().nullsLast().op("int4_ops"),
+    ),
+    uniqueIndex("menus_to_unique")
+      .using("btree", table.to.asc().nullsLast().op("text_ops"))
+      .where(sql`("to" IS NOT NULL)`),
+    foreignKey({
+      columns: [table.parentId],
+      foreignColumns: [table.id],
+      name: "menus_parent_id_menus_id_fk",
+    }).onDelete("restrict"),
+  ],
+);
 
 export const users = pgTable(
   "users",
@@ -47,6 +92,7 @@ export const users = pgTable(
     employeeNo: text("employee_no"),
     employmentStatus: text("employment_status"),
     entryDate: date("entry_date"),
+    gender: text(),
   },
   (table) => [
     uniqueIndex("users_email_unique_active")
@@ -55,51 +101,6 @@ export const users = pgTable(
     uniqueIndex("users_username_unique_active")
       .using("btree", table.username.asc().nullsLast().op("text_ops"))
       .where(sql`(deleted_at IS NULL)`),
-  ],
-);
-
-export const menus = pgTable(
-  "menus",
-  {
-    id: text().primaryKey().notNull(),
-    label: text().notNull(),
-    i18NKey: text("i18n_key"),
-    icon: text().notNull(),
-    to: text(),
-    badge: text(),
-    parentId: text("parent_id"),
-    sort: integer().default(0).notNull(),
-    keepAlive: boolean("keep_alive").default(false).notNull(),
-    hideInMenu: boolean("hide_in_menu").default(false).notNull(),
-    enabled: boolean().default(true).notNull(),
-    defaultOpen: boolean("default_open").default(false).notNull(),
-    // You can use { mode: "bigint" } if numbers are exceeding js number limitations
-    permissions: bigint({ mode: "number" }).default(0).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    index("menus_parent_idx").using(
-      "btree",
-      table.parentId.asc().nullsLast().op("text_ops"),
-    ),
-    index("menus_sort_idx").using(
-      "btree",
-      table.parentId.asc().nullsLast().op("text_ops"),
-      table.sort.asc().nullsLast().op("int4_ops"),
-    ),
-    uniqueIndex("menus_to_unique")
-      .using("btree", table.to.asc().nullsLast().op("text_ops"))
-      .where(sql`("to" IS NOT NULL)`),
-    foreignKey({
-      columns: [table.parentId],
-      foreignColumns: [table.id],
-      name: "menus_parent_id_menus_id_fk",
-    }).onDelete("restrict"),
   ],
 );
 
@@ -557,7 +558,7 @@ export const roleMenus = pgTable(
     roleId: text("role_id").notNull(),
     menuId: text("menu_id").notNull(),
     // You can use { mode: "bigint" } if numbers are exceeding js number limitations
-    permissions: bigint({ mode: "number" }).default(0).notNull(),
+    permissions: bigint({ mode: "bigint" }).default(0n).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
       .defaultNow()
       .notNull(),

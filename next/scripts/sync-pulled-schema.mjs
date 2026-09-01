@@ -35,6 +35,13 @@ for (const file of ["schema.ts", "relations.ts"]) {
   // 修复移除后残留的双逗号
   content = content.replace(/,\s*,/g, ",");
   content = content.replace(/,(\s*\n\s*\])/g, "$1");
+  // 权限位列必须以 bigint 模式取值：super_admin 全量位 9223372036854775807
+  // 超出 Number 安全整数（2^53），mode:"number"（drizzle-kit 内省默认）会
+  // 精度丢失导致位运算失真；Nest 端手写 schema 即为 mode:"bigint"。
+  content = content.replaceAll(
+    'bigint({ mode: "number" }).default(0).notNull()',
+    'bigint({ mode: "bigint" }).default(0n).notNull()',
+  );
   content = content.replace(
     /(\t)deptId: text\("dept_id"\),/,
     '$1deptId: text("dept_id").references((): AnyPgColumn => depts.id),',
