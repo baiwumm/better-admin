@@ -10,7 +10,7 @@ import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from "node:fs
 import { join } from "node:path";
 
 const scratch = join(process.cwd(), ".drizzle-scratch");
-const dbDir = join(process.cwd(), "db");
+const dbDir = join(process.cwd(), "src", "db");
 
 for (const file of ["schema.ts", "relations.ts"]) {
   const src = join(scratch, file);

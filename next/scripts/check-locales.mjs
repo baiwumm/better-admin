@@ -12,7 +12,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const REACT_ROOT = join(process.cwd(), "..", "react", "src", "i18n", "locales");
-const NEXT_ROOT = join(process.cwd(), "i18n", "locales");
+const NEXT_ROOT = join(process.cwd(), "src", "i18n", "locales");
 
 /** 递归收集相对路径下的 JSON 文件（按语言目录分组的 key-value map）。 */
 function collectLocales(root) {

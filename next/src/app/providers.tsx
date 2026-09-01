@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { I18nextProvider } from "react-i18next";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { Toast } from "@heroui/react";
 
 import { createI18nInstance, i18n as sessionI18n, initI18n } from "@/i18n";
 import { initDesignTheme } from "@/stores/design-theme-store";
@@ -38,7 +39,10 @@ export function Providers({ initialLanguage, children }: ProvidersProps) {
     <I18nextProvider
       i18n={isBrowser ? sessionI18n : createI18nInstance(initialLanguage)}
     >
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <Toast.Provider placement="top" />
+        {children}
+      </QueryClientProvider>
     </I18nextProvider>
   );
 }

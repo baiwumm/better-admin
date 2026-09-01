@@ -27,7 +27,7 @@ config({ path: ".env.local" });
  */
 export default defineConfig({
   dialect: "postgresql",
-  schema: "./db/schema.ts",
+  schema: "./src/db/schema.ts",
   out: "./.drizzle-scratch",
   schemaFilter: ["public"],
   dbCredentials: {

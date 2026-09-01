@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Chip, Typography } from "@heroui/react";
 
 import { useTranslation } from "@/i18n";
@@ -61,11 +62,14 @@ export function AuthPageShell({
         >
           {/* 顶部：品牌头 */}
           <div className="relative z-10 flex items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
+              priority
+              unoptimized
               alt={appName}
               className="size-8 rounded-lg shadow-sm lg:size-9"
+              height={36}
               src={theme === "dark" ? "/logo-dark.svg" : "/logo.svg"}
+              width={36}
             />
             <Typography
               className="text-base font-semibold tracking-tight"

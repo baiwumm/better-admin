@@ -114,6 +114,6 @@ export const config = {
   // Next 16 的 proxy 恒定运行于 Node.js runtime（官方约定，无需也不允许声明）
   matcher: [
     // 排除 API（Route Handler 自行鉴权）、静态资源与错误页
-    "/((?!api|_next|favicon.ico|apple-touch-icon.png|web-app-manifest-192x192.png|web-app-manifest-512x512.png|site.webmanifest|fonts/|403|404|500).*)",
+    "/((?!api|_next|favicon|logo|apple-touch|web-app-manifest|site\.webmanifest|fonts/|403|404|500).*)",
   ],
 };
