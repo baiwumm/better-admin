@@ -127,7 +127,7 @@ function AuthPageLayout() {
 
           {/* 版权：右侧区域底部（仅桌面端；移动端由页面级 footer 接管） */}
           <p className="relative z-10 mt-4 hidden text-center text-xs text-muted lg:block">
-            © 2026 by{" "}
+            © {new Date().getFullYear()} by{" "}
             <a
               className="underline-offset-2 transition-colors hover:text-foreground hover:underline"
               href="https://github.com/baiwumm"
@@ -143,7 +143,7 @@ function AuthPageLayout() {
 
       {/* 版权：页面级底部（仅移动端，位于表单区之下、整页贴底） */}
       <footer className="relative z-10 pb-4 text-center text-xs text-muted lg:hidden">
-        © 2026{" "}
+        © {new Date().getFullYear()}{" "}
         <a
           className="underline-offset-2 transition-colors hover:text-foreground hover:underline"
           href="https://github.com/baiwumm"
