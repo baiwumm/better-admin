@@ -42,7 +42,15 @@ info:
     并将 GET /auth/me 的 data 契约由 LoginResponse 纠偏为 AuthUser（实现一直如此）；
     管理端 User 视图补充 phone / tags 只读展示。错误码新增 CURRENT_PASSWORD_INCORRECT、
     AVATAR_FILE_INVALID、AVATAR_FILE_TOO_LARGE。
-  version: 1.5.0
+    v1.5.1 新增 DELETE /account/avatar（删除头像：置空 users.avatar 并尽力删除
+    Storage 对象，返回最新账户详情）。
+    v1.5.2 AccountProfile / PUT /account/profile 新增个人链接三个可空字段
+    website（裸域名，如 baidu.com，可带路径）/ githubUsername / xUsername
+    （第三方平台用户名裸值）：服务端提交时自动剥离 http(s):// 与平台前缀后校验，
+    展示 URL 前缀（https:// 、https://github.com/ 、https://x.com/）由前端统一拼接；
+    管理端 User 视图自动透出三个只读字段（toView 剩余字段展开，语义为个人链接，
+    仅管理端展示用）。
+  version: 1.5.2
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -227,6 +235,18 @@ components:
           description: 个人标签（v1.5.0 新增，管理端只读展示；自助维护走 PUT /account/profile）
           items:
             type: string
+        website:
+          type: string
+          nullable: true
+          description: 个人网站裸域名（v1.5.2 新增，管理端只读展示；自助修改走 PUT /account/profile）
+        githubUsername:
+          type: string
+          nullable: true
+          description: GitHub 用户名裸值（v1.5.2 新增，管理端只读展示；自助修改走 PUT /account/profile）
+        xUsername:
+          type: string
+          nullable: true
+          description: X（Twitter）用户名裸值（v1.5.2 新增，管理端只读展示；自助修改走 PUT /account/profile）
         status:
           type: string
           enum: [active, disabled]
@@ -335,6 +355,21 @@ components:
           description: 个人标签（自助维护，最多 10 个、每个去首尾空格后 1-20 字符、自动去重）
           items:
             type: string
+        website:
+          type: string
+          nullable: true
+          maxLength: 255
+          description: 个人网站裸域名（v1.5.2，如 baidu.com，可带路径；展示时前端拼 https:// 前缀）
+        githubUsername:
+          type: string
+          nullable: true
+          maxLength: 39
+          description: GitHub 用户名裸值（v1.5.2，如 baiwumm；展示时前端拼 https://github.com/ 前缀）
+        xUsername:
+          type: string
+          nullable: true
+          maxLength: 15
+          description: X（Twitter）用户名裸值（v1.5.2，如 baiwumm；展示时前端拼 https://x.com/ 前缀）
         status:
           type: string
           enum: [active, disabled]
@@ -378,10 +413,31 @@ components:
         tags:
           type: array
           maxItems: 10
-          description: 个人标签全量替换；服务端逐项 trim、去重，单项 1-20 字符
+          description: 个人标签全量替换；服务端逐项 trim、去空、去重，单项 1-20 字符
           items:
             type: string
             maxLength: 20
+        website:
+          type: string
+          nullable: true
+          maxLength: 255
+          description: >
+            个人网站裸域名（如 baidu.com，可带路径）；提交时自动剥离 http(s):// 前缀后校验，
+            null 清空、缺省不修改。格式：域名 + 可选端口 + 可选路径。
+        githubUsername:
+          type: string
+          nullable: true
+          maxLength: 39
+          description: >
+            GitHub 用户名裸值（如 baiwumm）；提交时自动剥离 GitHub 主页前缀后校验，
+            null 清空、缺省不修改。1-39 位字母数字或连字符，不以连字符开头/结尾。
+        xUsername:
+          type: string
+          nullable: true
+          maxLength: 15
+          description: >
+            X（Twitter）用户名裸值（如 baiwumm）；提交时自动剥离 X 主页前缀后校验，
+            null 清空、缺省不修改。4-15 位字母数字或下划线。
 
     AccountEmailUpdateRequest:
       type: object
@@ -1115,6 +1171,28 @@ paths:
               example:
                 code: AVATAR_UPLOAD_FAILED
                 message: 头像上传失败，请稍后重试
+    delete:
+      tags: [Account]
+      summary: 删除头像（置空并尽力清理 Storage 对象）
+      description: >
+        将 users.avatar 置空，并按现有头像 URL 尽力删除 Storage 中的
+        {userId}.{ext} 对象（对象删除失败不阻断，仅记录日志）；返回最新账户详情。
+      security:
+        - bearerAuth: []
+      x-permission: NONE
+      responses:
+        '200':
+          description: 删除成功（data.avatar 为 null）
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccountProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   # ===================== Permissions =====================
   /permissions:

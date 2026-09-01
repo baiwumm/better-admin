@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Post,
@@ -81,5 +82,11 @@ export class AccountController {
       });
     }
     return this.accountService.updateAvatar(this.userId(req), file);
+  }
+
+  /** DELETE /api/account/avatar（删除头像：置空并尽力清理 Storage 对象，v1.5.1） */
+  @Delete('avatar')
+  deleteAvatar(@Req() req: Request) {
+    return this.accountService.deleteAvatar(this.userId(req));
   }
 }

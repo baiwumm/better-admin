@@ -116,6 +116,9 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | phone | varchar(20) | NULL | 电话（v1.5.0，我的账户自助修改；`+` 前缀 + 数字/空格/短横线，4-20 位） |
 | tags | text[] | NULL | 个人标签（v1.5.0，我的账户自助维护；服务端 trim、去空、去重，≤10 个 × 20 字符） |
 | last_login_at | timestamptz | NULL | 最近一次登录成功时间（v1.5.0，登录成功时写入；从未登录为 NULL） |
+| website | text | NULL | 个人网站裸域名（v1.5.2，如 baidu.com，可带路径，不带协议；展示前缀 `https://` 由前端拼接） |
+| github_username | text | NULL | GitHub 用户名裸值（v1.5.2，如 baiwumm；展示前缀 `https://github.com/` 由前端拼接） |
+| x_username | text | NULL | X（Twitter）用户名裸值（v1.5.2，如 baiwumm；展示前缀 `https://x.com/` 由前端拼接） |
 | status | varchar(20) | NOT NULL, DEFAULT 'active' | `active` / `disabled`（收进字典 `user_status`） |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | |
 | updated_at | timestamptz | NOT NULL, DEFAULT now() | |

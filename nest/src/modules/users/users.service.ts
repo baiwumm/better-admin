@@ -28,6 +28,16 @@ export type UserView = {
   email: string;
   displayName: string;
   avatar: string | null;
+  /** 电话（v1.5.0） */
+  phone: string | null;
+  /** 个人标签（v1.5.0） */
+  tags: string[] | null;
+  /** 个人网站裸域名（v1.5.2，管理端只读展示） */
+  website: string | null;
+  /** GitHub 用户名裸值（v1.5.2，管理端只读展示） */
+  githubUsername: string | null;
+  /** X（Twitter）用户名裸值（v1.5.2，管理端只读展示） */
+  xUsername: string | null;
   status: string;
   createdAt: Date;
   updatedAt: Date;

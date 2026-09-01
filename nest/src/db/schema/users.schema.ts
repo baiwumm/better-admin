@@ -28,6 +28,15 @@ export const users = pgTable(
     tags: text('tags').array(),
     /** 最近一次登录成功时间（v1.5.0，登录成功时写入；从未登录为 null） */
     lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+    /**
+     * 个人网站裸域名（v1.5.2，如 baidu.com，可带路径，不带协议）；
+     * 展示 URL 前缀 https:// 由前端统一拼接
+     */
+    website: text('website'),
+    /** GitHub 用户名裸值（v1.5.2，如 baiwumm）；展示前缀 https://github.com/ 由前端拼接 */
+    githubUsername: text('github_username'),
+    /** X（Twitter）用户名裸值（v1.5.2，如 baiwumm）；展示前缀 https://x.com/ 由前端拼接 */
+    xUsername: text('x_username'),
     status: text('status').notNull().default('active'),
     /**
      * 令牌版本号：签发 JWT 时写入 payload（ver claim）。

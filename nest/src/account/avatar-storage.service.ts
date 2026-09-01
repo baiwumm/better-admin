@@ -92,4 +92,21 @@ export class AvatarStorageService {
     const base = process.env.SUPABASE_URL;
     return `${base}/storage/v1/object/public/${AVATAR_BUCKET}/${path}?v=${Date.now()}`;
   }
+
+  /**
+   * 尽力删除 Storage 对象（删除头像用）。对象不存在或删除失败不抛错——
+   * 删除头像的主语义是「置空 users.avatar」，孤儿对象仅记录日志，不阻断请求。
+   */
+  async removeObject(objectPath: string): Promise<void> {
+    try {
+      const { error } = await this.getClient()
+        .storage.from(AVATAR_BUCKET)
+        .remove([objectPath]);
+      if (error) {
+        console.error(`[avatar-storage] 删除对象失败(${objectPath}):`, error.message);
+      }
+    } catch (err) {
+      console.error(`[avatar-storage] 删除对象异常(${objectPath}):`, err);
+    }
+  }
 }

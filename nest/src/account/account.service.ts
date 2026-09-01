@@ -31,6 +31,12 @@ export type AccountProfile = {
   avatar: string | null;
   phone: string | null;
   tags: string[];
+  /** 个人网站裸域名（v1.5.2，如 baidu.com，不带协议；展示前缀由前端拼接） */
+  website: string | null;
+  /** GitHub 用户名裸值（v1.5.2） */
+  githubUsername: string | null;
+  /** X（Twitter）用户名裸值（v1.5.2） */
+  xUsername: string | null;
   status: string;
   roles: AccountRoleView[];
   createdAt: Date;
@@ -106,6 +112,9 @@ export class AccountService {
       avatar: row.avatar,
       phone: row.phone,
       tags: row.tags ?? [],
+      website: row.website,
+      githubUsername: row.githubUsername,
+      xUsername: row.xUsername,
       status: row.status,
       roles,
       createdAt: row.createdAt,
@@ -135,6 +144,16 @@ export class AccountService {
     }
     if (dto.tags !== undefined) {
       patch.tags = normalizeTags(dto.tags);
+    }
+    // 个人链接三字段（v1.5.2）：undefined = 未修改；null = 清空（裸值已由 DTO 剥前缀）
+    if (dto.website !== undefined) {
+      patch.website = dto.website;
+    }
+    if (dto.githubUsername !== undefined) {
+      patch.githubUsername = dto.githubUsername;
+    }
+    if (dto.xUsername !== undefined) {
+      patch.xUsername = dto.xUsername;
     }
 
     if (Object.keys(patch).length > 0) {
@@ -199,6 +218,24 @@ export class AccountService {
     await db.update(users).set({ avatar }).where(eq(users.id, userId));
     await this.writeLog('account.avatar_update', userId, null);
     return { avatar };
+  }
+
+  /**
+   * 删除头像（v1.5.1）：置空 users.avatar，并按现有 URL 尽力清理
+   * Storage 对象（对象删除失败不阻断，见 AvatarStorageService.removeObject）。
+   */
+  async deleteAvatar(userId: string): Promise<AccountProfile> {
+    const row = await this.loadRow(userId);
+    if (row.avatar) {
+      // avatar URL 形如 .../storage/v1/object/public/avatars/{userId}.{ext}?v=...
+      const match = row.avatar.match(/avatars\/([^?]+)/);
+      if (match) {
+        await this.avatarStorage.removeObject(decodeURIComponent(match[1]));
+      }
+    }
+    await db.update(users).set({ avatar: null }).where(eq(users.id, userId));
+    await this.writeLog('account.avatar_delete', userId, null);
+    return this.buildProfile(userId);
   }
 
   private async assertCurrentPassword(
