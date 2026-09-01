@@ -72,52 +72,35 @@ export function RoleFormDialog({
   role,
   onSaved,
 }: RoleFormDialogProps) {
-  const { t } = useTranslation();
-
-  return (
-    <Modal.Backdrop
-      isKeyboardDismissDisabled
-      isDismissable={false}
-      isOpen={isOpen}
+  // Modal 结构渲染在有 mutation 的内层组件（RoleFormModal），
+  // 保证 Modal.Footer 是 Modal.Dialog 的直接子元素（Body 滚动、Footer 固定）
+  return isOpen ? (
+    <RoleFormModal
+      key={`${mode}:${role?.id ?? "new"}`}
+      isOpen
+      mode={mode}
+      role={role}
       onOpenChange={onOpenChange}
-    >
-      <Modal.Container>
-        <Modal.Dialog className="sm:max-w-md">
-          <Modal.CloseTrigger />
-          <Modal.Header>
-            <Modal.Heading>
-              {t(
-                mode === "edit"
-                  ? "features.roles.form.title.edit"
-                  : "features.roles.form.title.create",
-              )}
-            </Modal.Heading>
-          </Modal.Header>
-          <Modal.Body>
-            {isOpen && (
-              <RoleForm
-                key={`${mode}:${role?.id ?? "new"}`}
-                mode={mode}
-                role={role}
-                onDone={() => onOpenChange(false)}
-                onSaved={onSaved}
-              />
-            )}
-          </Modal.Body>
-        </Modal.Dialog>
-      </Modal.Container>
-    </Modal.Backdrop>
-  );
+      onSaved={onSaved}
+    />
+  ) : null;
 }
 
 interface RoleFormProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
   mode: RoleFormMode;
   role: Role | null;
-  onDone: () => void;
   onSaved: () => void;
 }
 
-function RoleForm({ mode, role, onDone, onSaved }: RoleFormProps) {
+function RoleFormModal({
+  isOpen,
+  onOpenChange,
+  mode,
+  role,
+  onSaved,
+}: RoleFormProps) {
   const { t } = useTranslation();
   const isEdit = mode === "edit";
   // 系统内置角色保护（仅编辑态）：code/name/enabled 均不可改，
@@ -148,169 +131,204 @@ function RoleForm({ mode, role, onDone, onSaved }: RoleFormProps) {
         ? updateRole(role!.id, input)
         : createRole({ code: values.code, ...input });
     },
+    // 提示反馈统一由 onSubmit 的 toast.promise 呈现（loading → success/error）；
+    // 成功副作用（缓存失效联动、关弹窗）保留在此
     onSuccess: () => {
       onSaved();
-      toast.success(
-        t(
-          isEdit
-            ? "features.roles.message.updateSuccess"
-            : "features.roles.message.createSuccess",
-        ),
-      );
-      onDone();
-    },
-    onError: (error) => {
-      toast.danger(getRoleErrorMessage(error));
+      onOpenChange(false);
     },
   });
 
   const onSubmit = handleSubmit((values) => {
-    mutation.mutate(values);
+    toast.promise(mutation.mutateAsync(values), {
+      loading: t("features.roles.form.saving"),
+      success: t(
+        isEdit
+          ? "features.roles.message.updateSuccess"
+          : "features.roles.message.createSuccess",
+      ),
+      error: (error) => getRoleErrorMessage(error),
+    });
   });
 
   return (
-    <Form
-      className="flex flex-col gap-4"
-      id={FORM_ID}
-      // 校验统一交给 react-hook-form（aria 行为避免 required 抢聚焦阻断提交）
-      validationBehavior="aria"
-      onSubmit={(event) => void onSubmit(event)}
+    <Modal.Backdrop
+      isKeyboardDismissDisabled
+      isDismissable={false}
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
     >
-      <Controller
-        control={control}
-        name="code"
-        render={({ field, fieldState }) => (
-          <TextField
-            isRequired
-            className="flex flex-col gap-1"
-            isDisabled={isEdit}
-            isInvalid={Boolean(fieldState.error)}
-            value={field.value ?? ""}
-            onBlur={field.onBlur}
-            onChange={field.onChange}
-          >
-            <Label>{t("features.roles.form.code")}</Label>
-            <Input maxLength={50} placeholder="editor" variant="secondary" />
-            {fieldState.error ? (
-              <FieldError>
-                {!field.value?.trim()
-                  ? t("features.roles.form.codeRequired")
-                  : t("features.roles.form.codeFormat")}
-              </FieldError>
-            ) : (
-              <Description>{t("features.roles.form.codeHint")}</Description>
-            )}
-          </TextField>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="name"
-        render={({ field, fieldState }) => (
-          <TextField
-            isRequired
-            className="flex flex-col gap-1"
-            isDisabled={isSuperAdmin}
-            isInvalid={Boolean(fieldState.error)}
-            value={field.value ?? ""}
-            onBlur={field.onBlur}
-            onChange={field.onChange}
-          >
-            <Label>{t("features.roles.form.name")}</Label>
-            <Input
-              maxLength={50}
-              placeholder={t("features.roles.form.namePlaceholder")}
-              variant="secondary"
-            />
-            {fieldState.error && (
-              <FieldError>{t("features.roles.form.nameInvalid")}</FieldError>
-            )}
-          </TextField>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="description"
-        render={({ field, fieldState }) => (
-          <TextField
-            className="flex flex-col gap-1"
-            isInvalid={Boolean(fieldState.error)}
-            value={field.value ?? ""}
-            onBlur={field.onBlur}
-            onChange={field.onChange}
-          >
-            <Label>{t("features.roles.form.description")}</Label>
-            <TextArea
-              maxLength={200}
-              placeholder={t("features.roles.form.descriptionPlaceholder")}
-              rows={3}
-              variant="secondary"
-            />
-            {fieldState.error && (
-              <FieldError>
-                {t("features.roles.form.descriptionInvalid")}
-              </FieldError>
-            )}
-          </TextField>
-        )}
-      />
-
-      <SortField
-        value={watch("sort")}
-        onChange={(value) => setValue("sort", value, { shouldValidate: true })}
-      />
-
-      <Controller
-        control={control}
-        name="enabled"
-        render={({ field }) => (
-          <div className="flex items-center justify-between gap-3 rounded-3xl border border-border px-3 py-2">
-            <Label>{t("features.roles.form.enabled")}</Label>
-            <Switch
-              aria-label={t("features.roles.form.enabled")}
-              isDisabled={isSuperAdmin}
-              isSelected={field.value}
-              onChange={field.onChange}
-            >
-              {({ isSelected }) => (
-                <Switch.Content>
-                  <Switch.Control>
-                    <Switch.Thumb>
-                      <Switch.Icon>
-                        {isSelected ? (
-                          <Check className="size-3 text-inherit opacity-100" />
-                        ) : (
-                          <X className="size-3 text-inherit opacity-70" />
-                        )}
-                      </Switch.Icon>
-                    </Switch.Thumb>
-                  </Switch.Control>
-                </Switch.Content>
+      <Modal.Container>
+        <Modal.Dialog className="sm:max-w-md">
+          <Modal.CloseTrigger />
+          <Modal.Header>
+            <Modal.Heading>
+              {t(
+                mode === "edit"
+                  ? "features.roles.form.title.edit"
+                  : "features.roles.form.title.create",
               )}
-            </Switch>
-          </div>
-        )}
-      />
+            </Modal.Heading>
+          </Modal.Header>
+          <Modal.Body>
+            <Form
+              className="flex flex-col gap-4"
+              id={FORM_ID}
+              // 校验统一交给 react-hook-form（aria 行为避免 required 抢聚焦阻断提交）
+              validationBehavior="aria"
+              onSubmit={(event) => void onSubmit(event)}
+            >
+              <Controller
+                control={control}
+                name="code"
+                render={({ field, fieldState }) => (
+                  <TextField
+                    isRequired
+                    className="flex flex-col gap-1"
+                    isDisabled={isEdit}
+                    isInvalid={Boolean(fieldState.error)}
+                    value={field.value ?? ""}
+                    onBlur={field.onBlur}
+                    onChange={field.onChange}
+                  >
+                    <Label>{t("features.roles.form.code")}</Label>
+                    <Input
+                      maxLength={50}
+                      placeholder="editor"
+                      variant="secondary"
+                    />
+                    {fieldState.error ? (
+                      <FieldError>
+                        {!field.value?.trim()
+                          ? t("features.roles.form.codeRequired")
+                          : t("features.roles.form.codeFormat")}
+                      </FieldError>
+                    ) : (
+                      <Description>
+                        {t("features.roles.form.codeHint")}
+                      </Description>
+                    )}
+                  </TextField>
+                )}
+              />
 
-      <Modal.Footer className="w-full">
-        <Button slot="close" variant="secondary">
-          {t("common.cancel")}
-        </Button>
-        <Button form={FORM_ID} isPending={mutation.isPending} type="submit">
-          {({ isPending }) =>
-            isPending ? (
-              <>
-                <Spinner color="current" size="sm" />
-                {t("features.roles.form.saving")}
-              </>
-            ) : (
-              t("common.confirm")
-            )
-          }
-        </Button>
-      </Modal.Footer>
-    </Form>
+              <Controller
+                control={control}
+                name="name"
+                render={({ field, fieldState }) => (
+                  <TextField
+                    isRequired
+                    className="flex flex-col gap-1"
+                    isDisabled={isSuperAdmin}
+                    isInvalid={Boolean(fieldState.error)}
+                    value={field.value ?? ""}
+                    onBlur={field.onBlur}
+                    onChange={field.onChange}
+                  >
+                    <Label>{t("features.roles.form.name")}</Label>
+                    <Input
+                      maxLength={50}
+                      placeholder={t("features.roles.form.namePlaceholder")}
+                      variant="secondary"
+                    />
+                    {fieldState.error && (
+                      <FieldError>
+                        {t("features.roles.form.nameInvalid")}
+                      </FieldError>
+                    )}
+                  </TextField>
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="description"
+                render={({ field, fieldState }) => (
+                  <TextField
+                    className="flex flex-col gap-1"
+                    isInvalid={Boolean(fieldState.error)}
+                    value={field.value ?? ""}
+                    onBlur={field.onBlur}
+                    onChange={field.onChange}
+                  >
+                    <Label>{t("features.roles.form.description")}</Label>
+                    <TextArea
+                      maxLength={200}
+                      placeholder={t(
+                        "features.roles.form.descriptionPlaceholder",
+                      )}
+                      rows={3}
+                      variant="secondary"
+                    />
+                    {fieldState.error && (
+                      <FieldError>
+                        {t("features.roles.form.descriptionInvalid")}
+                      </FieldError>
+                    )}
+                  </TextField>
+                )}
+              />
+
+              <SortField
+                value={watch("sort")}
+                onChange={(value) =>
+                  setValue("sort", value, { shouldValidate: true })
+                }
+              />
+
+              <Controller
+                control={control}
+                name="enabled"
+                render={({ field }) => (
+                  <div className="flex items-center justify-between gap-3 rounded-3xl border border-border px-3 py-2">
+                    <Label>{t("features.roles.form.enabled")}</Label>
+                    <Switch
+                      aria-label={t("features.roles.form.enabled")}
+                      isDisabled={isSuperAdmin}
+                      isSelected={field.value}
+                      onChange={field.onChange}
+                    >
+                      {({ isSelected }) => (
+                        <Switch.Content>
+                          <Switch.Control>
+                            <Switch.Thumb>
+                              <Switch.Icon>
+                                {isSelected ? (
+                                  <Check className="size-3 text-inherit opacity-100" />
+                                ) : (
+                                  <X className="size-3 text-inherit opacity-70" />
+                                )}
+                              </Switch.Icon>
+                            </Switch.Thumb>
+                          </Switch.Control>
+                        </Switch.Content>
+                      )}
+                    </Switch>
+                  </div>
+                )}
+              />
+            </Form>
+          </Modal.Body>
+
+          <Modal.Footer className="w-full">
+            <Button slot="close" variant="secondary">
+              {t("common.cancel")}
+            </Button>
+            <Button form={FORM_ID} isPending={mutation.isPending} type="submit">
+              {({ isPending }) =>
+                isPending ? (
+                  <>
+                    <Spinner color="current" size="sm" />
+                    {t("features.roles.form.saving")}
+                  </>
+                ) : (
+                  t("common.confirm")
+                )
+              }
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 }

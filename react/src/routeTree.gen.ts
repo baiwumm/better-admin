@@ -24,6 +24,8 @@ import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_
 import { Route as AuthenticatedSettingsMenusRouteImport } from './routes/_authenticated/settings/menus'
 import { Route as AuthenticatedSettingsLogsRouteImport } from './routes/_authenticated/settings/logs'
 import { Route as AuthenticatedSettingsDictsRouteImport } from './routes/_authenticated/settings/dicts'
+import { Route as AuthenticatedOrgPostsRouteImport } from './routes/_authenticated/org/posts'
+import { Route as AuthenticatedOrgDirectoryRouteImport } from './routes/_authenticated/org/directory'
 import { Route as AuthenticatedOrgDeptsRouteImport } from './routes/_authenticated/org/depts'
 
 const R500Route = R500RouteImport.update({
@@ -106,6 +108,17 @@ const AuthenticatedSettingsDictsRoute =
     path: '/settings/dicts',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOrgPostsRoute = AuthenticatedOrgPostsRouteImport.update({
+  id: '/org/posts',
+  path: '/org/posts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOrgDirectoryRoute =
+  AuthenticatedOrgDirectoryRouteImport.update({
+    id: '/org/directory',
+    path: '/org/directory',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOrgDeptsRoute = AuthenticatedOrgDeptsRouteImport.update({
   id: '/org/depts',
   path: '/org/depts',
@@ -120,6 +133,8 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof authSignInRoute
   '/account': typeof AuthenticatedAccountRoute
   '/org/depts': typeof AuthenticatedOrgDeptsRoute
+  '/org/directory': typeof AuthenticatedOrgDirectoryRoute
+  '/org/posts': typeof AuthenticatedOrgPostsRoute
   '/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/settings/logs': typeof AuthenticatedSettingsLogsRoute
   '/settings/menus': typeof AuthenticatedSettingsMenusRoute
@@ -136,6 +151,8 @@ export interface FileRoutesByTo {
   '/account': typeof AuthenticatedAccountRoute
   '/': typeof AuthenticatedIndexRoute
   '/org/depts': typeof AuthenticatedOrgDeptsRoute
+  '/org/directory': typeof AuthenticatedOrgDirectoryRoute
+  '/org/posts': typeof AuthenticatedOrgPostsRoute
   '/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/settings/logs': typeof AuthenticatedSettingsLogsRoute
   '/settings/menus': typeof AuthenticatedSettingsMenusRoute
@@ -155,6 +172,8 @@ export interface FileRoutesById {
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/org/depts': typeof AuthenticatedOrgDeptsRoute
+  '/_authenticated/org/directory': typeof AuthenticatedOrgDirectoryRoute
+  '/_authenticated/org/posts': typeof AuthenticatedOrgPostsRoute
   '/_authenticated/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/_authenticated/settings/logs': typeof AuthenticatedSettingsLogsRoute
   '/_authenticated/settings/menus': typeof AuthenticatedSettingsMenusRoute
@@ -173,6 +192,8 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/account'
     | '/org/depts'
+    | '/org/directory'
+    | '/org/posts'
     | '/settings/dicts'
     | '/settings/logs'
     | '/settings/menus'
@@ -189,6 +210,8 @@ export interface FileRouteTypes {
     | '/account'
     | '/'
     | '/org/depts'
+    | '/org/directory'
+    | '/org/posts'
     | '/settings/dicts'
     | '/settings/logs'
     | '/settings/menus'
@@ -207,6 +230,8 @@ export interface FileRouteTypes {
     | '/_authenticated/account'
     | '/_authenticated/'
     | '/_authenticated/org/depts'
+    | '/_authenticated/org/directory'
+    | '/_authenticated/org/posts'
     | '/_authenticated/settings/dicts'
     | '/_authenticated/settings/logs'
     | '/_authenticated/settings/menus'
@@ -331,6 +356,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsDictsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/org/posts': {
+      id: '/_authenticated/org/posts'
+      path: '/org/posts'
+      fullPath: '/org/posts'
+      preLoaderRoute: typeof AuthenticatedOrgPostsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/org/directory': {
+      id: '/_authenticated/org/directory'
+      path: '/org/directory'
+      fullPath: '/org/directory'
+      preLoaderRoute: typeof AuthenticatedOrgDirectoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/org/depts': {
       id: '/_authenticated/org/depts'
       path: '/org/depts'
@@ -357,6 +396,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedOrgDeptsRoute: typeof AuthenticatedOrgDeptsRoute
+  AuthenticatedOrgDirectoryRoute: typeof AuthenticatedOrgDirectoryRoute
+  AuthenticatedOrgPostsRoute: typeof AuthenticatedOrgPostsRoute
   AuthenticatedSettingsDictsRoute: typeof AuthenticatedSettingsDictsRoute
   AuthenticatedSettingsLogsRoute: typeof AuthenticatedSettingsLogsRoute
   AuthenticatedSettingsMenusRoute: typeof AuthenticatedSettingsMenusRoute
@@ -370,6 +411,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedOrgDeptsRoute: AuthenticatedOrgDeptsRoute,
+  AuthenticatedOrgDirectoryRoute: AuthenticatedOrgDirectoryRoute,
+  AuthenticatedOrgPostsRoute: AuthenticatedOrgPostsRoute,
   AuthenticatedSettingsDictsRoute: AuthenticatedSettingsDictsRoute,
   AuthenticatedSettingsLogsRoute: AuthenticatedSettingsLogsRoute,
   AuthenticatedSettingsMenusRoute: AuthenticatedSettingsMenusRoute,

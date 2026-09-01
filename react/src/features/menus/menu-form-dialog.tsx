@@ -125,6 +125,38 @@ export function MenuFormDialog({
   tree,
   onSaved,
 }: MenuFormDialogProps) {
+  // Modal 结构渲染在有 mutation 的内层组件（MenuFormModal），
+  // 保证 Modal.Footer 是 Modal.Dialog 的直接子元素（Body 滚动、Footer 固定）
+  return isOpen ? (
+    <MenuFormModal
+      key={`${mode}:${node?.id ?? "root"}`}
+      isOpen
+      mode={mode}
+      node={node}
+      tree={tree}
+      onOpenChange={onOpenChange}
+      onSaved={onSaved}
+    />
+  ) : null;
+}
+
+interface MenuFormProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  mode: MenuFormMode;
+  node: MenuNode | null;
+  tree: MenuNode[];
+  onSaved: () => void;
+}
+
+function MenuFormModal({
+  isOpen,
+  onOpenChange,
+  mode,
+  node,
+  tree,
+  onSaved,
+}: MenuFormProps) {
   const { t } = useTranslation();
 
   const titleKey =
@@ -134,47 +166,6 @@ export function MenuFormDialog({
         ? "features.menus.form.title.addChild"
         : "features.menus.form.title.create";
 
-  return (
-    <Modal.Backdrop
-      isKeyboardDismissDisabled
-      isDismissable={false}
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-    >
-      <Modal.Container>
-        <Modal.Dialog className="sm:max-w-xl">
-          <Modal.CloseTrigger />
-          <Modal.Header>
-            <Modal.Heading>{t(titleKey)}</Modal.Heading>
-          </Modal.Header>
-          <Modal.Body>
-            {isOpen && (
-              <MenuForm
-                key={`${mode}:${node?.id ?? "root"}`}
-                mode={mode}
-                node={node}
-                tree={tree}
-                onDone={() => onOpenChange(false)}
-                onSaved={onSaved}
-              />
-            )}
-          </Modal.Body>
-        </Modal.Dialog>
-      </Modal.Container>
-    </Modal.Backdrop>
-  );
-}
-
-interface MenuFormProps {
-  mode: MenuFormMode;
-  node: MenuNode | null;
-  tree: MenuNode[];
-  onDone: () => void;
-  onSaved: () => void;
-}
-
-function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
-  const { t } = useTranslation();
   const { data: permissionItems } = usePermissions();
 
   const isEdit = mode === "edit";
@@ -245,332 +236,366 @@ function MenuForm({ mode, node, tree, onDone, onSaved }: MenuFormProps) {
 
       return createMenu(payload);
     },
+    // 提示反馈统一由 onSubmit 的 toast.promise 呈现（loading → success/error）；
+    // 成功副作用（缓存失效联动、关弹窗）保留在此
     onSuccess: () => {
-      // 缓存失效统一由页面 onSaved 处理（精准命中当前列表，避免重复请求）
       onSaved();
-      toast.success(
-        t(
-          isEdit
-            ? "features.menus.message.updateSuccess"
-            : "features.menus.message.createSuccess",
-        ),
-      );
-      onDone();
-    },
-    onError: (error) => {
-      // 后端错误 message 已本地化（MENU_HAS_CHILDREN / MENU_TO_EXISTS 等）
-      toast.danger(error instanceof Error ? error.message : String(error));
+      onOpenChange(false);
     },
   });
 
   const onSubmit = handleSubmit((values) => {
-    mutation.mutate({
-      label: values.label,
-      i18nKey: values.i18nKey || null,
-      icon: values.icon || EMPTY_ICON,
-      to: values.to || null,
-      parentId: values.parentId || null,
-      sort: values.sort,
-      keepAlive: values.keepAlive,
-      hideInMenu: values.hideInMenu,
-      enabled: values.enabled,
-      defaultOpen: values.defaultOpen,
-      permissions: permBits.toString(),
-    });
+    toast.promise(
+      mutation.mutateAsync({
+        label: values.label,
+        i18nKey: values.i18nKey || null,
+        icon: values.icon || EMPTY_ICON,
+        to: values.to || null,
+        parentId: values.parentId || null,
+        sort: values.sort,
+        keepAlive: values.keepAlive,
+        hideInMenu: values.hideInMenu,
+        enabled: values.enabled,
+        defaultOpen: values.defaultOpen,
+        permissions: permBits.toString(),
+      }),
+      {
+        loading: t("features.menus.form.saving"),
+        success: t(
+          isEdit
+            ? "features.menus.message.updateSuccess"
+            : "features.menus.message.createSuccess",
+        ),
+        // 后端错误 message 已本地化（MENU_HAS_CHILDREN / MENU_TO_EXISTS 等）
+        error: (error) =>
+          error instanceof Error ? error.message : String(error),
+      },
+    );
   });
 
   return (
-    <Form
-      className="flex flex-col gap-4"
-      id={FORM_ID}
-      // aria：禁用 react-aria 原生约束校验（否则 required 输入框会抢先聚焦并
-      // 阻断提交，RHF/zod 的 FieldError 无法呈现），校验统一交给 react-hook-form
-      validationBehavior="aria"
-      onSubmit={(event) => void onSubmit(event)}
+    <Modal.Backdrop
+      isKeyboardDismissDisabled
+      isDismissable={false}
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
     >
-      <div className="flex flex-col gap-1">
-        <Label>{t("features.menus.form.parent")}</Label>
-        <div className="flex items-center gap-2">
-          <Select
-            aria-label={t("features.menus.form.parent")}
-            className="flex-1"
-            isDisabled={mode === "addChild"}
-            placeholder={t("features.menus.form.parentPlaceholder")}
-            value={values.parentId || null}
-            variant="secondary"
-            onChange={(key) => setValue("parentId", key ? String(key) : "")}
-          >
-            <Select.Trigger>
-              <Select.Value />
-              <Select.Indicator />
-            </Select.Trigger>
-            <Select.Popover>
-              <ListBox>
-                {parentOptions.map((option) => {
-                  const origin = nodeById.get(option.id);
-
-                  return (
-                    <ListBox.Item
-                      key={option.id}
-                      id={option.id}
-                      textValue={option.label.trim()}
-                    >
-                      <span
-                        className="flex items-center gap-1.5"
-                        style={{ paddingInlineStart: option.depth * 16 }}
-                      >
-                        {origin?.icon ? (
-                          <DynamicIcon
-                            aria-hidden
-                            className="size-4 text-muted"
-                            name={origin.icon as IconName}
-                            size={16}
-                          />
-                        ) : null}
-                        {option.label}
-                      </span>
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  );
-                })}
-              </ListBox>
-            </Select.Popover>
-          </Select>
-          {values.parentId && mode !== "addChild" && (
-            <Button
-              isIconOnly
-              aria-label={t("features.menus.form.parentClear")}
-              size="sm"
-              variant="ghost"
-              onPress={() => setValue("parentId", "")}
+      <Modal.Container>
+        <Modal.Dialog className="sm:max-w-xl">
+          <Modal.CloseTrigger />
+          <Modal.Header>
+            <Modal.Heading>{t(titleKey)}</Modal.Heading>
+          </Modal.Header>
+          <Modal.Body>
+            <Form
+              className="flex flex-col gap-4"
+              id={FORM_ID}
+              // aria：禁用 react-aria 原生约束校验（否则 required 输入框会抢先聚焦并
+              // 阻断提交，RHF/zod 的 FieldError 无法呈现），校验统一交给 react-hook-form
+              validationBehavior="aria"
+              onSubmit={(event) => void onSubmit(event)}
             >
-              <X className="size-4" />
-            </Button>
-          )}
-        </div>
-        <Description>{t("features.menus.form.parentHint")}</Description>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Controller
-          control={control}
-          name="label"
-          render={({ field, fieldState }) => (
-            <TextField
-              isRequired
-              className="flex flex-col gap-1"
-              isInvalid={Boolean(fieldState.error)}
-              value={field.value ?? ""}
-              onBlur={field.onBlur}
-              onChange={field.onChange}
-            >
-              <Label>{t("features.menus.form.label")}</Label>
-              <Input
-                maxLength={50}
-                placeholder={t("features.menus.form.labelPlaceholder")}
-                variant="secondary"
-              />
-              {fieldState.error && (
-                <FieldError>{t("features.menus.form.labelInvalid")}</FieldError>
-              )}
-            </TextField>
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="i18nKey"
-          render={({ field, fieldState }) => (
-            <TextField
-              isRequired
-              className="flex flex-col gap-1"
-              isInvalid={Boolean(fieldState.error)}
-              value={field.value ?? ""}
-              onBlur={field.onBlur}
-              onChange={field.onChange}
-            >
-              <Label>{t("features.menus.form.i18nKey")}</Label>
-              <Input placeholder="menu.xxx.yyy" variant="secondary" />
-              {fieldState.error && (
-                <FieldError>
-                  {!field.value?.trim()
-                    ? t("features.menus.form.i18nKeyRequired")
-                    : t("features.menus.form.i18nKeyFormat")}
-                </FieldError>
-              )}
-            </TextField>
-          )}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Controller
-          control={control}
-          name="icon"
-          render={({ field, fieldState }) => (
-            <TextField
-              isRequired
-              className="flex flex-col gap-1"
-              isInvalid={Boolean(fieldState.error)}
-              value={field.value ?? ""}
-              onBlur={field.onBlur}
-              onChange={field.onChange}
-            >
-              <Label>{t("features.menus.form.icon")}</Label>
-              <Input
-                aria-label="Icon"
-                placeholder="house"
-                variant="secondary"
-              />
-              {fieldState.error && (
-                <FieldError>{t("features.menus.form.iconRequired")}</FieldError>
-              )}
-            </TextField>
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="to"
-          render={({ field, fieldState }) => (
-            <TextField
-              className="flex flex-col gap-1"
-              isInvalid={Boolean(fieldState.error)}
-              value={field.value ?? ""}
-              onBlur={field.onBlur}
-              onChange={field.onChange}
-            >
-              <Label>{t("features.menus.form.route")}</Label>
-              <Input
-                placeholder={t("features.menus.form.routePlaceholder")}
-                variant="secondary"
-              />
-              {fieldState.error ? (
-                <FieldError>{t("features.menus.form.routeFormat")}</FieldError>
-              ) : (
-                <Description>{t("features.menus.form.routeHint")}</Description>
-              )}
-            </TextField>
-          )}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <Label>{t("features.menus.form.permissions")}</Label>
-        <Select
-          aria-label={t("features.menus.form.permissions")}
-          placeholder={t("features.menus.form.permissionsPlaceholder")}
-          selectionMode="multiple"
-          value={(permissionItems ?? [])
-            .filter((item) => {
-              const bits = BigInt(item.bits);
-
-              return bits !== 0n && (permBits & bits) === bits;
-            })
-            .map((item) => item.value)}
-          variant="secondary"
-          onChange={(keys) => {
-            const selected = new Set((keys ?? []).map(String));
-            let next = 0n;
-
-            for (const item of permissionItems ?? []) {
-              if (selected.has(item.value)) next |= BigInt(item.bits);
-            }
-            setPermBits(next);
-          }}
-        >
-          <Select.Trigger>
-            <Select.Value>
-              {selectedPermissionNames.length > 0 ? (
-                <span className="truncate">
-                  {selectedPermissionNames.join("、")}
-                </span>
-              ) : (
-                <span className="text-muted">
-                  {t("features.menus.form.permissionsPlaceholder")}
-                </span>
-              )}
-            </Select.Value>
-            <Select.Indicator />
-          </Select.Trigger>
-          <Select.Popover>
-            <ListBox selectionMode="multiple">
-              {(permissionItems ?? []).map((item) => {
-                const key = `features.permissions.items.${item.value}`;
-                const name = t(key);
-
-                return (
-                  <ListBox.Item
-                    key={item.value}
-                    id={item.value}
-                    textValue={name === key ? item.label : name}
+              <div className="flex flex-col gap-1">
+                <Label>{t("features.menus.form.parent")}</Label>
+                <div className="flex items-center gap-2">
+                  <Select
+                    aria-label={t("features.menus.form.parent")}
+                    className="flex-1"
+                    isDisabled={mode === "addChild"}
+                    placeholder={t("features.menus.form.parentPlaceholder")}
+                    value={values.parentId || null}
+                    variant="secondary"
+                    onChange={(key) =>
+                      setValue("parentId", key ? String(key) : "")
+                    }
                   >
-                    <span className="flex items-center gap-1.5">
-                      {item.icon ? (
-                        <DynamicIcon
-                          aria-hidden
-                          className="size-4 text-muted"
-                          name={item.icon as IconName}
-                          size={16}
-                        />
-                      ) : null}
-                      {name === key ? item.label : name}
-                    </span>
-                    <ListBox.ItemIndicator />
-                  </ListBox.Item>
-                );
-              })}
-            </ListBox>
-          </Select.Popover>
-        </Select>
-      </div>
+                    <Select.Trigger>
+                      <Select.Value />
+                      <Select.Indicator />
+                    </Select.Trigger>
+                    <Select.Popover>
+                      <ListBox>
+                        {parentOptions.map((option) => {
+                          const origin = nodeById.get(option.id);
 
-      <SortField
-        value={values.sort}
-        onChange={(value) => setValue("sort", value, { shouldValidate: true })}
-      />
+                          return (
+                            <ListBox.Item
+                              key={option.id}
+                              id={option.id}
+                              textValue={option.label.trim()}
+                            >
+                              <span
+                                className="flex items-center gap-1.5"
+                                style={{
+                                  paddingInlineStart: option.depth * 16,
+                                }}
+                              >
+                                {origin?.icon ? (
+                                  <DynamicIcon
+                                    aria-hidden
+                                    className="size-4 text-muted"
+                                    name={origin.icon as IconName}
+                                    size={16}
+                                  />
+                                ) : null}
+                                {option.label}
+                              </span>
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          );
+                        })}
+                      </ListBox>
+                    </Select.Popover>
+                  </Select>
+                  {values.parentId && mode !== "addChild" && (
+                    <Button
+                      isIconOnly
+                      aria-label={t("features.menus.form.parentClear")}
+                      size="sm"
+                      variant="ghost"
+                      onPress={() => setValue("parentId", "")}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  )}
+                </div>
+                <Description>{t("features.menus.form.parentHint")}</Description>
+              </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <SwitchRow
-          checked={values.keepAlive}
-          label={t("features.menus.form.keepAlive")}
-          onChange={(checked) => setValue("keepAlive", checked)}
-        />
-        <SwitchRow
-          checked={values.hideInMenu}
-          label={t("features.menus.form.hideInMenu")}
-          onChange={(checked) => setValue("hideInMenu", checked)}
-        />
-        <SwitchRow
-          checked={values.enabled}
-          label={t("features.menus.form.enabled")}
-          onChange={(checked) => setValue("enabled", checked)}
-        />
-        <SwitchRow
-          checked={values.defaultOpen}
-          label={t("features.menus.form.defaultOpen")}
-          onChange={(checked) => setValue("defaultOpen", checked)}
-        />
-      </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Controller
+                  control={control}
+                  name="label"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      isRequired
+                      className="flex flex-col gap-1"
+                      isInvalid={Boolean(fieldState.error)}
+                      value={field.value ?? ""}
+                      onBlur={field.onBlur}
+                      onChange={field.onChange}
+                    >
+                      <Label>{t("features.menus.form.label")}</Label>
+                      <Input
+                        maxLength={50}
+                        placeholder={t("features.menus.form.labelPlaceholder")}
+                        variant="secondary"
+                      />
+                      {fieldState.error && (
+                        <FieldError>
+                          {t("features.menus.form.labelInvalid")}
+                        </FieldError>
+                      )}
+                    </TextField>
+                  )}
+                />
 
-      <Modal.Footer className="w-full">
-        <Button slot="close" variant="secondary">
-          {t("common.cancel")}
-        </Button>
-        <Button form={FORM_ID} isPending={mutation.isPending} type="submit">
-          {({ isPending }) =>
-            isPending ? (
-              <>
-                <Spinner color="current" size="sm" />
-                {t("features.menus.form.saving")}
-              </>
-            ) : (
-              t("common.confirm")
-            )
-          }
-        </Button>
-      </Modal.Footer>
-    </Form>
+                <Controller
+                  control={control}
+                  name="i18nKey"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      isRequired
+                      className="flex flex-col gap-1"
+                      isInvalid={Boolean(fieldState.error)}
+                      value={field.value ?? ""}
+                      onBlur={field.onBlur}
+                      onChange={field.onChange}
+                    >
+                      <Label>{t("features.menus.form.i18nKey")}</Label>
+                      <Input placeholder="menu.xxx.yyy" variant="secondary" />
+                      {fieldState.error && (
+                        <FieldError>
+                          {!field.value?.trim()
+                            ? t("features.menus.form.i18nKeyRequired")
+                            : t("features.menus.form.i18nKeyFormat")}
+                        </FieldError>
+                      )}
+                    </TextField>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Controller
+                  control={control}
+                  name="icon"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      isRequired
+                      className="flex flex-col gap-1"
+                      isInvalid={Boolean(fieldState.error)}
+                      value={field.value ?? ""}
+                      onBlur={field.onBlur}
+                      onChange={field.onChange}
+                    >
+                      <Label>{t("features.menus.form.icon")}</Label>
+                      <Input
+                        aria-label="Icon"
+                        placeholder="house"
+                        variant="secondary"
+                      />
+                      {fieldState.error && (
+                        <FieldError>
+                          {t("features.menus.form.iconRequired")}
+                        </FieldError>
+                      )}
+                    </TextField>
+                  )}
+                />
+
+                <Controller
+                  control={control}
+                  name="to"
+                  render={({ field, fieldState }) => (
+                    <TextField
+                      className="flex flex-col gap-1"
+                      isInvalid={Boolean(fieldState.error)}
+                      value={field.value ?? ""}
+                      onBlur={field.onBlur}
+                      onChange={field.onChange}
+                    >
+                      <Label>{t("features.menus.form.route")}</Label>
+                      <Input
+                        placeholder={t("features.menus.form.routePlaceholder")}
+                        variant="secondary"
+                      />
+                      {fieldState.error ? (
+                        <FieldError>
+                          {t("features.menus.form.routeFormat")}
+                        </FieldError>
+                      ) : (
+                        <Description>
+                          {t("features.menus.form.routeHint")}
+                        </Description>
+                      )}
+                    </TextField>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <Label>{t("features.menus.form.permissions")}</Label>
+                <Select
+                  aria-label={t("features.menus.form.permissions")}
+                  placeholder={t("features.menus.form.permissionsPlaceholder")}
+                  selectionMode="multiple"
+                  value={(permissionItems ?? [])
+                    .filter((item) => {
+                      const bits = BigInt(item.bits);
+
+                      return bits !== 0n && (permBits & bits) === bits;
+                    })
+                    .map((item) => item.value)}
+                  variant="secondary"
+                  onChange={(keys) => {
+                    const selected = new Set((keys ?? []).map(String));
+                    let next = 0n;
+
+                    for (const item of permissionItems ?? []) {
+                      if (selected.has(item.value)) next |= BigInt(item.bits);
+                    }
+                    setPermBits(next);
+                  }}
+                >
+                  <Select.Trigger>
+                    <Select.Value>
+                      {selectedPermissionNames.length > 0 ? (
+                        <span className="truncate">
+                          {selectedPermissionNames.join("、")}
+                        </span>
+                      ) : (
+                        <span className="text-muted">
+                          {t("features.menus.form.permissionsPlaceholder")}
+                        </span>
+                      )}
+                    </Select.Value>
+                    <Select.Indicator />
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox selectionMode="multiple">
+                      {(permissionItems ?? []).map((item) => {
+                        const key = `features.permissions.items.${item.value}`;
+                        const name = t(key);
+
+                        return (
+                          <ListBox.Item
+                            key={item.value}
+                            id={item.value}
+                            textValue={name === key ? item.label : name}
+                          >
+                            <span className="flex items-center gap-1.5">
+                              {item.icon ? (
+                                <DynamicIcon
+                                  aria-hidden
+                                  className="size-4 text-muted"
+                                  name={item.icon as IconName}
+                                  size={16}
+                                />
+                              ) : null}
+                              {name === key ? item.label : name}
+                            </span>
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        );
+                      })}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
+              </div>
+
+              <SortField
+                value={values.sort}
+                onChange={(value) =>
+                  setValue("sort", value, { shouldValidate: true })
+                }
+              />
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <SwitchRow
+                  checked={values.keepAlive}
+                  label={t("features.menus.form.keepAlive")}
+                  onChange={(checked) => setValue("keepAlive", checked)}
+                />
+                <SwitchRow
+                  checked={values.hideInMenu}
+                  label={t("features.menus.form.hideInMenu")}
+                  onChange={(checked) => setValue("hideInMenu", checked)}
+                />
+                <SwitchRow
+                  checked={values.enabled}
+                  label={t("features.menus.form.enabled")}
+                  onChange={(checked) => setValue("enabled", checked)}
+                />
+                <SwitchRow
+                  checked={values.defaultOpen}
+                  label={t("features.menus.form.defaultOpen")}
+                  onChange={(checked) => setValue("defaultOpen", checked)}
+                />
+              </div>
+            </Form>
+          </Modal.Body>
+
+          <Modal.Footer className="w-full">
+            <Button slot="close" variant="secondary">
+              {t("common.cancel")}
+            </Button>
+            <Button form={FORM_ID} isPending={mutation.isPending} type="submit">
+              {({ isPending }) =>
+                isPending ? (
+                  <>
+                    <Spinner color="current" size="sm" />
+                    {t("features.menus.form.saving")}
+                  </>
+                ) : (
+                  t("common.confirm")
+                )
+              }
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 }
 

@@ -135,9 +135,30 @@ export interface User {
   githubUsername: string | null;
   /** X（Twitter）用户名裸值（契约 v1.5.2 只读） */
   xUsername: string | null;
+  /** 所属组织 ID / 名称（契约 v1.6.0 组织中心，可空） */
+  deptId: string | null;
+  deptName: string | null;
+  /** 工号（契约 v1.6.0，可空） */
+  employeeNo: string | null;
+  /** 入职日期（契约 v1.6.0，YYYY-MM-DD，可空） */
+  entryDate: string | null;
+  /** 在职状态（契约 v1.6.0；存量 NULL 按 employed 输出，与账号启停 status 正交） */
+  employmentStatus: EmploymentStatus;
+  /** 性别（契约 v1.6.0 阶段 2 补充；male 男 / female 女，null = 未设置） */
+  gender: "male" | "female" | null;
+  /** 关联岗位（user_posts → posts 联查，主岗在前；契约 v1.6.0） */
+  posts: UserPostSummary[];
 }
 
-/** 创建用户请求体（契约 v1.4.4：username 创建后不可变更） */
+/** 用户关联岗位摘要（契约 v1.6.0） */
+export interface UserPostSummary {
+  id: string;
+  name: string;
+  category: PostCategory;
+  isMain: boolean;
+}
+
+/** 创建用户请求体（契约 v1.4.4：username 创建后不可变更；v1.6.0 组织中心关联字段） */
 export interface CreateUserInput {
   username: string;
   email: string;
@@ -145,11 +166,25 @@ export interface CreateUserInput {
   displayName: string;
   status?: UserStatus;
   roleIds: string[];
+  /** 所属组织（null = 无组织；须存在且启用） */
+  deptId?: string | null;
+  employeeNo?: string | null;
+  /** 入职日期（YYYY-MM-DD） */
+  entryDate?: string | null;
+  employmentStatus?: EmploymentStatus | null;
+  /** 性别（null = 未设置） */
+  gender?: "male" | "female" | null;
+  /** 关联岗位（user_posts 全量替换；须存在且启用，最多 20 个） */
+  postIds?: string[];
+  /** 主岗（须在 postIds 中） */
+  mainPostId?: string | null;
 }
 
 /** 更新用户请求体（契约 v1.4.4：不含 username/password——
  * 用户名创建后锁定，改密走 POST /users/:id/reset-password）。
  * roleIds 传数组（含空数组）为全量替换语义，缺省表示不修改。
+ * v1.6.0：deptId/employeeNo/entryDate/employmentStatus 为
+ * 「undefined 不修改 / null 清空」语义；postIds 同 roleIds 全量替换。
  */
 export interface UpdateUserInput {
   email?: string;
@@ -157,6 +192,14 @@ export interface UpdateUserInput {
   avatar?: string | null;
   status?: UserStatus;
   roleIds?: string[];
+  deptId?: string | null;
+  employeeNo?: string | null;
+  entryDate?: string | null;
+  employmentStatus?: EmploymentStatus | null;
+  /** 性别（undefined 不修改 / null 清空为未设置） */
+  gender?: "male" | "female" | null;
+  postIds?: string[];
+  mainPostId?: string | null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -356,8 +399,62 @@ export interface DeptSortItem {
   sort?: number;
 }
 
-/** 岗位类别（posts.category，阶段 2 使用） */
+/** 岗位类别（posts.category，契约 v1.6.0） */
 export type PostCategory = "management" | "professional" | "production";
+
+/** 岗位实体（/org/posts，含所属组织路径与在职人数；契约 v1.6.0） */
+export interface Post {
+  id: string;
+  deptId: string;
+  /** 所属组织完整路径，如「集团/技术研发中心/前端开发部」 */
+  deptPath: string;
+  name: string;
+  category: PostCategory;
+  /** 岗位职级（P1-P10 / M1-M5），空串表示未设置 */
+  rank: string;
+  status: DeptStatus;
+  /** 在职人数（穿透查看入口） */
+  userCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 创建岗位请求体 */
+export interface PostCreateInput {
+  name: string;
+  deptId: string;
+  category: PostCategory;
+  rank?: string;
+  status?: DeptStatus;
+}
+
+/** 更新岗位请求体（字段缺省表示不修改） */
+export interface PostUpdateInput {
+  name?: string;
+  deptId?: string;
+  category?: PostCategory;
+  rank?: string;
+  status?: DeptStatus;
+}
 
 /** 在职状态（users.employment_status，契约 v1.6.0；与账号启停 status 正交） */
 export type EmploymentStatus = "employed" | "resigned";
+
+/** 人员通讯录条目（/org/directory 与 /org/posts/:id/members 共用；契约 v1.6.0） */
+export interface DirectoryEntry {
+  id: string;
+  username: string;
+  displayName: string;
+  avatar: string | null;
+  employeeNo: string | null;
+  deptId: string | null;
+  /** 所属组织完整路径，如「集团/技术部/前端组」 */
+  deptPath: string | null;
+  mainPostId: string | null;
+  mainPostName: string | null;
+  phone: string | null;
+  email: string | null;
+  /** 入职日期（YYYY-MM-DD，可空） */
+  entryDate: string | null;
+  employmentStatus: EmploymentStatus;
+}

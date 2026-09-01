@@ -7,8 +7,6 @@ import {
   Chip,
   Dropdown,
   Label,
-  Skeleton,
-  Spinner,
   Surface,
   Typography,
   toast,
@@ -21,7 +19,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { deleteDept, getDeptErrorMessage, sortDepts } from "./dept-api";
 import { DeptFormDialog } from "./dept-form-dialog";
-import { DeptTree } from "./dept-tree";
+import { DeptTreePanel } from "./dept-tree-panel";
 import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "./dept-api";
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog";
@@ -305,14 +303,20 @@ export function DeptsPage() {
   return (
     <div className="flex w-full flex-col pb-8">
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
-        {/* 左栏：组织树 */}
-        <Surface className="flex flex-col gap-3 rounded-3xl p-4">
-          <div className="flex items-center justify-between gap-2">
-            <Typography className="font-medium" type="body-sm">
-              {t("features.depts.tree.title")}
-              <span className="ms-1 text-muted">({tree.length})</span>
-            </Typography>
-            {canAdd && (
+        {/* 左栏：组织树面板（与人员通讯录共用 DeptTreePanel） */}
+        <DeptTreePanel
+          canReorder={canEdit && !reorderMutation.isPending}
+          emptyAction={
+            canAdd ? (
+              <Button size="sm" variant="outline" onPress={openCreateRoot}>
+                <Plus className="size-4" />
+                {t("features.depts.action.addRoot")}
+              </Button>
+            ) : undefined
+          }
+          emptyTitle={t("features.depts.tree.empty")}
+          headerAction={
+            canAdd ? (
               <Button
                 isIconOnly
                 aria-label={t("features.depts.action.addRoot")}
@@ -322,57 +326,15 @@ export function DeptsPage() {
               >
                 <Plus className="size-4" />
               </Button>
-            )}
-          </div>
-
-          {treeQuery.isLoading ? (
-            // 骨架屏：与树行同形的占位（展开箭头 + 名称条，逐行缩进模拟层级）
-            <div className="flex flex-col gap-1">
-              {Array.from({ length: 6 }, (_, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 rounded-2xl py-2"
-                  style={{ paddingInlineStart: (index % 3) * 16 + 8 }}
-                >
-                  <Skeleton className="size-3.5 rounded" />
-                  <Skeleton
-                    className="h-3.5 rounded-md"
-                    style={{ width: `${52 - (index % 3) * 8}%` }}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : tree.length === 0 ? (
-            <EmptyContent
-              action={
-                canAdd ? (
-                  <Button size="sm" variant="outline" onPress={openCreateRoot}>
-                    <Plus className="size-4" />
-                    {t("features.depts.action.addRoot")}
-                  </Button>
-                ) : undefined
-              }
-              className="flex flex-col items-center justify-center gap-2 py-10 text-muted"
-              title={t("features.depts.tree.empty")}
-            />
-          ) : (
-            <div className="relative">
-              {/* 树刷新遮罩：增删改/排序后 refetch 全程可见（数据保留不闪白） */}
-              {treeQuery.isFetching && (
-                <div className="absolute inset-0 z-10 grid place-items-center bg-default/30 backdrop-blur-[1px] rounded-3xl">
-                  <Spinner size="sm" />
-                </div>
-              )}
-              <DeptTree
-                canReorder={canEdit && !reorderMutation.isPending}
-                nodes={tree}
-                selectedId={selectedNode?.id ?? null}
-                onReorder={handleReorder}
-                onSelect={(node) => setSelectedId(node.id)}
-              />
-            </div>
-          )}
-        </Surface>
+            ) : undefined
+          }
+          isFetching={treeQuery.isFetching}
+          isLoading={treeQuery.isLoading}
+          nodes={tree}
+          selectedId={selectedNode?.id ?? null}
+          onReorder={handleReorder}
+          onSelect={(node) => setSelectedId(node.id)}
+        />
 
         {/* 右栏：选中组织详情 + 子组织列表 */}
         <div className="flex min-w-0 flex-col gap-6">

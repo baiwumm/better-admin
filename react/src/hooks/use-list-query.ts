@@ -66,12 +66,24 @@ export function useListQuery<
   queryKeyPrefix: readonly unknown[];
   /** 请求路径，如 "/users" */
   path: string;
+  /**
+   * 搜索参数名：后端各接口命名不一（/users 为 search，/org/* 为 keyword），
+   * 缺省 "search"；queryKey 始终包含搜索词（key 形状不受参数名影响）
+   */
+  searchParam?: string;
   /** 由 filters 派生的额外请求参数（如 status/roleId），与 filters 同步变化 */
   buildFilters?: (filters: Filters) => ListQueryParams;
   /** 额外固定参数（合并进请求；同时并入 queryKey） */
   extraParams?: ListQueryParams;
 }) {
-  const { store, queryKeyPrefix, path, buildFilters, extraParams } = options;
+  const {
+    store,
+    queryKeyPrefix,
+    path,
+    searchParam = "search",
+    buildFilters,
+    extraParams,
+  } = options;
 
   const page = store((s) => s.page);
   const pageSize = store((s) => s.pageSize);
@@ -91,7 +103,7 @@ export function useListQuery<
   const params: ListQueryParams = {
     page,
     pageSize,
-    ...(search ? { search } : {}),
+    ...(search ? { [searchParam]: search } : {}),
     ...(sortField ? { sort: sortField, order: sortOrder } : {}),
     ...filterParams,
     ...extraParams,

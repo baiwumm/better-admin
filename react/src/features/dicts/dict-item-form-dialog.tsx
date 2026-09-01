@@ -81,54 +81,38 @@ export function DictItemFormDialog({
   item,
   onSaved,
 }: DictItemFormDialogProps) {
-  const { t } = useTranslation();
-
-  return (
-    <Modal.Backdrop
-      isKeyboardDismissDisabled
-      isDismissable={false}
-      isOpen={isOpen}
+  // Modal 结构渲染在有 mutation 的内层组件（ItemFormModal），
+  // 保证 Modal.Footer 是 Modal.Dialog 的直接子元素（Body 滚动、Footer 固定）
+  return isOpen ? (
+    <ItemFormModal
+      key={`${mode}:${item?.id ?? typeCode}`}
+      isOpen
+      item={item}
+      mode={mode}
+      typeCode={typeCode}
       onOpenChange={onOpenChange}
-    >
-      <Modal.Container>
-        <Modal.Dialog className="sm:max-w-md">
-          <Modal.CloseTrigger />
-          <Modal.Header>
-            <Modal.Heading>
-              {t(
-                mode === "edit"
-                  ? "features.dicts.form.title.editItem"
-                  : "features.dicts.form.title.createItem",
-              )}
-            </Modal.Heading>
-          </Modal.Header>
-          <Modal.Body>
-            {isOpen && (
-              <ItemForm
-                key={`${mode}:${item?.id ?? typeCode}`}
-                item={item}
-                mode={mode}
-                typeCode={typeCode}
-                onDone={() => onOpenChange(false)}
-                onSaved={onSaved}
-              />
-            )}
-          </Modal.Body>
-        </Modal.Dialog>
-      </Modal.Container>
-    </Modal.Backdrop>
-  );
+      onSaved={onSaved}
+    />
+  ) : null;
 }
 
 interface ItemFormProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
   mode: DictItemFormMode;
   typeCode: string;
   item: DictItem | null;
-  onDone: () => void;
   onSaved: () => void;
 }
 
-function ItemForm({ mode, typeCode, item, onDone, onSaved }: ItemFormProps) {
+function ItemFormModal({
+  isOpen,
+  onOpenChange,
+  mode,
+  typeCode,
+  item,
+  onSaved,
+}: ItemFormProps) {
   const { t } = useTranslation();
   const isEdit = mode === "edit";
 
@@ -157,159 +141,195 @@ function ItemForm({ mode, typeCode, item, onDone, onSaved }: ItemFormProps) {
         ? updateDictItem(item!.id, input)
         : createDictItem(typeCode, input);
     },
+    // 提示反馈统一由 onSubmit 的 toast.promise 呈现（loading → success/error）；
+    // 成功副作用（缓存失效联动、关弹窗）保留在此
     onSuccess: () => {
       onSaved();
-      toast.success(
-        t(
-          isEdit
-            ? "features.dicts.message.itemUpdated"
-            : "features.dicts.message.itemCreated",
-        ),
-      );
-      onDone();
-    },
-    onError: (error) => {
-      toast.danger(getDictErrorMessage(error));
+      onOpenChange(false);
     },
   });
 
   const onSubmit = handleSubmit((values) => {
-    mutation.mutate(values);
+    toast.promise(mutation.mutateAsync(values), {
+      loading: t("features.dicts.form.saving"),
+      success: t(
+        isEdit
+          ? "features.dicts.message.itemUpdated"
+          : "features.dicts.message.itemCreated",
+      ),
+      error: (error) => getDictErrorMessage(error),
+    });
   });
 
   return (
-    <Form
-      className="flex flex-col gap-4"
-      id={FORM_ID}
-      // 校验统一交给 react-hook-form（aria 行为避免 required 抢聚焦阻断提交）
-      validationBehavior="aria"
-      onSubmit={(event) => void onSubmit(event)}
+    <Modal.Backdrop
+      isKeyboardDismissDisabled
+      isDismissable={false}
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
     >
-      <Controller
-        control={control}
-        name="value"
-        render={({ field, fieldState }) => (
-          <TextField
-            isRequired
-            className="flex flex-col gap-1"
-            isInvalid={Boolean(fieldState.error)}
-            value={field.value ?? ""}
-            onBlur={field.onBlur}
-            onChange={field.onChange}
-          >
-            <Label>{t("features.dicts.form.value")}</Label>
-            <Input maxLength={100} placeholder="1" variant="secondary" />
-            {fieldState.error && (
-              <FieldError>{t("features.dicts.form.valueInvalid")}</FieldError>
-            )}
-          </TextField>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="label"
-        render={({ field, fieldState }) => (
-          <TextField
-            isRequired
-            className="flex flex-col gap-1"
-            isInvalid={Boolean(fieldState.error)}
-            value={field.value ?? ""}
-            onBlur={field.onBlur}
-            onChange={field.onChange}
-          >
-            <Label>{t("features.dicts.form.label")}</Label>
-            <Input
-              maxLength={100}
-              placeholder={t("features.dicts.form.labelPlaceholder")}
-              variant="secondary"
-            />
-            {fieldState.error && (
-              <FieldError>{t("features.dicts.form.labelInvalid")}</FieldError>
-            )}
-          </TextField>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="i18nKey"
-        render={({ field, fieldState }) => (
-          <TextField
-            className="flex flex-col gap-1"
-            isInvalid={Boolean(fieldState.error)}
-            value={field.value ?? ""}
-            onBlur={field.onBlur}
-            onChange={field.onChange}
-          >
-            <Label>{t("features.dicts.form.i18nKey")}</Label>
-            <Input
-              maxLength={100}
-              placeholder={`dict.${typeCode}.xxx`}
-              variant="secondary"
-            />
-            {fieldState.error ? (
-              <FieldError>{t("features.dicts.form.i18nKeyFormat")}</FieldError>
-            ) : (
-              <Description>{t("features.dicts.form.i18nKeyHint")}</Description>
-            )}
-          </TextField>
-        )}
-      />
-
-      <SortField
-        value={watch("sort")}
-        onChange={(value) => setValue("sort", value, { shouldValidate: true })}
-      />
-
-      <Controller
-        control={control}
-        name="enabled"
-        render={({ field }) => (
-          <div className="flex items-center justify-between gap-3 rounded-3xl border border-border px-3 py-2">
-            <Label>{t("features.dicts.form.enabled")}</Label>
-            <Switch
-              aria-label={t("features.dicts.form.enabled")}
-              isSelected={field.value}
-              onChange={field.onChange}
-            >
-              {({ isSelected }) => (
-                <Switch.Content>
-                  <Switch.Control>
-                    <Switch.Thumb>
-                      <Switch.Icon>
-                        {isSelected ? (
-                          <Check className="size-3 text-inherit opacity-100" />
-                        ) : (
-                          <X className="size-3 text-inherit opacity-70" />
-                        )}
-                      </Switch.Icon>
-                    </Switch.Thumb>
-                  </Switch.Control>
-                </Switch.Content>
+      <Modal.Container>
+        <Modal.Dialog className="sm:max-w-md">
+          <Modal.CloseTrigger />
+          <Modal.Header>
+            <Modal.Heading>
+              {t(
+                mode === "edit"
+                  ? "features.dicts.form.title.editItem"
+                  : "features.dicts.form.title.createItem",
               )}
-            </Switch>
-          </div>
-        )}
-      />
+            </Modal.Heading>
+          </Modal.Header>
+          <Modal.Body>
+            <Form
+              className="flex flex-col gap-4"
+              id={FORM_ID}
+              validationBehavior="aria"
+              onSubmit={(event) => void onSubmit(event)}
+            >
+              <Controller
+                control={control}
+                name="value"
+                render={({ field, fieldState }) => (
+                  <TextField
+                    isRequired
+                    className="flex flex-col gap-1"
+                    isInvalid={Boolean(fieldState.error)}
+                    value={field.value ?? ""}
+                    onBlur={field.onBlur}
+                    onChange={field.onChange}
+                  >
+                    <Label>{t("features.dicts.form.value")}</Label>
+                    <Input
+                      maxLength={100}
+                      placeholder="1"
+                      variant="secondary"
+                    />
+                    {fieldState.error && (
+                      <FieldError>
+                        {t("features.dicts.form.valueInvalid")}
+                      </FieldError>
+                    )}
+                  </TextField>
+                )}
+              />
 
-      <Modal.Footer className="w-full">
-        <Button slot="close" variant="secondary">
-          {t("common.cancel")}
-        </Button>
-        <Button form={FORM_ID} isPending={mutation.isPending} type="submit">
-          {({ isPending }) =>
-            isPending ? (
-              <>
-                <Spinner color="current" size="sm" />
-                {t("features.dicts.form.saving")}
-              </>
-            ) : (
-              t("common.confirm")
-            )
-          }
-        </Button>
-      </Modal.Footer>
-    </Form>
+              <Controller
+                control={control}
+                name="label"
+                render={({ field, fieldState }) => (
+                  <TextField
+                    isRequired
+                    className="flex flex-col gap-1"
+                    isInvalid={Boolean(fieldState.error)}
+                    value={field.value ?? ""}
+                    onBlur={field.onBlur}
+                    onChange={field.onChange}
+                  >
+                    <Label>{t("features.dicts.form.label")}</Label>
+                    <Input
+                      maxLength={100}
+                      placeholder={t("features.dicts.form.labelPlaceholder")}
+                      variant="secondary"
+                    />
+                    {fieldState.error && (
+                      <FieldError>
+                        {t("features.dicts.form.labelInvalid")}
+                      </FieldError>
+                    )}
+                  </TextField>
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="i18nKey"
+                render={({ field, fieldState }) => (
+                  <TextField
+                    className="flex flex-col gap-1"
+                    isInvalid={Boolean(fieldState.error)}
+                    value={field.value ?? ""}
+                    onBlur={field.onBlur}
+                    onChange={field.onChange}
+                  >
+                    <Label>{t("features.dicts.form.i18nKey")}</Label>
+                    <Input
+                      maxLength={100}
+                      placeholder={`dict.${typeCode}.xxx`}
+                      variant="secondary"
+                    />
+                    {fieldState.error ? (
+                      <FieldError>
+                        {t("features.dicts.form.i18nKeyFormat")}
+                      </FieldError>
+                    ) : (
+                      <Description>
+                        {t("features.dicts.form.i18nKeyHint")}
+                      </Description>
+                    )}
+                  </TextField>
+                )}
+              />
+
+              <SortField
+                value={watch("sort")}
+                onChange={(value) =>
+                  setValue("sort", value, { shouldValidate: true })
+                }
+              />
+
+              <Controller
+                control={control}
+                name="enabled"
+                render={({ field }) => (
+                  <div className="flex items-center justify-between gap-3 rounded-3xl border border-border px-3 py-2">
+                    <Label>{t("features.dicts.form.enabled")}</Label>
+                    <Switch
+                      aria-label={t("features.dicts.form.enabled")}
+                      isSelected={field.value}
+                      onChange={field.onChange}
+                    >
+                      {({ isSelected }) => (
+                        <Switch.Content>
+                          <Switch.Control>
+                            <Switch.Thumb>
+                              <Switch.Icon>
+                                {isSelected ? (
+                                  <Check className="size-3 text-inherit opacity-100" />
+                                ) : (
+                                  <X className="size-3 text-inherit opacity-70" />
+                                )}
+                              </Switch.Icon>
+                            </Switch.Thumb>
+                          </Switch.Control>
+                        </Switch.Content>
+                      )}
+                    </Switch>
+                  </div>
+                )}
+              />
+            </Form>
+          </Modal.Body>
+
+          <Modal.Footer className="w-full">
+            <Button slot="close" variant="secondary">
+              {t("common.cancel")}
+            </Button>
+            <Button form={FORM_ID} isPending={mutation.isPending} type="submit">
+              {({ isPending }) =>
+                isPending ? (
+                  <>
+                    <Spinner color="current" size="sm" />
+                    {t("features.dicts.form.saving")}
+                  </>
+                ) : (
+                  t("common.confirm")
+                )
+              }
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 }

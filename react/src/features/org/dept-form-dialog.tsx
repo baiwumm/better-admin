@@ -123,62 +123,39 @@ export function DeptFormDialog({
   tree,
   onSaved,
 }: DeptFormDialogProps) {
-  const { t } = useTranslation();
-  const isEdit = mode === "edit";
-
-  return (
-    <Modal.Backdrop
-      isKeyboardDismissDisabled
-      isDismissable={false}
-      isOpen={isOpen}
+  // Modal 结构渲染在有 mutation 的内层组件（DeptFormModal），
+  // 保证 Modal.Footer 是 Modal.Dialog 的直接子元素（Body 滚动、Footer 固定）
+  return isOpen ? (
+    <DeptFormModal
+      key={`${mode}:${dept?.id ?? parentNode?.id ?? "root"}`}
+      isOpen
+      dept={dept}
+      mode={mode}
+      parentNode={parentNode}
+      tree={tree}
       onOpenChange={onOpenChange}
-    >
-      <Modal.Container>
-        <Modal.Dialog className="sm:max-w-md">
-          <Modal.CloseTrigger />
-          <Modal.Header>
-            <Modal.Heading>
-              {t(
-                isEdit
-                  ? "features.depts.form.title.edit"
-                  : "features.depts.form.title.create",
-              )}
-            </Modal.Heading>
-          </Modal.Header>
-          <Modal.Body>
-            {isOpen && (
-              <DeptForm
-                key={`${mode}:${dept?.id ?? parentNode?.id ?? "root"}`}
-                dept={dept}
-                mode={mode}
-                parentNode={parentNode}
-                tree={tree}
-                onDone={() => onOpenChange(false)}
-                onSaved={onSaved}
-              />
-            )}
-          </Modal.Body>
-        </Modal.Dialog>
-      </Modal.Container>
-    </Modal.Backdrop>
-  );
+      onSaved={onSaved}
+    />
+  ) : null;
 }
 
 interface DeptFormProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
   mode: DeptFormMode;
   dept: Dept | null;
   parentNode: DeptTreeNode | null;
   tree: DeptTreeNode[];
-  onDone: () => void;
   onSaved: (dept: Dept, mode: DeptFormMode) => void;
 }
 
-function DeptForm({
+function DeptFormModal({
+  isOpen,
+  onOpenChange,
   mode,
   dept,
   parentNode,
   tree,
-  onDone,
   onSaved,
 }: DeptFormProps) {
   const { t } = useTranslation();
@@ -230,7 +207,7 @@ function DeptForm({
     // 成功副作用（缓存失效联动、关弹窗）保留在此
     onSuccess: (saved) => {
       onSaved(saved, mode);
-      onDone();
+      onOpenChange(false);
     },
   });
 
@@ -252,172 +229,209 @@ function DeptForm({
   );
 
   return (
-    <Form
-      className="flex flex-col gap-4"
-      id={FORM_ID}
-      // 校验统一交给 react-hook-form（aria 行为避免 required 抢聚焦阻断提交）
-      validationBehavior="aria"
-      onSubmit={(event) => void onSubmit(event)}
+    <Modal.Backdrop
+      isKeyboardDismissDisabled
+      isDismissable={false}
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
     >
-      <Controller
-        control={control}
-        name="parentId"
-        render={({ field }) => (
-          <div className="flex flex-col gap-1">
-            <Label>{t("features.depts.form.parent")}</Label>
-            <div className="flex items-center gap-2">
-              <Select
-                aria-label={t("features.depts.form.parent")}
-                className="flex-1"
-                isDisabled={isCreateChild}
-                placeholder={t("features.depts.form.parentPlaceholder")}
-                value={field.value || null}
-                variant="secondary"
-                onChange={(key) =>
-                  field.onChange(key === null ? "" : String(key))
-                }
-              >
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover>
-                  <ListBox>
-                    {parentOptions.map((option) => (
-                      <ListBox.Item
-                        key={option.id}
-                        id={option.id}
-                        isDisabled={option.disabled}
-                        textValue={option.label}
-                      >
-                        <span
-                          className="block truncate"
-                          style={{
-                            paddingInlineStart: option.depth * 16,
-                          }}
-                        >
-                          {option.label}
-                        </span>
-                        <ListBox.ItemIndicator />
-                      </ListBox.Item>
-                    ))}
-                  </ListBox>
-                </Select.Popover>
-              </Select>
-              {field.value && !isCreateChild && (
-                <Button
-                  isIconOnly
-                  aria-label={t("features.depts.form.parentClear")}
-                  size="sm"
-                  variant="ghost"
-                  onPress={() => field.onChange("")}
-                >
-                  <X className="size-4" />
-                </Button>
+      <Modal.Container>
+        <Modal.Dialog className="sm:max-w-md">
+          <Modal.CloseTrigger />
+          <Modal.Header>
+            <Modal.Heading>
+              {t(
+                isEdit
+                  ? "features.depts.form.title.edit"
+                  : "features.depts.form.title.create",
               )}
-            </div>
-            <Description>{t("features.depts.form.parentHint")}</Description>
-          </div>
-        )}
-      />
+            </Modal.Heading>
+          </Modal.Header>
+          <Modal.Body>
+            <Form
+              className="flex flex-col gap-4"
+              id={FORM_ID}
+              // 校验统一交给 react-hook-form（aria 行为避免 required 抢聚焦阻断提交）
+              validationBehavior="aria"
+              onSubmit={(event) => void onSubmit(event)}
+            >
+              <Controller
+                control={control}
+                name="parentId"
+                render={({ field }) => (
+                  <div className="flex flex-col gap-1">
+                    <Label>{t("features.depts.form.parent")}</Label>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        aria-label={t("features.depts.form.parent")}
+                        className="flex-1"
+                        isDisabled={isCreateChild}
+                        placeholder={t("features.depts.form.parentPlaceholder")}
+                        value={field.value || null}
+                        variant="secondary"
+                        onChange={(key) =>
+                          field.onChange(key === null ? "" : String(key))
+                        }
+                      >
+                        <Select.Trigger>
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover>
+                          <ListBox>
+                            {parentOptions.map((option) => (
+                              <ListBox.Item
+                                key={option.id}
+                                id={option.id}
+                                isDisabled={option.disabled}
+                                textValue={option.label}
+                              >
+                                <span
+                                  className="block truncate"
+                                  style={{
+                                    paddingInlineStart: option.depth * 16,
+                                  }}
+                                >
+                                  {option.label}
+                                </span>
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
+                      </Select>
+                      {field.value && !isCreateChild && (
+                        <Button
+                          isIconOnly
+                          aria-label={t("features.depts.form.parentClear")}
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => field.onChange("")}
+                        >
+                          <X className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <Description>
+                      {t("features.depts.form.parentHint")}
+                    </Description>
+                  </div>
+                )}
+              />
 
-      <Controller
-        control={control}
-        name="name"
-        render={({ field, fieldState }) => (
-          <TextField
-            isRequired
-            className="flex flex-col gap-1"
-            isInvalid={Boolean(fieldState.error)}
-            value={field.value ?? ""}
-            onBlur={field.onBlur}
-            onChange={field.onChange}
-          >
-            <Label>{t("features.depts.form.name")}</Label>
-            <Input
-              maxLength={100}
-              placeholder={t("features.depts.form.namePlaceholder")}
-              variant="secondary"
-            />
-            {fieldState.error && (
-              <FieldError>{t("features.depts.form.nameInvalid")}</FieldError>
-            )}
-          </TextField>
-        )}
-      />
+              <Controller
+                control={control}
+                name="name"
+                render={({ field, fieldState }) => (
+                  <TextField
+                    isRequired
+                    className="flex flex-col gap-1"
+                    isInvalid={Boolean(fieldState.error)}
+                    value={field.value ?? ""}
+                    onBlur={field.onBlur}
+                    onChange={field.onChange}
+                  >
+                    <Label>{t("features.depts.form.name")}</Label>
+                    <Input
+                      maxLength={100}
+                      placeholder={t("features.depts.form.namePlaceholder")}
+                      variant="secondary"
+                    />
+                    {fieldState.error && (
+                      <FieldError>
+                        {t("features.depts.form.nameInvalid")}
+                      </FieldError>
+                    )}
+                  </TextField>
+                )}
+              />
 
-      <Controller
-        control={control}
-        name="code"
-        render={({ field, fieldState }) => (
-          <TextField
-            className="flex flex-col gap-1"
-            isInvalid={Boolean(fieldState.error)}
-            value={field.value ?? ""}
-            onBlur={field.onBlur}
-            onChange={field.onChange}
-          >
-            <Label>{t("features.depts.form.code")}</Label>
-            <Input maxLength={50} placeholder="DEPT-001" variant="secondary" />
-            {fieldState.error ? (
-              <FieldError>{t("features.depts.form.codeInvalid")}</FieldError>
-            ) : (
-              <Description>{t("features.depts.form.codeHint")}</Description>
-            )}
-          </TextField>
-        )}
-      />
+              <Controller
+                control={control}
+                name="code"
+                render={({ field, fieldState }) => (
+                  <TextField
+                    className="flex flex-col gap-1"
+                    isInvalid={Boolean(fieldState.error)}
+                    value={field.value ?? ""}
+                    onBlur={field.onBlur}
+                    onChange={field.onChange}
+                  >
+                    <Label>{t("features.depts.form.code")}</Label>
+                    <Input
+                      maxLength={50}
+                      placeholder="DEPT-001"
+                      variant="secondary"
+                    />
+                    {fieldState.error ? (
+                      <FieldError>
+                        {t("features.depts.form.codeInvalid")}
+                      </FieldError>
+                    ) : (
+                      <Description>
+                        {t("features.depts.form.codeHint")}
+                      </Description>
+                    )}
+                  </TextField>
+                )}
+              />
 
-      <Controller
-        control={control}
-        name="leaderId"
-        render={({ field }) => (
-          <LeaderSelect
-            currentLeader={
-              isEdit && dept?.leaderId
-                ? {
-                    id: dept.leaderId,
-                    displayName: dept.leaderName ?? dept.leaderId,
-                  }
-                : null
-            }
-            value={field.value}
-            onChange={(key) => field.onChange(key)}
-          />
-        )}
-      />
+              <Controller
+                control={control}
+                name="leaderId"
+                render={({ field }) => (
+                  <LeaderSelect
+                    currentLeader={
+                      isEdit && dept?.leaderId
+                        ? {
+                            id: dept.leaderId,
+                            displayName: dept.leaderName ?? dept.leaderId,
+                          }
+                        : null
+                    }
+                    value={field.value}
+                    onChange={(key) => field.onChange(key)}
+                  />
+                )}
+              />
 
-      <SortField
-        value={watch("sort")}
-        onChange={(value) => setValue("sort", value, { shouldValidate: true })}
-      />
+              <SortField
+                value={watch("sort")}
+                onChange={(value) =>
+                  setValue("sort", value, { shouldValidate: true })
+                }
+              />
 
-      <SwitchRow
-        checked={watch("status") === "enabled"}
-        label={t("features.depts.form.status")}
-        onChange={(checked) =>
-          setValue("status", checked ? "enabled" : "disabled")
-        }
-      />
+              <SwitchRow
+                checked={watch("status") === "enabled"}
+                label={t("features.depts.form.status")}
+                onChange={(checked) =>
+                  setValue("status", checked ? "enabled" : "disabled")
+                }
+              />
+            </Form>
+          </Modal.Body>
 
-      <Modal.Footer className="w-full">
-        <Button slot="close" variant="secondary">
-          {t("common.cancel")}
-        </Button>
-        <Button form={FORM_ID} isPending={mutation.isPending} type="submit">
-          {({ isPending }) =>
-            isPending ? (
-              <>
-                <Spinner color="current" size="sm" />
-                {t("features.depts.form.saving")}
-              </>
-            ) : (
-              t("common.confirm")
-            )
-          }
-        </Button>
-      </Modal.Footer>
-    </Form>
+          <Modal.Footer className="w-full">
+            <Button slot="close" variant="secondary">
+              {t("common.cancel")}
+            </Button>
+            <Button form={FORM_ID} isPending={mutation.isPending} type="submit">
+              {({ isPending }) =>
+                isPending ? (
+                  <>
+                    <Spinner color="current" size="sm" />
+                    {t("features.depts.form.saving")}
+                  </>
+                ) : (
+                  t("common.confirm")
+                )
+              }
+            </Button>
+          </Modal.Footer>
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
   );
 }
 
