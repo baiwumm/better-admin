@@ -12,7 +12,7 @@ import {
   Spinner,
   toast,
 } from "@heroui/react";
-import { RotateCcw, RotateCw } from "lucide-react";
+import { RotateCcw, RotateCw, Upload } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import Cropper from "react-easy-crop";
 import { useEffect, useState } from "react";
@@ -153,12 +153,17 @@ export function AvatarCropDialog({
             ) : null}
           </Modal.Body>
           <Modal.Footer className="w-full">
-            <Button slot="close" variant="secondary">
+            <Button
+              isDisabled={mutation.isPending}
+              slot="close"
+              variant="secondary"
+            >
               {t("common.cancel")}
             </Button>
             <Button
               isDisabled={!imageSrc}
               isPending={mutation.isPending}
+              size="sm"
               onPress={() => mutation.mutate()}
             >
               {({ isPending }) =>
@@ -168,7 +173,10 @@ export function AvatarCropDialog({
                     {t("features.account.avatar.uploading")}
                   </>
                 ) : (
-                  t("features.account.avatar.upload")
+                  <>
+                    <Upload className="size-4" />
+                    {t("features.account.avatar.upload")}
+                  </>
                 )
               }
             </Button>

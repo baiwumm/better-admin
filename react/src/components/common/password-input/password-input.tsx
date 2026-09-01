@@ -29,7 +29,7 @@ export function PasswordInput({ label, ...inputProps }: PasswordInputProps) {
       className="w-full"
     >
       {label && <Label>{label}</Label>}
-      <InputGroup>
+      <InputGroup variant="secondary">
         <InputGroup.Input
           type={isVisible ? "text" : "password"}
           {...inputProps}

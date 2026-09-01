@@ -159,6 +159,12 @@ export interface AccountProfile {
   phone: string | null;
   /** 个人标签（自助维护，最多 10 个、每个 ≤20 字符，服务端去重） */
   tags: string[];
+  /** 个人网站裸域名（契约 v1.5.2，如 baiwumm.com，不带协议；展示前缀由前端拼接） */
+  website: string | null;
+  /** GitHub 用户名裸值（契约 v1.5.2；展示前缀 https://github.com/ 由前端拼接） */
+  githubUsername: string | null;
+  /** X（Twitter）用户名裸值（契约 v1.5.2；展示前缀 https://x.com/ 由前端拼接） */
+  xUsername: string | null;
   status: UserStatus;
   roles: UserRoleSummary[];
   createdAt: string;
@@ -174,6 +180,12 @@ export interface UpdateAccountProfileInput {
   phone?: string | null;
   /** 全量替换（空数组清空） */
   tags?: string[];
+  /** 个人网站裸域名（null 清空；提交时服务端自动剥 http(s):// 前缀） */
+  website?: string | null;
+  /** GitHub 用户名裸值（null 清空；服务端自动剥主页前缀） */
+  githubUsername?: string | null;
+  /** X 用户名裸值（null 清空；服务端自动剥主页前缀） */
+  xUsername?: string | null;
 }
 
 /** PUT /account/email 请求体（需当前密码确认） */

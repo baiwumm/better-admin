@@ -69,15 +69,17 @@ export async function getCroppedWebpBlob(
     safeArea / 2 - image.naturalHeight * 0.5,
   );
 
-  // 2. 取出裁剪区域（croppedAreaPixels 坐标系已包含旋转）
+  // 2. 取出裁剪区域（croppedAreaPixels 坐标系已包含旋转）。
+  //    偏移量取负号：把 safeArea 位图中 (绘制偏移 + 裁剪起点) 的像素平移到新画布 (0,0)；
+  //    符号写反会截取到图片右下角的错误区域（上线前实测发现的严重 bug）
   const data = ctx.getImageData(0, 0, safeArea, safeArea);
 
   canvas.width = Math.round(crop.width);
   canvas.height = Math.round(crop.height);
   ctx.putImageData(
     data,
-    Math.round(safeArea / 2 - image.naturalWidth * 0.5 - crop.x),
-    Math.round(safeArea / 2 - image.naturalHeight * 0.5 - crop.y),
+    Math.round(-safeArea / 2 + image.naturalWidth * 0.5 - crop.x),
+    Math.round(-safeArea / 2 + image.naturalHeight * 0.5 - crop.y),
   );
 
   // 3. 统一缩放输出 256×256 WebP

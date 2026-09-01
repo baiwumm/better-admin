@@ -22,6 +22,9 @@ import { getErrorMessage } from "@/i18n";
 /** 我的账户详情查询 key（页面与个人头像同步共用） */
 export const ACCOUNT_PROFILE_QUERY_KEY = ["account", "profile"] as const;
 
+/** 卡片保存/更新成功回调（参数为服务端返回的最新账户详情，调用方统一同步缓存与快照） */
+export type OnAccountProfileSaved = (updated: AccountProfile) => void;
+
 /** GET /account/profile */
 export function fetchAccountProfile() {
   return fetchApi<AccountProfile>("/account/profile");
@@ -58,6 +61,11 @@ export function uploadAccountAvatar(blob: Blob) {
     method: "POST",
     body: form,
   });
+}
+
+/** DELETE /account/avatar — 删除头像（置空并尽力清理 Storage 对象，契约 v1.5.1） */
+export function deleteAccountAvatar() {
+  return fetchApi<AccountProfile>("/account/avatar", { method: "DELETE" });
 }
 
 /** 我的账户模块错误文案映射（未知 code 回退后端 message） */

@@ -50,7 +50,16 @@ export function UserInfo({
 
   return (
     <div className={cn("flex min-w-0 items-center gap-3", className)}>
-      <Avatar className="shrink-0" color="accent" size={size} variant="soft">
+      {/* key 随 avatar 变化强制重建 Avatar 子树：Radix Avatar.Root 内部记录的
+          图片加载状态在 Avatar.Image 卸载后不会重置（残留 loaded 导致 Fallback
+          永不显示），删除头像后必须重建才能回显首字 fallback */}
+      <Avatar
+        key={user.avatar ?? "fallback"}
+        className="shrink-0"
+        color="accent"
+        size={size}
+        variant="soft"
+      >
         {user.avatar ? <Avatar.Image alt={name} src={user.avatar} /> : null}
         <Avatar.Fallback>{initials}</Avatar.Fallback>
       </Avatar>
