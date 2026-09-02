@@ -5,7 +5,21 @@
 
 ---
 
-### 公告管理验收修复 + 契约 v1.7.1（发布范围列展示范围摘要）（2026-09-02）
+### Next.js 全栈版分期落地 N0–N7（2026-09-02）
+
+- **范围**：`next/` 从 HeroUI 官方模板（零业务代码）分八期实现至与 React 端冻结范围（契约 v1.6.0 阶段 1）对齐的全栈版本。方案经用户评审（9 条修正 + 3 项决策确认：契约冻结文件加附录、GitHub Actions cron 直连数据库、服务端双源提取鉴权）。八期提交：N0 地基 `0d00d4` / N1 认证 `461a94a` / N2 布局横切 `dd68e88` / N3a 用户 `cf9efe2` / N3b 角色 `d90848b` / N3c 菜单+权限 `fbe3430` / N4 字典+日志 `629de7f` / N5 我的账户 `f9dffdd` / N6 组织管理 `753b9d3` / N7 收尾 `25c08d0`；此后并行演进：岗位/通讯录/公告跟进与冻结契约退役（`700d4d3`）、README 对齐（`3300ec1`）、全局进度条（`c1db1aa` / `a1b3f96` / `6ac9363`）。
+- **技术选型**（对齐 React 端）：HeroUI v3 同版本、React Query / zustand / RHF+zod / i18next（语言包与 React 端文件同步 + `pnpm check-locales` 一致性强制）、@tanstack/react-table + dnd-kit（DataTable 全套移植，零行为差异）；服务端 Drizzle + postgres.js（`prepare:false` 适配 transaction pooler）、jose、bcryptjs、nanoid。新增依赖仅对齐项，未引入 axios/NextAuth。
+- **架构要点**：
+  - **契约冻结机制**：`contracts/` 快照作为 N0–N6 唯一事实来源（阶段 2/公告字段冻结在外），N7 升级至 HEAD 后任务完成、快照退役（`700d4d3`）——字段实现严格按冻结版裁剪（如用户表单无组织/岗位字段），避免追并行开发中的移动目标。
+  - **鉴权**：JWT 双令牌存 httpOnly Cookie（与 React 的 localStorage+Bearer 仅存储层不同，内部 API 双源提取仍兼容 Bearer）；`src/proxy.ts`（Next 16 的 middleware 更名）每请求执行 jose 验签 → **token_version 实时 DB 比对**（改密全端即刻下线）→ refresh Cookie 静默轮换 → 菜单路径门卫；`requireAuthUser(req, permission)` 等价 AuthGuard+PermissionsGuard。
+  - **菜单权限过滤在服务端**（方案修正二）：authenticated layout RSC 过滤菜单树经 props 注入 Sidebar，客户端零二次过滤，规避水合闪烁；路径门卫在 proxy 用「全量菜单树 ∪ 白名单」区分**真实路由无权（403）**与**不存在路由（放行给 Next 404）**——修正了初版「未知路径误 403」的问题（N7 走查发现）。
+  - **数据库**：迁移真源在 `nest/drizzle/`，Next 端 `pnpm db:pull`（drizzle-kit pull）内省生成 schema，`scripts/sync-pulled-schema.mjs` 自动修复三类内省缺陷（空字符串默认值输出未闭合字面量、users↔depts 循环外键 TS 推断死循环、`i18NKey` 命名怪异大写）并强制 permissions 列 `mode:"bigint"`（9223372036854775807 超出 Number 安全整数）。**postgres.js 驱动的 pg 错误字段是 `constraint_name`（pg 驱动为 `constraint`）**——唯一冲突 409 映射须按此判别；drizzle-kit 0.31.10 在 postgres.js 多表并发内省下崩溃，装 `pg` 依赖即被优先选用后稳定。
+  - **SSR 适配**：i18next 同步初始化 + 服务端每请求独立实例（模块单例仅浏览器会话持有，防跨请求语言污染）；服务端模块只许引 `@/i18n/config`（引到 index 会经 re-export 评估 react-i18next，其 createContext 在 RSC 缺失即崩）；语言经 Cookie 双写实现服务端/客户端首帧一致；主题偏好由内联 bootstrap 脚本首帧前应用。移植 React 组件一律补 `"use client"`（Vite SPA 无此概念）。
+- **已知差异**（均已确认记录在 next/README.md）：KeepAlive 放弃（标签刷新仅对激活标签 `router.refresh()`）；菜单过滤位置服务端化；日志清理载体 GitHub Actions cron（`next/scripts/clean-logs.mjs`，幂等，与 Nest schedule 重复无害）。
+- **验证**：tsc / eslint（0 error）/ next build 全绿贯穿全程；每期真实库冒烟——认证闭环（登录/轮换/重放 401/登出/token_version 下线）、用户/角色/菜单/字典 CRUD 全链路、删除保护（删自己、super_admin、内置角色/账号/组织三级占用）、组织拖拽排序与组合环 400、头像 Supabase 上传/删除、改密后旧会话 401 + 新密码登录；N7 逐页 HTTP 走查 9 页全 200 + 守卫三语义。**待人工验证**：浏览器逐页 UI 走查（与 React 端像素级对照）、Vercel 部署。
+- **同步待办**：`docs/mechanisms.md` 沉淀本期机制结论（驱动差异/RSC 边界/内省缺陷修复）；组织阶段 2 字段（用户表单组织/岗位六项与列表列）随冻结契约退役已由并行批次补齐（`700d4d3` 等）；Vercel 部署与仓库级 CI 挂接（locales 检查 + 日志清理 cron，脚本已就绪）。
+
+ + 契约 v1.7.1（发布范围列展示范围摘要）（2026-09-02）
 
 - **背景**：公告管理页人工验收发现三类问题：① 详情抽屉「暂无人员」空状态不居中；② 详情抽屉富文本不渲染；③ 「先看详情再点编辑」表单不回显但能保存。另有范围口径疑问（勾 1 岗位 + 2 人员，未读仅显示 1 人）。
 - **修复（前端）**：

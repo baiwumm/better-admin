@@ -1,0 +1,45 @@
+# 日志定时清理：直连数据库执行 next/scripts/clean-logs.mjs（默认清理 30 天前日志）。
+# 与 Nest 端 log-cleanup.service（进程内 schedule）幂等重复，无害；载体的取舍
+# 见 docs/progress.md「Next.js 全栈版分期落地」条目（Vercel Cron 无法直接跑脚本）。
+#
+# 前置：仓库 Secrets 配置 DATABASE_URL（Supabase 连接串，与 Nest 端同库）。
+# 时区：GitHub Actions cron 为 UTC；03:00（UTC+8）= 前一日 19:00 UTC。
+
+name: clean-logs
+
+on:
+  schedule:
+    - cron: "0 19 * * *" # 每日 03:00 UTC+8
+  workflow_dispatch: {} # 支持手动触发（首次验证 / 补跑）
+
+concurrency:
+  group: clean-logs
+  cancel-in-progress: false
+
+jobs:
+  clean-logs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: next/pnpm-lock.yaml
+
+      - name: Install dependencies (next)
+        working-directory: next
+        run: pnpm install --frozen-lockfile
+
+      # 脚本自身读取 DATABASE_URL / LOG_RETENTION_DAYS 环境变量（见 clean-logs.mjs）
+      - name: Run log cleanup
+        working-directory: next
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LOG_RETENTION_DAYS: ${{ vars.LOG_RETENTION_DAYS || '30' }}
+        run: pnpm db:clean-logs
