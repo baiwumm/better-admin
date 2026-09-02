@@ -74,7 +74,21 @@ info:
     用户软删时同步清理 user_posts 关联。
     v1.6.0 阶段 2 补充：users 表新增 gender 列（可空，male / female，null = 未设置，
     迁移 0008）；UserCreateRequest / UserUpdateRequest / 管理端 User 视图新增 gender。
-  version: 1.6.0
+    v1.7.0 组织中心阶段 3（公告 + 站内信 + 铃铛）：新增 Notices / Notifications 两个模块——
+    公告管理（GET/POST /notices、GET/PUT/DELETE /notices/{id}、POST /notices/{id}/withdraw、
+    GET /notices/{id}/read-stats、POST /notices/{id}/remind，x-permission 位掩码 +
+    发布人本人/super_admin 编辑保护 NOTICE_NOT_PUBLISHER）、全员消费（GET /notices/mine、
+    GET /notices/{id} 详情进详情自动记已读，仅 AuthGuard + 服务端可见性校验）、
+    铃铛站内信（GET /notifications、GET /notifications/unread-count、
+    POST /notifications/read-all、POST /notifications/{id}/read，仅 AuthGuard）。
+    业务规则：发布范围三粒度（dept/post/user）取并集，只存范围记录不按人展开；
+    publish_time 未来 → draft，@Cron 每分钟扫描自动发布并写范围内全员通知；
+    已读率 = 已读人数/范围总人数（total 为 0 时 readRate 为 null）；
+    进详情即记首次已读（唯一约束幂等）；催办 24h 防频（409 NOTICE_REMIND_TOO_FREQUENT）；
+    公告编辑/删除/撤回/催办要求发布人本人或 super_admin（403 NOTICE_NOT_PUBLISHER）；
+    撤回仅限已发布（409 NOTICE_NOT_PUBLISHED）。富文本内容为 Tiptap HTML，
+    渲染端须消毒防 XSS。
+  version: 1.7.0
 
 servers:
   - url: https://api.baiwumm.com/api
@@ -105,6 +119,10 @@ tags:
     description: 岗位管理（组织下的岗位 CRUD + 在职人员穿透，v1.6.0）
   - name: Directory
     description: 人员通讯录（全员视图，组织筛选 + 关键词搜索，v1.6.0）
+  - name: Notices
+    description: 公告管理（发布/范围/已读率/催办，v1.7.0；管理接口走位掩码，消费接口仅登录态）
+  - name: Notifications
+    description: 站内信铃铛（未读数/通知列表/已读，v1.7.0，仅登录态）
 
 security:
   - bearerAuth: []
@@ -1253,6 +1271,215 @@ components:
           type: string
           enum: [employed, resigned]
           description: 在职状态（users.employment_status，v1.6.0 迁移新增字段；与账号启停 status 正交，存量 null 值按 employed 输出）
+
+    # ---------- 公告 + 站内信（v1.7.0 阶段 3） ----------
+    NoticeScopeType:
+      type: string
+      enum: [dept, post, user]
+      description: 发布范围类型（dept 按组织 / post 按岗位 / user 按具体人员）
+
+    NoticeScope:
+      type: object
+      required: [scopeType, targetId]
+      properties:
+        scopeType:
+          $ref: '#/components/schemas/NoticeScopeType'
+        targetId:
+          type: string
+          description: 目标 ID（组织 / 岗位 / 用户）
+        targetName:
+          type: string
+          nullable: true
+          description: 目标展示名（列表与详情接口均回填；目标已删除时为 null）
+
+    Notice:
+      type: object
+      required: [id, title, status, isTop, publishTime, readCount, totalCount, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+          description: 富文本内容（Tiptap HTML；渲染端须消毒防 XSS）
+        publisherId:
+          type: string
+          nullable: true
+        publisherName:
+          type: string
+          nullable: true
+          description: 发布人姓名（left join users.display_name）
+        publisherEmail:
+          type: string
+          nullable: true
+          description: 发布人邮箱（发布人被删除时为 null）
+        publisherAvatar:
+          type: string
+          nullable: true
+          description: 发布人头像（发布人被删除时为 null）
+        isTop:
+          type: boolean
+        status:
+          type: string
+          enum: [draft, published, withdrawn]
+          description: draft（含定时未到）/ published / withdrawn（撤回）
+        publishTime:
+          type: string
+          format: date-time
+          description: 发布时间（定时发布为计划时间）
+        scopeCount:
+          type: integer
+          description: 范围目标条数（组织/岗位/人员并集来源数）
+        scopes:
+          type: array
+          description: 范围明细（列表返回，targetName 已回填；内容不随列表返回）
+          items:
+            $ref: '#/components/schemas/NoticeScope'
+        readCount:
+          type: integer
+          description: 已读人数
+        totalCount:
+          type: integer
+          description: 范围内总人数（去重；动态解析）
+        readRate:
+          type: number
+          nullable: true
+          format: float
+          description: 已读率（0-100；totalCount 为 0 时为 null）
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    NoticeDetail:
+      type: object
+      description: 公告详情（Notice 全字段 + 范围明细）
+      allOf:
+        - $ref: '#/components/schemas/Notice'
+        - type: object
+          required: [scopes]
+          properties:
+            scopes:
+              type: array
+              items:
+                $ref: '#/components/schemas/NoticeScope'
+
+    NoticeCreateRequest:
+      type: object
+      required: [title, content, scopeTargets]
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+          description: 富文本内容（Tiptap HTML，非空）
+        scopeTargets:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description: 发布范围（三粒度可组合，取并集；目标须存在，400 VALIDATION_ERROR）
+          items:
+            $ref: '#/components/schemas/NoticeScope'
+        isTop:
+          type: boolean
+          default: false
+        publishTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: 发布时间；缺省或早于当前时间 = 立即发布，晚于当前时间 = 定时发布（draft，@Cron 每分钟扫描自动发布）
+
+    NoticeUpdateRequest:
+      type: object
+      description: 编辑公告（仅 draft/published 可编辑；withdrawn 不可编辑）
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+        scopeTargets:
+          type: array
+          minItems: 1
+          maxItems: 100
+          description: 全量替换发布范围
+          items:
+            $ref: '#/components/schemas/NoticeScope'
+        isTop:
+          type: boolean
+        publishTime:
+          type: string
+          format: date-time
+          nullable: true
+          description: 调整发布时间（draft 定时未到时可改）
+
+    NoticeReadStatEntry:
+      type: object
+      required: [userId, displayName, employmentStatus]
+      properties:
+        userId:
+          type: string
+        displayName:
+          type: string
+        username:
+          type: string
+        avatar:
+          type: string
+          nullable: true
+        deptPath:
+          type: string
+          nullable: true
+        mainPostName:
+          type: string
+          nullable: true
+        employmentStatus:
+          type: string
+          enum: [employed, resigned]
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 首次阅读时间（未读 Tab 为 null）
+
+    Notification:
+      type: object
+      required: [id, type, title, createdAt]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [notice_publish, notice_remind, system]
+          description: notice_publish 新公告 / notice_remind 公告催办 / system 系统消息
+        title:
+          type: string
+        content:
+          type: string
+          nullable: true
+        link:
+          type: string
+          nullable: true
+          description: 点击跳转的前端路由（如公告详情页）
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 已读时间；null = 未读
+        createdAt:
+          type: string
+          format: date-time
+
+    UnreadCount:
+      type: object
+      required: [count]
+      properties:
+        count:
+          type: integer
 
   responses:
     Unauthorized:
@@ -3466,3 +3693,518 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+
+  # ===================== 公告 + 站内信（v1.7.0 阶段 3） =====================
+  /notices:
+    get:
+      tags: [Notices]
+      summary: 公告管理列表（分页）
+      description: 管理侧全量公告（含草稿/撤回），含范围人数与已读率实时统计。
+      x-permission: SEARCH
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+        - name: keyword
+          in: query
+          description: 标题模糊搜索
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [draft, published, withdrawn] }
+        - name: sort
+          in: query
+          schema: { type: string }
+        - name: order
+          in: query
+          schema: { type: string, enum: [asc, desc] }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notice'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Notices]
+      summary: 发布公告
+      description: >
+        创建公告并解析发布范围（三粒度并集）。publishTime 缺省或早于当前时间 =
+        立即发布（published 并给范围内全员写 notice_publish 通知）；
+        晚于当前时间 = 定时发布（draft，@Cron 每分钟扫描自动发布）。
+      x-permission: ADD
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeCreateRequest'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NoticeDetail'
+        '400':
+          description: 范围目标无效（VALIDATION_ERROR）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: VALIDATION_ERROR
+                message: '发布范围目标不存在: xxx'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /notices/mine:
+    get:
+      tags: [Notices]
+      summary: 我的公告（全员消费端）
+      description: >
+        当前用户可见的已发布公告（发布范围三粒度并集解析，递归含下级组织），
+        置顶在前、发布时间降序。仅登录态，无权限位要求。
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notice'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notices/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Notices]
+      summary: 公告详情（进详情自动记已读）
+      description: >
+        可见性校验：范围内用户或拥有 SEARCH 位（管理侧）可读，否则 403 NOTICE_NOT_VISIBLE。
+        范围内用户首次访问自动写入已读记录（唯一约束幂等，仅记首次时间与 IP）。
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NoticeDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: 不在发布范围内且无管理权限（NOTICE_NOT_VISIBLE）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_VISIBLE
+                message: 您不在该公告的发布范围内
+        '404':
+          description: 公告不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_FOUND
+                message: 公告不存在
+    put:
+      tags: [Notices]
+      summary: 编辑公告
+      description: >
+        仅 draft/published 可编辑（withdrawn 409 NOTICE_NOT_PUBLISHED；
+        published 编辑后保持 published）。要求 EDIT 位 + 发布人本人或
+        super_admin（403 NOTICE_NOT_PUBLISHER）。
+      x-permission: EDIT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeUpdateRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NoticeDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: 非发布人且非 super_admin（NOTICE_NOT_PUBLISHER）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_PUBLISHER
+                message: 仅发布人本人或超级管理员可操作该公告
+        '404':
+          description: 公告不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_FOUND
+                message: 公告不存在
+        '409':
+          description: 已撤回公告不可编辑（NOTICE_NOT_PUBLISHED）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_PUBLISHED
+                message: 已撤回的公告不可编辑
+    delete:
+      tags: [Notices]
+      summary: 删除公告（软删）
+      description: 要求 DELETE 位 + 发布人本人或 super_admin（403 NOTICE_NOT_PUBLISHER）。敏感操作，记录操作日志。
+      x-permission: DELETE
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: 非发布人且非 super_admin（NOTICE_NOT_PUBLISHER）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_PUBLISHER
+                message: 仅发布人本人或超级管理员可操作该公告
+        '404':
+          description: 公告不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_FOUND
+                message: 公告不存在
+
+  /notices/{id}/withdraw:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Notices]
+      summary: 撤回公告（仅限已发布）
+      description: published → withdrawn。要求 EDIT 位 + 发布人本人或 super_admin。
+      x-permission: EDIT
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/NoticeDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: 非发布人且非 super_admin（NOTICE_NOT_PUBLISHER）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_PUBLISHER
+                message: 仅发布人本人或超级管理员可操作该公告
+        '404':
+          description: 公告不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_FOUND
+                message: 公告不存在
+        '409':
+          description: 非已发布状态不可撤回（NOTICE_NOT_PUBLISHED）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_PUBLISHED
+                message: 仅已发布的公告可撤回
+
+  /notices/{id}/read-stats:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Notices]
+      summary: 已读/未读人员名单（分页）
+      description: 按 status 过滤（read 已读 / unread 未读），未读不含离职人员；已读含离职（历史保留）。
+      x-permission: SEARCH
+      parameters:
+        - name: status
+          in: query
+          required: true
+          schema: { type: string, enum: [read, unread] }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NoticeReadStatEntry'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 公告不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_FOUND
+                message: 公告不存在
+
+  /notices/{id}/remind:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Notices]
+      summary: 一键催办（站内信提醒未读人员）
+      description: >
+        向全部未读（在职）人员写 notice_remind 站内信并记录催办日志；
+        24 小时内已催办过 → 409 NOTICE_REMIND_TOO_FREQUENT；
+        无未读人员 → 409 NOTICE_NO_UNREAD。
+        要求 EDIT 位 + 发布人本人或 super_admin。
+      x-permission: EDIT
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [remindedCount]
+                    properties:
+                      remindedCount:
+                        type: integer
+                        description: 本次催办的未读人数
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: 非发布人且非 super_admin（NOTICE_NOT_PUBLISHER）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_PUBLISHER
+                message: 仅发布人本人或超级管理员可操作该公告
+        '404':
+          description: 公告不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: NOTICE_NOT_FOUND
+                message: 公告不存在
+        '409':
+          description: 24 小时内已催办（NOTICE_REMIND_TOO_FREQUENT）或无未读人员（NOTICE_NO_UNREAD）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                tooFrequent:
+                  value:
+                    code: NOTICE_REMIND_TOO_FREQUENT
+                    message: 24 小时内已催办过，请稍后再试
+                noUnread:
+                  value:
+                    code: NOTICE_NO_UNREAD
+                    message: 没有需要催办的未读人员
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: 当前用户通知列表（分页，铃铛面板）
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+        - name: unreadOnly
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: 未读通知数（铃铛红点轮询）
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UnreadCount'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: 全部已读
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/{id}/read:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Notifications]
+      summary: 单条通知已读
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'

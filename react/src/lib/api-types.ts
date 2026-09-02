@@ -458,3 +458,100 @@ export interface DirectoryEntry {
   entryDate: string | null;
   employmentStatus: EmploymentStatus;
 }
+
+/* ---------------------------------------------------------------------------
+ * 公告 + 站内信（契约 v1.7.0 阶段 3，/notices /notifications）
+ * ------------------------------------------------------------------------- */
+
+/** 发布范围类型（dept 按组织 / post 按岗位 / user 按具体人员） */
+export type NoticeScopeType = "dept" | "post" | "user";
+
+/** 公告状态：draft（含定时未到）/ published / withdrawn（撤回） */
+export type NoticeStatus = "draft" | "published" | "withdrawn";
+
+/** 发布范围单项 */
+export interface NoticeScope {
+  scopeType: NoticeScopeType;
+  targetId: string;
+  /** 目标展示名（列表与详情接口均回填；目标已删除时为 null） */
+  targetName: string | null;
+}
+
+/** 公告实体（/notices，管理列表与我的公告共用；契约 v1.7.0） */
+export interface Notice {
+  id: string;
+  title: string;
+  /** 富文本内容（Tiptap HTML；列表不含，详情返回） */
+  content?: string;
+  publisherId: string | null;
+  publisherName: string | null;
+  /** 发布人邮箱（发布人被删除时为 null） */
+  publisherEmail: string | null;
+  /** 发布人头像（发布人被删除时为 null） */
+  publisherAvatar: string | null;
+  isTop: boolean;
+  status: NoticeStatus;
+  /** 发布时间（定时发布为计划时间） */
+  publishTime: string;
+  /** 范围目标条数（详情返回；列表为 undefined） */
+  scopeCount?: number;
+  /** 范围明细（列表接口返回，targetName 已回填；内容不随列表返回） */
+  scopes?: NoticeScope[];
+  /** 已读人数 */
+  readCount: number;
+  /** 范围内总人数（去重） */
+  totalCount: number;
+  /** 已读率 0-100；totalCount 为 0 时 null */
+  readRate: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 公告详情（Notice 全字段 + 范围明细） */
+export interface NoticeDetail extends Notice {
+  scopes: NoticeScope[];
+}
+
+/** 创建公告请求体（publishTime 缺省 = 立即发布；未来时间 = 定时草稿） */
+export interface NoticeCreateInput {
+  title: string;
+  content: string;
+  scopeTargets: NoticeScope[];
+  isTop?: boolean;
+  publishTime?: string | null;
+}
+
+/** 更新公告请求体（缺省表示不修改；scopeTargets 为全量替换） */
+export interface NoticeUpdateInput {
+  title?: string;
+  content?: string;
+  scopeTargets?: NoticeScope[];
+  isTop?: boolean;
+  publishTime?: string | null;
+}
+
+/** 已读/未读名单条目（/notices/:id/read-stats） */
+export interface NoticeReadStatEntry {
+  userId: string;
+  displayName: string;
+  username: string;
+  avatar: string | null;
+  deptPath: string | null;
+  mainPostName: string | null;
+  employmentStatus: EmploymentStatus;
+  /** 首次阅读时间（未读 Tab 为 null） */
+  readAt: string | null;
+}
+
+/** 站内信通知（/notifications，铃铛数据源） */
+export interface AppNotification {
+  id: string;
+  type: "notice_publish" | "notice_remind" | "system";
+  title: string;
+  content: string | null;
+  /** 点击跳转的前端路由 */
+  link: string | null;
+  /** 已读时间；null = 未读 */
+  readAt: string | null;
+  createdAt: string;
+}

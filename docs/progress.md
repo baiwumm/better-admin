@@ -5,6 +5,30 @@
 
 ---
 
+### 公告管理验收修复 + 契约 v1.7.1（发布范围列展示范围摘要）（2026-09-02）
+
+- **背景**：公告管理页人工验收发现三类问题：① 详情抽屉「暂无人员」空状态不居中；② 详情抽屉富文本不渲染；③ 「先看详情再点编辑」表单不回显但能保存。另有范围口径疑问（勾 1 岗位 + 2 人员，未读仅显示 1 人）。
+- **修复（前端）**：
+  - `EmptyContent` 类名从「传入即整体替换」改为 `cn(默认类, className)` 合并语义——调用方只传 `py-8` 等间距类时保留 `flex items-center justify-center` 居中（详情抽屉空状态居中显示）；既有传完整类的调用点（depts-page / dept-tree-panel）经 tailwind-merge 合并后行为不变。
+  - 详情抽屉（`notice-detail-drawer.tsx`）不再直接用列表行数据渲染：抽屉内部按 id 拉取 `fetchNoticeDetail`（queryKey `["notices","detail",id]`，与编辑弹窗共享缓存），富文本渲染真实 `content`，加载中显示骨架屏，返回前用列表行基础字段兜底。
+  - 编辑弹窗（`notice-form-dialog.tsx`）回填从 `useMemo + setValue`（渲染期副作用，第二次打开命中缓存时挂载首帧 setValue 被 React 丢弃 → 值已写入但界面不回显、保存却成功）改为 `useEffect + reset()` 整体回填，并用 `useRef` 保证每次打开仅回填一次（避免 `staleTime: 0` 的 refetch 覆盖用户正在编辑的内容）。
+- **契约 v1.7.1（发布范围列展示范围摘要）**：`GET /notices` 列表每条补充返回 `scopes`（NoticeScope[]，targetName 回填；`scopeCount` 保留为范围目标条数），`Notice` schema 新增可选 `scopes`，`NoticeScope.targetName` 描述更新为「列表与详情均回填」。`findAll` 由「scopeCount 计数查询」改为复用 `loadScopes`（targetName 回填，scopeCount = scopes.length，每行查询组数不变级）。前端列表「发布范围」列由数字 Chip 改为范围名称摘要（如「岗位：前端组、测试；人员：张三、李四」，组间「；」组内「、」，目标已删除显示「已删除」，无范围显示「—」）。
+- **收尾打磨（同日）**：① 发布范围摘要超长截断（单格限 20 字符 + 「…」）+ HeroUI Tooltip 完整提示（替代原生 title）；② 一键催办改用 `toast.promise`（loading「催办中…」/ 成功带 `remindedCount` 文案 / 失败走 `getNoticeErrorMessage`）且按钮 `isPending` 态显示「催办中…」防重复点击，toast 从 mutation onSuccess/onError 移出由 promise 统一呈现（成功副作用保留 invalidate read-stats）；③ 详情抽屉已读/未读名单由「单查询 queryKey 含 readTab + staleTime 0（切 Tab 必重新请求）」改为**两 Tab 独立查询**（queryKey 各含自身页码，抽屉打开时预取两个 Tab 首页，切 Tab 仅切换取数查询、零请求），staleTime 60s 内抽屉开合 / Tab 来回切换复用缓存，催办后 invalidate read-stats 前缀仍强制刷新；④ **列表接口连接池耗尽修复**：v1.7.1 的 `findAll` 每行 `loadScopes`（每行 4 组查询）与逐行 `computeStats` 用 `Promise.all` 全量并发，瞬间打满 pg Pool（默认 max 10）→ 详情请求排队 22s ETIMEDOUT 500、日志写入同样超时（`AggregateError [ETIMEDOUT]`）。修复：范围明细改**批量装载** `loadScopesBatch`（全页一次 IN + 3 组批量名称回填，共 4 组查询）+ 逐条统计 `mapWithConcurrency` 并发限制（同时 4 条），契约与返回结构不变；⑤ 顶栏铃铛通知抽屉 Loading 由单行文字改为**与通知条目同形的骨架屏**（红点占位 + 标题/时间双行，5 条、宽度渐变）。
+- **未读口径确认（维持现状）**：范围内总人数 `totalCount` = 三粒度并集去重（**含离职**，已读率分母口径）；未读名单（催办口径）**不含离职**；已读名单含离职（历史保留）。「勾 1 岗位 + 2 人员只显示 1 个未读」= 并集去重（岗位成员与勾选人员重合只算一次）+ 离职不展示的共同作用。「怎样算已读」：范围内用户打开公告详情（消费端详情页 / 铃铛跳转）即写 `notice_read_records`（唯一约束幂等，只记首次）。
+- **验证**：nest tsc / eslint 全绿；react tsc / eslint / vitest（68 通过，含 locales 一致性）/ vite build 全绿；openapi.yaml 文本结构校验通过（无 yaml 库，人工核对缩进与 $ref）。
+- **契约 v1.7.2（发布人列升级头像+邮箱）**：`Notice` schema 新增可选 `publisherEmail` / `publisherAvatar`（发布人被删除即 publisherId 置空时为 null）；后端 `findAll` / `findMine` / `findVisibleDetail` 的 users left join 补充 select `email` / `avatar`，`create` 返回补 `user.email` / `user.avatar`。前端公告管理列表「发布人」列由纯文本（publisherName）改为复用 `UserInfo` 通用组件（头像 + 名称 + 邮箱小字），发布人被删除时整体显示「—」，与通讯录「人员」列 / 日志「操作人」列样式统一。
+- **缺陷修复（同日）**：公告管理页**标题搜索不生效**——`useListQuery` 缺省 `searchParam` 为 `search`，而 `GET /notices` 后端参数名为 `keyword`（`NoticeQueryDto.keyword`，标题 ILIKE），搜索词从未发给后端。修复：`useListQuery` 补 `searchParam: "keyword"`（与 `/org/*` 系列统一命名）。
+
+### 组织中心阶段 3：公告管理 + 站内信铃铛（契约 v1.7.0）（2026-09-01）
+
+- **范围**：公告全流程（发布/范围三粒度/可见性过滤/已读率/阅读记录/定时发布/撤回/催办）+ 站内信 notifications（表在迁移 0007 已建）+ 顶栏铃铛。契约先行：openapi.yaml 升 v1.7.0（新增 Notices / Notifications tag、10 个路径、9 个 schema，YAML 校验通过）。
+- **后端（`nest/src/modules/notice/`）**：`NoticesService`（管理列表当页并行统计已读率；范围内详情可见性校验 [范围内用户或 SEARCH 位]；进详情自动记首读，唯一约束幂等，IP 从请求取；编辑/删除/撤回/催办走「发布人本人或 super_admin」保护 403 `NOTICE_NOT_PUBLISHER`；撤回仅 published 409 `NOTICE_NOT_PUBLISHED`；催办 24h 防频 409 `NOTICE_REMIND_TOO_FREQUENT`、无未读 409 `NOTICE_NO_UNREAD`）；`publishDueNotices` 定时发布（@Cron 每分钟扫描 draft 且 publish_time 到期 → published + 通知范围内全员，通知分批 1000/批写入）；`NotificationsService`（铃铛列表/未读数/单条与全部已读，数据严格限定 recipientId）。范围解析 `resolveScopeUserIds`（dept 递归子树 / post 经 user_posts / user 直接，并集去重）与 `assertScopeTargets` 沉淀在 org-views。
+- **前端（`react/src/features/notice/`）**：公告管理页（服务端分页 + keyword/status 筛选；置顶 Chip + 已读率 ProgressBar；详情抽屉：内容消毒渲染 + 已读/未读 Tab 名单 + 一键催办）；发布/编辑弹窗（**Tiptap 3** 富文本 + 三粒度范围选择器 `NoticeScopeSelector`（Tabs 组织/岗位/人员多选，三数组受控）+ 置顶开关 + 发布时间 DatePicker（未来时间 = 定时草稿））；公告详情页 `/org/notices/$noticeId`（全员，进详情自动记已读）；**顶栏铃铛** `NoticeBell`（未读数 60s 轮询红点 Badge、通知抽屉、点击标记已读并跳转 link、全部已读）。新增依赖：@tiptap/react / @tiptap/starter-kit / @tiptap/pm / dompurify；渲染端 `sanitizeNoticeHtml`（DOMPurify）阻断存储型 XSS——**服务端存储原始 HTML，消毒在渲染端**。
+- **Modal.Footer 结构修正（全站 8 个表单弹窗）**：原 Footer 嵌在 `Modal.Body` 内的 Form 里，跟随 Body 滚动不固定；统一重构为「Modal 结构下沉到有 mutation 的内层组件」——外层组件纯转发（isOpen 条件 + key），内层渲染完整 Modal（Header/Body[Form 无 Footer]/Footer），Footer 成为 Dialog 直接子元素（HeroUI CSS 语义：Body flex-1 滚动 + Footer flex 兄弟固定，无 sticky 样式）。涉及 dept/post/user/user-reset/menu/role/dict×2。
+- **事故记录**：Modal.Footer 批量移动曾误用 `git checkout` 还原 7 个文件，回退了 user-form 等未提交改动（阶段 2 用户表单扩展 + 4 处 toast.promise）——已全部重做并合并进本次 Modal 重构；教训：`git checkout --` 还原前必须确认目标文件的未提交改动内容（见 mechanisms.md 后续补充）。
+- **验证**：nest tsc / eslint / build 全绿；react tsc / eslint / build 全绿（routeTree 注册 /org/notices 与 /org/notices/$noticeId）。后端冒烟：发布 201（published，readRate null [范围内 0 人]）→ 详情/编辑/撤回状态流转 → 定时草稿 draft → 催办 409 NOTICE_NO_UNREAD（无范围内用户）→ read-stats → 删除清理 → 铃铛 unread-count/read-all 全通。**待人工验证**：浏览器发布带范围的公告 → 挂靠组织用户铃铛收到通知 → 点击进详情记已读 → 管理侧已读率与未读名单变化 → 催办防频；定时发布等 Cron 触发。
+- **同步待办**：阶段 4（架构图谱 ECharts + 通讯录 Excel 导出）；Vue / Next / Nuxt 跟上 v1.7.0。
+
 ### 组织中心阶段 2：岗位管理 + 人员通讯录 + 用户关联闭环（契约 v1.6.0 补充）（2026-09-01）
 
 - **范围**：阶段 1 契约中的岗位 5 接口与通讯录 1 接口全量实现；另扩 **用户管理关联编辑**（阶段 2 范围扩展，实现通讯录数据闭环——PRD 4.3 用户表组织字段的使用入口即用户管理，无此入口通讯录永远无数据）：`UserCreateRequest` / `UserUpdateRequest` 新增 `deptId`（须存在且启用，400 `DEPT_NOT_FOUND`）/ `employeeNo` / `entryDate`（YYYY-MM-DD）/ `employmentStatus` / `postIds`（user_posts 全量替换，须存在且启用，最多 20 个）/ `mainPostId`（须在 postIds 中，400 `VALIDATION_ERROR`）；管理端 User 视图新增 `deptId / deptName / employeeNo / entryDate / employmentStatus（存量 NULL 按 employed 输出）/ posts（主岗标记）`；用户软删同步清理 user_posts。契约以 v1.6.0 补充注记记录（YAML 校验通过）。

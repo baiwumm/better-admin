@@ -47,6 +47,13 @@ const CHILD_MENUS = [
     to: '/org/directory',
     sort: 2,
   },
+  {
+    i18nKey: 'menu.notices',
+    label: '公告管理',
+    icon: 'megaphone',
+    to: '/org/notices',
+    sort: 3,
+  },
 ] as const;
 
 async function main() {

@@ -222,3 +222,107 @@ export function toDirectoryEntryView(
     employmentStatus: normalizeEmploymentStatus(row.employmentStatus),
   };
 }
+
+/**
+ * 校验公告发布范围目标：dept / post / user 三类目标须存在（未删除），
+ * 无效时抛 VALIDATION_ERROR（对齐 assertValidRoleIds 风格）。
+ */
+export async function assertScopeTargets(
+  scopes: { scopeType: string; targetId: string }[],
+) {
+  if (scopes.length === 0) return;
+  const deptIds = scopes.filter((s) => s.scopeType === 'dept').map((s) => s.targetId);
+  const postIds = scopes.filter((s) => s.scopeType === 'post').map((s) => s.targetId);
+  const userIds = scopes.filter((s) => s.scopeType === 'user').map((s) => s.targetId);
+  const invalid: string[] = [];
+
+  if (deptIds.length > 0) {
+    const rows = await db
+      .select({ id: depts.id })
+      .from(depts)
+      .where(and(isNull(depts.deletedAt), inArray(depts.id, deptIds)));
+    const valid = new Set(rows.map((r) => r.id));
+    invalid.push(...deptIds.filter((id) => !valid.has(id)).map((id) => `组织:${id}`));
+  }
+  if (postIds.length > 0) {
+    const rows = await db
+      .select({ id: posts.id })
+      .from(posts)
+      .where(and(isNull(posts.deletedAt), inArray(posts.id, postIds)));
+    const valid = new Set(rows.map((r) => r.id));
+    invalid.push(...postIds.filter((id) => !valid.has(id)).map((id) => `岗位:${id}`));
+  }
+  if (userIds.length > 0) {
+    const rows = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(isNull(users.deletedAt), inArray(users.id, userIds)));
+    const valid = new Set(rows.map((r) => r.id));
+    invalid.push(...userIds.filter((id) => !valid.has(id)).map((id) => `人员:${id}`));
+  }
+
+  if (invalid.length > 0) {
+    throw new BadRequestException({
+      code: 'VALIDATION_ERROR',
+      message: `发布范围目标不存在: ${invalid.join(', ')}`,
+    });
+  }
+}
+
+/**
+ * 解析公告发布范围内的全部用户 ID（三粒度并集去重，仅未删除用户）：
+ * - dept：组织及其全部下级组织（递归）内的用户；
+ * - post：关联该岗位（user_posts）的用户；
+ * - user：直接指定的用户。
+ * 用于可见性校验、范围总人数统计与新公告通知写入。
+ */
+export async function resolveScopeUserIds(
+  scopes: { scopeType: string; targetId: string }[],
+): Promise<string[]> {
+  const collected = new Set<string>();
+
+  const deptIds = scopes.filter((s) => s.scopeType === 'dept').map((s) => s.targetId);
+  const postIds = scopes.filter((s) => s.scopeType === 'post').map((s) => s.targetId);
+  const userIds = scopes.filter((s) => s.scopeType === 'user').map((s) => s.targetId);
+
+  if (deptIds.length > 0) {
+    const subtreeIds = new Set<string>();
+    for (const deptId of deptIds) {
+      for (const id of await collectDeptSubtreeIds(deptId)) subtreeIds.add(id);
+    }
+    if (subtreeIds.size > 0) {
+      const rows = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(
+          and(
+            isNull(users.deletedAt),
+            inArray(users.deptId, [...subtreeIds]),
+          ),
+        );
+      for (const r of rows) collected.add(r.id);
+    }
+  }
+
+  if (postIds.length > 0) {
+    const rows = await db
+      .select({ id: users.id })
+      .from(userPosts)
+      .innerJoin(
+        users,
+        and(eq(userPosts.userId, users.id), isNull(users.deletedAt)),
+      )
+      .where(inArray(userPosts.postId, postIds));
+    for (const r of rows) collected.add(r.id);
+  }
+
+  if (userIds.length > 0) {
+    const rows = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(isNull(users.deletedAt), inArray(users.id, userIds)));
+    for (const r of rows) collected.add(r.id);
+  }
+
+  return [...collected];
+}

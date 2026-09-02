@@ -25,8 +25,10 @@ import { Route as AuthenticatedSettingsMenusRouteImport } from './routes/_authen
 import { Route as AuthenticatedSettingsLogsRouteImport } from './routes/_authenticated/settings/logs'
 import { Route as AuthenticatedSettingsDictsRouteImport } from './routes/_authenticated/settings/dicts'
 import { Route as AuthenticatedOrgPostsRouteImport } from './routes/_authenticated/org/posts'
+import { Route as AuthenticatedOrgNoticesRouteImport } from './routes/_authenticated/org/notices'
 import { Route as AuthenticatedOrgDirectoryRouteImport } from './routes/_authenticated/org/directory'
 import { Route as AuthenticatedOrgDeptsRouteImport } from './routes/_authenticated/org/depts'
+import { Route as AuthenticatedOrgNoticesNoticeIdRouteImport } from './routes/_authenticated/org/notices_.$noticeId'
 
 const R500Route = R500RouteImport.update({
   id: '/500',
@@ -113,6 +115,11 @@ const AuthenticatedOrgPostsRoute = AuthenticatedOrgPostsRouteImport.update({
   path: '/org/posts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOrgNoticesRoute = AuthenticatedOrgNoticesRouteImport.update({
+  id: '/org/notices',
+  path: '/org/notices',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedOrgDirectoryRoute =
   AuthenticatedOrgDirectoryRouteImport.update({
     id: '/org/directory',
@@ -124,6 +131,12 @@ const AuthenticatedOrgDeptsRoute = AuthenticatedOrgDeptsRouteImport.update({
   path: '/org/depts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOrgNoticesNoticeIdRoute =
+  AuthenticatedOrgNoticesNoticeIdRouteImport.update({
+    id: '/org/notices_/$noticeId',
+    path: '/org/notices/$noticeId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -134,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthenticatedAccountRoute
   '/org/depts': typeof AuthenticatedOrgDeptsRoute
   '/org/directory': typeof AuthenticatedOrgDirectoryRoute
+  '/org/notices': typeof AuthenticatedOrgNoticesRoute
   '/org/posts': typeof AuthenticatedOrgPostsRoute
   '/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/settings/logs': typeof AuthenticatedSettingsLogsRoute
@@ -142,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/settings/roles': typeof AuthenticatedSettingsRolesRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/org/notices/$noticeId': typeof AuthenticatedOrgNoticesNoticeIdRoute
 }
 export interface FileRoutesByTo {
   '/403': typeof R403Route
@@ -152,6 +167,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/org/depts': typeof AuthenticatedOrgDeptsRoute
   '/org/directory': typeof AuthenticatedOrgDirectoryRoute
+  '/org/notices': typeof AuthenticatedOrgNoticesRoute
   '/org/posts': typeof AuthenticatedOrgPostsRoute
   '/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/settings/logs': typeof AuthenticatedSettingsLogsRoute
@@ -160,6 +176,7 @@ export interface FileRoutesByTo {
   '/settings/roles': typeof AuthenticatedSettingsRolesRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/org/notices/$noticeId': typeof AuthenticatedOrgNoticesNoticeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -173,6 +190,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/org/depts': typeof AuthenticatedOrgDeptsRoute
   '/_authenticated/org/directory': typeof AuthenticatedOrgDirectoryRoute
+  '/_authenticated/org/notices': typeof AuthenticatedOrgNoticesRoute
   '/_authenticated/org/posts': typeof AuthenticatedOrgPostsRoute
   '/_authenticated/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/_authenticated/settings/logs': typeof AuthenticatedSettingsLogsRoute
@@ -181,6 +199,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/roles': typeof AuthenticatedSettingsRolesRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/_authenticated/org/notices_/$noticeId': typeof AuthenticatedOrgNoticesNoticeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -193,6 +212,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/org/depts'
     | '/org/directory'
+    | '/org/notices'
     | '/org/posts'
     | '/settings/dicts'
     | '/settings/logs'
@@ -201,6 +221,7 @@ export interface FileRouteTypes {
     | '/settings/roles'
     | '/settings/users'
     | '/settings/'
+    | '/org/notices/$noticeId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/403'
@@ -211,6 +232,7 @@ export interface FileRouteTypes {
     | '/'
     | '/org/depts'
     | '/org/directory'
+    | '/org/notices'
     | '/org/posts'
     | '/settings/dicts'
     | '/settings/logs'
@@ -219,6 +241,7 @@ export interface FileRouteTypes {
     | '/settings/roles'
     | '/settings/users'
     | '/settings'
+    | '/org/notices/$noticeId'
   id:
     | '__root__'
     | '/(auth)'
@@ -231,6 +254,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/org/depts'
     | '/_authenticated/org/directory'
+    | '/_authenticated/org/notices'
     | '/_authenticated/org/posts'
     | '/_authenticated/settings/dicts'
     | '/_authenticated/settings/logs'
@@ -239,6 +263,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/roles'
     | '/_authenticated/settings/users'
     | '/_authenticated/settings/'
+    | '/_authenticated/org/notices_/$noticeId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -363,6 +388,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrgPostsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/org/notices': {
+      id: '/_authenticated/org/notices'
+      path: '/org/notices'
+      fullPath: '/org/notices'
+      preLoaderRoute: typeof AuthenticatedOrgNoticesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/org/directory': {
       id: '/_authenticated/org/directory'
       path: '/org/directory'
@@ -375,6 +407,13 @@ declare module '@tanstack/react-router' {
       path: '/org/depts'
       fullPath: '/org/depts'
       preLoaderRoute: typeof AuthenticatedOrgDeptsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/org/notices_/$noticeId': {
+      id: '/_authenticated/org/notices_/$noticeId'
+      path: '/org/notices/$noticeId'
+      fullPath: '/org/notices/$noticeId'
+      preLoaderRoute: typeof AuthenticatedOrgNoticesNoticeIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -397,6 +436,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedOrgDeptsRoute: typeof AuthenticatedOrgDeptsRoute
   AuthenticatedOrgDirectoryRoute: typeof AuthenticatedOrgDirectoryRoute
+  AuthenticatedOrgNoticesRoute: typeof AuthenticatedOrgNoticesRoute
   AuthenticatedOrgPostsRoute: typeof AuthenticatedOrgPostsRoute
   AuthenticatedSettingsDictsRoute: typeof AuthenticatedSettingsDictsRoute
   AuthenticatedSettingsLogsRoute: typeof AuthenticatedSettingsLogsRoute
@@ -405,6 +445,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsRolesRoute: typeof AuthenticatedSettingsRolesRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
+  AuthenticatedOrgNoticesNoticeIdRoute: typeof AuthenticatedOrgNoticesNoticeIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -412,6 +453,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedOrgDeptsRoute: AuthenticatedOrgDeptsRoute,
   AuthenticatedOrgDirectoryRoute: AuthenticatedOrgDirectoryRoute,
+  AuthenticatedOrgNoticesRoute: AuthenticatedOrgNoticesRoute,
   AuthenticatedOrgPostsRoute: AuthenticatedOrgPostsRoute,
   AuthenticatedSettingsDictsRoute: AuthenticatedSettingsDictsRoute,
   AuthenticatedSettingsLogsRoute: AuthenticatedSettingsLogsRoute,
@@ -420,6 +462,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsRolesRoute: AuthenticatedSettingsRolesRoute,
   AuthenticatedSettingsUsersRoute: AuthenticatedSettingsUsersRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
+  AuthenticatedOrgNoticesNoticeIdRoute: AuthenticatedOrgNoticesNoticeIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

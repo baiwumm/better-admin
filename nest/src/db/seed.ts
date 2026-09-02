@@ -3,6 +3,7 @@
 import 'dotenv/config';
 import 'reflect-metadata';
 import { hash } from 'bcrypt';
+import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db } from './client';
 import {
@@ -31,38 +32,81 @@ import { SUPER_ADMIN_BITS, Permissions, SUPER_ADMIN_ROLE_CODE } from './schema/p
 const SEED_ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? 'admin123';
 const BCRYPT_ROUNDS = 10;
 
-async function seed() {
-  // ---------- 角色 ----------
-  const superAdminRoleId = nanoid();
-  const adminRoleId = nanoid();
+/**
+ * 幂等取 id：按业务键查询，缺则插入（随机 id），返回库内真实 id。
+ * 已有数据的库上重跑 seed 时 onConflictDoNothing 会跳过插入，
+ * 随机 id 不落库，后续引用将触发外键违规——所有「先插后引」的实体必须经此解析。
+ */
+async function resolveSeedId(
+  query: () => Promise<{ id: string } | undefined>,
+  insert: () => Promise<{ id: string }>,
+): Promise<string> {
+  const existing = await query();
+  if (existing) return existing.id;
+  const row = await insert();
+  return row.id;
+}
 
-  await db
-    .insert(roles)
-    .values([
-      {
-        id: superAdminRoleId,
-        name: '超级管理员',
-        code: SUPER_ADMIN_ROLE_CODE,
-        description: '全量权限，系统内置',
-        enabled: true,
-        sort: 0,
-      },
-      {
-        id: adminRoleId,
-        name: '管理员',
-        code: 'admin',
-        description: '常规管理权限',
-        enabled: true,
-        sort: 1,
-      },
-    ])
-    .onConflictDoNothing(); // 幂等：角色已存在则跳过
+async function seed() {
+  // ---------- 角色（按 code 幂等） ----------
+  const superAdminRoleId = await resolveSeedId(
+    async () => {
+      const [row] = await db
+        .select({ id: roles.id })
+        .from(roles)
+        .where(eq(roles.code, SUPER_ADMIN_ROLE_CODE))
+        .limit(1);
+      return row;
+    },
+    async () => {
+      const [row] = await db
+        .insert(roles)
+        .values({
+          id: nanoid(),
+          name: '超级管理员',
+          code: SUPER_ADMIN_ROLE_CODE,
+          description: '全量权限，系统内置',
+          enabled: true,
+          sort: 0,
+        })
+        .returning({ id: roles.id });
+      return row;
+    },
+  );
+
+  // admin 角色当前无绑定引用，仍需保证存在（保留解析调用触发插入）
+  await resolveSeedId(
+    async () => {
+      const [row] = await db
+        .select({ id: roles.id })
+        .from(roles)
+        .where(eq(roles.code, 'admin'))
+        .limit(1);
+      return row;
+    },
+    async () => {
+      const [row] = await db
+        .insert(roles)
+        .values({
+          id: nanoid(),
+          name: '管理员',
+          code: 'admin',
+          description: '常规管理权限',
+          enabled: true,
+          sort: 1,
+        })
+        .returning({ id: roles.id });
+      return row;
+    },
+  );
 
   // ---------- 用户（admin / 密码 bcrypt 哈希） ----------
+  // 已有 admin 的库上重跑 seed 时插入被跳过，必须查回真实 id，
+  // 否则后续 user_roles 引用随机 id 触发外键违规
   const adminUserId = nanoid();
   const passwordHash = await hash(SEED_ADMIN_PASSWORD, BCRYPT_ROUNDS);
 
-  await db
+  const [adminInsertRow] = await db
     .insert(users)
     .values({
       id: adminUserId,
@@ -72,29 +116,30 @@ async function seed() {
       displayName: '管理员',
       status: 'active',
     })
-    .onConflictDoNothing();
+    .onConflictDoNothing()
+    .returning({ id: users.id });
+
+  const adminResolvedId =
+    adminInsertRow?.id ??
+    (
+      await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.username, 'admin'))
+        .limit(1)
+    )[0]?.id;
+
+  if (!adminResolvedId) {
+    throw new Error('[seed] admin 用户缺失且插入失败');
+  }
 
   // 关联 admin → super_admin
   await db
     .insert(userRoles)
-    .values({ userId: adminUserId, roleId: superAdminRoleId })
+    .values({ userId: adminResolvedId, roleId: superAdminRoleId })
     .onConflictDoNothing();
 
-  // ---------- 菜单树 ----------
-  // 系统管理（用户 / 角色 / 权限 / 菜单 / 字典 / 日志）
-  const mSystem = nanoid();
-  const mUsers = nanoid();
-  const mRoles = nanoid();
-  const mPermissions = nanoid();
-  const mMenus = nanoid();
-  const mDicts = nanoid();
-  const mLogs = nanoid();
-  // 组织中心（v1.6.0 阶段 1：组织管理；阶段 2：岗位管理 / 人员通讯录）
-  const mOrg = nanoid();
-  const mDepts = nanoid();
-  const mPosts = nanoid();
-  const mDirectory = nanoid();
-
+  // ---------- 菜单树（按 i18nKey 幂等：已有数据的库重跑时查回真实 id） ----------
   // 菜单声明可用按钮位（全量位：搜索/新增/编辑/删除/批量删/新增子级/重置/重置密码）
   const menuFullBits =
     Permissions.SEARCH.bits |
@@ -109,132 +154,137 @@ async function seed() {
   // 菜单授权（GRANT）仅角色管理页使用：只有角色管理菜单声明该位
   const rolesMenuBits = menuFullBits | Permissions.GRANT.bits;
 
-  await db
-    .insert(menus)
-    .values([
-      {
-        id: mSystem,
-        label: '系统管理',
-        i18nKey: 'menu.system',
-        icon: 'settings-2',
-        to: '',
-        parentId: null,
-        sort: 1,
-        enabled: true,
-        permissions: 0n,
+  type MenuInsertValues = Omit<typeof menus.$inferInsert, 'id' | 'i18nKey'>;
+
+  const resolveMenu = (i18nKey: string, values: MenuInsertValues) =>
+    resolveSeedId(
+      async () => {
+        const [row] = await db
+          .select({ id: menus.id })
+          .from(menus)
+          .where(eq(menus.i18nKey, i18nKey))
+          .limit(1);
+        return row;
       },
-      {
-        id: mUsers,
-        label: '用户管理',
-        i18nKey: 'menu.users',
-        icon: 'users',
-        to: '/settings/users',
-        parentId: mSystem,
-        sort: 0,
-        enabled: true,
-        permissions: menuFullBits,
+      async () => {
+        const [row] = await db
+          .insert(menus)
+          .values({ ...values, i18nKey, id: nanoid() })
+          .returning({ id: menus.id });
+        return row;
       },
-      {
-        id: mRoles,
-        label: '角色管理',
-        i18nKey: 'menu.roles',
-        icon: 'shield',
-        to: '/settings/roles',
-        parentId: mSystem,
-        sort: 1,
-        enabled: true,
-        permissions: rolesMenuBits,
-      },
-      {
-        id: mPermissions,
-        label: '权限管理',
-        i18nKey: 'menu.permissions',
-        icon: 'key-round',
-        to: '/settings/permissions',
-        parentId: mSystem,
-        sort: 2,
-        enabled: true,
-        permissions: menuFullBits,
-      },
-      {
-        id: mMenus,
-        label: '菜单管理',
-        i18nKey: 'menu.menus',
-        icon: 'menu',
-        to: '/settings/menus',
-        parentId: mSystem,
-        sort: 3,
-        enabled: true,
-        permissions: menuFullBits,
-      },
-      {
-        id: mDicts,
-        label: '字典管理',
-        i18nKey: 'menu.dicts',
-        icon: 'book-text',
-        to: '/settings/dicts',
-        parentId: mSystem,
-        sort: 4,
-        enabled: true,
-        permissions: menuFullBits,
-      },
-      {
-        id: mLogs,
-        label: '日志管理',
-        i18nKey: 'menu.logs',
-        icon: 'scroll-text',
-        to: '/settings/logs',
-        parentId: mSystem,
-        sort: 5,
-        enabled: true,
-        permissions: menuFullBits,
-      },
-      {
-        id: mOrg,
-        label: '组织中心',
-        i18nKey: 'menu.org',
-        icon: 'building-2',
-        to: '',
-        parentId: null,
-        sort: 2,
-        enabled: true,
-        permissions: 0n,
-      },
-      {
-        id: mDepts,
-        label: '组织管理',
-        i18nKey: 'menu.depts',
-        icon: 'network',
-        to: '/org/depts',
-        parentId: mOrg,
-        sort: 0,
-        enabled: true,
-        permissions: menuFullBits,
-      },
-      {
-        id: mPosts,
-        label: '岗位管理',
-        i18nKey: 'menu.posts',
-        icon: 'briefcase',
-        to: '/org/posts',
-        parentId: mOrg,
-        sort: 1,
-        enabled: true,
-        permissions: menuFullBits,
-      },
-      {
-        id: mDirectory,
-        label: '人员通讯录',
-        i18nKey: 'menu.directory',
-        icon: 'book-user',
-        to: '/org/directory',
-        parentId: mOrg,
-        sort: 2,
-        enabled: true,
-        permissions: menuFullBits,
-      },
-    ])
-    .onConflictDoNothing();
+    );
+
+  // 系统管理（用户 / 角色 / 权限 / 菜单 / 字典 / 日志）
+  const mSystem = await resolveMenu('menu.system', {
+    label: '系统管理',
+    icon: 'settings-2',
+    to: '',
+    parentId: null,
+    sort: 1,
+    enabled: true,
+    permissions: 0n,
+  });
+  const mUsers = await resolveMenu('menu.users', {
+    label: '用户管理',
+    icon: 'users',
+    to: '/settings/users',
+    parentId: mSystem,
+    sort: 0,
+    enabled: true,
+    permissions: menuFullBits,
+  });
+  const mRoles = await resolveMenu('menu.roles', {
+    label: '角色管理',
+    icon: 'shield',
+    to: '/settings/roles',
+    parentId: mSystem,
+    sort: 1,
+    enabled: true,
+    permissions: rolesMenuBits,
+  });
+  const mPermissions = await resolveMenu('menu.permissions', {
+    label: '权限管理',
+    icon: 'key-round',
+    to: '/settings/permissions',
+    parentId: mSystem,
+    sort: 2,
+    enabled: true,
+    permissions: menuFullBits,
+  });
+  const mMenus = await resolveMenu('menu.menus', {
+    label: '菜单管理',
+    icon: 'menu',
+    to: '/settings/menus',
+    parentId: mSystem,
+    sort: 3,
+    enabled: true,
+    permissions: menuFullBits,
+  });
+  const mDicts = await resolveMenu('menu.dicts', {
+    label: '字典管理',
+    icon: 'book-text',
+    to: '/settings/dicts',
+    parentId: mSystem,
+    sort: 4,
+    enabled: true,
+    permissions: menuFullBits,
+  });
+  const mLogs = await resolveMenu('menu.logs', {
+    label: '日志管理',
+    icon: 'scroll-text',
+    to: '/settings/logs',
+    parentId: mSystem,
+    sort: 5,
+    enabled: true,
+    permissions: menuFullBits,
+  });
+  // 组织中心（v1.6.0 阶段 1：组织管理；阶段 2：岗位管理 / 人员通讯录；阶段 3：公告管理）
+  const mOrg = await resolveMenu('menu.org', {
+    label: '组织中心',
+    icon: 'building-2',
+    to: '',
+    parentId: null,
+    sort: 2,
+    enabled: true,
+    permissions: 0n,
+  });
+  const mDepts = await resolveMenu('menu.depts', {
+    label: '组织管理',
+    icon: 'network',
+    to: '/org/depts',
+    parentId: mOrg,
+    sort: 0,
+    enabled: true,
+    permissions: menuFullBits,
+  });
+  const mPosts = await resolveMenu('menu.posts', {
+    label: '岗位管理',
+    icon: 'briefcase',
+    to: '/org/posts',
+    parentId: mOrg,
+    sort: 1,
+    enabled: true,
+    permissions: menuFullBits,
+  });
+  const mDirectory = await resolveMenu('menu.directory', {
+    label: '人员通讯录',
+    icon: 'book-user',
+    to: '/org/directory',
+    parentId: mOrg,
+    sort: 2,
+    enabled: true,
+    permissions: menuFullBits,
+  });
+  const mNotices = await resolveMenu('menu.notices', {
+    label: '公告管理',
+    icon: 'megaphone',
+    to: '/org/notices',
+    parentId: mOrg,
+    sort: 3,
+    enabled: true,
+    permissions: menuFullBits,
+  });
 
   // ---------- 角色菜单授权 ----------
   // 关键防御：使用 SUPER_ADMIN_BITS（全量位 -1n），禁止硬编码 127。
@@ -251,6 +301,7 @@ async function seed() {
     mDepts,
     mPosts,
     mDirectory,
+    mNotices,
   ];
   await db
     .insert(roleMenus)
@@ -279,6 +330,12 @@ async function seed() {
         code: 'log_type',
         name: '日志类型',
         description: '日志 type 分类',
+      },
+      {
+        id: nanoid(),
+        code: 'notice_status',
+        name: '公告状态',
+        description: '公告 status 分类（draft/published/withdrawn）',
       },
     ])
     .onConflictDoNothing();
@@ -338,6 +395,33 @@ async function seed() {
         label: '错误日志',
         i18nKey: 'dict.log_type.error',
         sort: 3,
+        enabled: true,
+      },
+      {
+        id: nanoid(),
+        typeCode: 'notice_status',
+        value: 'draft',
+        label: '草稿',
+        i18nKey: 'dict.notice_status.draft',
+        sort: 0,
+        enabled: true,
+      },
+      {
+        id: nanoid(),
+        typeCode: 'notice_status',
+        value: 'published',
+        label: '已发布',
+        i18nKey: 'dict.notice_status.published',
+        sort: 1,
+        enabled: true,
+      },
+      {
+        id: nanoid(),
+        typeCode: 'notice_status',
+        value: 'withdrawn',
+        label: '已撤回',
+        i18nKey: 'dict.notice_status.withdrawn',
+        sort: 2,
         enabled: true,
       },
     ])
