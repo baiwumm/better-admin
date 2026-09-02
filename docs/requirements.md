@@ -102,7 +102,7 @@ better-admin/
 - TypeScript
 - UI 组件库：**Hero UI（为主）+ Shadcn UI（补充）**（见 §7.3）
 
-React 版本（`/react`）基于 Hero UI 模板实现，不含 Shadcn UI 组件；业务模块迁移期间以 `/react-shadcn`（原 Shadcn Admin 实现）为只读参考，做能力等价重写。UI 组件库策略遵循「渐进式调整」：新增功能优先 Hero UI，不做一次性大规模重构。
+React 版本（`/react`）基于 Hero UI 模板实现，不含 Shadcn UI 组件。UI 组件库策略遵循「渐进式调整」：新增功能优先 Hero UI，不做一次性大规模重构。
 
 React 不直接连接数据库。
 
@@ -471,7 +471,7 @@ Shadcn UI
 
 ### 渐进式调整（React / Next.js）
 
-- `/react` 基于 Hero UI 模板实现，不含 Shadcn UI 组件；业务模块迁移期间以 `/react-shadcn`（原 Shadcn Admin 实现）为只读参考，做能力等价重写，不一次性重构。
+- `/react` 基于 Hero UI 模板实现，不含 Shadcn UI 组件；不一次性重构。
 - 新增功能优先使用 Hero UI；修改已有组件时按实际收益决定是否迁移。
 - 不破坏现有页面结构与业务逻辑；DataTable 等复杂组件不因组件库统一而强行重写，**业务能力优先于组件库替换**。
 

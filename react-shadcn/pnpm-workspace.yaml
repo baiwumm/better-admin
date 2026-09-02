@@ -1,8 +1,0 @@
-# pnpm 10+ blocks dependency build scripts by default for security
-# (ERR_PNPM_IGNORED_BUILDS). esbuild and @clerk/shared declare postinstall
-# scripts, but their artifacts are already shipped as platform packages
-# (@esbuild/win32-x64 contains esbuild.exe), so the scripts are not required
-# in this sandboxed environment and are explicitly disabled.
-allowBuilds:
-  '@clerk/shared': false
-  esbuild: false

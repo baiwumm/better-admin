@@ -9,7 +9,7 @@
 **React 是 Better Admin 的 UI Source of Truth（UI 基准版本）。**
 
 - 后续 Vue、Next.js、Nuxt 版本以 React 版本的页面结构、UI 组件、视觉、交互、响应式与 Dark Mode 行为作为参考基准。
-- **`/react` 基于 Hero UI 模板实现，不含 Shadcn UI 组件**；业务模块迁移期间以 `/react-shadcn`（原 Shadcn Admin 实现）为只读参考，做能力等价重写，新增功能一律使用 Hero UI。
+- **`/react` 基于 Hero UI 模板实现，不含 Shadcn UI 组件**，新增功能一律使用 Hero UI。
 - **UI 组件库策略**：React（含 Next.js）以 **Hero UI 为主、Shadcn UI 为补充**（优先级：Hero UI > Shadcn UI > 项目级自定义）；样式变量以 Hero UI 设计体系为主要参考（详见 `AGENTS.md` §7.2 / `ui-spec.md` §18.3）。
 - React 是纯前端实现，**不直接连接数据库**，通过 NestJS API 访问数据：
 
@@ -157,7 +157,6 @@ pnpm preview        # 预览生产构建
 
 - [ ] 用户管理（当前 `users-page.tsx` 为 keepAlive 演示 Mock 页，接入真实 API 时替换）。
 - [ ] 日志管理、概览 Dashboard。
-- [ ] 渐进迁移 `/react-shadcn` 中尚未搬入的功能与页面。
 
 ### 后端 / 数据库接入状态
 

@@ -1,9 +1,0 @@
-/*
- * Maple Mono CN（自托管）
- *
- * 来源：@chinese-fonts/maple-mono-cn（cn-font-split 分包，SIL Open Font License 1.1）
- * 结构：Regular / Bold 两个字重，每字重按 unicode-range 拆分为多个 woff2 分片，
- * 浏览器只按需加载页面实际使用到的字符分片。
- */
-@import './Regular/result.css';
-@import './Bold/result.css';
