@@ -1,40 +1,19 @@
 import type { NextRequest } from "next/server";
 
-import { getAuthUser } from "@/lib/server/auth/request-auth";
-import { createMenu, findMenuTree } from "@/lib/server/menus-service";
 import { Permissions } from "@/lib/server/permissions";
 import { requireAuthUser } from "@/lib/server/route-auth";
+import { addChildMenu } from "@/lib/server/menus-service";
 import { ServerApiError } from "@/lib/server/http";
-import {
-  jsonOk,
-  jsonError,
-  handleRouteError,
-} from "@/lib/server/route-helpers";
+import { jsonOk, handleRouteError } from "@/lib/server/route-helpers";
 
-/**
- * GET /api/menus（契约 v1.6.0 /menus，200）。
- * 仅需登录（x-permission: NONE）；返回当前用户可见菜单树 + userPermissions。
- */
-export async function GET(request: NextRequest) {
+type RouteContext = { params: Promise<{ id: string }> };
+
+/** POST /api/menus/:id/add-child（契约，ADD_CHILD 位）— 新增子菜单。 */
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
-    const user = await getAuthUser(request);
+    const operator = await requireAuthUser(request, Permissions.ADD_CHILD);
 
-    if (!user) {
-      return jsonError(401, "UNAUTHORIZED", "未登录或 token 无效");
-    }
-
-    const tree = await findMenuTree(user);
-
-    return jsonOk(tree);
-  } catch (error) {
-    return handleRouteError(error, { path: "/api/menus", method: "GET" });
-  }
-}
-
-/** POST /api/menus（契约，ADD 位）— 创建顶级/指定父级菜单。 */
-export async function POST(request: NextRequest) {
-  try {
-    const operator = await requireAuthUser(request, Permissions.ADD);
+    const { id } = await context.params;
 
     let body: Record<string, unknown>;
 
@@ -53,7 +32,8 @@ export async function POST(request: NextRequest) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "label 与 icon 为必填");
     }
 
-    const node = await createMenu(
+    const node = await addChildMenu(
+      id,
       {
         label: body.label.trim(),
         i18nKey:
@@ -64,10 +44,6 @@ export async function POST(request: NextRequest) {
               : null,
         icon: body.icon.trim(),
         to: typeof body.to === "string" && body.to.length > 0 ? body.to : null,
-        parentId:
-          typeof body.parentId === "string" && body.parentId.length > 0
-            ? body.parentId
-            : null,
         sort: typeof body.sort === "number" ? body.sort : undefined,
         keepAlive:
           body.keepAlive === undefined ? undefined : Boolean(body.keepAlive),
@@ -86,6 +62,9 @@ export async function POST(request: NextRequest) {
 
     return jsonOk(node);
   } catch (error) {
-    return handleRouteError(error, { path: "/api/menus", method: "POST" });
+    return handleRouteError(error, {
+      path: "/api/menus/:id/add-child",
+      method: "POST",
+    });
   }
 }

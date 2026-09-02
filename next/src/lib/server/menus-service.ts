@@ -3,9 +3,10 @@ import "server-only";
 import type { AuthUser, MenuNode } from "@/lib/api-types";
 
 import { eq, ilike, or } from "drizzle-orm";
+import { count } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { menus, roleMenus, userRoles } from "@/db/schema";
+import { logs, menus, roleMenus, userRoles } from "@/db/schema";
 import {
   normalizePermissionBits,
   SUPER_ADMIN_BITS_POSITIVE,
@@ -230,4 +231,252 @@ export async function findManageMenuTree(
     : new Map<string, bigint>();
 
   return buildTree(rows, permMap, order);
+}
+
+/* ---------------------------------------------------------------------------
+ * 菜单管理（N3c）：findOne / create / addChild / update / remove
+ * 与 nest/src/modules/menus/menus.service.ts 的对应方法一一对齐。
+ * ------------------------------------------------------------------------- */
+
+import { generateRecordId } from "@/lib/server/ids";
+import { ServerApiError } from "@/lib/server/http";
+
+export interface MenuSaveInput {
+  /** 更新时可缺省（保留旧值）；创建/新增子菜单由路由层校验必填 */
+  label?: string;
+  i18nKey?: string | null;
+  /** 更新时可缺省（保留旧值）；创建/新增子菜单由路由层校验必填 */
+  icon?: string;
+  to?: string | null;
+  parentId?: string | null;
+  sort?: number;
+  keepAlive?: boolean;
+  hideInMenu?: boolean;
+  enabled?: boolean;
+  defaultOpen?: boolean;
+  /** bigint 位掩码字符串（勾选权限位的 OR） */
+  permissions?: string;
+}
+
+/** to 非空时校验格式：必须以 / 或 https:// 开头（契约 v1.3） */
+function assertValidTo(to: string | null | undefined): void {
+  if (!to) return;
+
+  if (!to.startsWith("/") && !to.startsWith("https://")) {
+    throw new ServerApiError(
+      400,
+      "MENU_TO_INVALID",
+      "路由路径必须以 / 或 https:// 开头",
+    );
+  }
+}
+
+/** to 非空时全局唯一（update 场景排除自身），部分唯一索引兜底（契约 v1.3） */
+async function assertToUnique(
+  to: string | null | undefined,
+  excludeId?: string,
+): Promise<void> {
+  if (!to) return;
+
+  const rows = await db
+    .select({ id: menus.id })
+    .from(menus)
+    .where(eq(menus.to, to));
+
+  if (rows.some((r) => r.id !== excludeId)) {
+    throw new ServerApiError(409, "MENU_TO_EXISTS", "路由路径已存在");
+  }
+}
+
+async function writeMenuLog(
+  action: string,
+  operatorId: string | null,
+  detail?: unknown,
+): Promise<void> {
+  try {
+    await db.insert(logs).values({
+      id: generateRecordId(),
+      type: "operation",
+      userId: operatorId,
+      action,
+      detail: detail === undefined ? null : detail,
+    });
+  } catch (err) {
+    console.error("[menus] 写入日志失败:", err);
+  }
+}
+
+async function createMenuRow(
+  dto: MenuSaveInput,
+  operatorId: string | null,
+  parentId?: string,
+): Promise<MenuNode> {
+  assertValidTo(dto.to);
+  await assertToUnique(dto.to ?? null);
+
+  if (BigInt(dto.permissions ?? "0") < 0n) {
+    throw new ServerApiError(
+      400,
+      "INVALID_OPERATION",
+      "permissions 包含非法权限位",
+    );
+  }
+
+  const [row] = await db
+    .insert(menus)
+    .values({
+      id: generateRecordId(),
+      // label/icon 创建场景由路由层校验必填（类型上兼容部分更新语义）
+      label: dto.label ?? "",
+      i18nKey: dto.i18nKey ?? null,
+      icon: dto.icon ?? "circle",
+      to: dto.to ?? null,
+      parentId: parentId ?? dto.parentId ?? null,
+      sort: dto.sort ?? 0,
+      keepAlive: dto.keepAlive ?? false,
+      hideInMenu: dto.hideInMenu ?? false,
+      enabled: dto.enabled ?? true,
+      defaultOpen: dto.defaultOpen ?? false,
+      permissions: BigInt(dto.permissions ?? "0"),
+    })
+    .returning();
+
+  await writeMenuLog("menu.create", operatorId, { id: row.id });
+
+  const tree = buildTree([row], new Map());
+
+  return tree[0]!;
+}
+
+/** POST /api/menus — 创建顶级/指定父级菜单。 */
+export async function createMenu(
+  dto: MenuSaveInput,
+  operatorId: string | null,
+): Promise<MenuNode> {
+  return createMenuRow(dto, operatorId);
+}
+
+/** POST /api/menus/:id/add-child — 新增子菜单（父菜单必须存在）。 */
+export async function addChildMenu(
+  parentId: string,
+  dto: MenuSaveInput,
+  operatorId: string | null,
+): Promise<MenuNode> {
+  const parent = await db.query.menus.findFirst({
+    where: eq(menus.id, parentId),
+  });
+
+  if (!parent) {
+    throw new ServerApiError(404, "MENU_NOT_FOUND", "父菜单不存在");
+  }
+
+  return createMenuRow(dto, operatorId, parentId);
+}
+
+/** GET /api/menus/:id — 单菜单详情（含子树与 userPermissions）。 */
+export async function findMenu(
+  id: string,
+  user: AuthUser | null,
+): Promise<MenuNode> {
+  const row = await db.query.menus.findFirst({ where: eq(menus.id, id) });
+
+  if (!row) {
+    throw new ServerApiError(404, "MENU_NOT_FOUND", "菜单不存在");
+  }
+
+  const permMap = user
+    ? await buildPermissionMap(user.id)
+    : new Map<string, bigint>();
+
+  return buildTree([row], permMap)[0]!;
+}
+
+/** PUT /api/menus/:id — 更新（to 传 null 表示清空路由，转为目录节点）。 */
+export async function updateMenu(
+  id: string,
+  dto: MenuSaveInput,
+  operatorId: string | null,
+): Promise<MenuNode> {
+  const existing = await db.query.menus.findFirst({ where: eq(menus.id, id) });
+
+  if (!existing) {
+    throw new ServerApiError(404, "MENU_NOT_FOUND", "菜单不存在");
+  }
+
+  // UpdateMenuDto 部分更新语义：to 用 === undefined 判断（允许显式 null 清空）
+  const effectiveTo =
+    (dto as { to?: string | null }).to === undefined
+      ? existing.to
+      : (dto.to ?? null);
+
+  assertValidTo(effectiveTo);
+  await assertToUnique(effectiveTo, id);
+
+  if (BigInt(dto.permissions ?? existing.permissions.toString()) < 0n) {
+    throw new ServerApiError(
+      400,
+      "INVALID_OPERATION",
+      "permissions 包含非法权限位",
+    );
+  }
+
+  const [row] = await db
+    .update(menus)
+    .set({
+      label: dto.label ?? existing.label,
+      i18nKey:
+        dto.i18nKey === undefined ? existing.i18nKey : (dto.i18nKey ?? null),
+      icon: dto.icon ?? existing.icon,
+      to: effectiveTo,
+      parentId: dto.parentId === undefined ? existing.parentId : dto.parentId,
+      sort: dto.sort ?? existing.sort,
+      keepAlive: dto.keepAlive ?? existing.keepAlive,
+      hideInMenu: dto.hideInMenu ?? existing.hideInMenu,
+      enabled: dto.enabled ?? existing.enabled,
+      defaultOpen: dto.defaultOpen ?? existing.defaultOpen,
+      permissions:
+        dto.permissions === undefined
+          ? existing.permissions
+          : BigInt(dto.permissions),
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(menus.id, id))
+    .returning();
+
+  await writeMenuLog("menu.update", operatorId, { id });
+
+  const tree = buildTree([row], new Map());
+
+  return tree[0]!;
+}
+
+/** DELETE /api/menus/:id — 有子菜单则禁止删除（409 MENU_HAS_CHILDREN）。 */
+export async function removeMenu(
+  id: string,
+  operatorId: string | null,
+): Promise<null> {
+  const existing = await db.query.menus.findFirst({ where: eq(menus.id, id) });
+
+  if (!existing) {
+    throw new ServerApiError(404, "MENU_NOT_FOUND", "菜单不存在");
+  }
+
+  const [{ count: childCount }] = await db
+    .select({ count: count() })
+    .from(menus)
+    .where(eq(menus.parentId, id));
+
+  if (childCount > 0) {
+    throw new ServerApiError(
+      409,
+      "MENU_HAS_CHILDREN",
+      "该菜单存在子菜单，无法删除",
+    );
+  }
+
+  await db.delete(menus).where(eq(menus.id, id));
+
+  await writeMenuLog("menu.delete", operatorId, { id });
+
+  return null;
 }
