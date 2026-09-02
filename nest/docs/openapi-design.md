@@ -265,7 +265,7 @@ info:
   title: Better Admin API
   version: 1.0.0
 servers:
-  - url: https://api.baiwumm.com/api
+  - url: https://nest.baiwumm.com/api
   - url: http://localhost:3000/api   # 本地
 tags:                                # 按模块分 tag
   - name: Auth

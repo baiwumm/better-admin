@@ -749,7 +749,7 @@ NestJS 使用 Render 部署。
 建议 API 域名：
 
 ```text
-https://api.baiwumm.com
+https://nest.baiwumm.com
 ```
 
 ---
@@ -772,7 +772,7 @@ Supabase PostgreSQL。
                │                 │                 │
              Vercel            Vercel            Render
                                                    │
-                                            api.baiwumm.com
+                                            nest.baiwumm.com
                                                    ▲
                                               ┌────┴────┐
                                               │         │
@@ -790,7 +790,7 @@ Supabase PostgreSQL。
 | Nuxt | `nuxt.baiwumm.com` | Vercel |
 | React | `react.baiwumm.com` | Vercel |
 | Vue | `vue.baiwumm.com` | Vercel |
-| NestJS | `api.baiwumm.com` | Render |
+| NestJS | `nest.baiwumm.com` | Render |
 
 ---
 
@@ -949,7 +949,7 @@ Better Admin
 - Nuxt：`https://nuxt.baiwumm.com`
 - React：`https://react.baiwumm.com`
 - Vue：`https://vue.baiwumm.com`
-- API：`https://api.baiwumm.com`
+- API：`https://nest.baiwumm.com`
 
 ---
 

@@ -55,7 +55,7 @@ better-admin/
 > React 版与 NestJS API 已部署上线；Vue / Next.js / Nuxt 为规划地址，对应版本实现后上线。
 
 - React：`https://react.baiwumm.com`（开发中）
-- API：`https://api.baiwumm.com`（开发中，Swagger 文档见 `/docs`）
+- API：`https://nest.baiwumm.com`（开发中，Swagger 文档见 `/docs`）
 - Next.js：`https://next.baiwumm.com`（规划中）
 - Nuxt：`https://nuxt.baiwumm.com`（规划中）
 - Vue：`https://vue.baiwumm.com`（规划中）

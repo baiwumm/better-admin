@@ -394,7 +394,7 @@ https://vue.baiwumm.com
 - **NestJS** 部署到 **Render**：
 
 ```text
-https://api.baiwumm.com
+https://nest.baiwumm.com
 ```
 
 - **数据库**：Supabase PostgreSQL。

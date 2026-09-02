@@ -91,7 +91,7 @@ info:
   version: 1.7.0
 
 servers:
-  - url: https://api.baiwumm.com/api
+  - url: https://nest.baiwumm.com/api
     description: Production (Render)
   - url: http://localhost:3000/api
     description: Local dev
