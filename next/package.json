@@ -19,7 +19,8 @@
 		"start": "next start",
 		"lint": "eslint --fix",
 		"db:pull": "drizzle-kit pull --config=drizzle.config.ts && node scripts/sync-pulled-schema.mjs",
-		"check-locales": "node scripts/check-locales.mjs"
+		"check-locales": "node scripts/check-locales.mjs",
+		"db:clean-logs": "node scripts/clean-logs.mjs"
 	},
 	"dependencies": {
 		"@dnd-kit/core": "6.3.1",
