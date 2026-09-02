@@ -26,9 +26,6 @@ type SidebarUserProps = {
   collapsed?: boolean;
 };
 
-/** 折叠态独立头像的兜底图（登录用户无 avatar 时走首字 fallback）。 */
-const fallbackAvatar = "";
-
 /**
  * 侧边栏底部用户区：头像 + 名称/邮箱（折叠态仅显示头像）。
  * 展开态与弹层头部统一走 UserInfo 组件展示（契约 v1.4.8 起 AuthUser 含 email，
@@ -113,12 +110,15 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
         >
           {collapsed ? (
             <Avatar
+              key={user?.avatar ?? "collapsed-fallback"}
               className="shrink-0"
               color="accent"
               size="sm"
               variant="soft"
             >
-              <Avatar.Image alt={displayName} src={fallbackAvatar} />
+              {user?.avatar ? (
+                <Avatar.Image alt={displayName} src={user.avatar} />
+              ) : null}
               <Avatar.Fallback>{initials}</Avatar.Fallback>
             </Avatar>
           ) : (
