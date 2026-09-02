@@ -9,14 +9,27 @@ import {
   type HistoryState,
 } from "@tanstack/react-router";
 import { Toast } from "@heroui/react";
+import { useProgress } from "@bprogress/react";
 
 import { GeneralErrorPage } from "@/components/common/error-pages/general-error";
 import { NotFoundErrorPage } from "@/components/common/error-pages/not-found-error";
+import { useRouteProgress } from "@/hooks/use-route-progress";
+import { bindProgress } from "@/lib/progress";
 import { useDocumentTitle } from "@/lib/use-document-title";
 
 function RootComponent() {
   // 全局同步浏览器标签页标题：`${页面标题} - ${品牌名}`
   useDocumentTitle();
+
+  // 路由导航进度条
+  useRouteProgress();
+
+  // 将 useProgress 的 start/stop 注入非 React 模块（api-client）
+  const { start, stop } = useProgress();
+
+  useEffect(() => {
+    bindProgress({ start, stop });
+  }, [start, stop]);
 
   return (
     <>

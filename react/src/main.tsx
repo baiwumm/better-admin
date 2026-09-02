@@ -6,6 +6,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { Provider } from "./provider.tsx";
 import { router } from "./router.ts";
 
+import { ProgressProvider } from "@/components/common/progress-provider";
 import { initI18n } from "@/i18n";
 import { queryClient } from "@/lib/query-client";
 import { installToastExitAnimation } from "@/lib/toast-animation";
@@ -38,9 +39,11 @@ async function bootstrap(): Promise<void> {
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
-        <Provider>
-          <RouterProvider router={router} />
-        </Provider>
+        <ProgressProvider>
+          <Provider>
+            <RouterProvider router={router} />
+          </Provider>
+        </ProgressProvider>
       </QueryClientProvider>
     </React.StrictMode>,
   );
