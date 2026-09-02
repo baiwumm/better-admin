@@ -252,14 +252,25 @@ async function assertTargetOperable(
   return;
 }
 
-/** 用户名/邮箱唯一冲突 → 409（部分唯一索引 deleted_at IS NULL 兜底）。 */
+/** 用户名/邮箱唯一冲突 → 409（部分唯一索引 deleted_at IS NULL 兜底）。
+ * drizzle 会把 pg 错误包装为 DrizzleQueryError，原始错误的 constraint
+ * 挂在对象（或其 cause）上，message 未必包含索引名——与 Nest 端同款判别。 */
 function mapUniqueViolation(error: unknown): never {
-  const message = error instanceof Error ? error.message : String(error);
+  const err = error as {
+    constraint_name?: string;
+    constraint?: string;
+    cause?: { constraint?: string; constraint_name?: string };
+  };
+  const constraint =
+    err?.constraint_name ??
+    err?.constraint ??
+    err?.cause?.constraint_name ??
+    "";
 
-  if (message.includes("users_username_unique_active")) {
+  if (constraint.includes("users_username_unique_active")) {
     throw new ServerApiError(409, "USERNAME_EXISTS", "用户名已存在");
   }
-  if (message.includes("users_email_unique_active")) {
+  if (constraint.includes("users_email_unique_active")) {
     throw new ServerApiError(409, "EMAIL_EXISTS", "邮箱已存在");
   }
 

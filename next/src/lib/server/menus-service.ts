@@ -2,7 +2,7 @@ import "server-only";
 
 import type { AuthUser, MenuNode } from "@/lib/api-types";
 
-import { eq } from "drizzle-orm";
+import { eq, ilike, or } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { menus, roleMenus, userRoles } from "@/db/schema";
@@ -111,6 +111,7 @@ function rowToBase(row: typeof menus.$inferSelect) {
 function buildTree(
   rows: (typeof menus.$inferSelect)[],
   permMap: Map<string, bigint>,
+  order: "asc" | "desc" = "asc",
 ): MenuNode[] {
   const nodes = new Map<string, MenuNode>();
 
@@ -137,7 +138,7 @@ function buildTree(
   }
 
   const sortRec = (list: MenuNode[]) => {
-    list.sort((a, b) => a.sort - b.sort);
+    list.sort((a, b) => (order === "desc" ? b.sort - a.sort : a.sort - b.sort));
     for (const n of list) sortRec(n.children ?? []);
   };
 
@@ -171,4 +172,62 @@ export async function findMenuTree(user: AuthUser | null): Promise<MenuNode[]> {
   const permMap = await buildPermissionMap(user.id);
 
   return buildTree(filteredRows, permMap);
+}
+
+/**
+ * GET /api/menus/tree — 管理用全量菜单树（契约 v1.3 新增）。
+ *
+ * 与 findMenuTree 的区别：不做角色可见性过滤——包含 enabled=false / hideInMenu
+ * 的全部节点，供菜单管理页与角色授权抽屉使用；userPermissions 仍按当前用户
+ * 下发，供前端操作按钮门控。控制器层要求菜单 SEARCH 位。
+ */
+export async function findManageMenuTree(
+  user: AuthUser | null,
+  search?: string,
+  order: "asc" | "desc" = "asc",
+): Promise<MenuNode[]> {
+  const allRows = await db.select().from(menus);
+
+  let rows = allRows;
+  const normalized = search?.trim();
+
+  if (normalized) {
+    const pattern = `%${normalized}%`;
+    // 后端模糊搜索：label / i18n_key / to 命中即保留，并回溯祖先链保证树完整
+    const matched = await db
+      .select({ id: menus.id })
+      .from(menus)
+      .where(
+        or(
+          ilike(menus.label, pattern),
+          ilike(menus.i18nKey, pattern),
+          ilike(menus.to, pattern),
+        ),
+      );
+    const matchedIds = new Set(matched.map((r) => r.id));
+
+    if (matchedIds.size > 0) {
+      const byId = new Map(allRows.map((m) => [m.id, m]));
+      const allowed = new Set(matchedIds);
+
+      for (const id of matchedIds) {
+        let cur = byId.get(id);
+
+        while (cur?.parentId) {
+          if (allowed.has(cur.parentId)) break;
+          allowed.add(cur.parentId);
+          cur = byId.get(cur.parentId);
+        }
+      }
+      rows = allRows.filter((r) => allowed.has(r.id));
+    } else {
+      rows = [];
+    }
+  }
+
+  const permMap = user
+    ? await buildPermissionMap(user.id)
+    : new Map<string, bigint>();
+
+  return buildTree(rows, permMap, order);
 }
