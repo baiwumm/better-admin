@@ -1,17 +1,15 @@
-# Better Admin — UI Spec（Phase 1B 规划）
+# Better Admin — UI 规范
 
-> 本文档基于原 Shadcn Admin 实现的源码分析产出，定义 Better Admin 的页面结构与 UI 规范；`/react` 现为 Hero UI 基准。
-> 本文档**只做分析与规划，不涉及代码修改**；落地实施在 Phase 1B 及后续阶段进行。
+> 本文档定义 Better Admin 的页面结构、组件行为、视觉 Token 与交互规范；`/react`（Hero UI 基准版本）是 UI Source of Truth，Vue / Next.js / Nuxt 按此规范对齐。
 >
-> **UI 组件库策略更新（2026-08-22）**：React / Next.js 采用 **Hero UI 为主 + Shadcn UI 为补充**，Vue / Nuxt 保持 **Shadcn UI 为主**（详见 §18.3）；本文档记录的 Token / 视觉数值来自原 Shadcn Admin 实现的分析，后续样式变量以 **Hero UI 设计体系为主要参考**对齐（§18.3）。
+> **UI 组件库策略**：React / Next.js 采用 **Hero UI 为主 + Shadcn UI 为补充**，Vue / Nuxt 保持 **Shadcn UI 为主**（详见 §18.3）；样式变量以 **Hero UI 设计体系为主要参考**对齐。
 
 ---
 
 ## 0. 文档目的与使用方式
 
-- **记录现状**：客观描述原 Shadcn Admin 实现的设计令牌、组件行为与页面模式（所有数值均来自该实现的源码分析）。
-- **定义规范**：为 Better Admin 定制阶段提供页面结构、Sidebar、Layout、主题、组件使用等方面的统一约定。
-- **约束后续实现**：Vue、Next.js、Nuxt 版本按本规范还原 React 基准；跨技术栈保持 UI 一致性。
+- **定义规范**：为 Better Admin 各技术栈实现提供页面结构、Sidebar、Layout、主题、组件使用等方面的统一约定。
+- **约束实现**：Vue、Next.js、Nuxt 版本按本规范还原 React 基准；跨技术栈保持 UI 一致性。
 - 文档与 [`requirements.md`](requirements.md) 配合使用；`requirements.md` 定义业务需求，本文档定义 UI 与交互规范。
 
 **优先级**：用户当前需求 > `requirements.md` > `AGENTS.md` > 本文档 > 现有代码 > 框架最佳实践。
@@ -20,30 +18,31 @@
 
 ## 1. 页面结构
 
-### 1.1 原始路由树（Shadcn Admin 实现，仅作迁移参考）
+### 1.1 当前路由结构（React Hero UI 基准）
 
-> 本节为迁移参考源的源结构记录，**路由现状以 [`routing.md`](routing.md) 为准**。
+> 路由详情以 [`routing.md`](routing.md) 为准；本节仅列出页面结构概览。
 
 ```text
 /
-├── (auth)/                  # 演示认证页（居中卡片布局）
-│   ├── sign-in              # 登录
-│   ├── sign-in-2            # 登录（双栏变体）
-│   ├── sign-up              # 注册
-│   ├── forgot-password      # 忘记密码
-│   └── otp                  # 验证码
+├── (auth)/                  # 认证页（居中卡片布局）
+│   └── sign-in              # 登录
 ├── (errors)/                # 全屏错误页
-│   ├── 401 / 403 / 404 / 500 / 503
-├── clerk/                   # 可选 Clerk 集成（无 Key 时优雅降级）
+│   ├── 401 / 403 / 404 / 500
 └── _authenticated/          # 认证态布局（Sidebar + Header + Main）
-    ├── index                # Dashboard（TopNav + Tabs + 统计卡片 + 图表）
-    ├── tasks                # 列表页范式（DataTable + Toolbar + Pagination + Dialog/Drawer）
-    ├── users                # 列表页范式（DataTable + 行操作 + 批量操作）
-    ├── apps                 # 卡片网格页（搜索 + 类型筛选 + 排序）
-    ├── chats                # 列表页（Mock）
-    ├── help-center          # ComingSoon 占位
-    └── settings             # 二级导航布局（左侧 sticky 导航 + 内容区）
-        ├── profile / account / appearance / notifications / display
+    ├── index                # Dashboard（占位）
+    ├── account              # 我的账户
+    ├── users                # 用户管理
+    ├── roles                # 角色管理
+    ├── permissions          # 权限管理（只读）
+    ├── menus                # 菜单管理
+    ├── dicts                # 字典管理
+    ├── logs                 # 日志管理
+    ├── org/
+    │   ├── depts            # 组织管理
+    │   ├── posts            # 岗位管理
+    │   ├── directory        # 人员通讯录
+    │   └── notices          # 公告管理
+    └── settings             # 系统设置（二级导航布局）
 ```
 
 ### 1.2 现有页面模式
@@ -58,21 +57,29 @@
 | 错误页 | `/401` 等 | 全屏居中：超大数字 + 说明 + `Go Back` / `Back to Home` 按钮 |
 | 占位页 | `/help-center` | `ComingSoon`（图标 + 标题 + 描述） |
 
-### 1.3 Better Admin 页面结构规划
+### 1.3 页面结构规划
 
 业务页面按 `requirements.md` 第 10 章规划，路由与结构如下：
 
-| 路由 | 页面 | 模块 | 主要 UI 模式 | 阶段 |
+| 路由 | 页面 | 模块 | 主要 UI 模式 | 状态 |
 | --- | --- | --- | --- | --- |
-| `/` | Dashboard | 数据统计 | Dashboard 模式（统计卡片 + 图表 + 最近活动） | Phase 1B 规划，后续实现 |
-| `/users` | 用户管理 | 用户 | 列表模式（列表/搜索/分页/详情/新建/编辑/删除/状态） | 后续阶段 |
-| `/roles` | 角色管理 | 角色 | 列表模式 + 角色权限配置（Drawer 内权限树/列表） | 后续阶段 |
-| `/permissions` | 权限管理 | 权限 | 列表模式（权限点 CRUD） | 后续阶段 |
-| `/menus` | 菜单管理 | 菜单 | 树形表格 + 排序 + 权限关联 | 后续阶段 |
-| `/logs` | 日志 | 日志 | Tabs（操作/登录/API/错误）+ 列表模式（只读 + 详情） | 后续阶段 |
-| `/settings` | 系统设置 | 设置 | 设置页模式（左侧导航 + 表单分区） | 后续阶段 |
-| `/sign-in` 等 | 认证页 | 认证 | 认证模式（复用现有 4 个页面结构） | 后续阶段 |
-| `/401` 等 | 错误页 | 系统 | 全屏错误模式（复用现有 5 个页面） | 后续阶段 |
+| `/` | Dashboard | 数据统计 | Dashboard 模式（统计卡片 + 图表 + 最近活动） | 占位 |
+| `/users` | 用户管理 | 用户 | 列表模式（列表/搜索/分页/详情/新建/编辑/删除/状态） | ✅ 已实现 |
+| `/roles` | 角色管理 | 角色 | 列表模式 + 角色权限配置（Drawer 内权限树/列表） | ✅ 已实现 |
+| `/permissions` | 权限管理 | 权限 | 列表模式（权限点 CRUD） | ✅ 已实现 |
+| `/menus` | 菜单管理 | 菜单 | 树形表格 + 排序 + 权限关联 | ✅ 已实现 |
+| `/dicts` | 字典管理 | 字典 | 列表模式（字典类型 + 字典项） | ✅ 已实现 |
+| `/logs` | 日志 | 日志 | Tabs（操作/登录/API/错误）+ 列表模式（只读 + 详情） | ✅ 已实现 |
+| `/org/depts` | 组织管理 | 组织 | 树形表格 + 排序 | ✅ 已实现 |
+| `/org/posts` | 岗位管理 | 岗位 | 列表模式（岗位 CRUD） | ✅ 已实现 |
+| `/org/directory` | 人员通讯录 | 组织 | 列表模式（搜索/筛选） | ✅ 已实现 |
+| `/org/notices` | 公告管理 | 组织 | 列表模式（富文本编辑器） | ✅ 已实现 |
+| `/account` | 我的账户 | 用户 | 卡片式多 Tab 设置 | ✅ 已实现 |
+| `/settings` | 系统设置 | 设置 | 设置页模式（左侧导航 + 表单分区） | 占位 |
+| `/sign-in` 等 | 认证页 | 认证 | 认证模式（居中卡片布局） | ✅ 已实现 |
+| `/401` 等 | 错误页 | 系统 | 全屏错误模式 | ✅ 已实现 |
+
+> **UI 组件库差异说明**：React / Next.js 使用 **Hero UI** 组件（Button / Modal / Tabs 等），Vue / Nuxt 使用 **Shadcn UI** 组件；组件库不同，但**页面功能、布局结构、交互逻辑、数据流保持一致**。
 
 **页面结构规范（Better Admin）**：
 
@@ -153,17 +160,23 @@ Sidebar
 
 1. **结构**：保留 `SidebarHeader（Logo + 产品名）/ SidebarContent（导航分组）/ SidebarFooter（用户信息）` 三段结构。
 2. **品牌化**：将 `TeamSwitcher` 替换为 `AppTitle`（Logo + "Better Admin"）；移除多团队切换 Demo 数据。
-3. **菜单规划**（Phase 1B 页面规划阶段定义，接入数据后由权限驱动）：
+3. **菜单结构**（接入 RBAC 后按权限过滤）：
 
 ```text
 概览
 ├── Dashboard          /
+组织中心
+├── 组织管理           /org/depts
+├── 岗位管理           /org/posts
+├── 人员通讯录         /org/directory
+├── 公告管理           /org/notices
 系统管理
 ├── 用户管理           /users
 ├── 角色管理           /roles
 ├── 权限管理           /permissions
 ├── 菜单管理           /menus
-└── 日志               /logs
+├── 字典管理           /dicts
+├── 日志               /logs
 系统设置
 └── 系统设置           /settings
 ```
@@ -189,7 +202,7 @@ Sidebar
 ### 4.2 Better Admin 主题规范
 
 1. 保留 `ThemeProvider` 机制（system/light/dark + class 策略 + Cookie 持久化），不更换方案。
-2. 所有颜色一律通过 CSS 变量（`--background`、`--primary` 等）与 Tailwind 语义类使用，**禁止在业务代码中硬编码色值**（现有 `apps` 页蓝色连接按钮是反例，Phase 1B 清理）。
+2. 所有颜色一律通过 CSS 变量（`--background`、`--primary` 等）与 Tailwind 语义类使用，**禁止在业务代码中硬编码色值**。
 3. 品牌化仅修改 `src/styles/theme.css` 中的变量值（如 `--primary`、`--chart-*`），组件代码不动。
 4. `theme-color` 元信息随主题同步（保留现有行为）。
 
@@ -362,7 +375,6 @@ Sidebar
 - Dark 模式下控件 `dark:bg-input/30`。
 - 其他控件：Checkbox、RadioGroup、Switch、InputOTP、Calendar/DatePicker、SelectDropdown（带图标选项封装）。
 - 表单承载：新建/编辑统一放 Drawer（`Sheet`）；提交按钮 `Button type="submit"`，表单 `id` 与 Drawer 底部按钮关联。
-- Demo 交互：提交后 `showSubmittedData` 展示提交内容（Phase 1B 清理，后续接真实 API）。
 
 ### 10.2 Better Admin 表单规范
 
@@ -433,7 +445,7 @@ Sidebar
 
 ### 13.2 Better Admin Empty State 规范
 
-1. **Phase 1B 新增统一 `EmptyState` 组件**：图标（lucide，如 `Inbox`/`SearchX`）+ 标题（`font-semibold`）+ 描述（`text-sm text-muted-foreground`）+ 可选操作按钮，居中布局。
+1. **统一 `EmptyState` 组件**：图标（lucide，如 `Inbox`/`SearchX`）+ 标题（`font-semibold`）+ 描述（`text-sm text-muted-foreground`）+ 可选操作按钮，居中布局。
 2. 表格空态：筛选无结果 → 图标 `SearchX` + 「未找到匹配结果」+ Reset 按钮；列表无数据 → 图标 `Inbox` + 「暂无数据」+ 新建按钮（有权限时）。
 3. 页面占位（未开发模块）沿用 `ComingSoon`，文案统一「该页面尚未开发」。
 
@@ -468,7 +480,7 @@ Sidebar
 
 ### 15.2 Better Admin Error State 规范
 
-1. 保留 5 个全屏错误页与根路由兜底；错误页文案中文化（Phase 1B 品牌化一并处理）。
+1. 保留全屏错误页与根路由兜底；错误页文案已中文化。
 2. 路由/权限错误：401 → 跳转登录（带 redirect）；403 → 提示无权限并跳转错误页；服务端 500 → Toast + `/500` 页。
 3. 区块级错误（如表内加载失败）：使用 `Alert destructive` + 重试按钮，不跳全屏。
 4. 所有错误场景必须有用户可执行的下一步（返回 / 重试 / 回首页）。
@@ -525,12 +537,12 @@ Sidebar
 
 ## 18. 组件使用原则
 
-### 18.1 现状技术栈（`/react`）
+### 18.1 技术栈（`/react`）
 
 | 类别 | 选型 |
 | --- | --- |
 | UI | React 19 + TypeScript（strict）+ Vite + Tailwind CSS v4 |
-| 组件 | **Hero UI（为主，规划引入 `@heroui/react`）** + **shadcn/ui（补充，new-york，源码在 `src/components/ui/`，存量保留）** + Radix UI 原语 |
+| 组件 | **Hero UI（为主，`@heroui/react`）** + **shadcn/ui（补充，new-york，源码在 `src/components/ui/`，存量保留）** + Radix UI 原语 |
 | 路由 | TanStack Router（文件式 `src/routes/`） |
 | 数据请求 | TanStack Query + axios |
 | 表格 | TanStack Table + 自研 DataTable 封装 |
@@ -608,20 +620,18 @@ Shadcn UI
 
 ---
 
-## 19. Phase 1B 落地清单（规划，不在本文档阶段实施）
+## 19. Phase 1B 落地记录
+
+> ✅ **Phase 1B 已完成（2026-08-21）**：品牌化、Sidebar、页面占位、Demo 清理、中文化、规范化已全部落地。
 
 | 序号 | 事项 | 涉及文件/范围 | 说明 |
 | --- | --- | --- | --- |
 | 1 | 品牌化 | `index.html`、`src/assets/`、`src/styles/theme.css` | 站点标题/描述/OG、Logo、favicon、主色与图表色 token |
-| 2 | Sidebar 调整 | `sidebar-data.ts`、`app-sidebar.tsx` | TeamSwitcher → AppTitle；菜单按 §3.2 规划；清理 Clerk/Demo 项 |
-| 3 | Layout 调整 | Header/Main/布局页面 | 统一 Header 操作区顺序；清理演示导航（TopNav 等） |
-| 4 | 页面规划 | `src/routes/` | 按 §1.3 建立业务路由骨架与占位页（不实现业务逻辑） |
-| 5 | Demo 清理 | `features/`、`routes/` | 移除 Tasks/Chats/Apps/Clerk/Help Center 演示；`showSubmittedData` 在保留的演示页（Users/Settings）暂留，接入真实 API 时移除 |
+| 2 | Sidebar 调整 | `sidebar-data.ts`、`app-sidebar.tsx` | TeamSwitcher → AppTitle；菜单按 §3.2 规划；清理 Demo 项 |
+| 3 | Layout 调整 | Header/Main/布局页面 | 统一 Header 操作区顺序；清理演示导航 |
+| 4 | 页面规划 | `src/routes/` | 按 §1.3 建立业务路由骨架与占位页 |
+| 5 | Demo 清理 | `features/`、`routes/` | 移除 Tasks/Chats/Apps/Clerk/Help Center 演示 |
 | 6 | 规范化收尾 | 全局 | 颜色/字号/间距按本文档对齐；中文化基础文案 |
-
-> 后续业务阶段（NestJS、React + NestJS）实现真实数据前，业务页面统一使用 Mock + Loading/Empty/Error 三态，不伪造已完成功能。
-
-> ✅ **Phase 1B 已执行（2026-08-21）**：本清单已全部落地（品牌化、Sidebar、页面占位、Demo 清理、中文化、规范化），业务逻辑留待后续阶段。
 
 ---
 
@@ -632,3 +642,4 @@ Shadcn UI
 | 2026-08-21 | v0.1 | 基于 Shadcn Admin v2.2.1 源码分析产出初版 UI Spec |
 | 2026-08-21 | v0.2 | Phase 1B 落地记录：品牌化、Sidebar 调整、页面占位、Demo 清理、中文化 |
 | 2026-08-22 | v0.3 | UI 组件库策略更新：React / Next.js 以 Hero UI 为主 + Shadcn UI 补充（§18.3）；样式变量以 Hero UI 设计体系为主要参考；Vue / Nuxt 保持 Shadcn UI |
+| 2026-09-02 | v1.0 | 文档重构：基于当前 React Hero UI 基准版本更新，移除 Shadcn Admin 历史引用与 Phase 1B 规划表述，同步页面结构与技术栈现状 |
