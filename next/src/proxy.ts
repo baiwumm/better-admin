@@ -8,7 +8,7 @@ import { loadUserWithPermissions, refresh } from "@/lib/server/auth/session";
 import { setAuthCookies } from "@/lib/server/auth/cookies";
 import { filterAccessibleMenus } from "@/lib/permission";
 import { collectMenuPaths } from "@/lib/menu-utils";
-import { findMenuTree } from "@/lib/server/menus-service";
+import { findMenuTree, getAllMenuPaths } from "@/lib/server/menus-service";
 import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
 
 /**
@@ -84,20 +84,28 @@ async function trySilentRefresh(
 }
 
 /**
- * 菜单路径 403 门卫：当前路径是否在「登录白名单 ∪ 用户可见菜单树」内。
- * 服务端过滤（filterAccessibleMenus）后再取可达路径集合——与注入侧边栏的
- * 树同源同规则，客户端不做二次判定（方案修正二）。
+ * 菜单路径 403 门卫（N7 语义修正）：区分两类「不在用户可见菜单树」的路径——
+ * - 真实存在的路由（在全量菜单树中，任何用户可见的菜单路径之并集）但当前
+ *   用户无权 → 403（等价 React 版 admin-layout 门卫）；
+ * - 根本不存在的路由（不在全量菜单树也不在白名单）→ 放行，由 Next 路由
+ *   渲染 not-found（404，对齐 React 版 TanStack Router 未匹配行为）。
  */
-async function isPathAllowed(
+async function resolvePathGate(
   user: AuthUser,
   pathname: string,
-): Promise<boolean> {
-  if (LOGIN_REQUIRED_SET.has(pathname)) return true;
+): Promise<"allowed" | "forbidden" | "unknown"> {
+  if (LOGIN_REQUIRED_SET.has(pathname)) return "allowed";
 
-  const tree = filterAccessibleMenus(await findMenuTree(user));
-  const allowedPaths = collectMenuPaths(tree);
+  const [tree, allPaths] = await Promise.all([
+    findMenuTree(user),
+    getAllMenuPaths(),
+  ]);
 
-  return allowedPaths.has(pathname);
+  if (!allPaths.has(pathname)) return "unknown";
+
+  const allowedPaths = collectMenuPaths(filterAccessibleMenus(tree));
+
+  return allowedPaths.has(pathname) ? "allowed" : "forbidden";
 }
 
 /** Next 16 的 proxy 约定（原 middleware；每请求守卫入口）。 */
@@ -131,9 +139,13 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/", request.url));
     }
 
-    // 菜单路径 403 门卫（登录页/错误页不在 matcher 白名单时由 PUBLIC_PATHS 兜底）
-    if (!isPublicPath && !(await isPathAllowed(user, pathname))) {
-      return NextResponse.redirect(new URL("/403", request.url));
+    // 菜单路径 403 门卫（unknown = 非真实路由，放行给 Next 404）
+    if (!isPublicPath) {
+      const gate = await resolvePathGate(user, pathname);
+
+      if (gate === "forbidden") {
+        return NextResponse.redirect(new URL("/403", request.url));
+      }
     }
 
     const response = NextResponse.next();

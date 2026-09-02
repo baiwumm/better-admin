@@ -480,3 +480,17 @@ export async function removeMenu(
 
   return null;
 }
+
+/** 全量菜单可达路径集合（不分用户；供 proxy 区分「真实路由但无权」与「不存在的路由」）。 */
+export async function getAllMenuPaths(): Promise<Set<string>> {
+  // menus 无软删列（Nest 端为硬删除），无需过滤
+  const rows = await db.select({ to: menus.to }).from(menus);
+
+  const paths = new Set<string>();
+
+  for (const r of rows) {
+    if (r.to) paths.add(r.to);
+  }
+
+  return paths;
+}
