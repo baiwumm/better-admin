@@ -4,15 +4,16 @@
 App Router + Server Components/Route Handlers + PostgreSQL（Drizzle ORM），不依赖 NestJS。
 
 - UI 基准：以 `/react`（HeroUI v3）为 Source of Truth，页面结构/交互/视觉对齐
-- API：`src/app/api/**` Route Handlers，形状对齐冻结契约 `contracts/openapi.v1.6.0.frozen.yaml`
+- API：`src/app/api/**` Route Handlers，形状对齐 `nest/openapi/openapi.yaml`（API Contract 唯一事实来源）
 - 鉴权：JWT 双令牌（httpOnly Cookie）+ `src/proxy.ts` 守卫（验签 + token_version 实时比对 + 菜单路径 403/404 语义）
 - 数据库：与 Nest 端共用同一 Supabase PostgreSQL；**迁移真源在 `nest/drizzle/`**，本端不生成/不执行迁移
 
-## 已实现模块（N0–N7）
+## 已实现模块（N0–N7 + 组织中心跟进）
 
 认证（登录/双令牌/静默轮换/强制下线）· Admin 布局（动态菜单/多标签页/命令面板/主题语言切换）·
-用户管理 · 角色管理（含菜单授权抽屉）· 菜单管理 · 权限说明页 · 字典管理 · 日志管理 ·
-我的账户（Supabase Storage 头像）· 组织管理（组织树/拖拽排序）· 错误页 403/404/500
+用户管理（含组织/岗位关联）· 角色管理（含菜单授权抽屉）· 菜单管理 · 权限说明页 · 字典管理 · 日志管理 ·
+我的账户（Supabase Storage 头像）· 组织管理（组织树/拖拽排序）· 岗位管理 · 人员通讯录 ·
+公告管理（Tiptap 富文本/发布范围/已读统计/催办）· 站内信铃铛 · 错误页 403/404/500
 
 ## 常用命令
 
@@ -42,4 +43,3 @@ pnpm check-locales  # 语言包与 react/src/i18n/locales 一致性检查（CI �
 - KeepAlive 放弃（App Router 无等价机制）；标签「刷新」仅对当前激活标签生效
 - 令牌存储层为 httpOnly Cookie（React 为 localStorage + Bearer）；API 内部仍兼容 Bearer 解析
 - 菜单权限过滤在服务端完成（React 在客户端）；日志清理载体为 GitHub Actions cron（Nest 为进程内 schedule）
-- 冻结契约快照之外的契约内容（组织阶段 2 的岗位/通讯录、公告模块）待 Nest/React 端落地后跟进
