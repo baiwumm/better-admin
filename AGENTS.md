@@ -330,6 +330,7 @@ ci: CI 配置变更
 | `docs/mechanisms.md` | 机制沉淀（代码行为的技术结论，代码为准） |
 | `docs/requirements.md` | 业务需求真源 |
 | `docs/ui-spec.md` | UI 规范真源（AGENTS.md §7 只留策略级规则） |
+| `docs/feature-matrix.md` | **功能矩阵**：四种前端实现的功能对齐状态（✅/❌），新增功能必须同步更新 |
 | `docs/react.md` / `docs/routing.md` | React 版本说明 / 路由说明 |
 | `docs/react-performance.md` | `vercel-react-best-practices` Skill 的项目适用政策 |
 | `nest/docs/*` | 后端数据库设计、OpenAPI Contract 设计说明 |
@@ -420,6 +421,7 @@ https://nest.baiwumm.com
 12. **React 迁移约束**：涉及 `/react` 代码生成（新建页面 / 组件 / 功能）时，**必须先阅读 `/react-shadcn` 对应模块代码**，理解其既有实现、布局、交互与业务逻辑，再在 `/react` 中以 Hero UI 模板为基础进行等效迁移（迁移策略详见 §4.6）。
 13. **`/react-shadcn` 是只读参考源**：`/react-shadcn`（原 Shadcn Admin 源码）仅作为迁移参考与比对使用，**不得修改其代码**；任何功能迁移、修复或调整都应在 `/react` 中完成，而非改动 `/react-shadcn`。
 14. **全局语言规则（跨会话持久生效）**：所有 AI Agent 在本项目中的**全部对话、思考过程与回复一律使用中文**。代码注释、文档、提交信息（Conventional Commits 描述）也以中文为主；仅在代码标识符、命令、API 字段等必须使用英文的场合保留英文。此规则覆盖所有会话，不局限于单一对话。
+15. **功能矩阵同步（跨会话持久生效）**：每次新增功能模块、完成模块迁移、或功能状态发生变化时，**必须同步更新 `docs/feature-matrix.md`**。更新时机：功能开发完成后立即更新对应技术栈的状态标记（✅/🔧/❌），并在提交信息中体现。该文件是四种前端实现功能对齐状态的唯一追踪源。
 
 ### 需求优先级
 
