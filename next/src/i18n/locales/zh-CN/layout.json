@@ -101,5 +101,9 @@
   "layout.user.myLinks": "个人链接",
   "layout.user.linkWebsite": "个人主页",
   "layout.user.linkGitHub": "GitHub",
-  "layout.user.linkX": "X"
+  "layout.user.linkX": "X",
+  "layout.header.moreNotifications": "仅显示最近 20 条",
+  "layout.header.noNotifications": "暂无通知",
+  "layout.header.notifications": "通知",
+  "layout.header.readAll": "全部已读"
 }

@@ -101,5 +101,9 @@
   "layout.user.myLinks": "Profile links",
   "layout.user.linkWebsite": "Website",
   "layout.user.linkGitHub": "GitHub",
-  "layout.user.linkX": "X"
+  "layout.user.linkX": "X",
+  "layout.header.moreNotifications": "Showing the latest 20 only",
+  "layout.header.noNotifications": "No notifications",
+  "layout.header.notifications": "Notifications",
+  "layout.header.readAll": "Mark all as read"
 }

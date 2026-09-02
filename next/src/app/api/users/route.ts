@@ -48,6 +48,13 @@ export async function POST(request: NextRequest) {
       avatar?: string;
       status?: string;
       roleIds?: string[];
+      deptId?: string | null;
+      employeeNo?: string | null;
+      entryDate?: string | null;
+      employmentStatus?: string | null;
+      gender?: "male" | "female" | null;
+      postIds?: string[];
+      mainPostId?: string | null;
     };
 
     // 契约 UserCreateRequest required [username, email, password, displayName]
@@ -73,6 +80,32 @@ export async function POST(request: NextRequest) {
         avatar: body.avatar,
         status: body.status,
         roleIds: Array.isArray(body.roleIds) ? body.roleIds : undefined,
+        deptId:
+          typeof body.deptId === "string" && body.deptId.length > 0
+            ? body.deptId
+            : null,
+        employeeNo:
+          typeof body.employeeNo === "string" && body.employeeNo.length > 0
+            ? body.employeeNo
+            : null,
+        entryDate:
+          typeof body.entryDate === "string" && body.entryDate.length > 0
+            ? body.entryDate
+            : null,
+        employmentStatus:
+          body.employmentStatus === "employed" ||
+          body.employmentStatus === "resigned"
+            ? body.employmentStatus
+            : null,
+        gender:
+          body.gender === "male" || body.gender === "female"
+            ? body.gender
+            : null,
+        postIds: Array.isArray(body.postIds) ? body.postIds : undefined,
+        mainPostId:
+          typeof body.mainPostId === "string" && body.mainPostId.length > 0
+            ? body.mainPostId
+            : null,
       },
       operator.id,
     );

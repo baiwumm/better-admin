@@ -260,6 +260,33 @@ export function UsersPage() {
         ),
       },
       {
+        // 性别（契约 v1.6.0 阶段 2 补充；未设置显示 —）
+        id: "gender",
+        enableSorting: false,
+        meta: { align: "center" },
+        header: t("features.users.column.gender"),
+        cell: ({ row }) => (
+          <Typography type="body-sm">
+            {row.original.gender
+              ? t(
+                  row.original.gender === "male"
+                    ? "features.users.gender.male"
+                    : "features.users.gender.female",
+                )
+              : "—"}
+          </Typography>
+        ),
+      },
+      {
+        // 所属组织（契约 v1.6.0 组织中心；组织被删/未关联显示 —）
+        id: "deptName",
+        enableSorting: false,
+        header: t("features.users.column.dept"),
+        cell: ({ row }) => (
+          <Typography type="body-sm">{row.original.deptName ?? "—"}</Typography>
+        ),
+      },
+      {
         id: "roles",
         enableSorting: false,
         meta: { align: "center" },
@@ -349,6 +376,20 @@ export function UsersPage() {
             </div>
           );
         },
+      },
+      {
+        // 后端排序白名单不含 lastLoginAt，禁用排序避免静默回退 createdAt
+        accessorKey: "lastLoginAt",
+        enableSorting: false,
+        meta: { align: "center" },
+        header: t("features.users.column.lastLoginAt"),
+        cell: ({ row }) => (
+          <Typography color="muted" type="body-sm">
+            {row.original.lastLoginAt
+              ? new Date(row.original.lastLoginAt).toLocaleString()
+              : "—"}
+          </Typography>
+        ),
       },
       {
         accessorKey: "createdAt",
@@ -611,7 +652,7 @@ export function UsersPage() {
       <DataTable
         aria-label={t("menu.pageTitle.users")}
         className="w-full"
-        contentClassName="min-w-[760px]"
+        contentClassName="min-w-[860px]"
         isLoading={isLoading || isFetching}
         table={table}
       />

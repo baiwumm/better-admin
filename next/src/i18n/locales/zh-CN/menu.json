@@ -28,5 +28,7 @@
   "menu.settings.notifications": "通知",
   "menu.settings.profile": "个人资料",
   "menu.system": "系统管理",
-  "menu.users": "用户管理"
+  "menu.users": "用户管理",
+  "menu.notices": "公告管理",
+  "menu.pageTitle.notices": "公告管理"
 }

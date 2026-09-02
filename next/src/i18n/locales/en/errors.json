@@ -43,5 +43,11 @@
   "errors.serverError.title": "Something Went Wrong",
   "errors.users.adminProtected": "System built-in admin account is protected",
   "errors.users.selfOperationForbidden": "Cannot operate on current user",
-  "errors.users.superAdminProtected": "This user is bound to super_admin role and cannot be operated"
+  "errors.users.superAdminProtected": "This user is bound to super_admin role and cannot be operated",
+  "errors.notices.noUnread": "No unread members to remind",
+  "errors.notices.notFound": "Notice not found",
+  "errors.notices.notPublished": "Only published notices can be withdrawn",
+  "errors.notices.notPublisher": "Only the publisher or a super admin can operate this notice",
+  "errors.notices.notVisible": "You are not in the scope of this notice",
+  "errors.notices.remindTooFrequent": "Already reminded within 24 hours. Please try later"
 }

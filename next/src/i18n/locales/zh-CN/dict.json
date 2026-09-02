@@ -2,5 +2,8 @@
   "dict.log_type.operation": "操作日志",
   "dict.log_type.login": "登录日志",
   "dict.log_type.api": "API 日志",
-  "dict.log_type.error": "错误日志"
+  "dict.log_type.error": "错误日志",
+  "dict.notice_status.draft": "草稿",
+  "dict.notice_status.published": "已发布",
+  "dict.notice_status.withdrawn": "已撤回"
 }

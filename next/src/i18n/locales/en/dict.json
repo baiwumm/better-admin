@@ -2,5 +2,8 @@
   "dict.log_type.operation": "Operation log",
   "dict.log_type.login": "Login log",
   "dict.log_type.api": "API log",
-  "dict.log_type.error": "Error log"
+  "dict.log_type.error": "Error log",
+  "dict.notice_status.draft": "Draft",
+  "dict.notice_status.published": "Published",
+  "dict.notice_status.withdrawn": "Withdrawn"
 }

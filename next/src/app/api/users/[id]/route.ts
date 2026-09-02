@@ -55,6 +55,45 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         roleIds: Array.isArray(body.roleIds)
           ? (body.roleIds as string[])
           : undefined,
+        // 组织中心关联（契约 v1.6.0）：undefined = 不修改；null = 清空
+        deptId:
+          body.deptId === undefined
+            ? undefined
+            : typeof body.deptId === "string" && body.deptId.length > 0
+              ? body.deptId
+              : null,
+        employeeNo:
+          body.employeeNo === undefined
+            ? undefined
+            : typeof body.employeeNo === "string" && body.employeeNo.length > 0
+              ? body.employeeNo
+              : null,
+        entryDate:
+          body.entryDate === undefined
+            ? undefined
+            : typeof body.entryDate === "string" && body.entryDate.length > 0
+              ? body.entryDate
+              : null,
+        employmentStatus:
+          body.employmentStatus === "employed" ||
+          body.employmentStatus === "resigned"
+            ? body.employmentStatus
+            : undefined,
+        gender:
+          body.gender === "male" || body.gender === "female"
+            ? body.gender
+            : body.gender === null || body.gender === ""
+              ? null
+              : undefined,
+        postIds: Array.isArray(body.postIds)
+          ? (body.postIds as string[])
+          : undefined,
+        mainPostId:
+          body.mainPostId === undefined
+            ? undefined
+            : typeof body.mainPostId === "string" && body.mainPostId.length > 0
+              ? body.mainPostId
+              : null,
       },
       operator,
     );

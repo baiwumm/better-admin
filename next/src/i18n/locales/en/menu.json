@@ -28,5 +28,7 @@
   "menu.settings.notifications": "Notifications",
   "menu.settings.profile": "Profile",
   "menu.system": "System Management",
-  "menu.users": "User Management"
+  "menu.users": "User Management",
+  "menu.notices": "Notice Management",
+  "menu.pageTitle.notices": "Notice Management"
 }

@@ -115,9 +115,15 @@ export interface UserRoleSummary {
   code: string;
 }
 
-/** 用户实体（/users，字段按冻结契约 openapi.v1.6.0.frozen.yaml 裁剪：
- * 不含 lastLoginAt/tokenVersion——前者是 Nest 运行时意外多带的字段、
- * 后者不出现在契约；deptId/employeeNo 等阶段 2 字段待 N7 契约升级） */
+/** 用户关联岗位摘要（契约 v1.6.0；user_posts → posts 联查，主岗在前） */
+export interface UserPostSummary {
+  id: string;
+  name: string;
+  category: PostCategory;
+  isMain: boolean;
+}
+
+/** 用户实体（/users，契约 v1.6.0：组织中心关联 + lastLoginAt） */
 export interface User {
   id: string;
   username: string;
@@ -137,9 +143,24 @@ export interface User {
   roles: UserRoleSummary[];
   createdAt: string;
   updatedAt: string;
+  /** 最近一次登录成功时间（从未登录为 null） */
+  lastLoginAt: string | null;
+  /** 所属组织 ID / 名称（契约 v1.6.0 组织中心，可空） */
+  deptId: string | null;
+  deptName: string | null;
+  /** 工号（契约 v1.6.0，可空） */
+  employeeNo: string | null;
+  /** 入职日期（契约 v1.6.0，YYYY-MM-DD，可空） */
+  entryDate: string | null;
+  /** 在职状态（契约 v1.6.0；存量 NULL 按 employed 输出，与账号启停 status 正交） */
+  employmentStatus: EmploymentStatus;
+  /** 性别（契约 v1.6.0；male 男 / female 女，null = 未设置） */
+  gender: "male" | "female" | null;
+  /** 关联岗位（user_posts → posts 联查，主岗在前；契约 v1.6.0） */
+  posts: UserPostSummary[];
 }
 
-/** 创建用户请求体（契约 v1.4.4：username 创建后不可变更） */
+/** 创建用户请求体（契约 v1.4.4：username 创建后不可变更；v1.6.0 组织中心关联字段） */
 export interface CreateUserInput {
   username: string;
   email: string;
@@ -147,11 +168,25 @@ export interface CreateUserInput {
   displayName: string;
   status?: UserStatus;
   roleIds: string[];
+  /** 所属组织（null = 无组织；须存在且启用） */
+  deptId?: string | null;
+  employeeNo?: string | null;
+  /** 入职日期（YYYY-MM-DD） */
+  entryDate?: string | null;
+  employmentStatus?: EmploymentStatus | null;
+  /** 性别（null = 未设置） */
+  gender?: "male" | "female" | null;
+  /** 关联岗位（user_posts 全量替换；须存在且启用，最多 20 个） */
+  postIds?: string[];
+  /** 主岗（须在 postIds 中） */
+  mainPostId?: string | null;
 }
 
 /** 更新用户请求体（契约 v1.4.4：不含 username/password——
  * 用户名创建后锁定，改密走 POST /users/:id/reset-password）。
  * roleIds 传数组（含空数组）为全量替换语义，缺省表示不修改。
+ * v1.6.0：deptId/employeeNo/entryDate/employmentStatus/gender 为
+ * 「undefined 不修改 / null 清空」语义；postIds 同 roleIds 全量替换。
  */
 export interface UpdateUserInput {
   email?: string;
@@ -159,6 +194,14 @@ export interface UpdateUserInput {
   avatar?: string | null;
   status?: UserStatus;
   roleIds?: string[];
+  deptId?: string | null;
+  employeeNo?: string | null;
+  entryDate?: string | null;
+  employmentStatus?: EmploymentStatus | null;
+  /** 性别（undefined 不修改 / null 清空为未设置） */
+  gender?: "male" | "female" | null;
+  postIds?: string[];
+  mainPostId?: string | null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -361,5 +404,156 @@ export interface DeptSortItem {
 /** 岗位类别（posts.category，阶段 2 使用） */
 export type PostCategory = "management" | "professional" | "production";
 
+/** 岗位实体（/org/posts，含所属组织路径与在职人数；契约 v1.6.0） */
+export interface Post {
+  id: string;
+  deptId: string;
+  /** 所属组织完整路径，如「集团/技术研发中心/前端开发部」 */
+  deptPath: string;
+  name: string;
+  category: PostCategory;
+  /** 岗位职级（P1-P10 / M1-M5），空串表示未设置 */
+  rank: string;
+  status: DeptStatus;
+  /** 在职人数（穿透查看入口） */
+  userCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 创建岗位请求体 */
+export interface PostCreateInput {
+  name: string;
+  deptId: string;
+  category: PostCategory;
+  rank?: string;
+  status?: DeptStatus;
+}
+
+/** 更新岗位请求体（字段缺省表示不修改） */
+export interface PostUpdateInput {
+  name?: string;
+  deptId?: string;
+  category?: PostCategory;
+  rank?: string;
+  status?: DeptStatus;
+}
+
 /** 在职状态（users.employment_status，契约 v1.6.0；与账号启停 status 正交） */
 export type EmploymentStatus = "employed" | "resigned";
+
+/** 人员通讯录条目（/org/directory 与 /org/posts/:id/members 共用；契约 v1.6.0） */
+export interface DirectoryEntry {
+  id: string;
+  username: string;
+  displayName: string;
+  avatar: string | null;
+  employeeNo: string | null;
+  deptId: string | null;
+  /** 所属组织完整路径，如「集团/技术部/前端组」 */
+  deptPath: string | null;
+  mainPostId: string | null;
+  mainPostName: string | null;
+  phone: string | null;
+  email: string | null;
+  /** 入职日期（YYYY-MM-DD，可空） */
+  entryDate: string | null;
+  employmentStatus: EmploymentStatus;
+}
+
+/* ---------------------------------------------------------------------------
+ * 公告 + 站内信（契约 v1.7.0 阶段 3，/notices /notifications）
+ * ------------------------------------------------------------------------- */
+
+/** 发布范围类型（dept 按组织 / post 按岗位 / user 按具体人员） */
+export type NoticeScopeType = "dept" | "post" | "user";
+
+/** 公告状态：draft（含定时未到）/ published / withdrawn（撤回） */
+export type NoticeStatus = "draft" | "published" | "withdrawn";
+
+/** 发布范围单项 */
+export interface NoticeScope {
+  scopeType: NoticeScopeType;
+  targetId: string;
+  /** 目标展示名（列表与详情接口均回填；目标已删除时为 null） */
+  targetName: string | null;
+}
+
+/** 公告实体（/notices，管理列表与我的公告共用；契约 v1.7.0） */
+export interface Notice {
+  id: string;
+  title: string;
+  /** 富文本内容（Tiptap HTML；列表不含，详情返回） */
+  content?: string;
+  publisherId: string | null;
+  publisherName: string | null;
+  /** 发布人邮箱（发布人被删除时为 null） */
+  publisherEmail: string | null;
+  /** 发布人头像（发布人被删除时为 null） */
+  publisherAvatar: string | null;
+  isTop: boolean;
+  status: NoticeStatus;
+  /** 发布时间（定时发布为计划时间） */
+  publishTime: string;
+  /** 范围目标条数（详情返回；列表为 undefined） */
+  scopeCount?: number;
+  /** 范围明细（列表接口返回，targetName 已回填；内容不随列表返回） */
+  scopes?: NoticeScope[];
+  /** 已读人数 */
+  readCount: number;
+  /** 范围内总人数（去重） */
+  totalCount: number;
+  /** 已读率 0-100；totalCount 为 0 时 null */
+  readRate: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 公告详情（Notice 全字段 + 范围明细） */
+export interface NoticeDetail extends Notice {
+  scopes: NoticeScope[];
+}
+
+/** 创建公告请求体（publishTime 缺省 = 立即发布；未来时间 = 定时草稿） */
+export interface NoticeCreateInput {
+  title: string;
+  content: string;
+  scopeTargets: NoticeScope[];
+  isTop?: boolean;
+  publishTime?: string | null;
+}
+
+/** 更新公告请求体（缺省表示不修改；scopeTargets 为全量替换） */
+export interface NoticeUpdateInput {
+  title?: string;
+  content?: string;
+  scopeTargets?: NoticeScope[];
+  isTop?: boolean;
+  publishTime?: string | null;
+}
+
+/** 已读/未读名单条目（/notices/:id/read-stats） */
+export interface NoticeReadStatEntry {
+  userId: string;
+  displayName: string;
+  username: string;
+  avatar: string | null;
+  deptPath: string | null;
+  mainPostName: string | null;
+  employmentStatus: EmploymentStatus;
+  /** 首次阅读时间（未读 Tab 为 null） */
+  readAt: string | null;
+}
+
+/** 站内信通知（/notifications，铃铛数据源） */
+export interface AppNotification {
+  id: string;
+  type: "notice_publish" | "notice_remind" | "system";
+  title: string;
+  content: string | null;
+  /** 点击跳转的前端路由 */
+  link: string | null;
+  /** 已读时间；null = 未读 */
+  readAt: string | null;
+  createdAt: string;
+}

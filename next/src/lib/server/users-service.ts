@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { AuthUser, User } from "@/lib/api-types";
+import type { AuthUser, EmploymentStatus, User } from "@/lib/api-types";
 
 import bcrypt from "bcryptjs";
 import {
@@ -16,7 +16,16 @@ import {
 } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { logs, refreshTokens, roles, userRoles, users } from "@/db/schema";
+import {
+  depts,
+  logs,
+  posts,
+  refreshTokens,
+  roles,
+  userPosts,
+  userRoles,
+  users,
+} from "@/db/schema";
 import { SUPER_ADMIN_ROLE_CODE } from "@/lib/server/permissions";
 import { ServerApiError } from "@/lib/server/http";
 import { generateRecordId } from "@/lib/server/ids";
@@ -24,18 +33,20 @@ import { generateRecordId } from "@/lib/server/ids";
 /**
  * 用户管理服务（与 nest/src/modules/users/users.service.ts 对齐）。
  *
- * 字段范围按冻结契约（next/contracts/openapi.v1.6.0.frozen.yaml）裁剪：
- * 仅 username/email/password/displayName/avatar/status/roleIds——
- * deptId/employeeNo/entryDate/employmentStatus/gender/postIds 属阶段 2
- * 后续字段，冻结契约不含，留待 N7 契约升级后再加。
+ * 字段范围：username/email/password/displayName/avatar/status/roleIds +
+ * 组织中心关联（契约 v1.6.0）：deptId/employeeNo/entryDate/employmentStatus/
+ * gender/postIds/mainPostId；lastLoginAt 随 users 行输出（契约 v1.5.0）。
  */
 
-/** 列表排序白名单（冻结契约字段范围内）。 */
+/** 列表排序白名单（契约字段范围内）。 */
 const SORTABLE = [
   "id",
   "username",
   "email",
   "displayName",
+  "employeeNo",
+  "entryDate",
+  "employmentStatus",
   "status",
   "createdAt",
   "updatedAt",
@@ -75,8 +86,82 @@ async function attachRoles(rows: Omit<User, "roles">[]): Promise<User[]> {
   return rows.map((r) => ({ ...r, roles: byUser.get(r.id) ?? [] }));
 }
 
-/** 契约 User 视图（不含 lastLoginAt/tokenVersion 等契约外字段）。 */
-function toView(row: typeof users.$inferSelect): Omit<User, "roles"> {
+/** 用户关联岗位摘要（user_posts → posts 未删除；主岗在前） */
+interface UserPostView {
+  id: string;
+  name: string;
+  category: string;
+  isMain: boolean;
+}
+
+/** 岗位 → 用户的批量联查（一次查询，避免 N+1），主岗在前。 */
+async function attachPosts(
+  rows: Omit<User, "roles" | "posts">[],
+): Promise<Omit<User, "roles">[]> {
+  if (rows.length === 0) return [];
+
+  const ids = rows.map((r) => r.id);
+  const links = await db
+    .select({
+      userId: userPosts.userId,
+      id: posts.id,
+      name: posts.name,
+      category: posts.category,
+      isMain: userPosts.isMain,
+    })
+    .from(userPosts)
+    .innerJoin(
+      posts,
+      and(eq(userPosts.postId, posts.id), isNull(posts.deletedAt)),
+    )
+    .where(inArray(userPosts.userId, ids))
+    .orderBy(desc(userPosts.isMain), asc(posts.name));
+
+  const byUser = new Map<string, UserPostView[]>();
+
+  for (const link of links) {
+    const list = byUser.get(link.userId) ?? [];
+
+    list.push({
+      id: link.id,
+      name: link.name,
+      category: link.category,
+      isMain: link.isMain,
+    });
+    byUser.set(link.userId, list);
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    posts: (byUser.get(r.id) ?? []) as User["posts"],
+  }));
+}
+
+/** 所属组织名称批量联查（users.dept_id → depts 未删除），避免 N+1。 */
+async function attachDeptNames(
+  rows: Omit<User, "roles" | "posts">[],
+): Promise<Omit<User, "roles" | "posts">[]> {
+  if (rows.length === 0) return [];
+
+  const ids = rows.map((r) => r.id);
+  const links = await db
+    .select({ id: users.id, deptName: depts.name })
+    .from(users)
+    .leftJoin(depts, and(eq(users.deptId, depts.id), isNull(depts.deletedAt)))
+    .where(inArray(users.id, ids));
+
+  const byUser = new Map<string, string | null>();
+
+  for (const link of links) byUser.set(link.id, link.deptName ?? null);
+
+  return rows.map((r) => ({
+    ...r,
+    deptName: byUser.get(r.id) ?? null,
+  }));
+}
+
+/** 契约 User 基础视图（不含 roles/posts，两关联由 attach* 补齐）。 */
+function toView(row: typeof users.$inferSelect): Omit<User, "roles" | "posts"> {
   return {
     id: row.id,
     username: row.username,
@@ -91,6 +176,16 @@ function toView(row: typeof users.$inferSelect): Omit<User, "roles"> {
     status: row.status === "disabled" ? "disabled" : "active",
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    lastLoginAt: row.lastLoginAt,
+    deptId: row.deptId ?? null,
+    deptName: null,
+    employeeNo: row.employeeNo ?? null,
+    entryDate: row.entryDate ?? null,
+    // 存量 employment_status 为 NULL 的按在职输出
+    employmentStatus: (row.employmentStatus === "resigned"
+      ? "resigned"
+      : "employed") as EmploymentStatus,
+    gender: (row.gender as "male" | "female" | null) ?? null,
   };
 }
 
@@ -124,9 +219,20 @@ export async function listUsers(params: UserListParams): Promise<{
       ? users.createdAt
       : sortField === "updatedAt"
         ? users.updatedAt
-        : users[
-            sortField as "username" | "email" | "displayName" | "status" | "id"
-          ];
+        : sortField === "employeeNo"
+          ? users.employeeNo
+          : sortField === "entryDate"
+            ? users.entryDate
+            : sortField === "employmentStatus"
+              ? users.employmentStatus
+              : users[
+                  sortField as
+                    | "username"
+                    | "email"
+                    | "displayName"
+                    | "status"
+                    | "id"
+                ];
 
   const conditions = [isNull(users.deletedAt)];
 
@@ -163,7 +269,10 @@ export async function listUsers(params: UserListParams): Promise<{
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 
-  const data = await attachRoles(rows.map(toView));
+  const base = rows.map(toView);
+  const withDept = await attachDeptNames(base);
+  const withPosts = await attachPosts(withDept);
+  const data = await attachRoles(withPosts);
 
   return { data, pagination: { page, pageSize, total } };
 }
@@ -178,7 +287,9 @@ export async function findUser(id: string): Promise<User> {
     throw new ServerApiError(404, "USER_NOT_FOUND", "用户不存在");
   }
 
-  const [view] = await attachRoles([toView(row)]);
+  const [withDept] = await attachDeptNames([toView(row)]);
+  const [withPosts] = await attachPosts([withDept]);
+  const [view] = await attachRoles([withPosts]);
 
   return view;
 }
@@ -194,6 +305,55 @@ async function assertValidRoleIds(roleIds: string[]): Promise<void> {
 
   if (found.length !== new Set(roleIds).size) {
     throw new ServerApiError(400, "VALIDATION_ERROR", "包含无效的角色");
+  }
+}
+
+/** 校验所属组织：存在、未删除且启用（停用组织不可关联新数据；对齐 Nest org-views）。 */
+async function assertValidDeptId(deptId: string | null): Promise<void> {
+  if (!deptId) return;
+
+  const row = await db.query.depts.findFirst({
+    where: and(eq(depts.id, deptId), isNull(depts.deletedAt)),
+  });
+
+  if (!row || row.status !== "enabled") {
+    throw new ServerApiError(400, "DEPT_NOT_FOUND", "所属组织不存在或已停用");
+  }
+}
+
+/** 校验 postIds 全部有效（存在、未删除且启用），无效抛 VALIDATION_ERROR。 */
+async function assertValidPostIds(postIds: string[]): Promise<void> {
+  if (postIds.length === 0) return;
+
+  const rows = await db
+    .select({ id: posts.id, status: posts.status })
+    .from(posts)
+    .where(and(isNull(posts.deletedAt), inArray(posts.id, postIds)));
+  const validIds = new Set(
+    rows.filter((r) => r.status === "enabled").map((r) => r.id),
+  );
+  const invalid = postIds.filter((id) => !validIds.has(id));
+
+  if (invalid.length > 0) {
+    throw new ServerApiError(
+      400,
+      "VALIDATION_ERROR",
+      `岗位不存在或已停用: ${invalid.join(", ")}`,
+    );
+  }
+}
+
+/** 校验 mainPostId 必须在关联岗位列表中（v1.6.0；主岗至多一条由 isMain 唯一标记保证）。 */
+function assertValidMainPost(
+  mainPostId: string | null | undefined,
+  postIds: string[],
+): void {
+  if (mainPostId && !postIds.includes(mainPostId)) {
+    throw new ServerApiError(
+      400,
+      "VALIDATION_ERROR",
+      "主岗必须在关联岗位列表中",
+    );
   }
 }
 
@@ -285,9 +445,21 @@ export interface CreateUserInput {
   avatar?: string;
   status?: string;
   roleIds?: string[];
+  /** 所属组织（null = 无组织；须存在且启用） */
+  deptId?: string | null;
+  employeeNo?: string | null;
+  /** 入职日期（YYYY-MM-DD） */
+  entryDate?: string | null;
+  employmentStatus?: string | null;
+  /** 性别（null = 未设置） */
+  gender?: "male" | "female" | null;
+  /** 关联岗位（user_posts 全量替换；须存在且启用，最多 20 个） */
+  postIds?: string[];
+  /** 主岗（须在 postIds 中） */
+  mainPostId?: string | null;
 }
 
-/** POST /users — 创建（密码必传 ≥6 位；roleIds 全量写入 user_roles）。 */
+/** POST /users — 创建（密码必传 ≥6 位；roleIds/postIds 全量写入关联表）。 */
 export async function createUser(
   dto: CreateUserInput,
   operatorId: string | null,
@@ -295,8 +467,18 @@ export async function createUser(
   if (dto.roleIds && dto.roleIds.length > 5) {
     throw new ServerApiError(400, "VALIDATION_ERROR", "角色数量超出上限（5）");
   }
+  if (dto.postIds && dto.postIds.length > 20) {
+    throw new ServerApiError(400, "VALIDATION_ERROR", "岗位数量超出上限（20）");
+  }
 
   await assertValidRoleIds(dto.roleIds ?? []);
+
+  // 组织中心关联校验（v1.6.0）：deptId 须存在且启用；postIds 全部有效；主岗须在 postIds 中
+  await assertValidDeptId(dto.deptId ?? null);
+  const postIds = dto.postIds ?? [];
+
+  await assertValidPostIds(postIds);
+  assertValidMainPost(dto.mainPostId, postIds);
 
   const passwordHash = await bcrypt.hash(dto.password, 10);
   const id = generateRecordId();
@@ -311,6 +493,11 @@ export async function createUser(
         displayName: dto.displayName,
         avatar: dto.avatar ?? null,
         status: dto.status === "disabled" ? "disabled" : "active",
+        deptId: dto.deptId ?? null,
+        employeeNo: dto.employeeNo ?? null,
+        entryDate: dto.entryDate ?? null,
+        employmentStatus: dto.employmentStatus ?? null,
+        gender: dto.gender ?? null,
       });
 
       if (dto.roleIds && dto.roleIds.length > 0) {
@@ -321,12 +508,29 @@ export async function createUser(
           })),
         );
       }
+
+      if (postIds.length > 0) {
+        await tx.insert(userPosts).values(
+          postIds.map((postId) => ({
+            id: generateRecordId(),
+            userId: id,
+            postId,
+            isMain: postId === (dto.mainPostId ?? null),
+          })),
+        );
+      }
     });
   } catch (error) {
     mapUniqueViolation(error);
   }
 
-  await writeLog("user.create", operatorId, { id, username: dto.username });
+  await writeLog("user.create", operatorId, {
+    id,
+    username: dto.username,
+    roleIds: dto.roleIds,
+    deptId: dto.deptId,
+    postIds,
+  });
 
   return findUser(id);
 }
@@ -337,9 +541,20 @@ export interface UpdateUserInput {
   avatar?: string | null;
   status?: string;
   roleIds?: string[];
+  /** 所属组织：undefined 不修改 / null 清空（须存在且启用） */
+  deptId?: string | null;
+  employeeNo?: string | null;
+  entryDate?: string | null;
+  employmentStatus?: string | null;
+  /** 性别：undefined 不修改 / null 清空为未设置 */
+  gender?: "male" | "female" | null;
+  /** 关联岗位（全量替换，同 roleIds 语义；须存在且启用，最多 20 个） */
+  postIds?: string[];
+  /** 主岗（须在 postIds 中；空/null = 无主岗） */
+  mainPostId?: string | null;
 }
 
-/** PUT /users/:id — 更新（不可改 username/password；roleIds 数组=全量替换）。 */
+/** PUT /users/:id — 更新（不可改 username/password；roleIds/postIds 数组=全量替换）。 */
 export async function updateUser(
   id: string,
   dto: UpdateUserInput,
@@ -366,6 +581,22 @@ export async function updateUser(
     await assertValidRoleIds(dto.roleIds);
   }
 
+  // 组织中心关联校验（v1.6.0）：postIds 全量替换语义同 roleIds；主岗须在列表中
+  if (dto.deptId !== undefined) {
+    await assertValidDeptId(dto.deptId);
+  }
+  if (dto.postIds !== undefined) {
+    if (dto.postIds.length > 20) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "岗位数量超出上限（20）",
+      );
+    }
+    await assertValidPostIds(dto.postIds);
+    assertValidMainPost(dto.mainPostId, dto.postIds);
+  }
+
   try {
     await db.transaction(async (tx) => {
       await tx
@@ -377,6 +608,17 @@ export async function updateUser(
           status: dto.status ?? existing.status,
           // avatar：undefined 保留旧值，显式 null 清空
           avatar: dto.avatar === undefined ? existing.avatar : dto.avatar,
+          // 组织中心字段：undefined 保留旧值，null/显式值落库
+          deptId: dto.deptId === undefined ? existing.deptId : dto.deptId,
+          employeeNo:
+            dto.employeeNo === undefined ? existing.employeeNo : dto.employeeNo,
+          entryDate:
+            dto.entryDate === undefined ? existing.entryDate : dto.entryDate,
+          employmentStatus:
+            dto.employmentStatus === undefined
+              ? existing.employmentStatus
+              : dto.employmentStatus,
+          gender: dto.gender === undefined ? existing.gender : dto.gender,
           updatedAt: new Date().toISOString(),
         })
         .where(eq(users.id, id));
@@ -391,12 +633,33 @@ export async function updateUser(
             .values(dto.roleIds.map((roleId) => ({ userId: id, roleId })));
         }
       }
+
+      // postIds：undefined = 不修改；数组（含空数组）= 全量替换
+      if (dto.postIds !== undefined) {
+        await tx.delete(userPosts).where(eq(userPosts.userId, id));
+
+        if (dto.postIds.length > 0) {
+          await tx.insert(userPosts).values(
+            dto.postIds.map((postId) => ({
+              id: generateRecordId(),
+              userId: id,
+              postId,
+              isMain: postId === (dto.mainPostId ?? null),
+            })),
+          );
+        }
+      }
     });
   } catch (error) {
     mapUniqueViolation(error);
   }
 
-  await writeLog("user.update", operator.id, { id });
+  await writeLog("user.update", operator.id, {
+    id,
+    roleIds: dto.roleIds,
+    deptId: dto.deptId,
+    postIds: dto.postIds,
+  });
 
   return findUser(id);
 }
@@ -466,6 +729,7 @@ export async function removeUser(
       .set({ deletedAt: new Date().toISOString() })
       .where(eq(users.id, id));
     await tx.delete(userRoles).where(eq(userRoles.userId, id));
+    await tx.delete(userPosts).where(eq(userPosts.userId, id));
     await tx.delete(refreshTokens).where(eq(refreshTokens.userId, id));
   });
 
@@ -510,6 +774,7 @@ export async function batchRemoveUsers(
       .set({ deletedAt: new Date().toISOString() })
       .where(inArray(users.id, ids));
     await tx.delete(userRoles).where(inArray(userRoles.userId, ids));
+    await tx.delete(userPosts).where(inArray(userPosts.userId, ids));
     await tx.delete(refreshTokens).where(inArray(refreshTokens.userId, ids));
   });
 
