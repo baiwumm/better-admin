@@ -7,6 +7,7 @@ import {
   type ApiErrorBody,
 } from "@/lib/api-shared";
 import { getErrorMessage } from "@/i18n/config";
+import { progressStart, progressStop } from "@/lib/progress";
 
 // 转发共享基座导出：业务模块沿用 React 版的导入习惯（from "@/lib/api-client"）
 export { API_BASE, ApiClientError, parseEnvelope, type ApiErrorBody };
@@ -103,6 +104,9 @@ export async function fetchApiRaw(
 ): Promise<{ data: unknown; pagination?: unknown }> {
   const { body, auth = true, allowRetry = true, headers, ...rest } = options;
 
+  // 进度条：仅业务请求触发（auth: false 为登录/刷新等内部请求，跳过）
+  if (auth) progressStart();
+
   const requestHeaders: Record<string, string> = {
     ...(headers as Record<string, string> | undefined),
   };
@@ -128,6 +132,7 @@ export async function fetchApiRaw(
     try {
       await refreshAccessToken();
     } catch {
+      progressStop();
       redirectToSignIn();
       throw new ApiClientError(
         401,
@@ -136,11 +141,13 @@ export async function fetchApiRaw(
       );
     }
 
+    // 重试请求会递归进入 fetchApiRaw（allowRetry=false），进度条由重试请求接管
     return fetchApiRaw(path, { ...options, allowRetry: false });
   }
 
   if (response.status === 204) {
     // 无内容响应（如 logout）
+    progressStop();
     return { data: null };
   }
 
@@ -150,6 +157,7 @@ export async function fetchApiRaw(
   if (!response.ok) {
     const err = (json ?? {}) as ApiErrorBody;
 
+    progressStop();
     throw new ApiClientError(
       response.status,
       err.code,
@@ -160,6 +168,7 @@ export async function fetchApiRaw(
     );
   }
 
+  progressStop();
   return parseEnvelope(json);
 }
 

@@ -1,7 +1,7 @@
 import type { Key } from "react";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@bprogress/next/app";
 import {
   Header,
   ListBox,

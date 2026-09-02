@@ -12,7 +12,7 @@ import {
   useOverlayState,
 } from "@heroui/react";
 import { Bell } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@bprogress/next/app";
 import { useCallback } from "react";
 import { keepPreviousData } from "@tanstack/react-query";
 

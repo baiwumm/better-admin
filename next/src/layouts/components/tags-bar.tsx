@@ -1,7 +1,8 @@
 import type { Key, MouseEvent as ReactMouseEvent } from "react";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useRouter } from "@bprogress/next/app";
 import {
   Button,
   Dropdown,

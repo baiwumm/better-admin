@@ -2,7 +2,7 @@ import type { Key } from "react";
 import type { AuthUser } from "@/lib/api-types";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@bprogress/next/app";
 import {
   AlertDialog,
   Avatar,

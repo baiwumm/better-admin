@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "@bprogress/next/app";
 import { Button } from "@heroui/react";
 import Link from "next/link";
 import { TriangleAlert } from "lucide-react";

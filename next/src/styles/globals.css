@@ -58,4 +58,9 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  .bprogress .spinner {
+    width:auto !important;
+    height:auto !important;
+  }
 }
