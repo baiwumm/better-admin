@@ -28,6 +28,9 @@
 /* 登录页专属样式（品牌区视觉 + 入场动效） */
 @import './sign-in.css';
 
+/* 组织树展开/收起动效 */
+@import './dept-tree.css';
+
 /* ── 以下为全局共用基底（其余特性样式见各按功能命名的文件，经上方 @import 聚合）── */
 
 @custom-variant dark (&:is(.dark *));
