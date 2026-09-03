@@ -37,12 +37,11 @@
     ├── menus                # 菜单管理
     ├── dicts                # 字典管理
     ├── logs                 # 日志管理
-    ├── org/
-    │   ├── depts            # 组织管理
-    │   ├── posts            # 岗位管理
-    │   ├── directory        # 人员通讯录
-    │   └── notices          # 公告管理
-    └── settings             # 系统设置（二级导航布局）
+    └── org/
+        ├── depts            # 组织管理
+        ├── posts            # 岗位管理
+        ├── directory        # 人员通讯录
+        └── notices          # 公告管理
 ```
 
 ### 1.2 现有页面模式
@@ -51,7 +50,6 @@
 | --- | --- | --- |
 | Dashboard | `/` | `Header`（TopNav/Search/ThemeSwitch/ConfigDrawer/ProfileDropdown）+ `Main`（标题行 + Tabs + 统计卡片网格 + 图表网格） |
 | 列表管理 | `/users`、`/tasks` | `Header fixed` + `Main`（页头：标题 + 描述 + 主操作按钮）+ `DataTable`（Toolbar / Table / Pagination / BulkActions）+ 全局 `Dialogs` |
-| 设置页 | `/settings/*` | `Header` + `Main fixed`（标题 + 分隔线 + 左侧 sticky 导航 + `ContentSection` 表单，内容 `lg:max-w-xl`） |
 | 卡片网格 | `/apps` | 页头 + 筛选/排序控件 + 分隔线 + 卡片网格（`md:grid-cols-2 lg:grid-cols-3`） |
 | 认证页 | `/sign-in` 等 | `AuthLayout`（居中 Logo + 标题）+ `Card max-w-sm` + 表单 + 页脚说明 |
 | 错误页 | `/401` 等 | 全屏居中：超大数字 + 说明 + `Go Back` / `Back to Home` 按钮 |
@@ -76,7 +74,6 @@
 | `/org/notices` | 公告管理 | 组织 | 列表模式（富文本编辑器） | ✅ 已实现 |
 | `/org/chart` | 组织架构图谱 | 组织 | 图谱可视化模式（只读：平移 / 缩放 / Fit View / 节点点击 / 折叠展开） | ✅ 已实现（React / Next） |
 | `/account` | 我的账户 | 用户 | 卡片式多 Tab 设置 | ✅ 已实现 |
-| `/settings` | 系统设置 | 设置 | 设置页模式（左侧导航 + 表单分区） | 占位 |
 | `/sign-in` 等 | 认证页 | 认证 | 认证模式（居中卡片布局） | ✅ 已实现 |
 | `/401` 等 | 错误页 | 系统 | 全屏错误模式 | ✅ 已实现 |
 
@@ -185,14 +182,12 @@ Sidebar
 ├── 权限管理           /permissions
 ├── 菜单管理           /menus
 ├── 字典管理           /dicts
-├── 日志               /logs
-系统设置
-└── 系统设置           /settings
+└── 日志               /logs
 ```
 
 4. 菜单项图标统一使用 lucide-react；子菜单使用 Collapsible；徽标（Badge）仅用于数字类提示，统一 `rounded-full px-1 py-0 text-xs`。
 5. 导航数据继续保持单一数据源（`sidebar-data` 结构），后续接入 RBAC 后按权限过滤，不散落写死在页面里。
-6. 用户区（NavUser）：头像 + 名称 + 邮箱 + 菜单（个人设置 / 系统设置 / 退出登录）；退出登录沿用确认 Dialog。
+6. 用户区（NavUser）：头像 + 名称 + 邮箱 + 菜单（个人设置 / 退出登录）；退出登录沿用确认 Dialog。
 7. 默认变体 inset + icon 折叠，`Ctrl/Cmd + B` 与移动端抽屉行为保留。
 
 ---

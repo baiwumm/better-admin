@@ -19,7 +19,7 @@ Better Admin 是一个基于统一设计与业务逻辑，使用 **React、Vue�
 
 ## 2. 项目目标
 
-- 完成一套完整、可实际使用的 Admin 基础系统（用户 / 角色 / 权限 / 菜单 / Dashboard / 系统设置 / 日志）。
+- 完成一套完整、可实际使用的 Admin 基础系统（用户 / 角色 / 权限 / 菜单 / Dashboard / 日志）。
 - 提供四种前端实现：**React、Vue、Next.js、Nuxt**。
 - 提供独立后端服务 **NestJS**，为 React 与 Vue 提供 API。
 - 所有版本共用**同一个 PostgreSQL 数据库**（Supabase 托管）。
@@ -223,7 +223,7 @@ DELETE /api/users/:id
 ### 7.4 UI 一致性要求
 
 - 四个前端版本需尽可能保持一致的：
-  - **页面**：Dashboard、用户管理、角色管理、权限管理、菜单管理、系统设置、日志、其他业务页面。
+  - **页面**：Dashboard、用户管理、角色管理、权限管理、菜单管理、日志、其他业务页面。
   - **UI 组件**：Sidebar、Header、Breadcrumb、Table、Form、Dialog、Drawer、Dropdown、Command、Tabs、Card、Button、Input、Select、Date Picker、Toast、Pagination、Empty / Loading / Error State。
   - **视觉**：色彩体系、字体体系、间距、圆角、阴影、图标风格、Dark Mode、Responsive 行为保持一致。
 
