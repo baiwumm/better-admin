@@ -1,6 +1,12 @@
 import type { MenuNode } from "@/lib/api-types";
 
-import { Button, SearchField, Spinner, toast } from "@heroui/react";
+import {
+  Button,
+  SearchField,
+  Spinner,
+  toast,
+  useOverlayState,
+} from "@heroui/react";
 import {
   keepPreviousData,
   useMutation,
@@ -92,14 +98,14 @@ export function MenusPage() {
   const searchDirty = searchInput.trim() !== appliedSearch;
   const canReset = searchDirty || appliedSearch !== "";
 
-  // 弹窗状态：Modal.Backdrop 受控（§7.2 受控浮层语义）
-  const [formOpen, setFormOpen] = useState(false);
+  // 弹窗状态（useOverlayState，§7.2 受控浮层语义）
+  const formDialog = useOverlayState();
   const [formContext, setFormContext] = useState<{
     mode: MenuFormMode;
     node: MenuNode | null;
   }>({ mode: "create", node: null });
   const [deleteTarget, setDeleteTarget] = useState<MenuNode | null>(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const deleteDialog = useOverlayState();
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteMenu(id),
@@ -112,10 +118,13 @@ export function MenusPage() {
     },
   });
 
-  const openForm = useCallback((mode: MenuFormMode, node: MenuNode | null) => {
-    setFormContext({ mode, node });
-    setFormOpen(true);
-  }, []);
+  const openForm = useCallback(
+    (mode: MenuFormMode, node: MenuNode | null) => {
+      setFormContext({ mode, node });
+      formDialog.open();
+    },
+    [formDialog],
+  );
 
   const onEdit = useCallback(
     (node: MenuNode) => openForm("edit", node),
@@ -125,10 +134,13 @@ export function MenusPage() {
     (node: MenuNode) => openForm("addChild", node),
     [openForm],
   );
-  const onDelete = useCallback((node: MenuNode) => {
-    setDeleteTarget(node);
-    setDeleteConfirmOpen(true);
-  }, []);
+  const onDelete = useCallback(
+    (node: MenuNode) => {
+      setDeleteTarget(node);
+      deleteDialog.open();
+    },
+    [deleteDialog],
+  );
 
   const columns = useMenusTableColumns({
     onEdit,
@@ -190,11 +202,11 @@ export function MenusPage() {
       </div>
 
       <MenuFormDialog
-        isOpen={formOpen}
+        isOpen={formDialog.isOpen}
         mode={formContext.mode}
         node={formContext.node}
         tree={data ?? []}
-        onOpenChange={setFormOpen}
+        onOpenChange={formDialog.setOpen}
         onSaved={handleSaved}
       />
 
@@ -206,9 +218,9 @@ export function MenusPage() {
         })}
         isLoading={deleteMutation.isPending}
         state={{
-          isOpen: deleteConfirmOpen,
-          setOpen: setDeleteConfirmOpen,
-          close: () => setDeleteConfirmOpen(false),
+          isOpen: deleteDialog.isOpen,
+          setOpen: deleteDialog.setOpen,
+          close: deleteDialog.close,
         }}
         title={t("features.menus.message.deleteTitle")}
         onConfirm={async () => {
