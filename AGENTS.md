@@ -7,33 +7,18 @@
 
 ## 1. 项目简介
 
-Better Admin 是一个基于统一设计与业务逻辑，使用 **React、Vue、Next.js、Nuxt、NestJS** 等现代 Web 技术栈分别实现的全栈 Admin 系统。
+Better Admin 是一个使用 **React、Vue、Next.js、Nuxt、NestJS** 分别实现的全栈 Admin 系统，核心理念是**同一套产品、同一套 UI、同一套业务逻辑、同一套数据库，分别用不同技术栈完成实现**。
 
-它的核心目标不是做多套不同的后台，而是：
-
-> **同一套产品、同一套 UI、同一套业务逻辑、同一套数据库，分别用不同技术栈完成实现。**
-
-通过同一个实际项目，对比和实践不同技术栈下的工程实践（Full-stack、UI 一致性、API 设计、认证、RBAC、部署等）。
+> 项目定位、目标与技术栈角色详见 [`docs/requirements.md`](docs/requirements.md) §1-§4。
 
 ---
 
 ## 2. 项目目标
 
-- 完成一套完整、可实际使用的 Admin 基础系统（用户 / 角色 / 权限 / 菜单 / Dashboard / 日志）。
-- 提供四种前端实现：**React、Vue、Next.js、Nuxt**。
-- 提供独立后端服务 **NestJS**，为 React 与 Vue 提供 API。
+> 完整目标与技术栈定位详见 [`docs/requirements.md`](docs/requirements.md) §2。以下为本文件需要的规则性约束：
+
 - 所有版本共用**同一个 PostgreSQL 数据库**（Supabase 托管）。
 - 保持 UI、业务逻辑、数据结构与 API Contract 在各技术栈间**尽可能一致**。
-
-### 技术栈定位
-
-| 技术栈 | 定位 | 后端方式 |
-| --- | --- | --- |
-| React | 前端（UI 基准） | NestJS API |
-| Vue | 前端 | NestJS API |
-| Next.js | 全栈 | Next.js Server |
-| Nuxt | 全栈 | Nuxt Server / Nitro |
-| NestJS | 后端 API | PostgreSQL |
 
 ---
 
@@ -66,111 +51,35 @@ better-admin/
 
 ## 4. 各技术栈职责
 
-### 4.1 React（UI 基准版本）
+> 各技术栈的详细职责、目录结构与数据流详见 [`docs/requirements.md`](docs/requirements.md) §4。以下为 AGENTS 约束要点：
 
-- 目录：`/react`
-- 技术栈：React + Tailwind CSS + TypeScript；UI 组件库 **Hero UI 为主 + Shadcn UI 补充**（§7.2）
-- 职责：`/react` 基于 **Hero UI 模板实现，不含 Shadcn UI 组件**，是整套产品的 **UI Source of Truth**（页面结构 / UI 设计 / 交互 / UX / Design Tokens / 组件行为）。
-- 数据流：`Browser → React → NestJS API → PostgreSQL`（不直接连接数据库）。
-
-### 4.2 Vue
-
-- 目录：`/vue`
-- 技术栈：Vue + **Shadcn UI**（shadcn-vue）+ TypeScript
-- 职责：尽可能还原 React 版本的页面结构、UI 设计、组件、交互、数据展示与用户体验；UI 组件库保持 **Shadcn UI 为主**，暂不切换 Hero UI（§7.2）。
-- 数据流：`Browser → Vue → NestJS API → PostgreSQL`（不直接连接数据库）。
-
-### 4.3 Next.js（全栈）
-
-- 目录：`/next`
-- 技术栈：Next.js App Router / Server Components 等全栈能力 + TypeScript；UI 组件库 **Hero UI 为主 + Shadcn UI 补充**（§7.2）
-- 职责：独立实现页面、UI、API、服务端逻辑、数据库访问、用户认证与权限控制，**不依赖 NestJS**。
-- 数据流：`Browser → Next.js → PostgreSQL`。
-
-### 4.4 Nuxt（全栈）
-
-- 目录：`/nuxt`
-- 技术栈：Nuxt 3 + Nitro Server + TypeScript；UI 组件库保持 **Shadcn UI 为主**（§7.2）
-- 职责：独立实现页面、UI、API / Server API、服务端业务逻辑、数据库访问、用户认证与权限控制，**不依赖 NestJS**。
-- 数据流：`Browser → Nuxt → PostgreSQL`。
-
-### 4.5 NestJS（后端 API）
-
-- 目录：`/nest`
-- 技术栈：NestJS + PostgreSQL + Drizzle ORM + TypeScript
-- 职责：独立的 REST API 服务，主要为 **React 和 Vue** 提供后端能力。
-- 覆盖：REST API、用户认证、用户/角色/权限/菜单管理、系统配置、日志、数据库访问、业务逻辑。
-- 数据流：`React / Vue → NestJS → PostgreSQL`。
+| 技术栈 | 核心约束 |
+| --- | --- |
+| **React** (`/react`) | UI Source of Truth；Hero UI 模板实现，不含 Shadcn UI 组件（§7.2）；通过 NestJS API 访问数据库 |
+| **Vue** (`/vue`) | 还原 React 版本的页面/交互/UX；Shadcn UI 为主；通过 NestJS API 访问数据库 |
+| **Next.js** (`/next`) | 独立全栈，**不依赖 NestJS**；Hero UI 为主（§7.2） |
+| **Nuxt** (`/nuxt`) | 独立全栈，**不依赖 NestJS**；Shadcn UI 为主（§7.2） |
+| **NestJS** (`/nest`) | 为 React 和 Vue 提供 REST API；NestJS + Drizzle ORM + PostgreSQL |
 
 ---
 
 ## 5. 数据库架构
 
-- **统一使用 PostgreSQL**，由 **Supabase** 提供数据库托管。
-- Supabase 仅作为 **PostgreSQL 托管平台**：**不使用** Supabase Auth、RLS（Row Level Security）、Edge Functions。
-- **Storage 唯一豁免（v1.5.0）**：用户头像这类静态文件允许使用 Supabase Storage（bucket `avatars`，public read）；上传一律由**服务端持有密钥中转**，浏览器端不接触 Storage 密钥、不直接读写 Storage，也不使用 Storage RLS 策略。API 密钥使用新体系 `sb_secret_`（Secret key），只走 `apikey` 请求头。
-- 数据库按照普通 PostgreSQL 使用，数据库连接由**服务端**负责。
+> 数据库设计、Supabase 使用范围与访问原则详见 [`docs/requirements.md`](docs/requirements.md) §5。以下为 AGENTS 约束要点：
 
-### 数据库访问原则
-
-- **浏览器端禁止直接访问 PostgreSQL。**
-- 数据库连接信息**只允许存在于服务端环境变量**中，严禁写入前端代码或提交到仓库。
-- 各后端（NestJS / Next.js / Nuxt）统一通过服务端访问数据库。
-
-### ORM
-
-- **Drizzle ORM 是项目默认 ORM。** Next.js、Nuxt、NestJS 默认使用 Drizzle ORM。
-- 如果某个技术栈存在**明确的技术原因**导致 Drizzle 不适合使用，可以提出说明后评估调整；**禁止仅仅因为个人偏好而更换 ORM**。
-- 无论 ORM 是否完全一致，都必须保证：
-  - **PostgreSQL Schema 一致**（同一套 Schema）
-  - **数据模型一致**
-  - **业务规则一致**
-  - **数据类型一致**
-  - **API Contract 一致**
-- 不要为了 ORM 的实现方式破坏整体架构一致性；禁止不同技术栈维护完全不同的数据库结构。
+- **统一 PostgreSQL**（Supabase 托管），仅作数据库平台使用；**不使用** Supabase Auth、RLS、Edge Functions。
+- **Storage 唯一豁免（v1.5.0）**：用户头像允许使用 Supabase Storage（bucket `avatars`，public read）；上传由**服务端持有密钥中转**，浏览器端不接触密钥、不直接读写 Storage。API 密钥使用 `sb_secret_` 前缀，只走 `apikey` 请求头。
+- **浏览器端禁止直接访问 PostgreSQL**；数据库连接信息只存在于服务端环境变量。
+- **默认 ORM 为 Drizzle ORM**；禁止仅因个人偏好更换；无论 ORM 是否一致，必须保证 PostgreSQL Schema / 数据模型 / 业务规则 / 数据类型 / API Contract **五项一致**。
 
 ---
 
 ## 6. API 架构
 
-- React 与 Vue 使用 **NestJS** 提供的 REST API；Next.js 与 Nuxt 各自实现 Server API。
-- API 采用统一 **RESTful** 设计。示例（用户模块）：
+> RESTful 设计、返回结构与 API 示例详见 [`docs/requirements.md`](docs/requirements.md) §8-§9。
 
-```http
-GET    /api/users
-GET    /api/users/:id
-POST   /api/users
-PUT    /api/users/:id
-DELETE /api/users/:id
-```
-
-### API 返回结构（统一规范）
-
-成功响应：
-
-```json
-{ "data": {} }
-```
-
-列表响应：
-
-```json
-{
-  "data": [],
-  "pagination": { "page": 1, "pageSize": 20, "total": 100 }
-}
-```
-
-错误响应：
-
-```json
-{ "code": "USER_NOT_FOUND", "message": "用户不存在" }
-```
-
-### API Contract
-
-- **OpenAPI 是 Better Admin 项目的 API Contract 唯一事实来源（Single Source of Truth）**：API 设计**优先定义 Contract，再进行实现**；NestJS / Next.js / Nuxt 的 Server API 与 React / Vue 前端请求都必须遵循同一 Contract。
-- 请求参数、响应结构、错误结构、分页结构、字段命名必须保持一致；**不允许任何技术栈为了实现方便而自行修改 API Contract**。
+- React 与 Vue 使用 **NestJS** REST API；Next.js 与 Nuxt 各自实现 Server API。
+- **OpenAPI 是 API Contract 唯一事实来源**：API 设计**优先定义 Contract，再进行实现**；所有技术栈必须遵循同一 Contract，不允许为实现方便而自行修改。
 - 修改 API Contract 时，必须**同步评估 React、Vue、Next.js、Nuxt、NestJS** 受到的影响，确认后再执行。
 
 ---
@@ -231,10 +140,12 @@ DELETE /api/users/:id
 
 ## 8. 认证与权限要求
 
+> 认证架构详见 [`docs/requirements.md`](docs/requirements.md) §11。
+
 - 项目**不使用 Supabase Auth**，认证体系由应用自身实现。
-- 四个版本需保持基本一致的：登录、登出、Session、用户身份、角色、权限、路由权限、API 权限。
-- 权限模型建议采用 **RBAC**：用户 ↔ 角色 ↔ 权限（权限点），并支持菜单与权限的关联控制。
-- 服务端必须对 API 做权限校验（授权），不能只依赖前端路由守卫。
+- 四个版本需保持基本一致的认证与权限行为（登录 / 登出 / Session / 用户身份 / 角色 / 权限 / 路由权限 / API 权限）。
+- 权限模型采用 **RBAC**：用户 ↔ 角色 ↔ 权限（位掩码），并支持菜单与权限的关联控制。
+- **服务端必须对 API 做权限校验**，不能只依赖前端路由守卫。
 
 ---
 
@@ -376,21 +287,13 @@ https://nest.baiwumm.com
 
 ## 18. AI Agent 开发规则（重要）
 
-以下为所有 AI Agent 在开发 Better Admin 时必须遵守的**硬性规则**：
+以下为所有 AI Agent 在开发 Better Admin 时必须遵守的**硬性规则**。架构约束（§3-§8）不在此重复，详见对应章节。
 
-1. **React 是 UI 基准版本（UI Source of Truth）**，`/react` 基于 Hero UI 实现；UI 组件库策略遵循 §7.2：React / Next.js 以 **Hero UI 为主、Shadcn UI 为补充**，Vue / Nuxt 以 **Shadcn UI 为主**。
-2. **Vue、Next.js、Nuxt 的 UI 应尽可能与 React 版本保持一致**（包括组件、视觉与交互）。
-3. **React 和 Vue 使用 NestJS API**；不得绕过 NestJS 直接访问数据库。
-4. **Next.js 和 Nuxt 采用各自的全栈能力，不依赖 NestJS**。
-5. **所有版本共用同一个 PostgreSQL 数据库**（同一套 Schema）。
-6. **Supabase 仅作为 PostgreSQL 托管平台**，不使用 Supabase Auth 与 RLS。
-7. **浏览器端禁止直接连接数据库**；数据库连接信息只存在于服务端环境变量。
-8. **不允许为了方便而修改既定的项目架构**（架构约束见本文档与 requirements.md）。
-9. **不同技术栈之间的业务逻辑、数据结构和 API Contract 应尽可能保持一致**。
-10. **不要为了实现某一个版本而破坏其他版本的设计一致性**。
-11. **React / Next.js 代码生成与重构必须遵循 `vercel-react-best-practices` Skill**（详见 §20）。该 Skill 已全局安装（`~/.agents/skills/vercel-react-best-practices`），是所有 React / Next.js 代码产出（新建组件 / 页面、数据获取、重构、性能优化）的硬性性能与正确性规范；若与其冲突，以本文档的架构约束与 UI 组件库策略（§7.2）为更高优先级，但性能模式不得无故违反。
-12. **全局语言规则（跨会话持久生效）**：所有 AI Agent 在本项目中的**全部对话、思考过程与回复一律使用中文**。代码注释、文档、提交信息（Conventional Commits 描述）也以中文为主；仅在代码标识符、命令、API 字段等必须使用英文的场合保留英文。此规则覆盖所有会话，不局限于单一对话。
-13. **功能矩阵同步（跨会话持久生效）**：每次新增功能模块、完成模块迁移、或功能状态发生变化时，**必须同步更新 `docs/feature-matrix.md`**。更新时机：功能开发完成后立即更新对应技术栈的状态标记（✅/🔧/❌），并在提交信息中体现。该文件是四种前端实现功能对齐状态的唯一追踪源。
+1. **不允许为了方便而修改既定的项目架构**（架构约束见本文档与 requirements.md）。
+2. **不要为了实现某一个版本而破坏其他版本的设计一致性**。
+3. **React / Next.js 代码生成与重构必须遵循 `vercel-react-best-practices` Skill**（详见 §20）。该 Skill 已全局安装（`~/.agents/skills/vercel-react-best-practices`），是所有 React / Next.js 代码产出（新建组件 / 页面、数据获取、重构、性能优化）的硬性性能与正确性规范；若与其冲突，以本文档的架构约束与 UI 组件库策略（§7.2）为更高优先级，但性能模式不得无故违反。
+4. **全局语言规则（跨会话持久生效）**：所有 AI Agent 在本项目中的**全部对话、思考过程与回复一律使用中文**。代码注释、文档、提交信息（Conventional Commits 描述）也以中文为主；仅在代码标识符、命令、API 字段等必须使用英文的场合保留英文。此规则覆盖所有会话，不局限于单一对话。
+5. **功能矩阵同步（跨会话持久生效）**：每次新增功能模块、完成模块迁移、或功能状态发生变化时，**必须同步更新 `docs/feature-matrix.md`**。更新时机：功能开发完成后立即更新对应技术栈的状态标记（✅/🔧/❌），并在提交信息中体现。该文件是四种前端实现功能对齐状态的唯一追踪源。
 
 ### 需求优先级
 
@@ -495,8 +398,10 @@ Phase 7  统一测试 → 部署全部版本
 
 > 阶段性进度记录已全部移至 [`docs/progress.md`](docs/progress.md)（按时间倒序），本节只保留当前快照；阶段由用户明确安排后再推进。
 
-- **当前阶段**：React 端业务模块迁移推进中（React + NestJS 全栈阶段）+ Next.js 全栈版已上线。已完成：React Hero UI 迁移启动、NestJS + PostgreSQL 后端（契约 v1.6.0），React 端登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户均已上线（含用户写操作保护 v1.4.6、登录鉴权加固 v1.4.7、日志操作人摘要与批量删除 v1.4.8、我的账户与 Supabase Storage 头像上传 v1.5.0、删除头像 v1.5.1、个人链接三字段 v1.5.2、用户管理列改版与侧边栏个人链接菜单 v1.5.3）；组织中心阶段 1（契约 v1.6.0 + 迁移 0007 + 组织管理前后端）、阶段 2（岗位管理 + 人员通讯录 + 用户管理组织/岗位关联编辑闭环）与阶段 3（契约 v1.7.0 + 公告管理 + 站内信铃铛 + Tiptap 富文本 + Modal.Footer 结构全站修正）已完成（2026-09-01，详见 progress.md）；**Next.js 全栈版分期 N0–N7 已完成（2026-09-02，提交 0d00d4…25c08d0）**——认证（JWT 双令牌 httpOnly Cookie + proxy 守卫 + token_version 实时比对）、Admin 布局（服务端过滤动态菜单/多标签页/命令面板）、用户/角色/菜单/字典/日志/我的账户/组织管理全模块，UI 对齐 React 基准；随后并行跟进岗位/通讯录/公告与全局进度条，契约冻结快照已退役（`700d4d3`）；路由访问控制已升级三层模型（公开 / **登录可达** = 精确白名单 + 动态前缀 `isLoginRequiredPath` / 菜单权限，公告详情 `/org/notices/:id` 归登录可达层，两端门卫 + 多标签治理对齐，2026-09-03，详见 progress.md）；权限体系整改已落地：按钮门控改菜单粒度（`useMenuPermissions`）、前端 `hasPermission` 与后端 OR 语义对齐并识别 super_admin 全量位、`roles.enabled` 参与两端权限聚合、super_admin 角色绑定保护（create + update 端点，nest + next 三端同步）；`UserInfo` 通用用户信息展示组件已沉淀（侧边栏与日志操作人列复用，Avatar 需随 avatar 值重建子树以规避 Radix 状态残留）；`DeptTreeSelect` 平铺缩进树下拉组件已沉淀（组织父级 / 用户所属组织 / 岗位所属组织复用，HeroUI 无 Tree 组件）；`DeptTreePanel` 组织树面板与 `RichTextEditor`（Tiptap）+ `sanitizeNoticeHtml`（DOMPurify 渲染端消毒）已沉淀。
-- **当前待办（记录在案）**：组织中心阶段 4（**React 端已上线（2026-09-03，本阶段 UI 与交互基准）**：架构图谱 React Flow 只读可视化 `/org/chart`[HeroUI Card/Avatar 企业级节点卡片] + 通讯录 Excel 导出 write-excel-file 分页批量[触发时动态加载，total 优先超限拦截，上限 10000，企业级样式：品牌蓝表头/斑马纹/在职状态高亮/冻结首行/微软雅黑]；**Next 端导出与架构图谱均已同步上线（2026-09-03，两端同款文件与样式；图谱 next/dynamic 不 SSR）**；**待浏览器人工走查**；d3-hierarchy 未引入[手写树布局，见 mechanisms §7.2]）；概览 Dashboard 仍待迁移（图表库 React/Next 已定 Recharts，Vue/Nuxt 待其 Dashboard 阶段决策）；Next 端待办：浏览器逐页 UI 走查（与 React 基准对照）、Vercel 部署（Root Directory 指向 `next/`）、`next/scripts/` 两个脚本的 CI 挂接（locales 检查 + 日志清理 cron，workflows 已建）、`docs/mechanisms.md` 沉淀 Next 期机制结论（postgres.js `constraint_name` 驱动差异 / RSC 模块边界 / drizzle-kit 内省缺陷修复）；Vue / Nuxt 后续实现 account 模块与 AuthUser `avatar / phone / tags` 字段直接跟上 v1.5.0，实现组织模块时跟上 v1.6.0（users 表新增 `dept_id / employee_no / employment_status / entry_date`、用户关联六字段与 org 模块为共享 Schema 变更），实现公告/通知时路由访问控制直接跟上登录可达三层模型（见 progress.md 2026-09-03 条目）。
+- **当前阶段**：React + NestJS 全栈已完成，Next.js 全栈版已上线。Vue / Nuxt 尚未启动。
+- **React 端已完成模块**：登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）。
+- **Next.js 端已完成模块**：与 React 端对齐（认证 / Admin 布局 / 用户 / 角色 / 菜单 / 字典 / 日志 / 我的账户 / 组织中心全套）。
+- **当前待办**：Dashboard 概览页（React / Next.js 均未实现，图表库已定 Recharts）；Next.js Vercel 部署 + UI 走查 + CI 挂接；`docs/mechanisms.md` 沉淀 Next 期机制结论。Vue / Nuxt 后续实现时直接跟上最新契约版本（详见 progress.md 各阶段条目）。
 - **super_admin 保护设计依据（重要，勿推翻）**：超管的"全量权限"不是代码身份判定，而是 seed 写入 role_menus 的 -1n 全量位经登录/每请求实时 OR 聚合而来（`auth.service.aggregatePermissions`）；PermissionsGuard 与菜单可见性的"超管免检"分支判据都是聚合值。清空其授权 = 全后台立即 403 且无自助恢复手段，故 `PUT /roles/{id}/menus` 与 `DELETE /roles/{id}` 对 `code === 'super_admin'` 必须返回 403 `SUPER_ADMIN_ROLE_PROTECTED`（详细背景见 progress.md 契约 v1.4.2/v1.4.3 条目）。
 
 ---
