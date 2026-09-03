@@ -2,7 +2,7 @@ import "server-only";
 
 import type { AuthUser, MenuNode } from "@/lib/api-types";
 
-import { and, eq, ilike, or } from "drizzle-orm";
+import { and, eq, ilike, or, sql } from "drizzle-orm";
 import { count } from "drizzle-orm";
 
 import { db } from "@/db/client";
@@ -61,12 +61,20 @@ async function buildAllowedMenuIds(
   }
 
   // 直接授权集合：用户所有**启用**角色在 role_menus 中关联的 menu_id（去重）
+  // 只包含 permissions 不为 0 的菜单（permissions = 0 表示无权限，不应出现在可见菜单中）
   const directRows = await db
     .selectDistinct({ menuId: roleMenus.menuId })
     .from(roleMenus)
     .innerJoin(userRoles, eq(roleMenus.roleId, userRoles.roleId))
     .innerJoin(roles, eq(userRoles.roleId, roles.id))
-    .where(and(eq(userRoles.userId, user.id), eq(roles.enabled, true)));
+    .where(
+      and(
+        eq(userRoles.userId, user.id),
+        eq(roles.enabled, true),
+        // 关键修复：只包含 permissions 不为 0 的菜单
+        sql`${roleMenus.permissions} != 0`,
+      ),
+    );
 
   const directIds = new Set(directRows.map((r) => r.menuId));
 
