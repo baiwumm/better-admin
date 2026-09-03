@@ -46,7 +46,7 @@ import {
 } from "@/components/common/data-table";
 import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog";
 import { appTableFeatures } from "@/components/common/data-table/table-types";
-import { useHasPermissionKey } from "@/hooks/use-permissions";
+import { useMenuPermissions } from "@/hooks/use-permissions";
 import { createListStore } from "@/hooks/create-list-store";
 import { useListQuery } from "@/hooks/use-list-query";
 import { useTranslation } from "@/i18n";
@@ -76,11 +76,7 @@ export function RolesPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);
-  const canAdd = useHasPermissionKey("ADD");
-  const canEdit = useHasPermissionKey("EDIT");
-  const canDelete = useHasPermissionKey("DELETE");
-  // 菜单授权独立位（契约 v1.4.4）：不复用 EDIT，由 GRANT 位单独控制授权入口
-  const canGrant = useHasPermissionKey("GRANT");
+  const { canAdd, canEdit, canDelete, canGrant } = useMenuPermissions();
 
   // ---------------- 列表（服务端分页 + 筛选） ----------------
   const page = useRolesListStore((s) => s.page);

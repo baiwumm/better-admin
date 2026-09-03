@@ -52,7 +52,7 @@ import {
 import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog";
 import { appTableFeatures } from "@/components/common/data-table/table-types";
 import { UserInfo } from "@/components/common/user-info/user-info";
-import { useHasPermissionKey } from "@/hooks/use-permissions";
+import { useMenuPermissions } from "@/hooks/use-permissions";
 import { createListStore } from "@/hooks/create-list-store";
 import { useListQuery } from "@/hooks/use-list-query";
 import { useTranslation } from "@/i18n";
@@ -101,11 +101,8 @@ export function UsersPage() {
     [currentUserId, currentUserIsSuperAdmin],
   );
 
-  const canAdd = useHasPermissionKey("ADD");
-  const canEdit = useHasPermissionKey("EDIT");
-  const canDelete = useHasPermissionKey("DELETE");
-  const canBatchDelete = useHasPermissionKey("BATCH_DELETE");
-  const canResetPassword = useHasPermissionKey("RESET_PASSWORD");
+  const { canAdd, canEdit, canDelete, canBatchDelete, canResetPassword } =
+    useMenuPermissions();
 
   // ---------------- 列表（服务端分页 + 筛选 + 排序） ----------------
   const page = useUsersListStore((s) => s.page);

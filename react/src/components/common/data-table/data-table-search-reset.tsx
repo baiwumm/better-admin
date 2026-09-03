@@ -1,7 +1,7 @@
 import { Button, Spinner } from "@heroui/react";
 import { RotateCcw, Search } from "lucide-react";
 
-import { useHasPermissionKey } from "@/hooks/use-permissions";
+import { useMenuPermissions } from "@/hooks/use-permissions";
 import { useTranslation } from "@/i18n";
 
 /**
@@ -12,6 +12,8 @@ import { useTranslation } from "@/i18n";
  *   「重置」是纯前端清筛选动作，RESET 位按 v1.3 约定仅控制显隐，不挂后端守卫；
  * - searchDirty / canReset / isFetching 由页面按各自列表语义传入
  *   （服务端分页页传请求态，纯本地过滤页可省略 isFetching）。
+ * - 自动读取当前菜单的 userPermissions 进行精确权限判断，
+ *   避免使用用户全局权限（可能包含其他菜单的权限位）。
  */
 
 interface DataTableSearchResetProps {
@@ -33,8 +35,7 @@ export function DataTableSearchReset({
   onReset,
 }: DataTableSearchResetProps) {
   const { t } = useTranslation();
-  const canSearch = useHasPermissionKey("SEARCH");
-  const canResetByPermission = useHasPermissionKey("RESET");
+  const { canSearch, canReset: canResetByPermission } = useMenuPermissions();
 
   if (!canSearch && !canResetByPermission) return null;
 

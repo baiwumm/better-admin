@@ -46,7 +46,7 @@ import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog
 import { appTableFeatures } from "@/components/common/data-table/table-types";
 import { UserInfo } from "@/components/common/user-info/user-info";
 import { dictItemsQueryKey, fetchDictItems } from "@/features/dicts/dict-api";
-import { useHasPermissionKey } from "@/hooks/use-permissions";
+import { useMenuPermissions } from "@/hooks/use-permissions";
 import { createListStore } from "@/hooks/create-list-store";
 import { useListQuery } from "@/hooks/use-list-query";
 import { useTranslation } from "@/i18n";
@@ -73,8 +73,7 @@ export function LogsPage() {
   const queryClient = useQueryClient();
   const currentUserId = useAuthStore((state) => state.user?.id);
 
-  const canDelete = useHasPermissionKey("DELETE");
-  const canBatchDelete = useHasPermissionKey("BATCH_DELETE");
+  const { canDelete, canBatchDelete } = useMenuPermissions();
 
   // ---------------- 列表（服务端分页 + 类型筛选；无排序） ----------------
   const page = useLogsListStore((s) => s.page);

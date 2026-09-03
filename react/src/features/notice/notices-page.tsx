@@ -46,7 +46,7 @@ import {
 import { appTableFeatures } from "@/components/common/data-table/table-types";
 import { UserInfo } from "@/components/common/user-info/user-info";
 import { createListStore } from "@/hooks/create-list-store";
-import { useHasPermissionKey } from "@/hooks/use-permissions";
+import { useMenuPermissions } from "@/hooks/use-permissions";
 import { useListQuery } from "@/hooks/use-list-query";
 import { useDict } from "@/stores/dict-store";
 import { useTranslation } from "@/i18n";
@@ -103,9 +103,7 @@ export function NoticesPage() {
   const currentUserIsSuperAdmin = useAuthStore(
     (state) => state.user?.roles.includes("super_admin") ?? false,
   );
-  const canAdd = useHasPermissionKey("ADD");
-  const canEdit = useHasPermissionKey("EDIT");
-  const canDelete = useHasPermissionKey("DELETE");
+  const { canAdd, canEdit, canDelete } = useMenuPermissions();
 
   // 发布人本人或 super_admin 才显示编辑/撤回/删除入口（与后端保护一致）
   const isOperator = useCallback(

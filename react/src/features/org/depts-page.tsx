@@ -30,7 +30,7 @@ import {
 } from "@/components/common/data-table";
 import { appTableFeatures } from "@/components/common/data-table/table-types";
 import { EmptyContent } from "@/components/common/empty-content/empty-content";
-import { useHasPermissionKey } from "@/hooks/use-permissions";
+import { useMenuPermissions } from "@/hooks/use-permissions";
 import { useTranslation } from "@/i18n";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -55,9 +55,7 @@ export function DeptsPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);
-  const canAdd = useHasPermissionKey("ADD");
-  const canEdit = useHasPermissionKey("EDIT");
-  const canDelete = useHasPermissionKey("DELETE");
+  const { canAdd, canEdit, canDelete } = useMenuPermissions();
 
   // 全量树（含停用组织，左栏置灰）；staleTime 0 保证强一致
   const treeQuery = useQuery({

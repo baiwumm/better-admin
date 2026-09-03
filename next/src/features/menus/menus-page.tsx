@@ -31,7 +31,7 @@ import {
   DataTableToolbar,
   buildColumnSettingKey,
 } from "@/components/common/data-table";
-import { useHasPermissionKey } from "@/hooks/use-permissions";
+import { useMenuPermissions } from "@/hooks/use-permissions";
 import { useTranslation } from "@/i18n";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -51,7 +51,7 @@ export function MenusPage() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);
-  const canAdd = useHasPermissionKey("ADD");
+  const { canAdd } = useMenuPermissions();
 
   // 搜索（提交式后端过滤）：applied 变化 → queryKey 变化 → 重新请求
   const [searchInput, setSearchInput] = useState("");

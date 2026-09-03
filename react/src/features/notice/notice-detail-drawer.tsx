@@ -33,7 +33,7 @@ import { sanitizeNoticeHtml } from "./sanitize";
 
 import { useDict } from "@/stores/dict-store";
 import { EmptyContent } from "@/components/common/empty-content/empty-content";
-import { useHasPermissionKey } from "@/hooks/use-permissions";
+import { useMenuPermissions } from "@/hooks/use-permissions";
 import { useTranslation } from "@/i18n";
 
 /**
@@ -54,7 +54,7 @@ export function NoticeDetailDrawer({
 }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const canEdit = useHasPermissionKey("EDIT");
+  const { canEdit } = useMenuPermissions();
 
   // 详情：抽屉打开时按 id 拉取完整数据（含 content/scopes/readCount 等）；
   // 未返回前用列表行信息兜底渲染（标题等基础字段已具备）

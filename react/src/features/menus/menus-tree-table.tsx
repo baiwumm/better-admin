@@ -28,7 +28,8 @@ import {
   type AppColumnDef,
   type AppTable,
 } from "@/components/common/data-table";
-import { useHasPermissionKey, usePermissions } from "@/hooks/use-permissions";
+import { usePermissions } from "@/hooks/use-permissions";
+import { useMenuPermissions } from "@/hooks/use-permissions";
 import { useTranslation } from "@/i18n";
 
 /**
@@ -172,9 +173,7 @@ export function useMenusTableColumns({
   onDelete,
 }: ColumnCallbacks): AppColumnDef<MenuNode>[] {
   const { t } = useTranslation();
-  const canEdit = useHasPermissionKey("EDIT");
-  const canAddChild = useHasPermissionKey("ADD_CHILD");
-  const canDelete = useHasPermissionKey("DELETE");
+  const { canEdit, canAddChild, canDelete } = useMenuPermissions();
   const { data: permissionItems } = usePermissions();
 
   return useMemo<AppColumnDef<MenuNode>[]>(

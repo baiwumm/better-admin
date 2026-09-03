@@ -83,6 +83,9 @@ export function filterHiddenMenus(nodes: MenuNode[]): MenuNode[] {
 /**
  * 操作级权限判断（业务页按钮显隐用）：
  * hasPermission(userBits, requiredBits)，例如 hasPermission(bits, 1n << 4n)。
+ *
+ * 语义与后端对齐：用户拥有 requiredBits 中的任意一个 bit 即通过（OR）。
+ * 同时识别 super_admin 全量位（9223372036854775807）。
  */
 export function hasPermission(
   userBits: string | number | null | undefined,
@@ -92,5 +95,8 @@ export function hasPermission(
 
   if (bits === null) return false;
 
-  return (bits & requiredBits) === requiredBits;
+  // super_admin 全量位识别（与后端 normalizePermissionBits 输出对齐）
+  if (bits === 9223372036854775807n) return true;
+
+  return (bits & requiredBits) !== 0n;
 }

@@ -13,6 +13,7 @@ import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
 import { collectMenuPaths } from "@/lib/menu-utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
+import { useMenuStore } from "@/stores/menu-store";
 import { useTabsStore } from "@/stores/tabs-store";
 
 type AdminShellProps = {
@@ -45,6 +46,12 @@ export function AdminShell({ menuTree, user, children }: AdminShellProps) {
   useEffect(() => {
     useAuthStore.getState().setUser(user);
   }, [user]);
+
+  // 菜单同步：把 RSC 注入的 menuTree 同步进客户端 store，
+  // 供 useCurrentMenuPermissions 等 hook 读取当前菜单权限。
+  useEffect(() => {
+    useMenuStore.getState().setMenus(menuTree);
+  }, [menuTree]);
 
   // 多标签页：挂载恢复 sessionStorage 快照（SSR 安全，见 tabs-store）；
   // 路由变化登记标签；菜单就绪后按可达路径治理残留标签。
