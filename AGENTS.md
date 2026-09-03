@@ -401,7 +401,7 @@ Phase 7  统一测试 → 部署全部版本
 - **当前阶段**：React + NestJS 全栈已完成，Next.js 全栈版已上线。Vue / Nuxt 尚未启动。
 - **React 端已完成模块**：登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）。
 - **Next.js 端已完成模块**：与 React 端对齐（认证 / Admin 布局 / 用户 / 角色 / 菜单 / 字典 / 日志 / 我的账户 / 组织中心全套）。
-- **当前待办**：Dashboard 概览页（React / Next.js 均未实现，图表库已定 Recharts）；Next.js Vercel 部署 + UI 走查 + CI 挂接；`docs/mechanisms.md` 沉淀 Next 期机制结论。Vue / Nuxt 后续实现时直接跟上最新契约版本（详见 progress.md 各阶段条目）。
+- **当前待办**：Dashboard 概览页（React / Next.js 均未实现，图表库已定 Recharts）；Next.js Vercel 部署 + CI 挂接；`docs/mechanisms.md` 沉淀 Next 期机制结论。Vue / Nuxt 后续实现时直接跟上最新契约版本（详见 progress.md 各阶段条目）。
 - **super_admin 保护设计依据（重要，勿推翻）**：超管的"全量权限"不是代码身份判定，而是 seed 写入 role_menus 的 -1n 全量位经登录/每请求实时 OR 聚合而来（`auth.service.aggregatePermissions`）；PermissionsGuard 与菜单可见性的"超管免检"分支判据都是聚合值。清空其授权 = 全后台立即 403 且无自助恢复手段，故 `PUT /roles/{id}/menus` 与 `DELETE /roles/{id}` 对 `code === 'super_admin'` 必须返回 403 `SUPER_ADMIN_ROLE_PROTECTED`（详细背景见 progress.md 契约 v1.4.2/v1.4.3 条目）。
 
 ---

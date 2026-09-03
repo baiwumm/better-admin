@@ -7,6 +7,10 @@
 
 ### super_admin 角色绑定保护确认 + 侧边栏菜单过滤修复 + 文档清理（2026-09-05）
 
+- **Next.js 端浏览器 UI 走查完成**：逐页与 React 基准对照验证通过（登录 / Dashboard 占位 / 用户管理 / 角色管理 / 菜单管理 / 字典管理 / 权限管理 / 日志管理 / 我的账户 / 组织管理 / 岗位管理 / 人员通讯录 / 公告管理 / 通知详情 / 架构图谱），UI 一致性与交互逻辑符合预期。
+- **AGENTS.md 大幅精简**（507 行 → 193 行，减少 62%）：§1/§2/§4/§5/§6/§8 删除与 requirements.md 重复的说明性文字，改为引用；§18 开发规则从 13 条精简为 5 条独立规则；§19 当前阶段描述从 ~400 字精简为 ~150 字（删除历史版本号/提交 hash/组件沉淀细节）。
+- **过时待办全面清理**：确认 super_admin 角色绑定保护 create 端点已覆盖、`roles.enabled` 参与权限聚合、`hasPermission` 三端 OR 语义对齐、所有迁移脚本已执行、系统设置功能已废弃（文档已清理），AGENTS.md §19 对应项已移除。
+
 - **super_admin 角色绑定保护（create 端点）**：排查确认 NestJS `create`（`nest/src/modules/users/users.service.ts` 第 527 行）与 Next.js `createUser`（`next/src/lib/server/users-service.ts` 第 542-543 行）均已在事务内调用 `assertValidRoleBindingChange`，非超管操作者绑定 super_admin 角色会被 403 `SUPER_ADMIN_ROLE_BINDING_PROTECTED`；React / Next.js 前端表单（`user-form-dialog.tsx`）均通过 `roleOptions` 过滤 `SUPER_ADMIN_ROLE_CODE`，非超管操作者不可见 super_admin 选项。AGENTS.md §19 此前记录的「create 未拦」为过时条目，代码早已补全，本次文档同步清账；§19 当前阶段描述中 super_admin 角色绑定保护措辞由「update 端点」更正为「create + update 端点，nest + next 三端同步」。
 - **`roles.enabled` 参与权限聚合确认**：NestJS `auth.service.aggregatePermissions`（第 59、90 行）、`menus.service.buildAllowedMenuIds`（第 66、100 行）与 Next.js `session.ts aggregatePermissions`（第 59、96 行）、`menus-service.ts buildPermissionMap`（第 37 行）、`buildAllowedMenuIds`（第 69 行）查询均含 `eq(roles.enabled, true)` 条件，停用角色的权限位不参与聚合，权限即时回收已落地。
 - **`hasPermission` 前后端 OR 语义确认**：NestJS `permissions.enum.ts hasPermission`（第 81-84 行）：`(userBits & requiredBit) !== 0n`（OR 语义）+ `-1n / SUPER_ADMIN_BITS_POSITIVE` 全量位识别；Next.js 服务端 `permissions.ts hasPermission`（第 81-85 行）同款逻辑；React / Next.js 客户端 `permission.ts hasPermission`：`(bits & requiredBits) !== 0n`（OR）+ `9223372036854775807n` 全量位识别——三端语义完全对齐。
