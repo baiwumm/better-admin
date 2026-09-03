@@ -1,13 +1,20 @@
 import type { DirectoryEntry } from "@/lib/api-types";
 import type { AppColumnDef } from "@/components/common/data-table/table-types";
+import type { DirectoryListParams } from "./directory-api";
 
 import { useQuery } from "@tanstack/react-query";
-import { Button, Chip, SearchField, Typography } from "@heroui/react";
+import { Button, Chip, SearchField, toast, Typography } from "@heroui/react";
+import { useNavigate } from "@tanstack/react-router";
 import { useTable } from "@tanstack/react-table";
-import { FilterX } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { Download, FilterX } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "./dept-api";
+import {
+  DIRECTORY_EXPORT_MAX_ROWS,
+  DirectoryExportLimitError,
+  exportDirectoryExcel,
+} from "./directory-export";
 import { DeptTreePanel } from "./dept-tree-panel";
 
 import { DataTable } from "@/components/common/data-table";
@@ -30,9 +37,12 @@ import { useAuthStore } from "@/stores/auth-store";
  *
  * - 左栏组织树点击即筛选（该组织及全部下级组织的人员，递归），
  *   再次进入「全部人员」清除组织筛选；
+ * - 组织筛选与 URL Query 双向同步（/org/directory?deptId=xxx）：
+ *   架构图谱节点点击跳转的落点（阶段 4 交互规范），刷新 / 分享 / 前进后退稳定；
  * - 在职状态缺省 employed（离职人员默认不展示，PRD 3.3.5）；
  *   可显式筛选离职 / 全部；
- * - 数据源为服务端分页联查（users × depts × user_posts × posts），实时无缓存。
+ * - 数据源为服务端分页联查（users × depts × user_posts × posts），实时无缓存；
+ * - 工具栏支持导出当前筛选结果为 Excel（分页批量汇总，见 directory-export.ts）。
  */
 
 /** 列表 store（模块级单例：保活实例复用同一份分页/筛选状态） */
@@ -45,10 +55,15 @@ const useDirectoryListStore = createListStore<{
   employmentStatus: "employed",
 });
 
-export function DirectoryPage() {
+export function DirectoryPage({
+  urlDeptId = null,
+}: {
+  /** URL Query deptId（架构图谱跳转落点；null = 无组织筛选） */
+  urlDeptId?: string | null;
+}) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const userId = useAuthStore((state) => state.user?.id);
-
   // 组织树（左栏筛选；与组织/岗位页共享缓存）
   const treeQuery = useQuery({
     queryKey: DEPTS_TREE_QUERY_KEY,
@@ -95,10 +110,73 @@ export function DirectoryPage() {
   );
   const searchDirty = searchInput.trim() !== search;
 
+  // URL Query → 列表 store（图谱跳转 / 刷新 / 前进后退恢复组织筛选）
+  useEffect(() => {
+    const current = useDirectoryListStore.getState().filters.deptId;
+
+    if (current !== urlDeptId) {
+      setFilters({ deptId: urlDeptId });
+    }
+  }, [urlDeptId, setFilters]);
+
+  // store → URL（页内树点击 / 清除时同步地址栏，保证分享与刷新一致；
+  // replace 避免每次点击都塞历史记录）
+  const syncDeptIdToUrl = useCallback(
+    (deptId: string | null) => {
+      void navigate({
+        replace: true,
+        search: { deptId: deptId ?? undefined },
+        to: "/org/directory",
+      });
+    },
+    [navigate],
+  );
+
   const resetFilters = useCallback(() => {
     setSearchInput("");
     resetStore();
-  }, [resetStore]);
+    syncDeptIdToUrl(null);
+  }, [resetStore, syncDeptIdToUrl]);
+
+  // ---------------- 导出 Excel（write-excel-file 触发时动态加载） ----------------
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExport = useCallback(() => {
+    if (isExporting) {
+      return;
+    }
+    setIsExporting(true);
+    const sortField = sorting[0]?.id;
+    const task = exportDirectoryExcel({
+      params: {
+        keyword: search || undefined,
+        deptId: filters.deptId ?? undefined,
+        employmentStatus: (filters.employmentStatus ??
+          "all") as DirectoryListParams["employmentStatus"],
+        ...(sortField
+          ? {
+              sort: sortField,
+              order: sorting[0].desc ? ("desc" as const) : ("asc" as const),
+            }
+          : {}),
+      },
+      t,
+    });
+
+    toast.promise(task, {
+      error: (error: unknown) =>
+        error instanceof DirectoryExportLimitError
+          ? t("features.directory.export.limitExceeded", {
+              max: DIRECTORY_EXPORT_MAX_ROWS,
+            })
+          : error instanceof Error
+            ? error.message
+            : String(error),
+      loading: t("features.directory.export.loading"),
+      success: (count: number) =>
+        t("features.directory.export.success", { count }),
+    });
+    void task.finally(() => setIsExporting(false));
+  }, [isExporting, sorting, search, filters, t]);
 
   const employmentOptions = useMemo(
     () => [
@@ -243,7 +321,10 @@ export function DirectoryPage() {
                 aria-label={t("features.directory.filter.showAll")}
                 size="sm"
                 variant="ghost"
-                onPress={() => setFilters({ deptId: null })}
+                onPress={() => {
+                  setFilters({ deptId: null });
+                  syncDeptIdToUrl(null);
+                }}
               >
                 <FilterX className="size-4" />
               </Button>
@@ -252,7 +333,10 @@ export function DirectoryPage() {
           isLoading={treeQuery.isLoading}
           nodes={tree}
           selectedId={filters.deptId}
-          onSelect={(node) => setFilters({ deptId: node.id })}
+          onSelect={(node) => {
+            setFilters({ deptId: node.id });
+            syncDeptIdToUrl(node.id);
+          }}
         />
 
         {/* 右栏：人员列表 */}
@@ -301,6 +385,15 @@ export function DirectoryPage() {
               onReset={resetFilters}
               onSearch={applySearch}
             />
+            <Button
+              isPending={isExporting}
+              size="sm"
+              variant="outline"
+              onPress={handleExport}
+            >
+              <Download aria-hidden className="size-4" />
+              {t("features.directory.export.button")}
+            </Button>
           </DataTableToolbar>
 
           <DataTable

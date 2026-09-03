@@ -4,14 +4,18 @@
   "menu.directory": "人员通讯录",
   "menu.logs": "日志管理",
   "menu.menus": "菜单管理",
+  "menu.notices": "公告管理",
   "menu.org": "组织中心",
+  "menu.org-chart": "架构图谱",
   "menu.pageTitle.account": "我的账户",
+  "menu.pageTitle.chart": "架构图谱",
   "menu.pageTitle.console": "控制台",
   "menu.pageTitle.depts": "组织管理",
   "menu.pageTitle.dicts": "字典管理",
   "menu.pageTitle.directory": "人员通讯录",
   "menu.pageTitle.logs": "日志管理",
   "menu.pageTitle.menus": "菜单管理",
+  "menu.pageTitle.notices": "公告管理",
   "menu.pageTitle.org": "组织中心",
   "menu.pageTitle.permissions": "权限管理",
   "menu.pageTitle.posts": "岗位管理",
@@ -28,7 +32,5 @@
   "menu.settings.notifications": "通知",
   "menu.settings.profile": "个人资料",
   "menu.system": "系统管理",
-  "menu.users": "用户管理",
-  "menu.notices": "公告管理",
-  "menu.pageTitle.notices": "公告管理"
+  "menu.users": "用户管理"
 }

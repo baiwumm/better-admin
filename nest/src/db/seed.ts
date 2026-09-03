@@ -285,6 +285,16 @@ async function seed() {
     enabled: true,
     permissions: menuFullBits,
   });
+  // 组织架构图谱（阶段 4：React Flow 只读可视化，复用组织树接口）
+  const mOrgChart = await resolveMenu('menu.org-chart', {
+    label: '架构图谱',
+    icon: 'git-fork',
+    to: '/org/chart',
+    parentId: mOrg,
+    sort: 4,
+    enabled: true,
+    permissions: menuFullBits,
+  });
 
   // ---------- 角色菜单授权 ----------
   // 关键防御：使用 SUPER_ADMIN_BITS（全量位 -1n），禁止硬编码 127。
@@ -302,6 +312,7 @@ async function seed() {
     mPosts,
     mDirectory,
     mNotices,
+    mOrgChart,
   ];
   await db
     .insert(roleMenus)

@@ -38,6 +38,7 @@
 		"@tiptap/pm": "3.30.5",
 		"@tiptap/react": "3.30.5",
 		"@tiptap/starter-kit": "3.30.5",
+		"@xyflow/react": "^12.11.6",
 		"bcryptjs": "^3.0.3",
 		"clsx": "2.1.1",
 		"dompurify": "3.4.14",
@@ -54,6 +55,7 @@
 		"react-easy-crop": "6.2.3",
 		"react-hook-form": "^7.87.0",
 		"react-i18next": "^17.0.12",
+		"write-excel-file": "^4.1.1",
 		"zod": "^4.5.4",
 		"zustand": "^5.0.15"
 	},

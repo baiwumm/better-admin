@@ -28,6 +28,7 @@ import { Route as AuthenticatedOrgPostsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedOrgNoticesRouteImport } from './routes/_authenticated/org/notices'
 import { Route as AuthenticatedOrgDirectoryRouteImport } from './routes/_authenticated/org/directory'
 import { Route as AuthenticatedOrgDeptsRouteImport } from './routes/_authenticated/org/depts'
+import { Route as AuthenticatedOrgChartRouteImport } from './routes/_authenticated/org/chart'
 import { Route as AuthenticatedOrgNoticesNoticeIdRouteImport } from './routes/_authenticated/org/notices_.$noticeId'
 
 const R500Route = R500RouteImport.update({
@@ -131,6 +132,11 @@ const AuthenticatedOrgDeptsRoute = AuthenticatedOrgDeptsRouteImport.update({
   path: '/org/depts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOrgChartRoute = AuthenticatedOrgChartRouteImport.update({
+  id: '/org/chart',
+  path: '/org/chart',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedOrgNoticesNoticeIdRoute =
   AuthenticatedOrgNoticesNoticeIdRouteImport.update({
     id: '/org/notices_/$noticeId',
@@ -145,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/500': typeof R500Route
   '/sign-in': typeof authSignInRoute
   '/account': typeof AuthenticatedAccountRoute
+  '/org/chart': typeof AuthenticatedOrgChartRoute
   '/org/depts': typeof AuthenticatedOrgDeptsRoute
   '/org/directory': typeof AuthenticatedOrgDirectoryRoute
   '/org/notices': typeof AuthenticatedOrgNoticesRoute
@@ -165,6 +172,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof authSignInRoute
   '/account': typeof AuthenticatedAccountRoute
   '/': typeof AuthenticatedIndexRoute
+  '/org/chart': typeof AuthenticatedOrgChartRoute
   '/org/depts': typeof AuthenticatedOrgDeptsRoute
   '/org/directory': typeof AuthenticatedOrgDirectoryRoute
   '/org/notices': typeof AuthenticatedOrgNoticesRoute
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   '/(auth)/sign-in': typeof authSignInRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/org/chart': typeof AuthenticatedOrgChartRoute
   '/_authenticated/org/depts': typeof AuthenticatedOrgDeptsRoute
   '/_authenticated/org/directory': typeof AuthenticatedOrgDirectoryRoute
   '/_authenticated/org/notices': typeof AuthenticatedOrgNoticesRoute
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/500'
     | '/sign-in'
     | '/account'
+    | '/org/chart'
     | '/org/depts'
     | '/org/directory'
     | '/org/notices'
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/account'
     | '/'
+    | '/org/chart'
     | '/org/depts'
     | '/org/directory'
     | '/org/notices'
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '/(auth)/sign-in'
     | '/_authenticated/account'
     | '/_authenticated/'
+    | '/_authenticated/org/chart'
     | '/_authenticated/org/depts'
     | '/_authenticated/org/directory'
     | '/_authenticated/org/notices'
@@ -409,6 +421,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrgDeptsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/org/chart': {
+      id: '/_authenticated/org/chart'
+      path: '/org/chart'
+      fullPath: '/org/chart'
+      preLoaderRoute: typeof AuthenticatedOrgChartRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/org/notices_/$noticeId': {
       id: '/_authenticated/org/notices_/$noticeId'
       path: '/org/notices/$noticeId'
@@ -434,6 +453,7 @@ const authRouteRouteWithChildren = authRouteRoute._addFileChildren(
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedOrgChartRoute: typeof AuthenticatedOrgChartRoute
   AuthenticatedOrgDeptsRoute: typeof AuthenticatedOrgDeptsRoute
   AuthenticatedOrgDirectoryRoute: typeof AuthenticatedOrgDirectoryRoute
   AuthenticatedOrgNoticesRoute: typeof AuthenticatedOrgNoticesRoute
@@ -451,6 +471,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedOrgChartRoute: AuthenticatedOrgChartRoute,
   AuthenticatedOrgDeptsRoute: AuthenticatedOrgDeptsRoute,
   AuthenticatedOrgDirectoryRoute: AuthenticatedOrgDirectoryRoute,
   AuthenticatedOrgNoticesRoute: AuthenticatedOrgNoticesRoute,

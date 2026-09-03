@@ -2,14 +2,21 @@
 
 import type { DirectoryEntry } from "@/lib/api-types";
 import type { AppColumnDef } from "@/components/common/data-table/table-types";
+import type { DirectoryListParams } from "./directory-api";
 
 import { useQuery } from "@tanstack/react-query";
-import { Button, Chip, SearchField, Typography } from "@heroui/react";
+import { Button, Chip, SearchField, toast, Typography } from "@heroui/react";
 import { useTable } from "@tanstack/react-table";
-import { FilterX } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { Download, FilterX } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "./dept-api";
+import {
+  DIRECTORY_EXPORT_MAX_ROWS,
+  DirectoryExportLimitError,
+  exportDirectoryExcel,
+} from "./directory-export";
 import { DeptTreePanel } from "./dept-tree-panel";
 
 import { DataTable } from "@/components/common/data-table";
@@ -101,6 +108,73 @@ export function DirectoryPage() {
     setSearchInput("");
     resetStore();
   }, [resetStore]);
+
+  // ---------------- 组织筛选与 URL Query 双向同步 ----------------
+  // 架构图谱节点点击跳转 /org/directory?deptId=xxx 的落点（阶段 4 交互规范）：
+  // 刷新 / 分享 / 前进后退均恢复筛选。
+  const urlDeptId = useSearchParams().get("deptId");
+  const pathname = usePathname();
+  // 用原生 router.replace 同步地址栏（避免 bprogress 进度条在页内筛选时闪烁）
+  const nativeRouter = useRouter();
+
+  // URL → 列表 store（getState 比较后 setFilters，防手动回写 URL 触发 effect 空转）
+  useEffect(() => {
+    const current = useDirectoryListStore.getState().filters.deptId;
+
+    if (current !== urlDeptId) {
+      setFilters({ deptId: urlDeptId });
+    }
+  }, [urlDeptId, setFilters]);
+
+  // store → URL（树点击 / 清除时 replace 地址栏，不塞历史记录）
+  const syncDeptIdToUrl = useCallback(
+    (deptId: string | null) => {
+      nativeRouter.replace(
+        deptId ? `${pathname}?deptId=${encodeURIComponent(deptId)}` : pathname,
+      );
+    },
+    [nativeRouter, pathname],
+  );
+
+  // ---------------- 导出 Excel（write-excel-file 触发时动态加载） ----------------
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExport = useCallback(() => {
+    if (isExporting) {
+      return;
+    }
+    setIsExporting(true);
+    const sortField = sorting[0]?.id;
+    const task = exportDirectoryExcel({
+      params: {
+        keyword: search || undefined,
+        deptId: filters.deptId ?? undefined,
+        employmentStatus: (filters.employmentStatus ??
+          "all") as DirectoryListParams["employmentStatus"],
+        ...(sortField
+          ? {
+              sort: sortField,
+              order: sorting[0].desc ? ("desc" as const) : ("asc" as const),
+            }
+          : {}),
+      },
+      t,
+    });
+
+    toast.promise(task, {
+      error: (error: unknown) =>
+        error instanceof DirectoryExportLimitError
+          ? t("features.directory.export.limitExceeded", {
+              max: DIRECTORY_EXPORT_MAX_ROWS,
+            })
+          : error instanceof Error
+            ? error.message
+            : String(error),
+      loading: t("features.directory.export.loading"),
+      success: (count: number) =>
+        t("features.directory.export.success", { count }),
+    });
+    void task.finally(() => setIsExporting(false));
+  }, [isExporting, sorting, search, filters, t]);
 
   const employmentOptions = useMemo(
     () => [
@@ -254,7 +328,10 @@ export function DirectoryPage() {
           isLoading={treeQuery.isLoading}
           nodes={tree}
           selectedId={filters.deptId}
-          onSelect={(node) => setFilters({ deptId: node.id })}
+          onSelect={(node) => {
+            setFilters({ deptId: node.id });
+            syncDeptIdToUrl(node.id);
+          }}
         />
 
         {/* 右栏：人员列表 */}
@@ -303,6 +380,15 @@ export function DirectoryPage() {
               onReset={resetFilters}
               onSearch={applySearch}
             />
+            <Button
+              isPending={isExporting}
+              size="sm"
+              variant="outline"
+              onPress={handleExport}
+            >
+              <Download aria-hidden className="size-4" />
+              {t("features.directory.export.button")}
+            </Button>
           </DataTableToolbar>
 
           <DataTable

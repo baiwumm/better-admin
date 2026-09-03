@@ -74,6 +74,7 @@
 | `/org/posts` | 岗位管理 | 岗位 | 列表模式（岗位 CRUD） | ✅ 已实现 |
 | `/org/directory` | 人员通讯录 | 组织 | 列表模式（搜索/筛选） | ✅ 已实现 |
 | `/org/notices` | 公告管理 | 组织 | 列表模式（富文本编辑器） | ✅ 已实现 |
+| `/org/chart` | 组织架构图谱 | 组织 | 图谱可视化模式（只读：平移 / 缩放 / Fit View / 节点点击 / 折叠展开） | ✅ 已实现（React / Next） |
 | `/account` | 我的账户 | 用户 | 卡片式多 Tab 设置 | ✅ 已实现 |
 | `/settings` | 系统设置 | 设置 | 设置页模式（左侧导航 + 表单分区） | 占位 |
 | `/sign-in` 等 | 认证页 | 认证 | 认证模式（居中卡片布局） | ✅ 已实现 |
@@ -89,6 +90,14 @@
 4. 设置类页面统一使用左侧 sticky 导航 + `ContentSection` 结构，表单内容不超过 `max-w-xl`。
 5. 认证页统一使用 `AuthLayout` + 居中卡片，卡片宽度 `max-w-sm`。
 6. 详情展示优先使用 Drawer 或 Dialog（`max-w-lg` 或 `max-w-2xl`），不新建独立详情路由（除非需求明确）。
+
+**组织架构图谱（阶段 4，React 端实施中——本阶段 UI 与交互基准）**：
+
+- **定位**：只读可视化。允许画布平移、缩放、Fit View、点击节点、折叠 / 展开组织节点；禁用节点自由拖拽、连线创建 / 编辑、拖拽改变组织结构——图谱可视化引擎，不做成流程编辑器。
+- **交互**：节点点击跳转通讯录统一 URL Query `/org/directory?deptId=xxx`（禁用路由 state）；第一版控件提供 Zoom Controls / Fit View / 画布平移，Minimap 不默认必备，按实际节点规模决定。
+- **视觉**：节点卡片用项目 Design Tokens + HeroUI 组件（React / Next 端）渲染，停用组织沿用置灰；连线与画布背景提供 light / dark 两套值（对齐 §17.2）；数据加载 / 空状态对齐 §14 / §13。
+- **四端一致性原则**：统一「数据模型 + 节点字段 / 状态 + 节点 / 连线视觉 + 交互规范」，实现库各端自选（React / Next → `@xyflow/react`；Vue / Nuxt → `@vue-flow/core`，届时确认维护状态），一致性靠本规范保证而非同一实现库。
+- **实现约束**：`@xyflow/react` 随图谱页面懒加载（React.lazy / `next/dynamic`），默认不做 SSR；`write-excel-file` 在用户触发导出时动态 `import()`（不占通讯录页初始包体积）；d3-hierarchy 等布局库在确认布局需求前不引入；数据源复用 `GET /org/depts/tree`（无契约变更）。
 
 ---
 
@@ -643,3 +652,4 @@ Shadcn UI
 | 2026-08-21 | v0.2 | Phase 1B 落地记录：品牌化、Sidebar 调整、页面占位、Demo 清理、中文化 |
 | 2026-08-22 | v0.3 | UI 组件库策略更新：React / Next.js 以 Hero UI 为主 + Shadcn UI 补充（§18.3）；样式变量以 Hero UI 设计体系为主要参考；Vue / Nuxt 保持 Shadcn UI |
 | 2026-09-02 | v1.0 | 文档重构：基于当前 React Hero UI 基准版本更新，移除 Shadcn Admin 历史引用与 Phase 1B 规划表述，同步页面结构与技术栈现状 |
+| 2026-09-03 | v1.1 | 新增组织架构图谱页面规划与交互边界（§1.3，阶段 4，未实施）；明确四端图谱 / 图表一致性原则：实现库可不同（React/Next → @xyflow/react + Recharts；Vue/Nuxt 待其对应阶段决策），视觉靠本规范对齐 |

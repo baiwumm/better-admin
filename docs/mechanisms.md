@@ -197,3 +197,66 @@ SUPER_ADMIN_USER_PROTECTED）；前端只做入口隐藏止损，后端为契约
   权限版本号探测等「在线即时生效」方案；如未来需要即时生效语义，演进路径为
   权限版本号（API 响应携带版本，前端发现变化重拉 /auth/me + invalidate menus），
   无需引入长连接。
+
+---
+
+## 7. 组织架构图谱与通讯录 Excel 导出（React 端，阶段 4）
+
+> 更新日期：2026-09-03。对应代码：`react/src/features/org/org-chart*.ts(x)`、
+> `directory-export.ts`、`directory-page.tsx`、`routes/_authenticated/org/{chart,directory}.tsx`。
+
+### 7.1 React Flow v12 只读配置（@xyflow/react 12.11）
+
+- 编辑能力全部关闭：`nodesDraggable={false}`、`nodesConnectable={false}`、
+  `elementsSelectable={false}`、`edgesFocusable={false}`、`zoomOnDoubleClick={false}`；
+  Controls 用 `showInteractive={false}` 隐藏「锁定交互」按钮，只留 Zoom In / Out / Fit View。
+- `nodeTypes` 必须是模块级常量——组件内字面量会随渲染重建触发 React Flow 性能警告。
+- 折叠 / 展开 = 受控 nodes/edges 重算：`collapsed: Set<string>`（空集 = 全展开），
+  按可见子树 relayout（父节点居中于子树 span），不自动 fitView（保持用户视角）；
+  节点 data中的 `onToggle` 由页面 `useCallback` 提供（functional setState 保证引用稳定）。
+- Handle 隐藏后仍可锚定连线：`style={{ visibility: "hidden" }}` + `isConnectable={false}`。
+- 懒加载：`React.lazy(() => import("./org-chart"))`，@xyflow/react 及其 CSS 独立 chunk
+  （约 180KB / gzip 58KB），不进主包；`import "@xyflow/react/dist/style.css"` 写在图谱组件模块内。
+
+### 7.2 手写树布局替代 d3-hierarchy
+
+- 组织树为严格树 + 固定节点尺寸（220×84），「子树宽度先序分配」即可：
+  叶子宽 = 节点宽；内部节点宽 = max(自身, Σ子树宽 + 兄弟间距)；子树布完后父节点居中于子树 span。
+  约 60 行零依赖，不引入 d3-hierarchy（阶段 4 选型评审约束：确认需要前不提前引入）。
+- 正确性前提：节点 DOM 尺寸必须与布局常量一致（org-chart-node 用 style width/height 锁定）。
+
+### 7.3 write-excel-file 4.x API 与旧版 / 常见文档的差异（踩坑）
+
+- exports 无裸 `"."` 入口：必须 `write-excel-file/browser`（浏览器）/ `/node` / `/universal`
+  子路径导入，否则 rolldown 构建报 "not exported under conditions"。
+- 行数组模式下 `columns[].cell` 是**按行回调** `(object, objectIndex) => Cell`，不是静态样式对象。
+- **`columns[].header` / `columns[].cell` 不会被 `writeXlsxFile` 内部消费**（4.1.1 运行时
+  initializeSheets 无 header 逻辑）——直接把 objects + columns 传给 writeXlsxFile 时
+  表头行不生成、全部单元格样式丢失（值倒是会按数组直写）。**必须先调库导出的
+  `getSheetData(objects, columns)` 转成 SheetData**（自动拼表头行 + 应用单元格样式），
+  再把 SheetData 传给 writeXlsxFile；`stickyRowsCount` 保持在 sheetOptions。
+  排查手段：xlsx 即 zip，解包看 `xl/sharedStrings.xml`（有无表头文字）与
+  `xl/worksheets/sheet1.xml`（行数、`s=` 样式索引是否分化）即可定位数据层 / 样式层。
+- `writeXlsxFile(objects, sheetOptions, options)` 的 options 只有 fontFamily / fontSize / features
+  ——**没有 fileName**；返回 `{ toBlob(): Promise<Blob>, toFile(fileName): Promise<void> }` 句柄，
+  浏览器下载走 `.toFile("xxx.xlsx")`。
+- 动态 `import("write-excel-file/browser")` 放在导出动作内，通讯录页初始包不受影响。
+- 4.x 样式属性命名与常见文档 / 直觉不同：字体色是 **`textColor`**（非 `color`）、
+  垂直对齐是 **`alignVertical`**（非 `verticalAlign`）；四边统一边框用
+  `borderColor` + `borderStyle`（'thin' 等）。
+- objects 模式下单元格的**值与样式统一由 `columns[].cell(object, objectIndex)` 回调产出**
+  （这一转换发生在 `getSheetData` 内，须返回 `{ value, ...style }`）；
+  `columns[].header` 为列头 Cell——只要有一列配了 header，`getSheetData` 即自动生成表头行，
+  此时 objects 只含数据行，`objectIndex` 自第一条数据行起 0 计（斑马纹按此索引）。
+- 全局字体 / 字号走第三个参数 `Options { fontFamily, fontSize }`（仅 fontFamily /
+  fontSize / features 三类字段，无 fileName / 样式）；`stickyRowsCount: 1` 冻结表头
+  在第二个参数 sheetOptions。
+
+### 7.4 URL Query ↔ list store 双向同步（KeepAlive 页面）
+
+- URL → store：effect 内先 `store.getState().filters.deptId` 比较、不同才 `setFilters`，
+  避免手动回写 URL 触发的 effect 空转（防 epoch 重置循环）。
+- store → URL：树点击 / 清除时 `navigate({ replace: true, search: {...} })`（replace 不塞历史）；
+  `validateSearch` 在 route 文件声明 `deptId?: string`。
+- 效果：图谱跳转 `/org/directory?deptId=xxx` 后，刷新 / 分享 / 前进后退均恢复筛选；
+  页内操作地址栏实时跟随。
