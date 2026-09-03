@@ -1300,7 +1300,7 @@ components:
           type: string
         title:
           type: string
-          maxLength: 200
+          maxLength: 50
         content:
           type: string
           description: 富文本内容（Tiptap HTML；渲染端须消毒防 XSS）
@@ -1357,7 +1357,7 @@ components:
 
     NoticeDetail:
       type: object
-      description: 公告详情（Notice 全字段 + 范围明细）
+      description: 公告详情（Notice 全字段 + 范围明细 + 当前用户阅读时间）
       allOf:
         - $ref: '#/components/schemas/Notice'
         - type: object
@@ -1367,6 +1367,13 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/NoticeScope'
+            myReadAt:
+              type: string
+              format: date-time
+              nullable: true
+              description: >-
+                当前用户的首次阅读时间（ISO 8601）。范围内用户进详情即记首读（含本次触发）；
+                管理视角（SEARCH 位 / super_admin）或范围外查看不产生阅读记录，为 null。
 
     NoticeCreateRequest:
       type: object
@@ -1374,7 +1381,7 @@ components:
       properties:
         title:
           type: string
-          maxLength: 200
+          maxLength: 50
         content:
           type: string
           description: 富文本内容（Tiptap HTML，非空）
@@ -1400,7 +1407,7 @@ components:
       properties:
         title:
           type: string
-          maxLength: 200
+          maxLength: 50
         content:
           type: string
         scopeTargets:
@@ -3821,7 +3828,10 @@ paths:
       tags: [Notices]
       summary: 公告详情（进详情自动记已读）
       description: >
-        可见性校验：范围内用户或拥有 SEARCH 位（管理侧）可读，否则 403 NOTICE_NOT_VISIBLE。
+        可见性校验（满足其一即可读）：发布范围内用户 / 拥有 SEARCH 位（管理侧）/
+        收到过该公告的站内信（通知消费凭证——发布时在范围内的用户此后被移出范围，
+        凭站内信记录仍可查看，保证「能在通知列表看到就能查看详情」），
+        否则 403 NOTICE_NOT_VISIBLE。
         范围内用户首次访问自动写入已读记录（唯一约束幂等，仅记首次时间与 IP）。
       responses:
         '200':

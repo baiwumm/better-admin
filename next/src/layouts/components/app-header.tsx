@@ -24,6 +24,7 @@ import { getMenuLabel } from "@/lib/menu-i18n";
 import { filterHiddenMenus } from "@/lib/permission";
 import { findActivePath, getBreadcrumbNodes } from "@/lib/menu-utils";
 import { getRouteTitleKey } from "@/lib/route-title";
+import { useTabsStore } from "@/stores/tabs-store";
 
 type AppHeaderProps = {
   /** 服务端注入的可见菜单树 */
@@ -80,8 +81,11 @@ export function AppHeader({
   }, [searchSetOpen, searchState.isOpen]);
 
   // 从可见菜单树解析出当前路由对应的面包屑节点链（含图标与名称）；
-  // 非菜单路由（如登录白名单页 /account）在菜单树中无匹配，回退为单级
-  // 面包屑，标题取静态路由标题映射（与标签栏、页面标题 hook 同源）。
+  // 非菜单路由（如登录白名单页 /account、通知详情）在菜单树中无匹配，回退为
+  // 静态面包屑：优先取 tabs meta 中页面写入的具体标题，写入时若带 parentTitle
+  // （动态详情页场景，如公告详情）则渲染「父级 > 具体标题」两级；
+  // 无快照时回退静态路由标题映射（与标签栏、页面标题 hook 同源）。
+  const tabsMeta = useTabsStore((s) => s.meta);
   const crumbs = (() => {
     const tree = filterHiddenMenus(menuTree);
     const activePath = findActivePath(tree, pathname);
@@ -91,6 +95,17 @@ export function AppHeader({
         id: node.id,
         label: getMenuLabel(node, t),
       }));
+    }
+
+    const live = tabsMeta[pathname];
+
+    if (live?.title) {
+      return live.parentTitle
+        ? [
+            { id: `${pathname}#parent`, label: live.parentTitle },
+            { id: pathname, label: live.title },
+          ]
+        : [{ id: pathname, label: live.title }];
     }
 
     const titleKey = getRouteTitleKey(pathname);
@@ -162,7 +177,7 @@ export function AppHeader({
             <div className="min-w-0 hidden md:flex">
               <Breadcrumbs className="min-w-0">
                 {crumbs.map((item) => (
-                  <Breadcrumbs.Item key={item.id} className="min-w-0">
+                  <Breadcrumbs.Item key={item.id} className="max-w-60 min-w-0">
                     {item.label}
                   </Breadcrumbs.Item>
                 ))}

@@ -34,6 +34,9 @@
 /* 错误页专属动效与质感 */
 @import './error-page.css';
 
+/* 面包屑超长标题单行截断 */
+@import './breadcrumbs.css';
+
 /* ── 以下为全局共用基底（其余特性样式见各按功能命名的文件，经上方 @import 聚合）── */
 
 @custom-variant dark (&:is(.dark *));

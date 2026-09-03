@@ -196,6 +196,34 @@ describe("pruneTabPaths", () => {
 
     expect(pruneTabPaths(paths, allowed)).toBe(paths);
   });
+
+  it("命中 allowPrefixes 前缀的登录可达标签不被清理", () => {
+    const allowed = new Set([HOME_TAB_PATH]);
+
+    expect(
+      pruneTabPaths([HOME_TAB_PATH, "/org/notices/n1", "/b"], allowed, [
+        "/org/notices/",
+      ]),
+    ).toEqual([HOME_TAB_PATH, "/org/notices/n1"]);
+  });
+
+  it("未命中前缀且不在可达集合的标签仍被清理", () => {
+    const allowed = new Set([HOME_TAB_PATH]);
+
+    expect(
+      pruneTabPaths([HOME_TAB_PATH, "/org/notices-x", "/b"], allowed, [
+        "/org/notices/",
+      ]),
+    ).toEqual([HOME_TAB_PATH]);
+  });
+
+  it("不传 allowPrefixes 时行为与原签名一致", () => {
+    const allowed = new Set([HOME_TAB_PATH, "/a"]);
+
+    expect(
+      pruneTabPaths([HOME_TAB_PATH, "/a", "/org/notices/n1"], allowed),
+    ).toEqual([HOME_TAB_PATH, "/a"]);
+  });
 });
 
 describe("ensureHomeTab", () => {

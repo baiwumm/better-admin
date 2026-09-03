@@ -61,6 +61,8 @@ export type NoticeView = {
   readCount: number;
   totalCount: number;
   readRate: number | null;
+  /** 当前用户的首次阅读时间（详情返回；管理视角或范围外查看为 null） */
+  myReadAt?: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -515,7 +517,25 @@ export class NoticesService {
     const scopedUserIds = await resolveScopeUserIds(scopeInputs);
     const inScope = scopedUserIds.includes(user.id);
 
+    // 通知消费凭证：发布时收到过该公告的站内信 = 当时在发布范围内，
+    // 此后即使被移出范围（调岗 / 组织调整），凭站内信记录仍可查看详情
+    // （「能在通知列表看到，就能查看详情」的消费语义）。
+    let hasNotification = false;
     if (!hasSearch && !inScope) {
+      const [notifyRow] = await db
+        .select({ id: notifications.id })
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.recipientId, user.id),
+            eq(notifications.link, `/org/notices/${id}`),
+          ),
+        )
+        .limit(1);
+      hasNotification = !!notifyRow;
+    }
+
+    if (!hasSearch && !inScope && !hasNotification) {
       throw new ForbiddenException({
         code: 'NOTICE_NOT_VISIBLE',
         message: '您不在该公告的发布范围内',
@@ -537,6 +557,19 @@ export class NoticesService {
     const scopes = await this.loadScopes(id);
     const stats = await this.computeStats(id);
 
+    // 当前用户的首次阅读时间（记首读之后查询，本次触发阅读也返回）；
+    // 管理视角（SEARCH 位 / 超管）或范围外查看不产生阅读记录，为 null
+    const [myRead] = await db
+      .select({ readAt: noticeReadRecords.readAt })
+      .from(noticeReadRecords)
+      .where(
+        and(
+          eq(noticeReadRecords.noticeId, id),
+          eq(noticeReadRecords.userId, user.id),
+        ),
+      )
+      .limit(1);
+
     return {
       ...row,
       scopes,
@@ -544,6 +577,7 @@ export class NoticesService {
       readCount: stats.readCount,
       totalCount: stats.totalCount,
       readRate: stats.readRate,
+      myReadAt: myRead?.readAt?.toISOString() ?? null,
     };
   }
 
@@ -674,6 +708,11 @@ export class NoticesService {
       // 关联明细随主记录软删一并清理（阅读记录属审计数据，保留）
       await tx.delete(noticeScopes).where(eq(noticeScopes.noticeId, id));
       await tx.delete(noticeRemindLogs).where(eq(noticeRemindLogs.noticeId, id));
+      // 关联站内信同步清理：公告已删，指向它的「新公告」通知失效，
+      // 保留会让铃铛列表出现点开即 404 的死通知
+      await tx
+        .delete(notifications)
+        .where(eq(notifications.link, `/org/notices/${id}`));
     });
     await this.writeLog('notice.delete', user.id, { id, title: existing.title });
     return null;

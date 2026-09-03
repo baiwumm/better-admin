@@ -5,6 +5,72 @@
 
 ---
 
+### 图谱节点卡片重设计 + 导出样式美化 + Next 端导出跟进（2026-09-03）
+
+- **背景**：阶段 4 验收反馈——图谱卡片太简陋（白底细边框、负责人「R 张三」类文本无视觉锚点）、导出 Excel 是默认样式；且用户明确要求**导出功能 React / Next 两端一致**。本轮三项：节点卡片 HeroUI 化重设计、导出表格企业级样式、Next 端导出同步上线。
+- **节点卡片重设计（org-chart-node）**：改用 HeroUI **Card / Avatar / Chip / Tooltip / Button** 复合组件（Card.Header/Content/Footer 语义分区）。负责人区为视觉核心：圆形头像（HeroUI Avatar，无头像数据故按姓名散列稳定取色 accent/success/warning/danger/default + Fallback 首字）+ 姓名加粗 / 组织编码灰色 mono 两行；头部为名称（截断 Tooltip 全名）+ 状态 Chip（启用 success soft / 停用 default soft）；底部归属行（根节点 = N 个顶级组织；普通节点 = N 个下级组织 / 末级显示「末级组织」）；hover 抬起（-translate-y-1 + 主色边框 + shadow-md）。折叠钮改 HeroUI Button——**React Aria 的 PressEvent 默认停止冒泡**（不调用 continuePropagation），无需外层 div 拦截 click（顺带消除 jsx-a11y 违规）。卡片尺寸 220×84 → **240×112**（布局常量与骨架屏占位同步），LEVEL_GAP 88→100、SIBLING_GAP 32→36。
+- **导出样式美化（directory-export，两端同文件）**：write-excel-file 4.x 企业级样式——全局**微软雅黑 11 号**（第三参 Options `{ fontFamily, fontSize }`）；表头由 `columns[].header` 生成（**objects 只含数据行**），品牌蓝 `#1677FF` 底白字加粗 12 号水平/垂直居中 + 深蓝 `#1668DC` 细边框 + 行高 26；数据单元格的值与样式统一由 `columns[].cell(object, objectIndex)` 回调产出：**斑马纹**（偶数行 `#F5F7FA` / 奇数行 `#FFFFFF`，索引自第一条数据行起）+ 浅灰 `#D9D9D9` 细边框 + 行高 22 + 垂直居中 + 正文 `#333333`；**在职状态列按值高亮**（在职 `#52c41a` 加粗 / 离职 `#f5222d`）；`stickyRowsCount: 1` 冻结表头。样式属性命名差异（`textColor` 非 color、`alignVertical` 非 verticalAlign）沉淀 mechanisms §7.3。
+- **Next 端导出跟进（用户安排，两端一致）**：write-excel-file 4.1.1 装入 next；`directory-export.ts` 全量移植（两端 api 层同构，零适配）；directory-page 加同款导出按钮（outline + isPending + toast.promise）。语言包**增量合并**（React 独有的 chart.* 9 键 + export.* 5 键 + menu 2 键 + 并行任务的 common.loading 追平；用脚本合并且按字母序重排，避免整文件覆盖丢掉并行任务新增的 notices 键），`pnpm check-locales` 14 文件完全一致。**Next 端架构图谱仍 ❌ 待用户安排**。
+- **Next 端架构图谱跟进（2026-09-03 晚，用户点菜单遇 404 触发）**：菜单数据在共享库（seed 已含 `/org/chart`），Next 端页面此前未实施导致侧边栏出现破损入口——按用户「两端功能、UI 一致」要求补齐：`@xyflow/react` 装入 next；org-chart-layout / org-chart-node / org-chart 三件直接复制（纯客户端组件零平台依赖）；org-chart-page 适配 **next/dynamic（`ssr: false`，选型评审定稿：后台页面不做 SSR）** + bprogress `router.push` 跳转 `/org/directory?deptId=xxx`；directory-page 补 **deptId URL Query 双向同步**（原生 `useSearchParams` 读 + effect `getState` 比较防循环 + 树点击 / 清除原生 `router.replace` 回写，replace 避开 bprogress 进度条闪烁）。踩坑：新页面文件漏 `"use client"`，Turbopack build 以 Server Component 报 `ssr:false`/`useState` 非法——Next 端移植 Vite SPA 组件时此指令必补。
+- **验证**：react tsc / eslint / vitest（71 通过）/ build 全绿；next tsc / eslint（0 error）/ build 全绿；check-locales ✓。**待人工验证**：两端导出文件打开核对样式（蓝底表头 / 斑马纹 / 状态色 / 冻结首行 / 微软雅黑）、图谱卡片观感与 hover 抬起、折叠钮不误触跳转、**Next 端 `/org/chart` 打开与节点跳转通讯录带筛选**。
+- **缺陷修复（同日，导出表头丢失）**：首轮样式版导出实测**表头行消失、全部样式未生效**（数据值正常）。根因：write-excel-file 4.1.1 运行时的 `writeXlsxFile` **不消费 `columns.header/cell`**（initializeSheets 无该逻辑），objects 被当纯行数组直写——表头与样式必须经库导出的 **`getSheetData(objects, columns)`** 显式转换成 SheetData 再传入。修复方式：动态 import 解构 `getSheetData`，调用链改为 `getSheetData(objectRows, columns)` → `writeXlsxFile(sheetData, { stickyRowsCount: 1 }, options)`；已用 node 生成测试文件解包 XML 验证（sharedStrings 含表头文字、styles.xml 含 1677FF/F5F7FA/D9D9D9、sheet1 冻结 pane），两端同文件修复，tsc / build 全绿。机制结论更新至 mechanisms §7.3（含「解包 xlsx 定位数据层 / 样式层」排查手段）。
+
+### 组织中心阶段 4 实施：架构图谱 + 通讯录 Excel 导出（React 端，2026-09-03）
+
+- **范围**：React 端（本阶段 UI 与交互基准）两项上线——架构图谱页 `/org/chart`（React Flow 只读可视化）与通讯录 Excel 导出；**Next 端严格按 feature-matrix 保持 ❌，待用户安排**。新增运行时依赖仅 2 个：`@xyflow/react 12.11.6`、`write-excel-file 4.1.1`（均按需懒加载）；**未引入 d3-hierarchy**——手写紧凑树布局（见 mechanisms §7.2 评估结论）。
+- **架构图谱**：新路由 `/org/chart`；菜单 seed（icon `git-fork`，sort 4，常规全量按钮位）+ `nest/scripts/migrate-menus-add-org-chart.ts` 幂等补录（本地库已执行：菜单插入 + super_admin 全量授权）。手写树布局 `org-chart-layout.ts`（子树宽度先序分配 + 父节点居中，固定节点尺寸 220×84）；自定义节点 `org-chart-node.tsx`（HeroUI Typography/Chip，停用置灰，底部折叠按钮显示 +N）；只读边界——`nodesDraggable` / `nodesConnectable` / `elementsSelectable` / `edgesFocusable` / `zoomOnDoubleClick` 全关、Controls `showInteractive={false}`（Zoom In / Out / Fit View）、无 Minimap（按规模再评估）；节点点击 → `navigate /org/directory?deptId=xxx`（URL Query 规范）；折叠展开基于可见子树整体重排（不自动 fitView 保持视角）；图谱组件 `React.lazy` 懒加载（org-chart chunk 约 180KB / gzip 58KB，@xyflow/react 不进主包，CSS 随 chunk）。
+- **通讯录导出**：`directory-export.ts`——`write-excel-file/browser` 在触发导出时动态 import（通讯录页初始包不受影响）；串行分页 pageSize=100 逐页汇总（禁止 pageSize 拉满）；**超限判断前移**：首次响应优先读 `pagination.total`，total > 10000 直接终止不再请求后续页，无 total 时累计超限立即停止（不允许拉完全部数据后才判断）；导出随当前筛选与排序（sort / order 传后端保证翻页稳定）；工具栏「导出 Excel」按钮 `isPending` 防重复 + `toast.promise` 反馈；9 列（姓名/登录名/工号/组织路径/主岗/手机/邮箱/入职日期/状态）。
+- **通讯录 URL Query 落点**：directory 路由新增 `validateSearch`（deptId）；URL → store 用 effect + `getState()` 比较后 `setFilters`（防冗余 epoch 重置）；store → URL 树点击 / 清除时 replace navigate 同步——刷新 / 分享 / 前进后退稳定（详见 mechanisms §7.4）。
+- **write-excel-file 4.x API 差异（踩坑，详见 mechanisms §7.3）**：exports 无裸 "."（必须 `/browser` 子路径）；`columns[].cell` 是按行回调而非静态对象；`writeXlsxFile(...)` 返回 `{ toBlob, toFile }` 句柄、下载走 `.toFile(fileName)`（options 无 fileName）。
+- **验证**：react tsc / eslint / vitest（71 通过，含 locales 一致性）/ vite build 全绿；nest tsc 全绿；补录脚本本地库执行成功。**待人工验证**：浏览器走查图谱页（布局 / 折叠 / 缩放 / Dark Mode / 节点跳转）与导出（各筛选组合、超限提示、文件打开）。
+- **同步待办**：Next 端图谱与导出待用户安排（Client Component + `next/dynamic`，不做 SSR）；mechanisms.md §7 已沉淀机制结论。
+
+### 通知详情登录可达路由 + 权限体系整改落地（2026-09-03）
+
+- **背景**：站内信推送给发布范围内用户，接收者未必拥有公告管理菜单——点铃铛通知跳 `/org/notices/:id` 被菜单权限门卫整页 403，体验断裂。方案经用户评估批准：**路由访问控制升级三层模型**——公开路由 / **登录可达路由**（精确白名单 + 动态前缀）/ 菜单权限路由；公告详情归登录可达层，可见性由详情接口服务端校验兜底（super_admin / SEARCH 位 / 发布范围内，范围外 API 403 `NOTICE_NOT_VISIBLE`，详情页内容区错误卡呈现，非整页 403）。
+- **路由层改动（React / Next 同一变更集同步）**：
+  - 两端 `lib/route-access.ts` 新增 `LOGIN_REQUIRED_PREFIXES = ["/org/notices/"]` 与 `isLoginRequiredPath()`，作为唯一语义源（前缀带尾斜杠，列表页 `/org/notices` 不豁免；已确认前缀下无其它业务路由）；Next `proxy.ts` 删除本地 `NOTIFICATION_CONSUME_PREFIXES` 改用统一判定，React `admin-layout.tsx` 门卫同步切换，父级路径匹配逻辑保留服务其它动态路由。
+  - 多标签治理放行：`lib/tabs-model.ts` 的 `pruneTabPaths` 增加 `allowPrefixes` 参数（两端同构实现），`tags-bar.tsx` / `admin-shell.tsx` 传入前缀——通知详情标签不再被菜单加载后的治理误删；React 端 `tabs-model.test.ts` 补 3 个用例（32 全过）。
+  - 详情页返回入口动态降级：两端 `notice-detail-page.tsx` 按「当前用户菜单树是否含 `/org/notices`」（`useMemo` 派生）切换「返回列表 / 返回控制台」，无公告菜单权限的消费用户不再撞列表页门卫。
+- **走查发现的两个既有缺陷（放行后暴露，已修复）**：
+  - React 端 `lib/route-component.ts` 的 `findRouteLeafComponent` 仅精确匹配 fullPath，动态路由 `/org/notices/<id>` 解析不到 routeTree 模板 `/org/notices/$noticeId` → KeepAliveOutlet 实例池渲染 null → **详情页主体空白**（此前有菜单权限账号经父级匹配放行后同样命中，属既有问题）。修复：新增导出 `matchRoutePattern`（段级匹配，`$xxx` 通配），叶子判定改用之。
+  - `lib/route-title.ts` 的 titleKey 映射键为路由模板，消费点（`tags-bar` 标签名 / `app-header` 面包屑）用具体路径查询必然 miss → 详情标签无名。修复：新增 `findRouteTitleKey`（精确 → 模板匹配兜底），两消费点切换。
+- **同一变更集落地的权限体系整改**（对应 AGENTS.md §19 三项待办清账）：
+  - **按钮门控改菜单粒度**：新增 `useMenuPermissions` / `useMenuHasPermissionKey` / `useHasPermission`（基于当前路由菜单的 `userPermissions` 位，数据链路 React=useMenus / Next=RSC menuTree → `stores/menu-store.ts`），全部业务页与 `DataTableSearchReset` 从全局聚合位切换；旧的 `use-has-permission.ts` 与 `useHasPermissionKey` 删除（无残留引用）。
+  - **`hasPermission` 语义对齐后端**：多权限位判定由「全部命中（AND）」改「任一命中（OR）」，并识别 super_admin 全量位 `9223372036854775807n`（与后端 `normalizePermissionBits` 输出对齐）。
+  - **`roles.enabled` 参与权限聚合**：NestJS（`aggregatePermissions` / `buildAllowedMenuIds`）与 Next（`buildPermissionMap` / `buildAllowedMenuIds`）同步只聚合启用角色，停用角色权限即时回收。
+  - **super_admin 角色绑定保护**：`PUT /users/:id` 的 `roleIds` 变更拦截移除/添加 super_admin 绑定（非超管操作者 403 `SUPER_ADMIN_ROLE_BINDING_PROTECTED`，超管间互操作豁免），nest / next 同步实现；**`POST /users`（create）尚未拦截，留待办**。
+  - **NoticeBell 列表换 HeroUI ListBox**（对齐 `.heroui-docs` 文档用法：`selectionMode="none"` + `onAction`），浏览器实测渲染正常。
+  - **通知消费凭证（人工验收修复）**：发布时在范围内、此后被移出范围（调岗/组织调整）的账号，点站内信进详情曾 403 `NOTICE_NOT_VISIBLE`（可见性为实时范围判定）。语义修正为「**能在通知列表看到，就能查看详情**」：`GET /notices/{id}` 可见性增加「收到过该公告站内信」分支（`notifications.recipient_id + link = /org/notices/{id}` 精确匹配，nest / next 同步实现，openapi 契约描述同步更新）；无凭证且不在范围仍 403，安全边界不变。API 实测：凭证用户 nest 200 / next 200，无凭证用户 403。
+  - **通知详情标签页与面包屑显示具体公告标题（人工验收修复）**：详情页加载成功后将 `notice.title` 写入 tabs meta（复用 `syncMeta` 快照机制，随 sessionStorage 持久化、关标签随治理清理），标签页与面包屑据此显示具体标题而非静态名「公告管理」。截断：标签沿用 `max-w-44 + truncate`；面包屑新增 `max-w-60` + `styles/breadcrumbs.css` 组件类（`.breadcrumbs__link` 为 flex 容器，`text-overflow` 需 block 才生效；Tailwind 任意变体含 `.` 的选择器无法生成，走全局组件类），两端同步。
+  - **死通知治理（人工验收修复）**：删除公告（软删）此前不清理关联站内信，铃铛列表残留「点开即 404 `NOTICE_NOT_FOUND`」的死通知。修复分两层：① 删除公告时在同一事务内清理 `link = /org/notices/{id}` 的站内信（nest / next 同步）；② 存量兜底脚本 `nest/scripts/clean-dead-notifications.ts`（幂等，本地库已执行，清理 3 条死通知），存量库执行项已记入 AGENTS.md §19。详情 404 的错误卡文案「或公告已被删除」本就覆盖该场景。
+  - **详情错误卡入口改按钮（人工验收调整）**：`ErrorContent` 的 action 从 Link 文字链接改为 `Button size="sm"`「返回控制台」（HeroUI Button 无 href 属性，`onPress` + 路由导航实现，react 用 `useNavigate` / next 用 `router.push`），两端同步。
+  - **面包屑两级化（人工验收调整）**：通知详情面包屑由单级具体标题改为「**公告详情 > 标题**」两级——`TabMetaSnapshot` 增加可选 `parentTitle`（两端 `tabs-model.ts` 同步），详情页写 meta 时以 `features.notices.detail.titleFallback`（公告详情 / Notice detail）为父级名，两端 `app-header` 回退分支按 `parentTitle` 渲染两级，无 parentTitle 的标签保持单级。
+  - **详情页样式升级（人工验收调整）**：标题从 `body-sm` 小字升级为 `Typography type="h4" font-bold` + 置顶 Chip 同行，下接发布人/发布时间元信息行；正文改 `bg-surface` 卡片（`rounded-3xl border px-6 py-5`），容器间距 `gap-5`，视觉对齐管理侧详情抽屉的信息层次，两端同步。
+  - **通知抽屉骨架屏闪空态修复（人工验收反馈）**：抽屉未开时列表 query 处于 disabled 的 pending 态，`isLoading`（= pending && fetching）为 false，导致打开抽屉首帧闪现「暂无通知」空态再切骨架。条件改 `isPending`（无数据即骨架）后稳定呈现与条目同形的骨架屏，两端同步。
+  - **详情页 Card 版式重构（人工验收任务）**：按用户设计要求整体重构——HeroUI Card 主容器（rounded-3xl shadow-sm，p-6/8 留白充足）内依次为返回 Button（ghost + 箭头，按菜单权限「返回列表/返回控制台」降级）、类型 Chip「系统公告」（新增 i18n key `typeNotice`）+ 置顶 Chip、`type="h3"` 大标题（`leading-relaxed` 保证超长标题换行阅读间距）、发布人/发布时间元信息（`Intl.DateTimeFormat` 按 i18n locale 输出「2026年9月3日 11:15」格式，新增 `lib/format-date.ts`）、Separator、ScrollShadow 正文卡片（`max-h-[480px] bg-content2` 限高滚动 + `leading-7` 行距；content 缺失回退标题文本）、底部已读状态「你已于 {{time}} 阅读此公告」（新增 i18n key `readAtTip`）。加载骨架与卡片同形。两端同步，含 4 个语言包文件。
+  - **契约扩展 `myReadAt`**：`GET /notices/{id}` 响应新增当前用户首次阅读时间（范围内进详情记首读后查询，含本次触发；管理视角/范围外查看为 null）——nest / next `NoticeView` + openapi `NoticeDetail` schema + 两端 `api-types` 四处同步。HeroUI 项目枚举注意：Button 无 `light` variant（用 `ghost`）与 `startContent` prop（图标放 children），Chip 无 `primary`（主色为 `accent`）。
+  - **公告标题上限 200 → 50（人工验收调整）**：nest `NoticeCreateDto/NoticeUpdateDto` `@MaxLength(50)`；openapi 三处 `title maxLength`（实体/创建/更新）同步；next server 补齐缺失的长度校验（create/update 超 50 → 400 VALIDATION_ERROR「公告标题不能超过 50 个字符」，此前 next 端无此校验）；两端表单 zod `max(50)` + Input `maxLength={50}` + `titleInvalid` 文案「公告标题为 1-50 个字符」（4 语言包）。API 实测 51 字 nest/next 均 400。
+  - **详情页发布人头像（人工验收调整）**：元信息行左侧新增发布人 Avatar（`publisherAvatar` 非空才渲染，`size="sm"` 最小档，accent soft + `Avatar.Image/Fallback` 组合式 API），无头像保持纯文本元信息，两端同步。
+  - **KeepAlive 保活下详情页 `useParams` 崩溃修复（人工验收反馈）**：动态路由组件解析修复后，详情组件真正进入 KeepAlive 实例池；从详情跳往他页时实例 hidden 保活但路由已切走，`useParams({ from: 详情路由 })` 严格模式因找不到活跃 match 抛 `Invariant failed: Could not find an active match` 使布局级 CatchBoundary 重建整树（多标签栏渲染随之错乱）。修复：改 `useParams({ strict: false })` 宽松模式（hidden 期间实例不发请求，无副作用）。验证：详情 → 返回列表正常跳转无崩溃，三标签（控制台/公告管理/详情标题）标题与活跃态正确；详情页刷新后标签亦正常——用户报告的「刷新后公告管理标签显示成详情标题」为崩溃重建的次生表现，随崩溃修复消失。
+- **验证**：react / next / nest 三端 `tsc --noEmit`（react 端现存 3 个错误全部来自并行进行中的阶段 4 依赖未安装，与本批改动文件无关）；eslint 0 error；tabs-model 32 测试全过；**真实库浏览器走查矩阵全过**（admin / 无权限观察者 / 范围内详情 / 范围外错误卡 / Next proxy 放行与列表页 403 未误豁免 / 标签保留与标题恢复 / 返回按钮降级 / 进详情记已读），测试数据（角色、用户、公告）已清理。
+- **后续对齐**：Vue / Nuxt 实现公告/通知模块时直接跟上登录可达三层模型与菜单粒度按钮门控；机制结论（动态路由模板匹配、登录可达层）视需要沉淀 `docs/mechanisms.md`。
+
+### 组织中心阶段 4 技术选型评审：图谱 React Flow + 导出 write-excel-file（2026-09-03）
+
+- **性质**：选型决策 + 实施批准记录。阶段 1 评审暂定的「架构图谱 ECharts + 通讯录 Excel 导出 xlsx」经用户评审确认推翻，新方向如下（历史条目按 §13 原则永不回改，以本条目为准）；方案 v2 经用户批准进入实施，批准时确认 3 项微调（懒加载策略分别明确 / 导出上限优先读 total / 本阶段仅 React 端实施），同日开工。
+- **架构图谱 → React Flow（`@xyflow/react ^12`，React / Next 端）**：v12 官方支持 React 19 / Tailwind 4 / Dark Mode；相比 ECharts canvas 自绘，其节点为普通 DOM，组织卡片直接用 HeroUI 组件 + 项目 Design Tokens 渲染，视觉一致性更贴合「UI 基准 + 各端组件库」架构。**第一版定位只读可视化**——允许：画布平移 / 缩放 / Fit View / 点击节点 / 折叠展开组织节点；禁用：节点自由拖拽 / 连线创建与编辑 / 拖拽改变组织结构（React Flow 仅作图谱可视化引擎，关闭编辑能力，不做成流程编辑器）。Minimap 不作第一版必备：演示规模几十~百级节点，提供 Zoom Controls / Fit View / 画布平移即可，是否加 Minimap 按实际节点规模决定。
+- **d3-hierarchy 暂不引入**：React Flow 是唯一确定依赖；自动布局方案待根据实际节点规格（规模 / 节点尺寸 / 布局复杂度）评估后再定，优先考虑 d3-hierarchy，确认需要前不提前引入；确需引入时单独说明理由。
+- **节点跳转通讯录统一 URL Query**：`/org/directory?deptId=xxx`，不用路由 state——支持刷新 / 复制分享 URL / 浏览器前进后退，四端实现统一（与 ui-spec §18.2「路由态 → URL search params」一致）。
+- **懒加载策略（两项依赖分别明确，不笼统「均可 lazy」）**：`@xyflow/react` 随图谱页面懒加载（React.lazy / `next/dynamic`，仅进入图谱路由时加载）；`write-excel-file` 在用户触发导出时动态 `import()`，不增加通讯录页面初始包体积。
+- **Next.js 端不做 React Flow SSR**：图谱属后台高交互页面、无 SEO 需求，采用 Client Component + 图谱组件 `next/dynamic` 懒加载，默认不做 SSR，不为 SSR 增加节点尺寸 / Handle / fitView 容器尺寸等额外复杂度。
+- **后续图表库 → Recharts（仅 React / Next）**：recharts 3.x 对齐 React 19、内置 TS、无头 SVG 完全消费项目 Design Tokens（ui-spec §18.1 已列 Recharts、§17.2 已有 `--chart-1..5` token，决策有先例）。**Vue / Nuxt 图表库本次不决策**，待其 Dashboard 阶段单独评估；四端图表一致性不依赖同一实现库，靠 Design Tokens + 图表颜色 / 字号 / Tooltip / Grid / Legend / 空状态 / Dark Mode 的 UI 规范保证。
+- **Excel 导出弃用 npm `xlsx`（SheetJS）→ `write-excel-file ^4`**：npm xlsx 0.18.5 停更且带未修复 CVE（CVE-2023-30533 原型污染 / CVE-2024-22363 ReDoS），禁止作为新依赖；write-excel-file 纯 TS、浏览器端生成 xlsx、运行时仅依赖 fflate（无 React 依赖，四端可复用同一库），满足通讯录导出需求（单 Sheet + 表头加粗 / 列宽等基础样式，无多 Sheet / 图片 / 公式 / 合并单元格诉求）；如实施中发现无法满足，说明具体原因后再评估 ExcelJS。
+- **导出数据获取 → 分页批量汇总（禁止 pageSize 拉满）**：当前筛选条件 → 串行分页请求（复用 `DirectoryListParams`，不使用 pageSize=999999 一类方式）→ 逐页汇总 → 前端生成 Excel。数据量保护（超限判断前移，不允许拉完全部数据后才判断）：分页接口返回 `pagination.total` 时，**首次请求后优先读 total**，total > 10000 直接提示缩小筛选范围并终止（不继续请求后续页）；无 total 时分页过程中累计数量，一旦超过 10000 立即停止后续请求。未来数据规模明显扩大再单独演进 NestJS 服务端生成文件流的导出方案，现阶段不为未来大数据量提前增加后端导出接口（无契约变更）。
+- **本阶段实施范围**：**React 端为本阶段 UI 与交互基准**；Next.js 是否同步实施严格按 feature-matrix 与当前阶段范围执行——本阶段仅实施 React 端，Next 端图谱/导出保持 ❌ 待用户安排，不因方案中「Next 端随后对齐」的表述默认扩大范围。
+- **四端图谱架构原则**：统一「组织图谱数据模型（节点字段 / 节点状态）+ 节点视觉 + 连线视觉 + 交互规范」，各端 Adapter 对接各自实现库——React / Next → `@xyflow/react`（官方）；Vue / Nuxt → `@vue-flow/core`（社区维护，最终版本与维护状态待 Vue / Nuxt 进入组织模块阶段再确认，不阻塞 React 端）。图谱数据源复用现有 `GET /org/depts/tree`，无契约变更；节点展示组织人数属契约扩展，第一版不做（后续如需另行评审）。
+- **文档同步**：feature-matrix 新增架构图谱 / 通讯录 Excel 导出两行（❌ 待实施）并修正统计口径；ui-spec §1.3 增补图谱页面规划与交互边界（v1.1）；AGENTS.md §19 待办措辞更新。mechanisms.md 本次不新增条目（无代码行为结论可沉淀），待实施后补 React Flow 集成机制条目（布局计算 / 受控节点 / 懒加载边界）。
+
 ### Next.js 全栈版分期落地 N0–N7（2026-09-02）
 
 - **范围**：`next/` 从 HeroUI 官方模板（零业务代码）分八期实现至与 React 端冻结范围（契约 v1.6.0 阶段 1）对齐的全栈版本。方案经用户评审（9 条修正 + 3 项决策确认：契约冻结文件加附录、GitHub Actions cron 直连数据库、服务端双源提取鉴权）。八期提交：N0 地基 `0d00d4` / N1 认证 `461a94a` / N2 布局横切 `dd68e88` / N3a 用户 `cf9efe2` / N3b 角色 `d90848b` / N3c 菜单+权限 `fbe3430` / N4 字典+日志 `629de7f` / N5 我的账户 `f9dffdd` / N6 组织管理 `753b9d3` / N7 收尾 `25c08d0`；此后并行演进：岗位/通讯录/公告跟进与冻结契约退役（`700d4d3`）、README 对齐（`3300ec1`）、全局进度条（`c1db1aa` / `a1b3f96` / `6ac9363`）。

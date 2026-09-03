@@ -507,9 +507,11 @@ export interface Notice {
   updatedAt: string;
 }
 
-/** 公告详情（Notice 全字段 + 范围明细） */
+/** 公告详情（Notice 全字段 + 范围明细 + 当前用户阅读时间） */
 export interface NoticeDetail extends Notice {
   scopes: NoticeScope[];
+  /** 当前用户的首次阅读时间（范围内进详情即记首读；管理视角或范围外查看为 null） */
+  myReadAt?: string | null;
 }
 
 /** 创建公告请求体（publishTime 缺省 = 立即发布；未来时间 = 定时草稿） */

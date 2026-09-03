@@ -22,8 +22,9 @@ import { useTranslation } from "@/i18n";
 import { getMenuLabel } from "@/lib/menu-i18n";
 import { filterHiddenMenus } from "@/lib/permission";
 import { findActivePath, getBreadcrumbNodes } from "@/lib/menu-utils";
-import { buildRouteTitleKeyMap } from "@/lib/route-title";
+import { buildRouteTitleKeyMap, findRouteTitleKey } from "@/lib/route-title";
 import { useDisplayedPathStore } from "@/stores/displayed-path-store";
+import { useTabsStore } from "@/stores/tabs-store";
 
 type AppHeaderProps = {
   collapsed: boolean;
@@ -81,8 +82,11 @@ export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
   );
 
   // 从可见菜单树解析出当前路由对应的面包屑节点链（含图标与名称）；
-  // 非菜单路由（如登录白名单页 /account）在菜单树中无匹配，回退为单级
-  // 面包屑，标题取路由 staticData.titleKey（与标签栏、useDocumentTitle 同源）。
+  // 非菜单路由（如登录白名单页 /account、通知详情）在菜单树中无匹配，回退为
+  // 静态面包屑：优先取 tabs meta 中页面写入的具体标题，写入时若带 parentTitle
+  // （动态详情页场景，如公告详情）则渲染「父级 > 具体标题」两级；
+  // 无快照时回退路由 staticData.titleKey（与标签栏、useDocumentTitle 同源）。
+  const tabsMeta = useTabsStore((s) => s.meta);
   const crumbs = (() => {
     const tree = filterHiddenMenus(menuTree ?? []);
     const target = committedPath || pathname;
@@ -95,7 +99,18 @@ export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
       }));
     }
 
-    const titleKey = routeTitleKeyByPath.get(target);
+    const live = tabsMeta[target];
+
+    if (live?.title) {
+      return live.parentTitle
+        ? [
+            { id: `${target}#parent`, label: live.parentTitle },
+            { id: target, label: live.title },
+          ]
+        : [{ id: target, label: live.title }];
+    }
+
+    const titleKey = findRouteTitleKey(routeTitleKeyByPath, target);
 
     return titleKey ? [{ id: target, label: t(titleKey) }] : [];
   })();
@@ -159,7 +174,7 @@ export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
             <div className="min-w-0 hidden md:flex">
               <Breadcrumbs className="min-w-0">
                 {crumbs.map((item) => (
-                  <Breadcrumbs.Item key={item.id} className="min-w-0">
+                  <Breadcrumbs.Item key={item.id} className="max-w-60 min-w-0">
                     {item.label}
                   </Breadcrumbs.Item>
                 ))}

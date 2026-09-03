@@ -26,6 +26,23 @@ type RouteNode = {
 
 const componentCache = new Map<string, ComponentType | undefined>();
 
+/**
+ * 路由模板段级匹配：$xxx 动态段通配任意非空段，其余段精确相等。
+ * 用于把具体 URL（/org/notices/123）匹配到 routeTree 模板
+ * （/org/notices/$noticeId），供组件解析与标题兜底查询。
+ */
+export function matchRoutePattern(pattern: string, pathname: string): boolean {
+  const patternSegments = pattern.split("/");
+  const pathSegments = pathname.split("/");
+
+  if (patternSegments.length !== pathSegments.length) return false;
+
+  return patternSegments.every(
+    (segment, index) =>
+      segment.startsWith("$") || segment === pathSegments[index],
+  );
+}
+
 function findLeafComponent(
   node: RouteNode,
   fullPath: string,
@@ -40,7 +57,9 @@ function findLeafComponent(
     return undefined;
   }
 
-  if (node.fullPath === fullPath) return node.options?.component;
+  if (node.fullPath && matchRoutePattern(node.fullPath, fullPath)) {
+    return node.options?.component;
+  }
 
   return undefined;
 }

@@ -19,7 +19,16 @@ export const HOME_TAB_PATH = "/";
 export const MAX_OPEN_TABS = 16;
 
 /** 标签元数据快照（菜单就绪时写入；用于刷新后立即渲染中文标题）。 */
-export type TabMetaSnapshot = { title?: string; icon?: string };
+/**
+ * 标签元数据快照（菜单就绪时写入；用于刷新后立即渲染中文标题）。
+ * parentTitle：动态路由详情页（如公告详情）写入的面包屑父级名，
+ * 供面包屑渲染「父级 > 具体标题」两级结构；普通标签不写。
+ */
+export type TabMetaSnapshot = {
+  title?: string;
+  icon?: string;
+  parentTitle?: string;
+};
 
 /** 变更结果：paths 为新标签序列；redirect 为需要导航的目标（null = 不需要）。 */
 export type TabsMutationResult = {
@@ -183,13 +192,21 @@ export function closeAllTabPaths(
 
 /**
  * 权限治理：移除不在可达集合中的标签（登录恢复 / 权限变更后清理残留）。
- * 固定标签始终保留（控制台为登录白名单）。
+ * 固定标签始终保留（控制台为登录白名单）；
+ * 命中 allowPrefixes 前缀的登录可达路由（如通知详情）同样豁免——
+ * 用户显式打开的标签不应被菜单加载后的治理误删。
  */
 export function pruneTabPaths(
   paths: string[],
   allowedPaths: ReadonlySet<string>,
+  allowPrefixes: readonly string[] = [],
 ): string[] {
-  const next = paths.filter((p) => allowedPaths.has(p) || isPinnedTab(p));
+  const next = paths.filter(
+    (p) =>
+      allowedPaths.has(p) ||
+      isPinnedTab(p) ||
+      allowPrefixes.some((prefix) => p.startsWith(prefix)),
+  );
 
   return sameStrings(next, paths) ? paths : next;
 }

@@ -9,7 +9,10 @@ import { AppHeader } from "@/layouts/components/app-header";
 import { AppSidebar } from "@/layouts/components/app-sidebar";
 import { TagsBar } from "@/layouts/components/tags-bar";
 import { usePageTitle } from "@/lib/use-page-title";
-import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
+import {
+  LOGIN_REQUIRED_PATHS,
+  LOGIN_REQUIRED_PREFIXES,
+} from "@/lib/route-access";
 import { collectMenuPaths } from "@/lib/menu-utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
@@ -68,8 +71,11 @@ export function AdminShell({ menuTree, user, children }: AdminShellProps) {
   }, [pathname, openPath]);
 
   useEffect(() => {
+    // 登录可达路径（精确白名单 + 通知消费前缀，见 route-access.ts）不参与
+    // 菜单权限体系，用户显式打开的标签不应被菜单加载后的治理误删。
     pruneTabs(
       new Set([...collectMenuPaths(menuTree), ...LOGIN_REQUIRED_PATHS]),
+      LOGIN_REQUIRED_PREFIXES,
     );
   }, [menuTree, pruneTabs]);
 

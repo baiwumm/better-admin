@@ -7,6 +7,7 @@ import {
   cn,
   Description,
   Drawer,
+  ListBox,
   Skeleton,
   Typography,
   useOverlayState,
@@ -97,7 +98,9 @@ export function NoticeBell() {
           <Bell className="size-4" />
         </Button>
         {unreadCount > 0 && (
-          <Badge color="danger">{unreadCount > 99 ? "99+" : unreadCount}</Badge>
+          <Badge color="danger" size="sm">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </Badge>
         )}
       </Badge.Anchor>
 
@@ -120,7 +123,10 @@ export function NoticeBell() {
                 </Button>
               </Drawer.Header>
               <Drawer.Body className="flex flex-col gap-2">
-                {listQuery.isLoading ? (
+                {/* isPending（而非 isLoading）：抽屉未开时 query 处于 disabled 的
+                    pending 态（isLoading 为 false），用 isLoading 会在打开抽屉的
+                    首帧闪现「暂无通知」空态，isPending 才稳定呈现骨架屏 */}
+                {listQuery.isPending ? (
                   /* 逼真骨架屏：与通知条目同形（标题行 + 时间行） */
                   <div aria-hidden className="flex flex-col gap-2">
                     {Array.from({ length: 5 }, (_, index) => (
@@ -144,45 +150,57 @@ export function NoticeBell() {
                 ) : notifications.length === 0 ? (
                   <EmptyContent title={t("layout.header.noNotifications")} />
                 ) : (
-                  notifications.map((notification) => {
-                    const isUnread = notification.readAt === null;
+                  <ListBox
+                    aria-label={t("layout.header.notifications")}
+                    selectionMode="none"
+                    onAction={(key) => {
+                      const notification = notifications.find(
+                        (n) => n.id === key,
+                      );
 
-                    return (
-                      <button
-                        key={notification.id}
-                        className={cn(
-                          "flex w-full flex-col items-start gap-0.5 rounded-3xl px-3 py-2 text-start transition-colors",
-                          "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring hover:bg-default/60",
-                          isUnread && "bg-accent/10",
-                        )}
-                        type="button"
-                        onClick={() =>
-                          handleItemClick(notification.id, notification.link)
-                        }
-                      >
-                        <span className="flex w-full items-center gap-2">
-                          {isUnread && (
-                            <span
-                              aria-hidden
-                              className="size-1.5 shrink-0 rounded-full bg-danger"
-                            />
+                      if (notification) {
+                        handleItemClick(notification.id, notification.link);
+                      }
+                    }}
+                  >
+                    {notifications.map((notification) => {
+                      const isUnread = notification.readAt === null;
+
+                      return (
+                        <ListBox.Item
+                          key={notification.id}
+                          className={cn(
+                            "flex w-full flex-col items-start gap-0.5 rounded-3xl px-3 py-2 text-start transition-colors",
+                            "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring hover:bg-default/60",
+                            isUnread && "bg-accent/10",
                           )}
-                          <Typography
-                            className={cn(
-                              "min-w-0 flex-1 truncate",
-                              isUnread && "font-medium",
+                          id={notification.id}
+                          textValue={notification.title}
+                        >
+                          <span className="flex w-full items-center gap-2">
+                            {isUnread && (
+                              <span
+                                aria-hidden
+                                className="size-1.5 shrink-0 rounded-full bg-danger"
+                              />
                             )}
-                            type="body-sm"
-                          >
-                            {notification.title}
+                            <Typography
+                              className={cn(
+                                "min-w-0 flex-1 truncate",
+                                isUnread && "font-medium",
+                              )}
+                              type="body-sm"
+                            >
+                              {notification.title}
+                            </Typography>
+                          </span>
+                          <Typography color="muted" type="body-xs">
+                            {new Date(notification.createdAt).toLocaleString()}
                           </Typography>
-                        </span>
-                        <Typography color="muted" type="body-xs">
-                          {new Date(notification.createdAt).toLocaleString()}
-                        </Typography>
-                      </button>
-                    );
-                  })
+                        </ListBox.Item>
+                      );
+                    })}
+                  </ListBox>
                 )}
                 {listQuery.data &&
                   listQuery.data.pagination.total > notifications.length && (

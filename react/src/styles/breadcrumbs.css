@@ -1,0 +1,12 @@
+/* 面包屑超长标题截断（组件：layouts/components/app-header.tsx）：
+   HeroUI 的 .breadcrumbs__link 为 flex 容器，text-overflow 不生效，
+   改为 block + ellipsis 单行截断；宽度上限由 Item 的 max-w-* 控制 */
+
+@layer components {
+  .breadcrumbs li > .breadcrumbs__link {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

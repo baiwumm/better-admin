@@ -15,14 +15,11 @@ import { MENUS_QUERY_KEY, useMenus } from "@/hooks/use-menus";
 import { useAuthSync } from "@/hooks/use-auth-sync";
 import { useTranslation } from "@/i18n";
 import { type MenuNode } from "@/lib/api-types";
-import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
+import { isLoginRequiredPath } from "@/lib/route-access";
 import { collectMenuPaths } from "@/lib/menu-utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
 import { useTabsStore } from "@/stores/tabs-store";
-
-/** 登录即可访问的白名单路径集合（Set 查找 O(1)，模块级只建一次）。 */
-const LOGIN_REQUIRED_SET = new Set<string>(LOGIN_REQUIRED_PATHS);
 
 /* 异常态覆盖层：组件化取词（跟随语言切换重渲染），
    外层用 memo 包装保持引用稳定，替代原先的模块级 JSX 常量（hoist-jsx） */
@@ -106,21 +103,32 @@ export function AdminLayout() {
     [menuTree],
   );
 
-  // 白名单：登录即可访问，不参与菜单权限校验
-  const isWhitelisted = LOGIN_REQUIRED_SET.has(pathname);
+  // 白名单：登录即可访问（精确路径 + 通知消费前缀），不参与菜单权限校验
+  const isWhitelisted = isLoginRequiredPath(pathname);
+
+  // 动态路由支持：检查父级路径是否在允许路径集合中
+  // 例如 /org/notices/123 → 检查 /org/notices 是否在 allowedPaths 中
+  const isAllowedByParentPath = useMemo(() => {
+    if (allowedPaths.has(pathname)) return true;
+    const segments = pathname.split("/").filter(Boolean);
+
+    for (let i = segments.length - 1; i > 0; i--) {
+      const parentPath = "/" + segments.slice(0, i).join("/");
+
+      if (allowedPaths.has(parentPath)) return true;
+    }
+
+    return false;
+  }, [pathname, allowedPaths]);
 
   // 无权访问（菜单就绪后判定）：跳转独立 /403 页。
-  // 设计决策 v2（2026-08-30，推翻原「URL 不变、主体区直显 403」方案）：
-  // 错误页样式按独立全屏页设计，主体区直显观感不符，改为 replace 跳转
-  // （后退不回到无权路径）。跳转完成前的过渡帧以 loading 覆盖层兜底，
-  // 避免无权页面内容闪现。
   const forbidden =
     isAuthenticated &&
     !isLoading &&
     !isError &&
     menuTree !== undefined &&
     !isWhitelisted &&
-    !allowedPaths.has(pathname);
+    !isAllowedByParentPath;
 
   useEffect(() => {
     if (!forbidden) return;

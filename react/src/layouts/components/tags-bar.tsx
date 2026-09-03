@@ -28,8 +28,11 @@ import { useTranslation } from "@/i18n";
 import { getMenuLabel } from "@/lib/menu-i18n";
 import { type MenuNode } from "@/lib/api-types";
 import { collectMenuPaths, flattenLeafMenus } from "@/lib/menu-utils";
-import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
-import { buildRouteTitleKeyMap } from "@/lib/route-title";
+import {
+  LOGIN_REQUIRED_PATHS,
+  LOGIN_REQUIRED_PREFIXES,
+} from "@/lib/route-access";
+import { buildRouteTitleKeyMap, findRouteTitleKey } from "@/lib/route-title";
 import { isPinnedTab } from "@/lib/tabs-model";
 import { useTabsStore } from "@/stores/tabs-store";
 
@@ -143,8 +146,8 @@ export function TagsBar() {
   }, [pathname, openPath]);
 
   // 菜单就绪 → 权限治理：清理恢复 / 权限变更后不可达的残留标签。
-  // 登录白名单路径（/ 与 /account）不属于菜单权限体系，登录即可达，
-  // 用户显式打开的标签不应被菜单加载后的治理误删。
+  // 登录可达路径（精确白名单 + 通知消费前缀，见 route-access.ts）不属于
+  // 菜单权限体系，登录即可达，用户显式打开的标签不应被治理误删。
   useEffect(() => {
     if (!menuTree) return;
 
@@ -153,6 +156,7 @@ export function TagsBar() {
         ...collectMenuPaths(menuTree as MenuNode[]),
         ...LOGIN_REQUIRED_PATHS,
       ]),
+      LOGIN_REQUIRED_PREFIXES,
     );
   }, [menuTree, pruneTabs]);
 
@@ -454,7 +458,7 @@ export function TagsBar() {
           {paths.map((path) => {
             const live = liveMetaByPath.get(path);
             const cached = cachedMeta[path];
-            const routeTitleKey = routeTitleKeyByPath.get(path);
+            const routeTitleKey = findRouteTitleKey(routeTitleKeyByPath, path);
             const title =
               live?.title ??
               cached?.title ??

@@ -83,7 +83,7 @@ function toLocalMinuteInput(iso: string | null | undefined): string {
 
 const noticeFormSchema = z
   .object({
-    title: z.string().trim().min(1).max(200),
+    title: z.string().trim().min(1).max(50),
     content: z.string().trim().min(1),
     // 发布范围：三类目标分别受控，并集语义
     scopeDeptIds: z.array(z.string()),
@@ -340,7 +340,7 @@ function NoticeFormModal({
                     >
                       <Label>{t("features.notices.form.title")}</Label>
                       <Input
-                        maxLength={200}
+                        maxLength={50}
                         placeholder={t(
                           "features.notices.form.titlePlaceholder",
                         )}

@@ -66,7 +66,10 @@ interface TabsState {
   /** 合并标题/图标快照（菜单就绪后调用；新值覆盖旧值，文案变更自动跟随）。 */
   syncMeta: (entries: Record<string, TabMetaSnapshot>) => void;
   /** 权限治理：移除不可达标签及其元数据（恢复 / 权限变更后调用）。 */
-  pruneTabs: (allowedPaths: ReadonlySet<string>) => void;
+  pruneTabs: (
+    allowedPaths: ReadonlySet<string>,
+    allowPrefixes?: readonly string[],
+  ) => void;
   /** 清空标题快照缓存（语言切换时调用）：标签列表保留，tags-bar 回退实时菜单名称。 */
   clearTabsCache: () => void;
   /** 清空（登出 / 会话失效时调用）。 */
@@ -194,9 +197,11 @@ export const useTabsStore = create<TabsState>()(() => ({
     useTabsStore.setState((state) => ({ meta: { ...state.meta, ...entries } }));
   },
 
-  pruneTabs: (allowedPaths) => {
+  pruneTabs: (allowedPaths, allowPrefixes) => {
     useTabsStore.setState((state) => {
-      const paths = ensureHomeTab(pruneTabPaths(state.paths, allowedPaths));
+      const paths = ensureHomeTab(
+        pruneTabPaths(state.paths, allowedPaths, allowPrefixes),
+      );
       // 同步清理已不在标签列表中的残留元数据
       const stale = Object.keys(state.meta).filter(
         (key) => !paths.includes(key),

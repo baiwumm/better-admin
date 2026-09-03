@@ -16,7 +16,7 @@ export class NoticeScopeInputDto {
 /** POST /api/notices 请求体（与 NoticeCreateRequest 对齐） */
 export class NoticeCreateDto {
   @IsString()
-  @MaxLength(200)
+  @MaxLength(50)
   title!: string;
 
   /** 富文本内容（Tiptap HTML，非空；渲染端消毒防 XSS） */
@@ -43,7 +43,7 @@ export class NoticeCreateDto {
 export class NoticeUpdateDto {
   @IsOptional()
   @IsString()
-  @MaxLength(200)
+  @MaxLength(50)
   title?: string;
 
   @IsOptional()

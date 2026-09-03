@@ -9,7 +9,7 @@ import { setAuthCookies } from "@/lib/server/auth/cookies";
 import { filterAccessibleMenus } from "@/lib/permission";
 import { collectMenuPaths } from "@/lib/menu-utils";
 import { findMenuTree, getAllMenuPaths } from "@/lib/server/menus-service";
-import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
+import { isLoginRequiredPath } from "@/lib/route-access";
 
 /**
  * 全站守卫（对齐方案 §架构要点 2/3 / 修正七）：
@@ -32,9 +32,6 @@ import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
 
 /** 登录页与错误页无需会话（等价 React 版 LOGIN_REQUIRED_PATHS + 错误页）。 */
 const PUBLIC_PATHS = new Set(["/sign-in", "/403", "/404", "/500"]);
-
-/** 登录即可访问的白名单路径集合（Set 查找 O(1)，模块级只建一次）。 */
-const LOGIN_REQUIRED_SET = new Set<string>(LOGIN_REQUIRED_PATHS);
 
 function buildSignInRedirect(request: NextRequest): NextResponse {
   const { pathname, search } = request.nextUrl;
@@ -84,28 +81,48 @@ async function trySilentRefresh(
 }
 
 /**
- * 菜单路径 403 门卫（N7 语义修正）：区分两类「不在用户可见菜单树」的路径——
- * - 真实存在的路由（在全量菜单树中，任何用户可见的菜单路径之并集）但当前
- *   用户无权 → 403（等价 React 版 admin-layout 门卫）；
- * - 根本不存在的路由（不在全量菜单树也不在白名单）→ 放行，由 Next 路由
- *   渲染 not-found（404，对齐 React 版 TanStack Router 未匹配行为）。
+ * 菜单路径 403 门卫（N7 语义修正 + 动态路由支持）：
+ * - 登录可达路由（isLoginRequiredPath：精确白名单 + 通知消费前缀）→ 直接
+ *   放行，不走菜单权限校验（详情可见性由 /api/notices/:id 服务端校验兜底）；
+ * - 真实存在的路由（在全量菜单树中）但当前用户无权 → 403；
+ * - 根本不存在的路由 → 放行（404）；
+ * - 动态路由（通知消费前缀之外的场景）：检查父级路径是否在全量菜单树中，
+ *   如果父级在菜单树中但当前用户无权 → 403。
  */
 async function resolvePathGate(
   user: AuthUser,
   pathname: string,
 ): Promise<"allowed" | "forbidden" | "unknown"> {
-  if (LOGIN_REQUIRED_SET.has(pathname)) return "allowed";
+  // 登录可达路由（精确白名单 + 动态前缀，语义见 route-access.ts）
+  if (isLoginRequiredPath(pathname)) return "allowed";
 
   const [tree, allPaths] = await Promise.all([
     findMenuTree(user),
     getAllMenuPaths(),
   ]);
 
-  if (!allPaths.has(pathname)) return "unknown";
+  // 精确匹配
+  if (allPaths.has(pathname)) {
+    const allowedPaths = collectMenuPaths(filterAccessibleMenus(tree));
 
-  const allowedPaths = collectMenuPaths(filterAccessibleMenus(tree));
+    return allowedPaths.has(pathname) ? "allowed" : "forbidden";
+  }
 
-  return allowedPaths.has(pathname) ? "allowed" : "forbidden";
+  // 动态路由支持：检查父级路径是否在全量菜单树中
+  // 例如 /org/notices/123 → 检查 /org/notices 是否在菜单树中
+  const segments = pathname.split("/").filter(Boolean);
+
+  for (let i = segments.length - 1; i > 0; i--) {
+    const parentPath = "/" + segments.slice(0, i).join("/");
+
+    if (allPaths.has(parentPath)) {
+      const allowedPaths = collectMenuPaths(filterAccessibleMenus(tree));
+
+      return allowedPaths.has(parentPath) ? "allowed" : "forbidden";
+    }
+  }
+
+  return "unknown";
 }
 
 /** Next 16 的 proxy 约定（原 middleware；每请求守卫入口）。 */
