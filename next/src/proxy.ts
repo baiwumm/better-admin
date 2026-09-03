@@ -6,7 +6,6 @@ import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "@/lib/auth-cookies";
 import { verifyToken } from "@/lib/server/auth/tokens";
 import { loadUserWithPermissions, refresh } from "@/lib/server/auth/session";
 import { setAuthCookies } from "@/lib/server/auth/cookies";
-import { filterAccessibleMenus } from "@/lib/permission";
 import { collectMenuPaths } from "@/lib/menu-utils";
 import { findMenuTree, getAllMenuPaths } from "@/lib/server/menus-service";
 import { isLoginRequiredPath } from "@/lib/route-access";
@@ -101,9 +100,10 @@ async function resolvePathGate(
     getAllMenuPaths(),
   ]);
 
-  // 精确匹配
+  // 精确匹配：findMenuTree 已按 role_menus 完成权限过滤与祖先链补全，
+  // 无需 filterAccessibleMenus 二次过滤（分组节点 userPermissions="0" 会被误杀）
   if (allPaths.has(pathname)) {
-    const allowedPaths = collectMenuPaths(filterAccessibleMenus(tree));
+    const allowedPaths = collectMenuPaths(tree);
 
     return allowedPaths.has(pathname) ? "allowed" : "forbidden";
   }
@@ -116,7 +116,7 @@ async function resolvePathGate(
     const parentPath = "/" + segments.slice(0, i).join("/");
 
     if (allPaths.has(parentPath)) {
-      const allowedPaths = collectMenuPaths(filterAccessibleMenus(tree));
+      const allowedPaths = collectMenuPaths(tree);
 
       return allowedPaths.has(parentPath) ? "allowed" : "forbidden";
     }
