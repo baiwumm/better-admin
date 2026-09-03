@@ -149,6 +149,11 @@ export function getUserErrorMessage(error: unknown): string {
         "errors.users.superAdminProtected",
         "该用户绑定了超级管理员角色，不可操作",
       );
+    case "SUPER_ADMIN_ROLE_BINDING_PROTECTED":
+      return getErrorMessage(
+        "errors.users.superAdminRoleBindingProtected",
+        "不可移除或添加超级管理员角色绑定",
+      );
     default:
       return error instanceof Error ? error.message : String(error);
   }

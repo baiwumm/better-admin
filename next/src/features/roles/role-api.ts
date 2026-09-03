@@ -97,7 +97,7 @@ export function getRoleErrorMessage(error: unknown): string {
     case "SUPER_ADMIN_ROLE_PROTECTED":
       return getErrorMessage(
         "errors.roles.superAdminProtected",
-        "超级管理员为系统内置角色，其授权不可修改",
+        "超级管理员为系统内置角色，不可修改或删除",
       );
     case "INVALID_OPERATION":
       return getErrorMessage(

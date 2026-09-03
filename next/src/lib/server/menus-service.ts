@@ -2,11 +2,11 @@ import "server-only";
 
 import type { AuthUser, MenuNode } from "@/lib/api-types";
 
-import { eq, ilike, or } from "drizzle-orm";
+import { and, eq, ilike, or } from "drizzle-orm";
 import { count } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { logs, menus, roleMenus, userRoles } from "@/db/schema";
+import { logs, menus, roleMenus, userRoles, roles } from "@/db/schema";
 import {
   normalizePermissionBits,
   SUPER_ADMIN_BITS_POSITIVE,
@@ -22,8 +22,9 @@ import {
  */
 
 /**
- * 一次性查询当前用户所有角色的 role_menus，聚合为 Map<menuId, permissions>。
+ * 一次性查询当前用户所有**启用**角色的 role_menus，聚合为 Map<menuId, permissions>。
  * 仅 1 次查询，严格禁止 N+1（database-design.md §1.5）。
+ * 停用角色（enabled=false）不参与聚合，实现权限即时回收。
  */
 async function buildPermissionMap(
   userId: string,
@@ -32,7 +33,8 @@ async function buildPermissionMap(
     .select({ menuId: roleMenus.menuId, bits: roleMenus.permissions })
     .from(roleMenus)
     .innerJoin(userRoles, eq(roleMenus.roleId, userRoles.roleId))
-    .where(eq(userRoles.userId, userId));
+    .innerJoin(roles, eq(userRoles.roleId, roles.id))
+    .where(and(eq(userRoles.userId, userId), eq(roles.enabled, true)));
 
   const map = new Map<string, bigint>();
 
@@ -58,12 +60,13 @@ async function buildAllowedMenuIds(
     return null;
   }
 
-  // 直接授权集合：用户所有角色在 role_menus 中关联的 menu_id（去重）
+  // 直接授权集合：用户所有**启用**角色在 role_menus 中关联的 menu_id（去重）
   const directRows = await db
     .selectDistinct({ menuId: roleMenus.menuId })
     .from(roleMenus)
     .innerJoin(userRoles, eq(roleMenus.roleId, userRoles.roleId))
-    .where(eq(userRoles.userId, user.id));
+    .innerJoin(roles, eq(userRoles.roleId, roles.id))
+    .where(and(eq(userRoles.userId, user.id), eq(roles.enabled, true)));
 
   const directIds = new Set(directRows.map((r) => r.menuId));
 

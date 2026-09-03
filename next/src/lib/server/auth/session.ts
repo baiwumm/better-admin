@@ -46,15 +46,17 @@ function hashToken(token: string): string {
 }
 
 /**
- * 聚合用户权限位：OR 其所有角色在 role_menus 上的授权位。
+ * 聚合用户权限位：OR 其所有**启用**角色在 role_menus 上的授权位。
  * super_admin 角色为 -1n，OR 后整体仍为 -1n（全量位）。
+ * 停用角色（enabled=false）不参与聚合，实现权限即时回收。
  */
 export async function aggregatePermissions(userId: string): Promise<bigint> {
   const rows = await db
     .select({ bits: roleMenus.permissions })
     .from(roleMenus)
     .innerJoin(userRoles, eq(roleMenus.roleId, userRoles.roleId))
-    .where(eq(userRoles.userId, userId));
+    .innerJoin(roles, eq(userRoles.roleId, roles.id))
+    .where(and(eq(userRoles.userId, userId), eq(roles.enabled, true)));
 
   let agg = 0n;
 
@@ -91,7 +93,7 @@ export async function loadUserWithPermissions(
     .select({ code: roles.code })
     .from(roles)
     .innerJoin(userRoles, eq(roles.id, userRoles.roleId))
-    .where(eq(userRoles.userId, userId));
+    .where(and(eq(userRoles.userId, userId), eq(roles.enabled, true)));
 
   const permissions = await aggregatePermissions(userId);
 

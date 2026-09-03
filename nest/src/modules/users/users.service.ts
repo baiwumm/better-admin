@@ -207,6 +207,52 @@ export class UsersService {
     return new Set(rows.map((r) => r.userId));
   }
 
+  /** 校验 roleIds 中是否包含 super_admin 角色 */
+  private async roleContainsSuperAdmin(roleIds: string[]): Promise<boolean> {
+    if (roleIds.length === 0) return false;
+    const rows = await db
+      .select({ id: roles.id })
+      .from(roles)
+      .where(and(inArray(roles.id, roleIds), eq(roles.code, SUPER_ADMIN_ROLE_CODE)));
+    return rows.length > 0;
+  }
+
+  /**
+   * super_admin 角色绑定保护：
+   * 1. 不可移除 super_admin 角色绑定（除非操作者也是 super_admin）
+   * 2. 不可给其他用户添加 super_admin 角色（除非操作者也是 super_admin）
+   */
+  private async assertValidRoleBindingChange(
+    targetUserId: string,
+    newRoleIds: string[],
+    operatorId: string | null,
+  ) {
+    const hasSuperAdminInNew = await this.roleContainsSuperAdmin(newRoleIds);
+    const hasSuperAdminInExisting = (await this.filterSuperAdminIds([targetUserId])).size > 0;
+
+    // 试图移除 super_admin 绑定
+    if (hasSuperAdminInExisting && !hasSuperAdminInNew) {
+      const operatorBound = operatorId && (await this.filterSuperAdminIds([operatorId])).size > 0;
+      if (!operatorBound) {
+        throw new ForbiddenException({
+          code: 'SUPER_ADMIN_ROLE_BINDING_PROTECTED',
+          message: '不可移除超级管理员角色绑定',
+        });
+      }
+    }
+
+    // 试图给其他用户添加 super_admin 角色
+    if (!hasSuperAdminInExisting && hasSuperAdminInNew) {
+      const operatorBound = operatorId && (await this.filterSuperAdminIds([operatorId])).size > 0;
+      if (!operatorBound) {
+        throw new ForbiddenException({
+          code: 'SUPER_ADMIN_ROLE_BINDING_PROTECTED',
+          message: '不可为用户添加超级管理员角色',
+        });
+      }
+    }
+  }
+
   /** 捕获唯一索引冲突，转换为业务 409 错误 */
   private handleUniqueError(err: any): never {
     // drizzle 0.45 将 pg 错误包装为 DrizzleQueryError，原始错误的 constraint 挂在 cause 上
@@ -278,7 +324,7 @@ export class UsersService {
     return map;
   }
 
-  /** 校验 roleIds 全部有效（存在且启用），存在无效 ID 时抛 VALIDATION_ERROR */
+  /** 校验 roleIds 全部有效（存在），存在无效 ID 时抛 VALIDATION_ERROR */
   private async assertValidRoleIds(roleIds: string[]) {
     if (roleIds.length === 0) return;
     const rows = await db
@@ -477,6 +523,8 @@ export class UsersService {
           .returning();
 
         if (roleIds.length > 0) {
+          // super_admin 角色绑定保护：创建即绑定 super_admin 角色要求操作者自身为超管
+          await this.assertValidRoleBindingChange(row.id, roleIds, operatorId);
           await tx
             .insert(userRoles)
             .values(roleIds.map((roleId) => ({ userId: row.id, roleId })));
@@ -524,7 +572,7 @@ export class UsersService {
     }
 
     // v1.4.6 保护：编辑接口请求停用受保护用户时与 /status 端点同权拦截
-    //（编辑邮箱/昵称等资料不受限）；super_admin 角色绑定变更（roleIds）暂不限制
+    //（编辑邮箱/昵称等资料不受限）
     if (dto.status === 'disabled') {
       await this.assertTargetOperable(existing, operatorId);
     }
@@ -532,6 +580,8 @@ export class UsersService {
     // roleIds 为 undefined 表示「未修改角色」；为数组（含空数组）表示「全量替换」
     if (dto.roleIds !== undefined) {
       await this.assertValidRoleIds(dto.roleIds);
+      // super_admin 角色绑定保护：不可移除或添加 super_admin 角色绑定（超管间互操作豁免）
+      await this.assertValidRoleBindingChange(id, dto.roleIds, operatorId);
     }
 
     // 组织中心关联校验（v1.6.0）：postIds 全量替换语义同 roleIds；主岗须在列表中

@@ -357,6 +357,24 @@ function assertValidMainPost(
   }
 }
 
+/** 查询 userIds 中绑定了 super_admin 角色的用户 id 集合（操作者/目标超管判定统一走绑定关系）。 */
+async function filterSuperAdminIds(userIds: string[]): Promise<Set<string>> {
+  if (userIds.length === 0) return new Set();
+
+  const rows = await db
+    .select({ userId: userRoles.userId })
+    .from(userRoles)
+    .innerJoin(roles, eq(roles.id, userRoles.roleId))
+    .where(
+      and(
+        inArray(userRoles.userId, userIds),
+        eq(roles.code, SUPER_ADMIN_ROLE_CODE),
+      ),
+    );
+
+  return new Set(rows.map((row) => row.userId));
+}
+
 /** 目标用户保护校验（删除/批量删/停用/重置密码共用，v1.4.6）：
  * - 删除/批量删/重置密码/停用目标为本人 → 400 SELF_OPERATION_FORBIDDEN；
  * - 内置 admin（username='admin'）→ 403 ADMIN_USER_PROTECTED；
@@ -386,22 +404,9 @@ async function assertTargetOperable(
     throw new ServerApiError(403, "ADMIN_USER_PROTECTED", "内置管理员受保护");
   }
 
-  const superAdminBinding = await db
-    .select({ roleId: roles.id })
-    .from(userRoles)
-    .innerJoin(roles, eq(roles.id, userRoles.roleId))
-    .where(
-      and(
-        eq(userRoles.userId, targetId),
-        eq(roles.code, SUPER_ADMIN_ROLE_CODE),
-      ),
-    )
-    .limit(1);
+  const superAdminUserIds = await filterSuperAdminIds([targetId, operator.id]);
 
-  if (
-    superAdminBinding.length > 0 &&
-    BigInt(operator.permissions) !== 9223372036854775807n
-  ) {
+  if (superAdminUserIds.has(targetId) && !superAdminUserIds.has(operator.id)) {
     throw new ServerApiError(
       403,
       "SUPER_ADMIN_USER_PROTECTED",
@@ -410,6 +415,56 @@ async function assertTargetOperable(
   }
 
   return;
+}
+
+/** 校验 roleIds 中是否包含 super_admin 角色 */
+async function roleContainsSuperAdmin(roleIds: string[]): Promise<boolean> {
+  if (roleIds.length === 0) return false;
+  const rows = await db
+    .select({ id: roles.id })
+    .from(roles)
+    .where(
+      and(inArray(roles.id, roleIds), eq(roles.code, SUPER_ADMIN_ROLE_CODE)),
+    );
+
+  return rows.length > 0;
+}
+
+/**
+ * super_admin 角色绑定保护：
+ * 1. 不可移除 super_admin 角色绑定（除非操作者也是 super_admin）
+ * 2. 不可给其他用户添加 super_admin 角色（除非操作者也是 super_admin）
+ */
+async function assertValidRoleBindingChange(
+  targetUserId: string,
+  newRoleIds: string[],
+  operatorId: string | null,
+): Promise<void> {
+  const hasSuperAdminInNew = await roleContainsSuperAdmin(newRoleIds);
+  const superAdminUserIds = await filterSuperAdminIds(
+    operatorId ? [targetUserId, operatorId] : [targetUserId],
+  );
+  const hasSuperAdminInExisting = superAdminUserIds.has(targetUserId);
+  const operatorIsSuperAdmin =
+    operatorId !== null && superAdminUserIds.has(operatorId);
+
+  // 试图移除 super_admin 绑定
+  if (hasSuperAdminInExisting && !hasSuperAdminInNew && !operatorIsSuperAdmin) {
+    throw new ServerApiError(
+      403,
+      "SUPER_ADMIN_ROLE_BINDING_PROTECTED",
+      "不可移除超级管理员角色绑定",
+    );
+  }
+
+  // 试图给其他用户添加 super_admin 角色
+  if (!hasSuperAdminInExisting && hasSuperAdminInNew && !operatorIsSuperAdmin) {
+    throw new ServerApiError(
+      403,
+      "SUPER_ADMIN_ROLE_BINDING_PROTECTED",
+      "不可为用户添加超级管理员角色",
+    );
+  }
 }
 
 /** 用户名/邮箱唯一冲突 → 409（部分唯一索引 deleted_at IS NULL 兜底）。
@@ -482,6 +537,11 @@ export async function createUser(
 
   const passwordHash = await bcrypt.hash(dto.password, 10);
   const id = generateRecordId();
+
+  // super_admin 角色绑定保护：创建用户绑定 super_admin 角色同样要求操作者自身为超管
+  if (dto.roleIds?.length) {
+    await assertValidRoleBindingChange(id, dto.roleIds, operatorId);
+  }
 
   try {
     await db.transaction(async (tx) => {
@@ -579,6 +639,8 @@ export async function updateUser(
 
   if (dto.roleIds !== undefined) {
     await assertValidRoleIds(dto.roleIds);
+    // super_admin 角色绑定保护：不可移除或添加 super_admin 角色绑定（超管间互操作豁免）
+    await assertValidRoleBindingChange(id, dto.roleIds, operator.id);
   }
 
   // 组织中心关联校验（v1.6.0）：postIds 全量替换语义同 roleIds；主岗须在列表中

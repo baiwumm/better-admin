@@ -85,7 +85,7 @@ function assertNotSuperAdmin(role: { code: string }): void {
     throw new ServerApiError(
       403,
       "SUPER_ADMIN_ROLE_PROTECTED",
-      "超级管理员为系统内置角色，其授权不可修改",
+      "超级管理员为系统内置角色，不可修改或删除",
     );
   }
 }
@@ -252,6 +252,17 @@ export async function updateRole(
 
   if (!existing) {
     throw new ServerApiError(404, "ROLE_NOT_FOUND", "角色不存在");
+  }
+
+  // 系统内置角色保护：super_admin 角色不可停用（enabled 参与聚合，停用将使
+  // 绑定用户聚合位清空、全后台失权且无自助恢复手段）；name/description/sort
+  // 无权限语义，允许修改（对齐前端「编辑保留」设计）
+  if (existing.code === SUPER_ADMIN_ROLE_CODE && dto.enabled === false) {
+    throw new ServerApiError(
+      403,
+      "SUPER_ADMIN_ROLE_PROTECTED",
+      "超级管理员为系统内置角色，不可停用",
+    );
   }
 
   let row: typeof roles.$inferSelect;

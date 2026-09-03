@@ -40,6 +40,7 @@ import { DeptTreeSelect } from "@/features/org/dept-tree-select";
 import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "@/features/org/dept-api";
 import { fetchPosts } from "@/features/org/post-api";
 import { useTranslation } from "@/i18n";
+import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
@@ -196,12 +197,24 @@ function UserFormModal({
   });
 
   // 角色下拉选项：仅启用角色；pageSize 上限 50，超出由 fetchRoleOptions 续拉
-  const { data: roleOptions = [], isLoading: rolesLoading } = useQuery({
+  const { data: fetchedRoleOptions = [], isLoading: rolesLoading } = useQuery({
     enabled: true,
     queryKey: ROLE_OPTIONS_QUERY_KEY,
     queryFn: fetchRoleOptions,
     staleTime: 60_000,
   });
+
+  // super_admin 绑定保护（前端止损）：非超管操作者不可见/不可选 super_admin 角色，
+  // 与后端 POST/PUT /users 绑定校验同口径（超管间互操作豁免）
+  const roleOptions = useMemo(
+    () =>
+      currentUserIsSuperAdmin
+        ? fetchedRoleOptions
+        : fetchedRoleOptions.filter(
+            (role: Role) => role.code !== SUPER_ADMIN_ROLE_CODE,
+          ),
+    [fetchedRoleOptions, currentUserIsSuperAdmin],
+  );
 
   // 组织中心数据源：组织树（与组织/岗位页共享缓存）+ 岗位选项（首页 50 条）
   const { data: deptTree = [] } = useQuery({
