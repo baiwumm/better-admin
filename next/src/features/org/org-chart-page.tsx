@@ -36,15 +36,15 @@ const OrgChart = dynamic(
 function ChartSkeleton() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 p-6">
-      <Skeleton className="h-[112px] w-[240px] rounded-xl" />
+      <Skeleton className="h-28 w-60 rounded-xl" />
       <div className="flex gap-8">
-        <Skeleton className="h-[112px] w-[240px] rounded-xl" />
-        <Skeleton className="h-[112px] w-[240px] rounded-xl" />
+        <Skeleton className="h-28 w-60 rounded-xl" />
+        <Skeleton className="h-28 w-60 rounded-xl" />
       </div>
       <div className="flex gap-8">
-        <Skeleton className="h-[112px] w-[240px] rounded-xl" />
-        <Skeleton className="h-[112px] w-[240px] rounded-xl" />
-        <Skeleton className="h-[112px] w-[240px] rounded-xl" />
+        <Skeleton className="h-28 w-60 rounded-xl" />
+        <Skeleton className="h-28 w-60 rounded-xl" />
+        <Skeleton className="h-28 w-60 rounded-xl" />
       </div>
     </div>
   );
@@ -114,7 +114,7 @@ export function OrgChartPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <Surface className="min-h-[420px] flex-1 overflow-hidden rounded-3xl">
+      <Surface className="min-h-120 flex-1 overflow-hidden">
         {treeQuery.isLoading ? (
           <ChartSkeleton />
         ) : tree.length === 0 ? (

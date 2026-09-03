@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { Button, Spinner, Typography } from "@heroui/react";
+import { Button, Spinner, Typography, cn } from "@heroui/react";
 
 import { AppHeader } from "./components/app-header";
 import { AppSidebar } from "./components/app-sidebar";
@@ -20,6 +20,9 @@ import { collectMenuPaths } from "@/lib/menu-utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
 import { useTabsStore } from "@/stores/tabs-store";
+
+/** 全宽页面白名单（无 main 内边距）：这些页面需要占满主体区域 */
+const FULL_WIDTH_ROUTES = ["/org/chart"];
 
 /* 异常态覆盖层：组件化取词（跟随语言切换重渲染），
    外层用 memo 包装保持引用稳定，替代原先的模块级 JSX 常量（hoist-jsx） */
@@ -102,6 +105,9 @@ export function AdminLayout() {
       menuTree ? collectMenuPaths(menuTree as MenuNode[]) : new Set<string>(),
     [menuTree],
   );
+
+  // 全宽页面判定
+  const isFullWidthPage = FULL_WIDTH_ROUTES.includes(pathname);
 
   // 白名单：登录即可访问（精确路径 + 通知消费前缀），不参与菜单权限校验
   const isWhitelisted = isLoginRequiredPath(pathname);
@@ -187,7 +193,10 @@ export function AdminLayout() {
             滚动统一由本容器承担（滚动条贴合主体区边缘）；KeepAliveOutlet
             在每次页面切换完成后会将滚动位置重置到顶部。 */}
         <main
-          className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6 [view-transition-name:main-content]"
+          className={cn(
+            "min-h-0 flex-1 overflow-y-auto",
+            isFullWidthPage ? "" : "p-4 md:p-6",
+          )}
           data-vt-name="main-content"
         >
           {body}

@@ -1,6 +1,7 @@
 import type { DeptTreeNode } from "@/lib/api-types";
-import type { Edge, Node } from "@xyflow/react";
+import type { Edge, Node, ColorMode } from "@xyflow/react";
 
+import { useTheme } from "@heroui/react";
 import {
   Background,
   BackgroundVariant,
@@ -65,6 +66,7 @@ export function OrgChart({
   onToggle,
   onNodeClick,
 }: OrgChartProps) {
+  const { theme } = useTheme();
   const nodes = useMemo<Node<DeptNodeData>[]>(() => {
     const positions = layoutDeptForest(filterVisible(tree, collapsed));
     const list: Node<DeptNodeData>[] = [];
@@ -129,6 +131,7 @@ export function OrgChart({
   return (
     <ReactFlow
       fitView
+      colorMode={theme as ColorMode}
       edges={edges}
       edgesFocusable={false}
       elementsSelectable={false}

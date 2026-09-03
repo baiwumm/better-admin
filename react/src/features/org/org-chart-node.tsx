@@ -1,7 +1,15 @@
 import type { DeptTreeNode } from "@/lib/api-types";
 import type { Node, NodeProps } from "@xyflow/react";
 
-import { Avatar, Button, Card, Chip, Tooltip, cn } from "@heroui/react";
+import {
+  Avatar,
+  Button,
+  Card,
+  Chip,
+  Tooltip,
+  cn,
+  Description,
+} from "@heroui/react";
 import {
   ChevronDown,
   ChevronUp,
@@ -76,16 +84,7 @@ export const DeptChartNode = memo(function DeptChartNode({
 
   return (
     <Card
-      className={cn(
-        "group/node gap-2 rounded-xl border bg-gradient-to-b from-content2/70 to-content1 p-3 shadow-sm transition-all duration-200",
-        isRoot
-          ? "border-primary/25 from-primary/10 shadow-md shadow-primary/10"
-          : "border-default/50",
-        !isRoot &&
-          !isDisabled &&
-          "hover:-translate-y-1 hover:border-primary/35 hover:shadow-md",
-        isDisabled && "opacity-55 saturate-[0.55]",
-      )}
+      className="group/node hover:-translate-y-1 transition-all duration-200 gap-2"
       style={{ width: CHART_NODE_WIDTH, height: CHART_NODE_HEIGHT }}
     >
       {/* 只读图谱：Handle 仅作父子连线锚点，隐藏且不可连 */}
@@ -132,7 +131,7 @@ export const DeptChartNode = memo(function DeptChartNode({
       </Card.Header>
 
       {/* 负责人区（核心）：圆形头像（有头像显示图片，无头像显示首字）+ 姓名 / 组织编码两行 */}
-      <Card.Content className="min-w-0 p-0">
+      <Card.Content className="min-w-0">
         {leaderName ? (
           <Tooltip>
             <Tooltip.Trigger>
@@ -175,19 +174,19 @@ export const DeptChartNode = memo(function DeptChartNode({
       </Card.Content>
 
       {/* 底部：归属信息（根节点 = 顶级组织数；普通节点 = 下级数 / 末级标记） */}
-      <Card.Footer className="flex items-center gap-1 p-0 text-[11px] text-default-500">
+      <Card.Footer className="flex items-center gap-1">
         {isRoot ? (
           <Landmark aria-hidden className="size-3 shrink-0" />
         ) : (
           <Network aria-hidden className="size-3 shrink-0" />
         )}
-        <span className="truncate">
+        <Description className="truncate">
           {isRoot
             ? t("features.chart.rootSubtitle", { count: childCount })
             : childCount > 0
               ? t("features.chart.childCountLine", { count: childCount })
               : t("features.chart.leafNode")}
-        </span>
+        </Description>
       </Card.Footer>
 
       {/* 折叠 / 展开：底部悬浮圆钮。React Aria 的 PressEvent 默认停止冒泡
@@ -199,7 +198,7 @@ export const DeptChartNode = memo(function DeptChartNode({
               ? "features.chart.node.expand"
               : "features.chart.node.collapse",
           )}
-          className="absolute -bottom-3.5 left-1/2 z-10 h-6 min-w-6 -translate-x-1/2 gap-0.5 rounded-full border border-border bg-content1 px-1.5 shadow-sm transition-colors data-[hover=true]:border-primary/40 data-[hover=true]:bg-default/60"
+          className="absolute -bottom-3.5 left-1/2 z-10 h-6 min-w-6 -translate-x-1/2 gap-0.5 rounded-full border border-border bg-content1 px-1.5 shadow-sm transition-colors data-[hover=true]:border-primary/40 data-[hover=true]:bg-default/60 dark:bg-content2 dark:data-[hover=true]:bg-default/40"
           size="sm"
           variant="ghost"
           onPress={() => onToggle(dept.id)}

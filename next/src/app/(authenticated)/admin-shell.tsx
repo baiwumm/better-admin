@@ -4,6 +4,7 @@ import type { AuthUser, MenuNode } from "@/lib/api-types";
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { cn } from "@heroui/react";
 
 import { AppHeader } from "@/layouts/components/app-header";
 import { AppSidebar } from "@/layouts/components/app-sidebar";
@@ -18,6 +19,9 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
 import { useMenuStore } from "@/stores/menu-store";
 import { useTabsStore } from "@/stores/tabs-store";
+
+/** 全宽页面白名单（无 main 内边距）：这些页面需要占满主体区域 */
+const FULL_WIDTH_ROUTES = ["/org/chart"];
 
 type AdminShellProps = {
   /** 服务端注入的可见菜单树（权限过滤后，含固定控制台节点） */
@@ -55,6 +59,9 @@ export function AdminShell({ menuTree, user, children }: AdminShellProps) {
   useEffect(() => {
     useMenuStore.getState().setMenus(menuTree);
   }, [menuTree]);
+
+  // 全宽页面判定
+  const isFullWidthPage = FULL_WIDTH_ROUTES.includes(pathname);
 
   // 多标签页：挂载恢复 sessionStorage 快照（SSR 安全，见 tabs-store）；
   // 路由变化登记标签；菜单就绪后按可达路径治理残留标签。
@@ -110,7 +117,12 @@ export function AdminShell({ menuTree, user, children }: AdminShellProps) {
         {/* 主体内容：滚动统一由本容器承担（滚动条贴合主体区边缘）。
             React 版的 view-transition-name/KeepAlive 实例池随 KeepAlive
             一并放弃（已知差异），页面切换为普通提交渲染。 */}
-        <main className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
+        <main
+          className={cn(
+            "min-h-0 flex-1 overflow-y-auto",
+            isFullWidthPage ? "" : "p-4 md:p-6",
+          )}
+        >
           {children}
         </main>
       </div>
