@@ -148,6 +148,7 @@ export async function fetchApiRaw(
   if (response.status === 204) {
     // 无内容响应（如 logout）
     progressStop();
+
     return { data: null };
   }
 
@@ -169,6 +170,7 @@ export async function fetchApiRaw(
   }
 
   progressStop();
+
   return parseEnvelope(json);
 }
 
