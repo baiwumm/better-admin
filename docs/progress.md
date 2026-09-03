@@ -5,6 +5,13 @@
 
 ---
 
+### super_admin 角色绑定保护确认 + 侧边栏菜单过滤修复 + 文档清理（2026-09-05）
+
+- **super_admin 角色绑定保护（create 端点）**：排查确认 NestJS `create`（`nest/src/modules/users/users.service.ts` 第 527 行）与 Next.js `createUser`（`next/src/lib/server/users-service.ts` 第 542-543 行）均已在事务内调用 `assertValidRoleBindingChange`，非超管操作者绑定 super_admin 角色会被 403 `SUPER_ADMIN_ROLE_BINDING_PROTECTED`；React / Next.js 前端表单（`user-form-dialog.tsx`）均通过 `roleOptions` 过滤 `SUPER_ADMIN_ROLE_CODE`，非超管操作者不可见 super_admin 选项。AGENTS.md §19 此前记录的「create 未拦」为过时条目，代码早已补全，本次文档同步清账；§19 当前阶段描述中 super_admin 角色绑定保护措辞由「update 端点」更正为「create + update 端点，nest + next 三端同步」。
+- **侧边栏菜单分组分支消失修复**：React / Next.js 两端侧边栏均缺失分组菜单（如「系统管理」整个分支）。根因为 `filterAccessibleMenus` 对 `findMenuTree` / `GET /api/menus` 已过滤的结果做二次过滤——分组节点（如「系统管理」「组织中心」）的 `userPermissions` 为 `"0"`（自身不声明权限位），`canAccessMenu` 将其判为无权而砍掉整个分支。修复：移除 React `menu-fetch.ts`、Next.js `layout.tsx`（RSC）与 `proxy.ts` 中多余的 `filterAccessibleMenus` 调用，保留后端 `buildAllowedMenuIds`（按 `role_menus` 角色关联过滤 + 祖先链补全）为唯一权限层；侧边栏渲染仅做 `hideInMenu` 剔除（`filterHiddenMenus`）。
+- **验证**：react / next tsc / lint（无新增 error）全绿；React `tsc --noEmit` 全绿。
+- **变更文件**：`react/src/lib/menu-fetch.ts`、`next/src/app/(authenticated)/layout.tsx`、`next/src/proxy.ts`、`next/src/layouts/components/app-sidebar.tsx`、`AGENTS.md`、`docs/progress.md`。
+
 ### 图谱节点卡片重设计 + 导出样式美化 + Next 端导出跟进（2026-09-03）
 
 - **背景**：阶段 4 验收反馈——图谱卡片太简陋（白底细边框、负责人「R 张三」类文本无视觉锚点）、导出 Excel 是默认样式；且用户明确要求**导出功能 React / Next 两端一致**。本轮三项：节点卡片 HeroUI 化重设计、导出表格企业级样式、Next 端导出同步上线。
