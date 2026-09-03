@@ -45,7 +45,7 @@ export type DeptNodeData = {
 
 export type DeptChartNode = Node<DeptNodeData, "dept">;
 
-/** Avatar 色板：按负责人姓名稳定散列取色（无头像数据，Fallback 显示首字） */
+/** Avatar 色板：按负责人姓名稳定散列取色（Fallback 显示首字） */
 const AVATAR_COLORS = [
   "accent",
   "success",
@@ -131,7 +131,7 @@ export const DeptChartNode = memo(function DeptChartNode({
         </Chip>
       </Card.Header>
 
-      {/* 负责人区（核心）：圆形头像（姓名散列取色）+ 姓名 / 组织编码两行 */}
+      {/* 负责人区（核心）：圆形头像（有头像显示图片，无头像显示首字）+ 姓名 / 组织编码两行 */}
       <Card.Content className="min-w-0 p-0">
         {leaderName ? (
           <Tooltip>
@@ -143,6 +143,9 @@ export const DeptChartNode = memo(function DeptChartNode({
                   color={pickAvatarColor(leaderName)}
                   size="sm"
                 >
+                  {dept.leaderAvatar && (
+                    <Avatar.Image alt={leaderName} src={dept.leaderAvatar} />
+                  )}
                   <Avatar.Fallback className="text-xs">
                     {leaderName.charAt(0)}
                   </Avatar.Fallback>

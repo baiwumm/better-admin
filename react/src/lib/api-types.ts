@@ -367,6 +367,8 @@ export interface DeptTreeNode {
   /** 负责人用户 ID（契约 v1.6.0 补充；编辑弹窗回显负责人需要） */
   leaderId: string | null;
   leaderName: string | null;
+  /** 负责人头像 URL（契约 v1.7.0：图谱卡片展示用） */
+  leaderAvatar: string | null;
   sort: number;
   status: DeptStatus;
   children: DeptTreeNode[];

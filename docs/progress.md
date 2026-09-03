@@ -5,6 +5,35 @@
 
 ---
 
+### 架构图谱负责人头像显示修复（2026-09-06）
+
+- **问题**：架构图谱中，用户有头像，但卡片名称左侧的头像还是显示的是第一个字（首字 Fallback），没有显示用户实际头像。
+- **根因分析**：
+  1. OpenAPI 合约 `DeptTreeNode` 缺少 `leaderAvatar` 字段
+  2. 后端 `depts.service.ts` 的 `baseSelect` 查询只返回 `users.displayName` 作为 `leaderName`，未返回 `users.avatar`
+  3. 前端 `org-chart-node.tsx` 使用 HeroUI Avatar 组件时，只使用了 `Avatar.Fallback` 显示首字，未使用 `Avatar.Image` 显示头像
+- **修复方案**：
+  1. **更新 OpenAPI 合约**：`DeptTreeNode` 新增 `leaderAvatar` 字段（nullable string，契约 v1.7.0）
+  2. **更新后端服务（NestJS）**：
+     - `DeptView`、`DeptTreeNodeView`、`DeptRow` 类型新增 `leaderAvatar` 字段
+     - `baseSelect` 查询增加 `users.avatar AS leaderAvatar`（LEFT JOIN users）
+     - `toView` 函数和 `findTree` 构建逻辑同步返回 `leaderAvatar`
+  3. **更新后端服务（Next.js）**：同步 NestJS 的变更，`DeptView`、`DeptTreeNodeView`、`DeptRow` 类型 + `baseSelect` + `toView` + `findDeptTree` 构建逻辑
+  4. **更新前端类型**：React / Next.js 两端 `api-types.ts` 的 `DeptTreeNode` 接口新增 `leaderAvatar: string | null`
+  5. **更新前端组件**：React / Next.js 两端 `org-chart-node.tsx` 的 Avatar 区域改为条件渲染——有 `leaderAvatar` 时渲染 `<Avatar.Image>`，始终渲染 `<Avatar.Fallback>` 作为无头像时的首字兜底
+  6. **同步虚拟根节点**：React / Next.js 两端 `org-chart-page.tsx` 的 Better Admin 虚拟根节点补 `leaderAvatar: null`
+- **变更文件**：
+  - `nest/openapi/openapi.yaml`（DeptTreeNode schema）
+  - `nest/src/modules/org/depts.service.ts`（类型 + 查询 + 构建）
+  - `react/src/lib/api-types.ts`（DeptTreeNode 接口）
+  - `react/src/features/org/org-chart-node.tsx`（Avatar.Image 条件渲染）
+  - `react/src/features/org/org-chart-page.tsx`（虚拟根节点 leaderAvatar）
+  - `next/src/lib/api-types.ts`（DeptTreeNode 接口）
+  - `next/src/lib/server/depts-service.ts`（类型 + 查询 + 构建）
+  - `next/src/features/org/org-chart-node.tsx`（Avatar.Image 条件渲染）
+  - `next/src/features/org/org-chart-page.tsx`（虚拟根节点 leaderAvatar）
+- **验证**：React / Next.js 两端 tsc 通过，TypeScript 类型完整对齐。图谱卡片在有头像时显示用户头像图片，无头像时 Fallback 显示首字。
+
 ### super_admin 角色绑定保护确认 + 侧边栏菜单过滤修复 + 文档清理（2026-09-05）
 
 - **Next.js 端浏览器 UI 走查完成**：逐页与 React 基准对照验证通过（登录 / Dashboard 占位 / 用户管理 / 角色管理 / 菜单管理 / 字典管理 / 权限管理 / 日志管理 / 我的账户 / 组织管理 / 岗位管理 / 人员通讯录 / 公告管理 / 通知详情 / 架构图谱），UI 一致性与交互逻辑符合预期。

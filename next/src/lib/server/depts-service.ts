@@ -33,6 +33,8 @@ export interface DeptView {
   leaderId: string | null;
   /** 负责人姓名（left join 未删除 users.display_name） */
   leaderName: string | null;
+  /** 负责人头像 URL（契约 v1.7.0：图谱卡片展示用） */
+  leaderAvatar: string | null;
   sort: number;
   status: string;
   childCount: number;
@@ -50,6 +52,8 @@ export interface DeptTreeNodeView {
   code: string | null;
   leaderId: string | null;
   leaderName: string | null;
+  /** 负责人头像 URL（契约 v1.7.0：图谱卡片展示用） */
+  leaderAvatar: string | null;
   sort: number;
   status: string;
   children: DeptTreeNodeView[];
@@ -62,6 +66,7 @@ type DeptRow = {
   code: string | null;
   leaderId: string | null;
   leaderName: string | null;
+  leaderAvatar: string | null;
   sort: number;
   status: string;
   createdAt: string;
@@ -91,6 +96,7 @@ function toView(row: DeptRow, counts?: Partial<DeptView>): DeptView {
     code: row.code,
     leaderId: row.leaderId,
     leaderName: row.leaderName,
+    leaderAvatar: row.leaderAvatar,
     sort: row.sort,
     status: row.status,
     childCount: counts?.childCount ?? 0,
@@ -142,7 +148,7 @@ async function writeLog(
   }
 }
 
-/** 仅查询未软删组织的共用基础行（含负责人姓名联查）。 */
+/** 仅查询未软删组织的共用基础行（含负责人姓名 + 头像联查）。 */
 function baseSelect() {
   return db
     .select({
@@ -152,6 +158,7 @@ function baseSelect() {
       code: depts.code,
       leaderId: depts.leaderId,
       leaderName: users.displayName,
+      leaderAvatar: users.avatar,
       sort: depts.sort,
       status: depts.status,
       createdAt: depts.createdAt,
@@ -320,6 +327,7 @@ export async function findDeptTree(): Promise<DeptTreeNodeView[]> {
       code: row.code,
       leaderId: row.leaderId,
       leaderName: row.leaderName,
+      leaderAvatar: row.leaderAvatar,
       sort: row.sort,
       status: row.status,
       children: build(row.id),

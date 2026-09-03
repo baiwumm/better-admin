@@ -1056,6 +1056,10 @@ components:
           type: string
           nullable: true
           description: 负责人姓名（节点浮窗 / 图谱展示用）
+        leaderAvatar:
+          type: string
+          nullable: true
+          description: 负责人头像 URL（图谱卡片展示用；契约 v1.7.0 补充）
         sort:
           type: integer
         status:

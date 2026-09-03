@@ -72,6 +72,7 @@ export function OrgChartPage() {
         code: null,
         leaderId: null,
         leaderName: null,
+        leaderAvatar: null,
         sort: 0,
         status: "enabled",
         children: tree,
