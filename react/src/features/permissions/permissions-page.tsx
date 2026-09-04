@@ -138,7 +138,9 @@ export function PermissionsPage() {
     <div className="flex w-full flex-col pb-8">
       <DataTableToolbar
         columnSettingKey={
-          userId ? buildColumnSettingKey(userId, "/settings/permissions") : undefined
+          userId
+            ? buildColumnSettingKey(userId, "/settings/permissions")
+            : undefined
         }
         table={table}
       >

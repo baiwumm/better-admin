@@ -518,7 +518,9 @@ export function DictsPage() {
         <div className="flex min-w-0 flex-col">
           <DataTableToolbar
             columnSettingKey={
-              userId ? buildColumnSettingKey(userId, "/settings/dicts") : undefined
+              userId
+                ? buildColumnSettingKey(userId, "/settings/dicts")
+                : undefined
             }
             table={table}
           >
