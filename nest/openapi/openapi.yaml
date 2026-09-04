@@ -239,9 +239,9 @@ components:
           items:
             type: string
         permissions:
-          type: integer
-          description: 用户全部权限位聚合（超级管理员为全1掩码，普通角色为实际位聚合值）
-          example: 9223372036854775807
+          type: string
+          description: 用户全部权限位聚合，十进制整数字符串（bigint 精度安全传输；超级管理员为全 1 掩码 "9223372036854775807"，普通角色为实际位聚合值）
+          example: "9223372036854775807"
 
     LoginResponse:
       type: object
@@ -701,8 +701,8 @@ components:
         menuId:
           type: string
         permissions:
-          type: integer
-          description: 该角色在此菜单的授权位（role_menus.permissions 子集）
+          type: string
+          description: 该角色在此菜单的授权位（role_menus.permissions 子集），十进制整数字符串
 
     RoleMenusResponse:
       type: object
@@ -753,11 +753,11 @@ components:
         defaultOpen:
           type: boolean
         permissions:
-          type: integer
-          description: 该菜单声明的可用按钮位（全量）
+          type: string
+          description: 该菜单声明的可用按钮位（全量），十进制整数字符串
         userPermissions:
-          type: integer
-          description: 当前登录用户在此菜单的实际授权位（登录态返回）
+          type: string
+          description: 当前登录用户在此菜单的实际授权位（登录态返回），十进制整数字符串
           nullable: true
         children:
           type: array
@@ -797,8 +797,9 @@ components:
           type: boolean
           default: false
         permissions:
-          type: integer
-          default: 0
+          type: string
+          description: 菜单声明按钮位，十进制整数字符串
+          default: "0"
 
     MenuUpdateRequest:
       type: object
@@ -827,7 +828,8 @@ components:
         defaultOpen:
           type: boolean
         permissions:
-          type: integer
+          type: string
+          description: 菜单声明按钮位，十进制整数字符串；未传保持不变
 
     AddChildRequest:
       type: object
@@ -847,8 +849,9 @@ components:
           type: integer
           default: 0
         permissions:
-          type: integer
-          default: 0
+          type: string
+          description: 菜单声明按钮位，十进制整数字符串
+          default: "0"
 
     # ---------- Dict ----------
     DictType:
@@ -1988,7 +1991,22 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          description: |
+            无权限（FORBIDDEN）；或非超管操作者试图绑定 super_admin 角色
+            （SUPER_ADMIN_ROLE_BINDING_PROTECTED，v1.4.6；操作者自身绑定 super_admin 时豁免）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                forbidden:
+                  value:
+                    code: FORBIDDEN
+                    message: 无权限
+                superAdminRoleBindingProtected:
+                  value:
+                    code: SUPER_ADMIN_ROLE_BINDING_PROTECTED
+                    message: 不能绑定超级管理员角色
         '409':
           description: 用户名/邮箱已存在
           content:
@@ -2114,7 +2132,10 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          description: 请求停用受保护用户（v1.4.6；status 非 disabled 不受影响）
+          description: |
+            请求停用受保护用户（v1.4.6；status 非 disabled 不受影响）；
+            或 roleIds 变更涉及移除/添加 super_admin 角色绑定且操作者非超管
+            （SUPER_ADMIN_ROLE_BINDING_PROTECTED，操作者自身绑定 super_admin 时豁免）。
           content:
             application/json:
               schema:
@@ -2128,6 +2149,10 @@ paths:
                   value:
                     code: SUPER_ADMIN_USER_PROTECTED
                     message: 该用户绑定了超级管理员角色，不可操作
+                superAdminRoleBindingProtected:
+                  value:
+                    code: SUPER_ADMIN_ROLE_BINDING_PROTECTED
+                    message: 不能变更超级管理员角色绑定
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
@@ -2562,6 +2587,15 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '409':
+          description: 路由路径已存在（MENU_TO_EXISTS，to 非空时全局唯一）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: MENU_TO_EXISTS
+                message: 路由路径已存在
 
   /menus/tree:
     get:
@@ -2648,6 +2682,15 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: 路由路径已存在（MENU_TO_EXISTS，to 非空时全局唯一，排除自身）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: MENU_TO_EXISTS
+                message: 路由路径已存在
     delete:
       tags: [Menus]
       summary: 删除菜单
@@ -2668,6 +2711,15 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: 存在子菜单，无法删除（MENU_HAS_CHILDREN）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: MENU_HAS_CHILDREN
+                message: 该菜单存在子菜单，无法删除
 
   /menus/{id}/add-child:
     post:
@@ -2704,6 +2756,15 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: 路由路径已存在（MENU_TO_EXISTS，to 非空时全局唯一）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: MENU_TO_EXISTS
+                message: 路由路径已存在
 
   # ===================== Dict =====================
   /dict/types:
