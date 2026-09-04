@@ -37,6 +37,7 @@ const NoticeFormDialog = lazy(() =>
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog";
 import { DataTable } from "@/components/common/data-table";
+import { ErrorContent } from "@/components/common/error-content/error-content";
 import {
   DataTableFilterSelect,
   DataTablePagination,
@@ -126,17 +127,15 @@ export function NoticesPage() {
   const setFilters = useNoticesListStore((s) => s.setFilters);
   const resetStore = useNoticesListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching } = useListQuery<
-    Notice,
-    { status: string | null }
-  >({
-    store: useNoticesListStore,
-    queryKeyPrefix: ["notices", "list"],
-    path: "/notices",
-    // 后端标题搜索参数名为 keyword（与 /org/* 系列统一命名）
-    searchParam: "keyword",
-    buildFilters: (f) => (f.status ? { status: f.status } : {}),
-  });
+  const { data, pagination, isLoading, isFetching, isError, refetch } =
+    useListQuery<Notice, { status: string | null }>({
+      store: useNoticesListStore,
+      queryKeyPrefix: ["notices", "list"],
+      path: "/notices",
+      // 后端标题搜索参数名为 keyword（与 /org/* 系列统一命名）
+      searchParam: "keyword",
+      buildFilters: (f) => (f.status ? { status: f.status } : {}),
+    });
 
   // 搜索（提交式后端过滤：标题）
   const [searchInput, setSearchInput] = useState(search);
@@ -603,13 +602,28 @@ export function NoticesPage() {
         )}
       </DataTableToolbar>
 
-      <DataTable
-        aria-label={t("menu.pageTitle.notices")}
-        className="w-full"
-        contentClassName="min-w-[860px]"
-        isLoading={isLoading || isFetching}
-        table={table}
-      />
+      {isError ? (
+        <ErrorContent
+          action={
+            <Button
+              size="sm"
+              variant="secondary"
+              onPress={() => void refetch()}
+            >
+              {t("common.retry")}
+            </Button>
+          }
+          title={t("common.loadError")}
+        />
+      ) : (
+        <DataTable
+          aria-label={t("menu.pageTitle.notices")}
+          className="w-full"
+          contentClassName="min-w-[860px]"
+          isLoading={isLoading || isFetching}
+          table={table}
+        />
+      )}
       <DataTablePagination table={table} total={total} />
 
       <Suspense fallback={null}>

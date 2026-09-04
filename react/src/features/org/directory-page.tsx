@@ -18,6 +18,7 @@ import {
 import { DeptTreePanel } from "./dept-tree-panel";
 
 import { DataTable } from "@/components/common/data-table";
+import { ErrorContent } from "@/components/common/error-content/error-content";
 import {
   DataTableFilterSelect,
   DataTablePagination,
@@ -86,21 +87,22 @@ export function DirectoryPage({
   const setFilters = useDirectoryListStore((s) => s.setFilters);
   const resetStore = useDirectoryListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching } = useListQuery<
-    DirectoryEntry,
-    { deptId: string | null; employmentStatus: string | null }
-  >({
-    store: useDirectoryListStore,
-    queryKeyPrefix: ["org", "directory", "list"],
-    path: "/org/directory",
-    // 后端搜索参数名为 keyword（/org/* 统一命名）
-    searchParam: "keyword",
-    buildFilters: (f) => ({
-      ...(f.deptId ? { deptId: f.deptId } : {}),
-      // FilterSelect 首项「全部」(null) 映射后端 all；store 默认 employed
-      employmentStatus: f.employmentStatus ?? "all",
-    }),
-  });
+  const { data, pagination, isLoading, isFetching, isError, refetch } =
+    useListQuery<
+      DirectoryEntry,
+      { deptId: string | null; employmentStatus: string | null }
+    >({
+      store: useDirectoryListStore,
+      queryKeyPrefix: ["org", "directory", "list"],
+      path: "/org/directory",
+      // 后端搜索参数名为 keyword（/org/* 统一命名）
+      searchParam: "keyword",
+      buildFilters: (f) => ({
+        ...(f.deptId ? { deptId: f.deptId } : {}),
+        // FilterSelect 首项「全部」(null) 映射后端 all；store 默认 employed
+        employmentStatus: f.employmentStatus ?? "all",
+      }),
+    });
 
   // 搜索（提交式后端过滤：姓名 / 工号 / 登录名）
   const [searchInput, setSearchInput] = useState(search);
@@ -396,13 +398,28 @@ export function DirectoryPage({
             </Button>
           </DataTableToolbar>
 
-          <DataTable
-            aria-label={t("menu.pageTitle.directory")}
-            className="w-full"
-            contentClassName="min-w-[900px]"
-            isLoading={isLoading || isFetching}
-            table={table}
-          />
+          {isError ? (
+            <ErrorContent
+              action={
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => void refetch()}
+                >
+                  {t("common.retry")}
+                </Button>
+              }
+              title={t("common.loadError")}
+            />
+          ) : (
+            <DataTable
+              aria-label={t("menu.pageTitle.directory")}
+              className="w-full"
+              contentClassName="min-w-[900px]"
+              isLoading={isLoading || isFetching}
+              table={table}
+            />
+          )}
           <DataTablePagination table={table} total={total} />
         </div>
       </div>

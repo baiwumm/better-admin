@@ -34,6 +34,7 @@ import { RoleFormDialog, type RoleFormMode } from "./role-form-dialog";
 import { RoleGrantDrawer } from "./role-grant-drawer";
 
 import { DataTable } from "@/components/common/data-table";
+import { ErrorContent } from "@/components/common/error-content/error-content";
 import {
   DataTableFilterSelect,
   DataTablePagination,
@@ -86,15 +87,13 @@ export function RolesPage() {
   const setFilters = useRolesListStore((s) => s.setFilters);
   const resetStore = useRolesListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching } = useListQuery<
-    Role,
-    { enabled: string | null }
-  >({
-    store: useRolesListStore,
-    queryKeyPrefix: ROLES_QUERY_KEY,
-    path: "/roles",
-    buildFilters: (f) => (f.enabled ? { enabled: f.enabled } : {}),
-  });
+  const { data, pagination, isLoading, isFetching, isError, refetch } =
+    useListQuery<Role, { enabled: string | null }>({
+      store: useRolesListStore,
+      queryKeyPrefix: ROLES_QUERY_KEY,
+      path: "/roles",
+      buildFilters: (f) => (f.enabled ? { enabled: f.enabled } : {}),
+    });
 
   // 搜索（提交式后端过滤）：本地输入 → 应用到 store
   const [searchInput, setSearchInput] = useState(search);
@@ -457,13 +456,28 @@ export function RolesPage() {
         )}
       </DataTableToolbar>
 
-      <DataTable
-        aria-label={t("menu.pageTitle.roles")}
-        className="w-full"
-        contentClassName="min-w-[760px]"
-        isLoading={isLoading || isFetching}
-        table={table}
-      />
+      {isError ? (
+        <ErrorContent
+          action={
+            <Button
+              size="sm"
+              variant="secondary"
+              onPress={() => void refetch()}
+            >
+              {t("common.retry")}
+            </Button>
+          }
+          title={t("common.loadError")}
+        />
+      ) : (
+        <DataTable
+          aria-label={t("menu.pageTitle.roles")}
+          className="w-full"
+          contentClassName="min-w-[760px]"
+          isLoading={isLoading || isFetching}
+          table={table}
+        />
+      )}
 
       <DataTablePagination table={table} total={total} />
 

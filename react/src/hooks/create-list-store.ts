@@ -82,9 +82,11 @@ export function createListStore<Filters extends Record<string, unknown>>(
         const changed = (Object.keys(patch) as (keyof Filters)[]).some(
           (key) => !Object.is(state.filters[key], patch[key]),
         );
+
         if (!changed) {
           return state;
         }
+
         return {
           filters: { ...state.filters, ...patch },
           page: 1,

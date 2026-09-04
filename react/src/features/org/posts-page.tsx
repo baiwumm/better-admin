@@ -25,6 +25,7 @@ import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "./dept-api";
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog";
 import { DataTable } from "@/components/common/data-table";
+import { ErrorContent } from "@/components/common/error-content/error-content";
 import {
   DataTableFilterSelect,
   DataTablePagination,
@@ -87,21 +88,22 @@ export function PostsPage() {
   const setFilters = usePostsListStore((s) => s.setFilters);
   const resetStore = usePostsListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching } = useListQuery<
-    Post,
-    { deptId: string | null; category: string | null; status: string | null }
-  >({
-    store: usePostsListStore,
-    queryKeyPrefix: ["org", "posts", "list"],
-    path: "/org/posts",
-    // 后端搜索参数名为 keyword（/org/* 统一命名）
-    searchParam: "keyword",
-    buildFilters: (f) => ({
-      ...(f.deptId ? { deptId: f.deptId } : {}),
-      ...(f.category ? { category: f.category } : {}),
-      ...(f.status ? { status: f.status } : {}),
-    }),
-  });
+  const { data, pagination, isLoading, isFetching, isError, refetch } =
+    useListQuery<
+      Post,
+      { deptId: string | null; category: string | null; status: string | null }
+    >({
+      store: usePostsListStore,
+      queryKeyPrefix: ["org", "posts", "list"],
+      path: "/org/posts",
+      // 后端搜索参数名为 keyword（/org/* 统一命名）
+      searchParam: "keyword",
+      buildFilters: (f) => ({
+        ...(f.deptId ? { deptId: f.deptId } : {}),
+        ...(f.category ? { category: f.category } : {}),
+        ...(f.status ? { status: f.status } : {}),
+      }),
+    });
 
   // 搜索（提交式后端过滤：岗位名称）
   const [searchInput, setSearchInput] = useState(search);
@@ -423,13 +425,28 @@ export function PostsPage() {
         )}
       </DataTableToolbar>
 
-      <DataTable
-        aria-label={t("menu.pageTitle.posts")}
-        className="w-full"
-        contentClassName="min-w-[860px]"
-        isLoading={isLoading || isFetching}
-        table={table}
-      />
+      {isError ? (
+        <ErrorContent
+          action={
+            <Button
+              size="sm"
+              variant="secondary"
+              onPress={() => void refetch()}
+            >
+              {t("common.retry")}
+            </Button>
+          }
+          title={t("common.loadError")}
+        />
+      ) : (
+        <DataTable
+          aria-label={t("menu.pageTitle.posts")}
+          className="w-full"
+          contentClassName="min-w-[860px]"
+          isLoading={isLoading || isFetching}
+          table={table}
+        />
+      )}
       <DataTablePagination table={table} total={total} />
 
       <PostFormDialog

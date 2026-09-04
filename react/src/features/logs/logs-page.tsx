@@ -32,6 +32,7 @@ import {
 import { LogDetailDrawer } from "./log-detail-drawer";
 
 import { DataTable } from "@/components/common/data-table";
+import { ErrorContent } from "@/components/common/error-content/error-content";
 import {
   DataTableBulkActions,
   DataTableFilterSelect,
@@ -86,15 +87,13 @@ export function LogsPage() {
   const setFilters = useLogsListStore((s) => s.setFilters);
   const resetStore = useLogsListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching } = useListQuery<
-    Log,
-    { type: string | null }
-  >({
-    store: useLogsListStore,
-    queryKeyPrefix: LOGS_QUERY_KEY,
-    path: "/logs",
-    buildFilters: (f) => (f.type ? { type: f.type } : {}),
-  });
+  const { data, pagination, isLoading, isFetching, isError, refetch } =
+    useListQuery<Log, { type: string | null }>({
+      store: useLogsListStore,
+      queryKeyPrefix: LOGS_QUERY_KEY,
+      path: "/logs",
+      buildFilters: (f) => (f.type ? { type: f.type } : {}),
+    });
 
   // 搜索（提交式后端过滤，后端匹配 action 字段）
   const [searchInput, setSearchInput] = useState(search);
@@ -381,13 +380,28 @@ export function LogsPage() {
         />
       </DataTableToolbar>
 
-      <DataTable
-        aria-label={t("menu.pageTitle.logs")}
-        className="w-full"
-        contentClassName="min-w-[820px]"
-        isLoading={isLoading || isFetching}
-        table={table}
-      />
+      {isError ? (
+        <ErrorContent
+          action={
+            <Button
+              size="sm"
+              variant="secondary"
+              onPress={() => void refetch()}
+            >
+              {t("common.retry")}
+            </Button>
+          }
+          title={t("common.loadError")}
+        />
+      ) : (
+        <DataTable
+          aria-label={t("menu.pageTitle.logs")}
+          className="w-full"
+          contentClassName="min-w-[820px]"
+          isLoading={isLoading || isFetching}
+          table={table}
+        />
+      )}
 
       <DataTablePagination table={table} total={total} />
 

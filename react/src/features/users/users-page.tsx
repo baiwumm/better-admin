@@ -39,6 +39,7 @@ import { UserResetPasswordDialog } from "./user-reset-password-dialog";
 import { buildProfileLinks, openExternalLink } from "@/lib/profile-links";
 import { GithubIcon, XIcon } from "@/lib/brand-icons";
 import { DataTable } from "@/components/common/data-table";
+import { ErrorContent } from "@/components/common/error-content/error-content";
 import {
   DataTableBulkActions,
   DataTableFilterSelect,
@@ -117,15 +118,13 @@ export function UsersPage() {
   const setFilters = useUsersListStore((s) => s.setFilters);
   const resetStore = useUsersListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching } = useListQuery<
-    User,
-    { status: string | null }
-  >({
-    store: useUsersListStore,
-    queryKeyPrefix: USERS_QUERY_KEY,
-    path: "/users",
-    buildFilters: (f) => (f.status ? { status: f.status } : {}),
-  });
+  const { data, pagination, isLoading, isFetching, isError, refetch } =
+    useListQuery<User, { status: string | null }>({
+      store: useUsersListStore,
+      queryKeyPrefix: USERS_QUERY_KEY,
+      path: "/users",
+      buildFilters: (f) => (f.status ? { status: f.status } : {}),
+    });
 
   // 搜索（提交式后端过滤，后端匹配 username/email/displayName 三字段）
   const [searchInput, setSearchInput] = useState(search);
@@ -650,13 +649,28 @@ export function UsersPage() {
         )}
       </DataTableToolbar>
 
-      <DataTable
-        aria-label={t("menu.pageTitle.users")}
-        className="w-full"
-        contentClassName="min-w-[860px]"
-        isLoading={isLoading || isFetching}
-        table={table}
-      />
+      {isError ? (
+        <ErrorContent
+          action={
+            <Button
+              size="sm"
+              variant="secondary"
+              onPress={() => void refetch()}
+            >
+              {t("common.retry")}
+            </Button>
+          }
+          title={t("common.loadError")}
+        />
+      ) : (
+        <DataTable
+          aria-label={t("menu.pageTitle.users")}
+          className="w-full"
+          contentClassName="min-w-[860px]"
+          isLoading={isLoading || isFetching}
+          table={table}
+        />
+      )}
 
       <DataTablePagination table={table} total={total} />
 

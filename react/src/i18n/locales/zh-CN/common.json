@@ -33,6 +33,7 @@
   "common.language.label": "语言",
   "common.language.switch": "切换语言",
   "common.language.zhCN": "简体中文",
+  "common.loadError": "数据加载失败",
   "common.loading": "加载中…",
   "common.pageHeader.add": "新增",
   "common.password.hide": "隐藏密码",
