@@ -1,16 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Put,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { DeptsService, DeptView } from './depts.service';
@@ -59,6 +47,7 @@ export class DeptsController {
 
   /** POST /api/org/depts */
   @Post()
+  @HttpCode(200)
   @Permissions('ADD')
   create(@Body() dto: DeptCreateDto, @Req() req: Request): Promise<DeptView> {
     return this.deptsService.create(dto, this.operatorId(req));

@@ -29,30 +29,35 @@
 ├── (errors)/                # 全屏错误页
 │   ├── 401 / 403 / 404 / 500
 └── _authenticated/          # 认证态布局（Sidebar + Header + Main）
-    ├── index                # Dashboard（占位）
+    ├── index                # 控制台（占位）
     ├── account              # 我的账户
-    ├── users                # 用户管理
-    ├── roles                # 角色管理
-    ├── permissions          # 权限管理（只读）
-    ├── menus                # 菜单管理
-    ├── dicts                # 字典管理
-    ├── logs                 # 日志管理
-    └── org/
-        ├── depts            # 组织管理
-        ├── posts            # 岗位管理
-        ├── directory        # 人员通讯录
-        └── notices          # 公告管理
+    ├── my-notices           # 我的公告（登录可达）
+    ├── org/
+    │   ├── depts            # 组织管理
+    │   ├── posts            # 岗位管理
+    │   ├── directory        # 人员通讯录
+    │   ├── notices          # 公告管理
+    │   ├── notices_.$noticeId # 公告详情（登录可达前缀）
+    │   └── chart            # 架构图谱
+    └── settings/
+        ├── index            # 分组兜底空页
+        ├── users            # 用户管理
+        ├── roles            # 角色管理
+        ├── permissions      # 权限管理（只读）
+        ├── menus            # 菜单管理
+        ├── dicts            # 字典管理
+        └── logs             # 日志管理
 ```
 
 ### 1.2 现有页面模式
 
 | 模式 | 代表页面 | 结构特征 |
 | --- | --- | --- |
-| Dashboard | `/` | `Header`（TopNav/Search/ThemeSwitch/ConfigDrawer/ProfileDropdown）+ `Main`（标题行 + Tabs + 统计卡片网格 + 图表网格） |
+| Dashboard | `/` | `Header`（Search/ThemeSwitch/ThemeSettingsDrawer/ProfileDropdown）+ `Main`（标题行 + Tabs + 统计卡片网格 + 图表网格） |
 | 列表管理 | `/users`、`/tasks` | `Header fixed` + `Main`（页头：标题 + 描述 + 主操作按钮）+ `DataTable`（Toolbar / Table / Pagination / BulkActions）+ 全局 `Dialogs` |
 | 卡片网格 | `/apps` | 页头 + 筛选/排序控件 + 分隔线 + 卡片网格（`md:grid-cols-2 lg:grid-cols-3`） |
 | 认证页 | `/sign-in` 等 | `AuthLayout`（居中 Logo + 标题）+ `Card max-w-sm` + 表单 + 页脚说明 |
-| 错误页 | `/401` 等 | 全屏居中：超大数字 + 说明 + `Go Back` / `Back to Home` 按钮 |
+| 错误页 | `/403` `/404` `/500` | 全屏居中：超大数字 + 说明 + `Go Back` / `Back to Home` 按钮 |
 | 占位页 | `/help-center` | `ComingSoon`（图标 + 标题 + 描述） |
 
 ### 1.3 页面结构规划
@@ -62,20 +67,22 @@
 | 路由 | 页面 | 模块 | 主要 UI 模式 | 状态 |
 | --- | --- | --- | --- | --- |
 | `/` | Dashboard | 数据统计 | Dashboard 模式（统计卡片 + 图表 + 最近活动） | 占位 |
-| `/users` | 用户管理 | 用户 | 列表模式（列表/搜索/分页/详情/新建/编辑/删除/状态） | ✅ 已实现 |
-| `/roles` | 角色管理 | 角色 | 列表模式 + 角色权限配置（Drawer 内权限树/列表） | ✅ 已实现 |
-| `/permissions` | 权限管理 | 权限 | 列表模式（权限点 CRUD） | ✅ 已实现 |
-| `/menus` | 菜单管理 | 菜单 | 树形表格 + 排序 + 权限关联 | ✅ 已实现 |
-| `/dicts` | 字典管理 | 字典 | 列表模式（字典类型 + 字典项） | ✅ 已实现 |
-| `/logs` | 日志 | 日志 | Tabs（操作/登录/API/错误）+ 列表模式（只读 + 详情） | ✅ 已实现 |
-| `/org/depts` | 组织管理 | 组织 | 树形表格 + 排序 | ✅ 已实现 |
-| `/org/posts` | 岗位管理 | 岗位 | 列表模式（岗位 CRUD） | ✅ 已实现 |
-| `/org/directory` | 人员通讯录 | 组织 | 列表模式（搜索/筛选） | ✅ 已实现 |
-| `/org/notices` | 公告管理 | 组织 | 列表模式（富文本编辑器） | ✅ 已实现 |
+| `/settings/users` | 用户管理 | 用户 | 列表模式（列表/搜索/分页/详情/新建/编辑/删除/状态） | ✅ 已实现 |
+| `/settings/roles` | 角色管理 | 角色 | 列表模式 + 菜单授权抽屉（树形授权 + 权限位多选） | ✅ 已实现 |
+| `/settings/permissions` | 权限管理 | 权限 | 只读位掩码枚举字典 | ✅ 已实现 |
+| `/settings/menus` | 菜单管理 | 菜单 | 树形表格 + CRUD + add-child + 权限关联 | ✅ 已实现 |
+| `/settings/dicts` | 字典管理 | 字典 | 双栏模式（字典类型列表 + 字典项 DataTable） | ✅ 已实现 |
+| `/settings/logs` | 日志管理 | 日志 | 列表模式（只读）+ 字典驱动类型筛选 + 详情 Drawer | ✅ 已实现 |
+| `/org/depts` | 组织管理 | 组织 | 左树右表 + 同级拖拽排序 | ✅ 已实现 |
+| `/org/posts` | 岗位管理 | 组织 | 列表模式（岗位 CRUD + 在职成员穿透抽屉） | ✅ 已实现 |
+| `/org/directory` | 人员通讯录 | 组织 | 左树右表 + URL Query 筛选（`?deptId=`）+ Excel 导出 | ✅ 已实现 |
+| `/org/notices` | 公告管理 | 组织 | 列表模式（富文本编辑器 + 范围选择 + 已读统计） | ✅ 已实现 |
+| `/org/notices/:noticeId` | 公告详情（消费端） | 组织 | 详情页（登录可达前缀，服务端可见性校验） | ✅ 已实现 |
 | `/org/chart` | 组织架构图谱 | 组织 | 图谱可视化模式（只读：平移 / 缩放 / Fit View / 节点点击 / 折叠展开） | ✅ 已实现（React / Next） |
-| `/account` | 我的账户 | 用户 | 卡片式多 Tab 设置 | ✅ 已实现 |
+| `/my-notices` | 我的公告 | 组织 | 左列表右详情（URL `?noticeId=` 驱动） | ✅ 已实现 |
+| `/account` | 我的账户 | 用户 | 卡片式多分区设置 | ✅ 已实现 |
 | `/sign-in` 等 | 认证页 | 认证 | 认证模式（居中卡片布局） | ✅ 已实现 |
-| `/401` 等 | 错误页 | 系统 | 全屏错误模式 | ✅ 已实现 |
+| `/403` `/404` `/500` | 错误页 | 系统 | 全屏错误模式 | ✅ 已实现 |
 
 > **UI 组件库差异说明**：React / Next.js 使用 **Hero UI** 组件（Button / Modal / Tabs 等），Vue / Nuxt 使用 **Shadcn UI** 组件；组件库不同，但**页面功能、布局结构、交互逻辑、数据流保持一致**。
 
@@ -115,15 +122,15 @@ SearchProvider
 - `SidebarInset` 使用 **container queries**（`@container/content`），DataTable 分页等组件基于容器宽度自适应。
 - `Main`：默认 `px-4 py-6`；非 fluid 时在 `@7xl/content` 下居中并限宽 `max-w-7xl`；`fixed` 变体为全高 flex 布局（设置页）。
 - `Header`：高度 `h-16`，内容 `p-4 sm:gap-4`；`fixed` 时 `sticky top-0`，滚动超过 10px 后显示阴影 + `backdrop-blur` 背景。
-- `ConfigDrawer` 支持：主题（system/light/dark）、Sidebar 变体（inset/floating/sidebar）、Layout 模式（default/icon/offcanvas）、方向（ltr/rtl），偏好 Cookie 持久化（7 天）。
-- 顶部进度条 `NavigationProgress`（react-top-loading-bar）在路由切换时显示；`Toaster` 全局挂载在根布局。
+- 主题设置抽屉（`ThemeSettingsDrawer`，即旧称 ConfigDrawer）支持：主题（system/light/dark）、Sidebar 变体、Layout 模式、主题色板（6 套），偏好经 zustand persist 存 **localStorage**（永不过期；不使用 Cookie）。
+- 顶部进度条（bprogress）在路由切换时显示；`Toaster` 全局挂载在根布局。
 
 ### 2.2 Better Admin Layout 规范
 
 1. 保留现有层级：`SidebarProvider > SidebarInset > Header + Main`，不改变整体骨架。
-2. 默认配置固定为：Sidebar 变体 **inset**、折叠模式 **icon**、主题 **system**、方向 **ltr**；`ConfigDrawer` 作为用户偏好入口保留。
+2. 默认配置固定为：Sidebar 变体 **inset**、折叠模式 **icon**、主题 **system**、方向 **ltr**；`ThemeSettingsDrawer`（主题设置抽屉）作为用户偏好入口保留。
 3. 页面内容统一使用 `Main`（默认居中限宽 `max-w-7xl`），全高场景使用 `Main fixed`。
-4. `Header` 右侧操作区顺序统一为：`Search` → `ThemeSwitch` → `ConfigDrawer` → `ProfileDropdown`（从左到右）。
+4. `Header` 右侧操作区顺序统一为：`Search` → `ThemeSwitch` → `ThemeSettingsDrawer` → `ProfileDropdown`（从左到右）。
 5. 列表页使用 `Header fixed`，其余页面使用普通 `Header`。
 6. 禁止在页面内自行实现 sticky/fixed 布局，统一通过 `Header fixed` / `Main fixed` 组合。
 
@@ -199,7 +206,7 @@ Sidebar
 - **实现**：`ThemeProvider`（`src/context/theme-provider.tsx`），在 `<html>` 上切换 `light` / `dark` class。
 - **选项**：`system`（默认）/ `light` / `dark`；`system` 跟随系统并监听 `prefers-color-scheme` 实时变化。
 - **持久化**：Cookie `vite-ui-theme`，有效期 1 年。
-- **入口**：Header 的 `ThemeSwitch`（Dropdown，sun/moon 动画切换）；`ConfigDrawer` 的 Theme 选择。
+- **入口**：Header 的 `ThemeSwitch`（Dropdown，sun/moon 动画切换）；`ThemeSettingsDrawer` 的 Theme 选择。
 - **CSS 策略**：Tailwind v4 `@custom-variant dark (&:is(.dark *))`，即 class 策略。
 - **浏览器主题色**：切换时同步更新 `<meta name="theme-color">`（light `#fff` / dark `#020817`）。
 
@@ -460,7 +467,7 @@ Sidebar
 ### 14.1 现状
 
 - `Skeleton`：`animate-pulse rounded-md bg-accent`（shadcn/ui）。
-- 路由级：`NavigationProgress`（react-top-loading-bar）顶部进度条。
+- 路由级：bprogress 顶部进度条（路由切换时显示）。
 - 数据级：TanStack Query 全局配置（retry：开发 0 次 / 生产最多 3 次且 401/403 不重试；`refetchOnWindowFocus` 仅生产；`staleTime 10s`）。
 - 当前 Demo 页面均为静态数据，无页面级骨架屏实例。
 
@@ -526,7 +533,7 @@ Sidebar
   - 主色：深色 → 反转为浅色（近白），按钮在暗色下「反白」；
   - 边框：实色 → `white/10%`、输入框 `white/15%`；
   - 图表：整体提亮以提高可读性。
-- 联动：`ThemeSwitch`、`ConfigDrawer`、`Toaster`、`theme-color` 元信息全部跟随主题。
+- 联动：`ThemeSwitch`、`ThemeSettingsDrawer`、`Toaster`、`theme-color` 元信息全部跟随主题。
 - 移动端焦点缩放防护在两种主题下一致。
 
 ### 17.2 Better Admin Dark Mode 规范
@@ -560,7 +567,7 @@ Sidebar
 ### 18.2 Better Admin 组件使用原则
 
 1. **组件优先级**：Hero UI 为主 → Shadcn UI 补充 → 项目级自定义组件（见 §18.3）；组件只从声明库（Hero UI 包 / `@/components/ui/*` / `@/components/common/*` / `@/components/business/*`）引入。
-2. **不重复造轮子**：已有 DataTable、ConfirmDialog、ConfigDrawer、Header/Main 等组合组件，业务页面优先组合复用。
+2. **不重复造轮子**：已有 DataTable、ConfirmDialog、ThemeSettingsDrawer、Header/Main 等组合组件，业务页面优先组合复用。
 3. **图标统一 lucide-react**；不引入其他图标库。
 4. **样式统一 Tailwind + 语义 token**：不用内联 style 表达布局/颜色；`cn()` 用于条件合并。
 5. **状态分层**：服务端数据 → TanStack Query；全局 UI 状态 → Zustand；页面内弹层 → Provider + useDialogState；路由态 → URL search params。

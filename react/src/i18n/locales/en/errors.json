@@ -28,6 +28,12 @@
   "errors.forbidden.title": "Access Denied",
   "errors.logs.invalidOperation": "Some log IDs are invalid",
   "errors.logs.notFound": "Log not found",
+  "errors.menus.invalidOperation": "permissions is not a valid permission bitmask",
+  "errors.menus.menuHasChildren": "This menu has children and cannot be deleted",
+  "errors.menus.menuNotFound": "Menu not found",
+  "errors.menus.menuParentInvalid": "Parent menu is invalid (not found or moved under itself or its descendants)",
+  "errors.menus.menuToExists": "Route path already exists",
+  "errors.menus.menuToInvalid": "Route path must start with / or https://",
   "errors.notFound.description": "The page you are looking for does not exist or has been removed. Please check the address.",
   "errors.notFound.title": "Page Not Found",
   "errors.notices.noUnread": "No unread members to remind",
@@ -48,7 +54,12 @@
   "errors.serverError.description": "Something went wrong on the page. Please refresh and try again; contact an administrator if the problem persists.",
   "errors.serverError.title": "Something Went Wrong",
   "errors.users.adminProtected": "System built-in admin account is protected",
+  "errors.users.emailExists": "Email already exists",
+  "errors.users.invalidOperation": "Some user IDs are invalid or not operable",
+  "errors.users.notFound": "User not found or deleted",
   "errors.users.selfOperationForbidden": "Cannot operate on current user",
   "errors.users.superAdminProtected": "This user is bound to super_admin role and cannot be operated",
-  "errors.users.superAdminRoleBindingProtected": "Cannot remove or assign the super_admin role binding"
+  "errors.users.superAdminRoleBindingProtected": "Cannot remove or assign the super_admin role binding",
+  "errors.users.usernameExists": "Username already exists",
+  "errors.users.validation": "Invalid request, please check the form and retry"
 }

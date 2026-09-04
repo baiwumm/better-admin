@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Post,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { NotificationsService } from './notifications.service';
@@ -48,12 +40,14 @@ export class NotificationsController {
 
   /** POST /api/notifications/read-all —— 全部已读 */
   @Post('read-all')
+  @HttpCode(200)
   readAll(@Req() req: Request) {
     return this.notificationsService.readAll(this.userId(req));
   }
 
   /** POST /api/notifications/:id/read —— 单条已读 */
   @Post(':id/read')
+  @HttpCode(200)
   readOne(@Param('id') id: string, @Req() req: Request) {
     return this.notificationsService.readOne(this.userId(req), id);
   }

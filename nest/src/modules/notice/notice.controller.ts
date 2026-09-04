@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { NoticesService } from './notice.service';
@@ -59,6 +48,7 @@ export class NoticesController {
 
   /** POST /api/notices —— 发布公告 */
   @Post()
+  @HttpCode(200)
   @Permissions('ADD')
   create(@Body() dto: NoticeCreateDto, @Req() req: Request) {
     const { user } = this.operator(req);
@@ -94,6 +84,7 @@ export class NoticesController {
 
   /** POST /api/notices/:id/withdraw —— 撤回公告 */
   @Post(':id/withdraw')
+  @HttpCode(200)
   @Permissions('EDIT')
   withdraw(@Param('id') id: string, @Req() req: Request) {
     const { user } = this.operator(req);
@@ -112,6 +103,7 @@ export class NoticesController {
 
   /** POST /api/notices/:id/remind —— 一键催办 */
   @Post(':id/remind')
+  @HttpCode(200)
   @Permissions('EDIT')
   remind(@Param('id') id: string, @Req() req: Request) {
     const { user } = this.operator(req);

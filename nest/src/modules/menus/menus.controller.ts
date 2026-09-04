@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { MenusService, MenuNode } from './menus.service';
@@ -72,6 +61,7 @@ export class MenusController {
 
   /** POST /api/menus */
   @Post()
+  @HttpCode(200)
   @Permissions('ADD')
   create(@Body() dto: CreateMenuDto, @Req() req: Request) {
     return this.menusService.create(dto, this.operatorId(req));
@@ -79,6 +69,7 @@ export class MenusController {
 
   /** POST /api/menus/:id/add-child */
   @Post(':id/add-child')
+  @HttpCode(200)
   @Permissions('ADD_CHILD')
   addChild(
     @Param('id') id: string,

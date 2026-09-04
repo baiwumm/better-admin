@@ -1,16 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseArrayPipe,
-  Post,
-  Put,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseArrayPipe, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { UsersService, UserView } from './users.service';
@@ -48,6 +36,7 @@ export class UsersController {
 
   /** POST /api/users */
   @Post()
+  @HttpCode(200)
   @Permissions('ADD')
   create(@Body() dto: CreateUserDto, @Req() req: Request): Promise<UserView> {
     return this.usersService.create(dto, this.operatorId(req));
@@ -91,6 +80,7 @@ export class UsersController {
 
   /** POST /api/users/:id/reset-password */
   @Post(':id/reset-password')
+  @HttpCode(200)
   @Permissions('RESET_PASSWORD')
   resetPassword(
     @Param('id') id: string,

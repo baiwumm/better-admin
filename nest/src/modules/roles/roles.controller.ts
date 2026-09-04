@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { RolesService, RoleView } from './roles.service';
@@ -53,6 +42,7 @@ export class RolesController {
 
   /** POST /api/roles */
   @Post()
+  @HttpCode(200)
   @Permissions('ADD')
   create(@Body() dto: CreateRoleDto, @Req() req: Request): Promise<RoleView> {
     return this.rolesService.create(dto, this.operatorId(req));

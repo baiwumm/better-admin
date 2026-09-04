@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { DictService } from './dict.service';
@@ -43,6 +33,7 @@ export class DictController {
   }
 
   @Post('types')
+  @HttpCode(200)
   @Permissions('ADD')
   createType(@Body() dto: DictTypeCreateDto, @Req() req: Request) {
     return this.dictService.createType(dto, this.operatorId(req));
@@ -72,6 +63,7 @@ export class DictController {
   }
 
   @Post('types/:code/items')
+  @HttpCode(200)
   @Permissions('ADD')
   createItem(
     @Param('code') code: string,

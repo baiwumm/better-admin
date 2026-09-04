@@ -28,6 +28,12 @@
   "errors.forbidden.title": "禁止访问",
   "errors.logs.invalidOperation": "部分日志 ID 无效",
   "errors.logs.notFound": "日志不存在",
+  "errors.menus.invalidOperation": "permissions 不是合法的权限位掩码",
+  "errors.menus.menuHasChildren": "该菜单存在子菜单，无法删除",
+  "errors.menus.menuNotFound": "菜单不存在",
+  "errors.menus.menuParentInvalid": "父菜单不合法（不存在或移动到自身及下级菜单下）",
+  "errors.menus.menuToExists": "路由路径已存在",
+  "errors.menus.menuToInvalid": "路由路径必须以 / 或 https:// 开头",
   "errors.notFound.description": "你访问的页面不存在或已被移除，请检查地址是否正确。",
   "errors.notFound.title": "页面不存在",
   "errors.notices.noUnread": "没有需要催办的未读人员",
@@ -48,7 +54,12 @@
   "errors.serverError.description": "页面出错了，请刷新重试；若问题持续存在，请联系管理员。",
   "errors.serverError.title": "出错了",
   "errors.users.adminProtected": "系统内置管理员账号不可操作",
+  "errors.users.emailExists": "邮箱已被占用",
+  "errors.users.invalidOperation": "部分用户 ID 无效或无权限操作",
+  "errors.users.notFound": "用户不存在或已被删除",
   "errors.users.selfOperationForbidden": "不能操作当前登录用户",
   "errors.users.superAdminProtected": "该用户绑定了超级管理员角色，不可操作",
-  "errors.users.superAdminRoleBindingProtected": "不可移除或添加超级管理员角色绑定"
+  "errors.users.superAdminRoleBindingProtected": "不可移除或添加超级管理员角色绑定",
+  "errors.users.usernameExists": "用户名已被占用",
+  "errors.users.validation": "请求参数不合法，请检查表单后重试"
 }

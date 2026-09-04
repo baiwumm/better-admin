@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { PostsService, PostView } from './posts.service';
@@ -39,6 +28,7 @@ export class PostsController {
 
   /** POST /api/org/posts */
   @Post()
+  @HttpCode(200)
   @Permissions('ADD')
   create(@Body() dto: PostCreateDto, @Req() req: Request): Promise<PostView> {
     return this.postsService.create(dto, this.operatorId(req));
