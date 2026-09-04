@@ -1,0 +1,64 @@
+{
+  "name": "better-admin-vue",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Better Admin — Vue + Nuxt UI v4 前端（NestJS API 消费方）",
+  "author": "baiwumm",
+  "homepage": "https://vue.baiwumm.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baiwumm/better-admin.git",
+    "directory": "vue"
+  },
+  "bugs": {
+    "url": "https://github.com/baiwumm/better-admin/issues"
+  },
+  "scripts": {
+    "dev": "vite",
+    "predev": "node scripts/sync-locales.mjs",
+    "build": "vite build && pnpm type-check",
+    "prebuild": "node scripts/sync-locales.mjs",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --fix .",
+    "test": "vitest run",
+    "sync-locales": "node scripts/sync-locales.mjs"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^4.11.0",
+    "@tanstack/vue-query": "^5.102.8",
+    "@vueuse/core": "^14.4.0",
+    "lucide-vue-next": "^1.0.0",
+    "pinia": "^4.0.3",
+    "vue": "^3.5.42",
+    "vue-i18n": "^11.4.10",
+    "vue-router": "^5.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.25.1",
+    "@iconify-json/lucide": "^1.2.129",
+    "@types/node": "^24.0.0",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/eslint-config-typescript": "^14.9.0",
+    "@vue/test-utils": "^2.5.0",
+    "eslint": "^9.25.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.2.1",
+    "eslint-plugin-vue": "^10.10.0",
+    "globals": "^16.0.0",
+    "jsdom": "^30.0.1",
+    "prettier": "^3.5.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.6.3",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11",
+    "vue-tsc": "^3.3.11"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "vue-demi"
+    ]
+  }
+}

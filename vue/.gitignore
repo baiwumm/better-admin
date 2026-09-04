@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+
+# 环境变量（.env.example 之外的本地环境文件不入库）
+.env
+.env.local
+.env.*.local
+
+# 构建期生成物（unplugin / Nuxt UI vite 插件产物）
+auto-imports.d.ts
+components.d.ts
+.nuxt-ui
+
+*.log
+.DS_Store

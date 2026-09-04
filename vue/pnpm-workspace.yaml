@@ -1,0 +1,5 @@
+# pnpm 11 依赖构建脚本许可（esbuild 安装平台二进制；vue-demi 为 vue-query 依赖）
+# 本文件仅为 pnpm 设置，不构成 workspace 依赖提升，各端仍独立安装/构建
+allowBuilds:
+  esbuild: true
+  vue-demi: true
