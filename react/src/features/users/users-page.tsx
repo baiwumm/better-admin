@@ -181,28 +181,8 @@ export function UsersPage() {
     void queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
   }, [queryClient]);
 
-  const confirmDelete = useCallback(async () => {
-    if (!deleteTarget) return;
-    try {
-      await deleteUser(deleteTarget.id);
-    } catch (error) {
-      toast.danger(getUserErrorMessage(error));
-      throw error; // ConfirmDialog 约定：抛错保持弹窗打开
-    }
-    invalidateList();
-    toast.success(t("features.users.message.deleteSuccess"));
-  }, [deleteTarget, invalidateList, t]);
-
-  const confirmBatchDelete = useCallback(async () => {
-    try {
-      await batchDeleteUsers(batchDeleteIds);
-    } catch (error) {
-      toast.danger(getUserErrorMessage(error));
-      throw error;
-    }
-    invalidateList();
-    toast.success(t("features.users.message.deleteSuccess"));
-  }, [batchDeleteIds, invalidateList, t]);
+  // confirmDelete / confirmBatchDelete / confirmStatusChange 定义在
+  // table 实例之后：三者成功后都需要 table.resetRowSelection() 清理勾选残留。
 
   /**
    * 状态切换（单个/批量共用）：Promise.allSettled 逐行调用，
@@ -590,6 +570,32 @@ export function UsersPage() {
       toast.danger(getUserErrorMessage(firstError.reason));
     }
   }, [statusTarget, invalidateList, table, t]);
+
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteUser(deleteTarget.id);
+    } catch (error) {
+      toast.danger(getUserErrorMessage(error));
+      throw error; // ConfirmDialog 约定：抛错保持弹窗打开
+    }
+    invalidateList();
+    // 与 logs 页口径一致：删除后清理勾选残留（表头全选框据此判定）
+    table.resetRowSelection();
+    toast.success(t("features.users.message.deleteSuccess"));
+  }, [deleteTarget, invalidateList, table, t]);
+
+  const confirmBatchDelete = useCallback(async () => {
+    try {
+      await batchDeleteUsers(batchDeleteIds);
+    } catch (error) {
+      toast.danger(getUserErrorMessage(error));
+      throw error;
+    }
+    invalidateList();
+    table.resetRowSelection();
+    toast.success(t("features.users.message.deleteSuccess"));
+  }, [batchDeleteIds, invalidateList, table, t]);
 
   return (
     <div className="flex w-full flex-col pb-8">

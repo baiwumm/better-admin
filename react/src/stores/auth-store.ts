@@ -131,9 +131,11 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
         });
         // 会话结束同时清空多标签页（标签属于用户级 UI 态，不跨会话残留）
-        // 与用户快照缓存（防止换账号登录后命中上一账号的 /auth/me 缓存）。
+        // 与用户级缓存：/auth/me 快照（防止换账号登录后命中上一账号的快照）
+        // 与菜单树（staleTime 60s 内换账号会命中上一账号的菜单/权限位缓存）。
         useTabsStore.getState().resetTabs();
         queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY });
+        queryClient.removeQueries({ queryKey: MENUS_QUERY_KEY });
       },
 
       resetAuth: () => {
@@ -145,6 +147,7 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
         });
         queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY });
+        queryClient.removeQueries({ queryKey: MENUS_QUERY_KEY });
       },
     }),
     {

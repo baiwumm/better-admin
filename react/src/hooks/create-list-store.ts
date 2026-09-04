@@ -74,11 +74,23 @@ export function createListStore<Filters extends Record<string, unknown>>(
       ),
     setSorting: (sorting) => set({ sorting }),
     setFilters: (patch) =>
-      set((state) => ({
-        filters: { ...state.filters, ...patch },
-        page: 1,
-        epoch: state.epoch + 1,
-      })),
+      set((state) => {
+        // 同值幂等（与 setSearch / reset 一致，mechanisms §4.2）：patch 与现有
+        // filters 逐键比较全部同值时不 bump epoch、不重置页码、不触发重新请求。
+        // 典型场景：URL query 同步 effect 与「重置」先后写回同一 deptId，
+        // 无幂等会产生一次重置双 epoch bump、发两次请求。
+        const changed = (Object.keys(patch) as (keyof Filters)[]).some(
+          (key) => !Object.is(state.filters[key], patch[key]),
+        );
+        if (!changed) {
+          return state;
+        }
+        return {
+          filters: { ...state.filters, ...patch },
+          page: 1,
+          epoch: state.epoch + 1,
+        };
+      }),
     reset: () =>
       set((state) => {
         const nextFilters = { ...defaultFilters };
