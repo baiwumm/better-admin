@@ -2582,7 +2582,22 @@ paths:
                   data:
                     $ref: '#/components/schemas/MenuNode'
         '400':
-          $ref: '#/components/responses/ValidationError'
+          description: |
+            参数校验失败（VALIDATION_ERROR）；路由路径格式非法（MENU_TO_INVALID，须以 / 或 https:// 开头）；
+            父菜单不存在（MENU_PARENT_INVALID）；permissions 非法位掩码（INVALID_OPERATION）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                menuParentInvalid:
+                  value:
+                    code: MENU_PARENT_INVALID
+                    message: 父菜单不存在
+                invalidPermissions:
+                  value:
+                    code: INVALID_OPERATION
+                    message: permissions 包含非法权限位
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2677,7 +2692,23 @@ paths:
                   data:
                     $ref: '#/components/schemas/MenuNode'
         '400':
-          $ref: '#/components/responses/ValidationError'
+          description: |
+            参数校验失败（VALIDATION_ERROR）；路由路径格式非法（MENU_TO_INVALID）；
+            父菜单不合法（MENU_PARENT_INVALID：父菜单不存在 / 不可移动到自身或自身下级菜单下）；
+            permissions 非法位掩码（INVALID_OPERATION）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                menuParentInvalid:
+                  value:
+                    code: MENU_PARENT_INVALID
+                    message: 父菜单不合法（不可移动到自身或自身下级菜单下）
+                invalidPermissions:
+                  value:
+                    code: INVALID_OPERATION
+                    message: permissions 包含非法权限位
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':

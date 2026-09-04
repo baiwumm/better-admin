@@ -9,6 +9,8 @@ import { db } from '../../db/client';
 import { menus, roleMenus, userRoles, roles, logs } from '../../db/schema';
 import {
   normalizePermissionBits,
+  Permissions,
+  SUPER_ADMIN_BITS,
   SUPER_ADMIN_BITS_POSITIVE,
 } from '../../db/schema/permissions.enum';
 import { CreateMenuDto } from './dto/menu-create.dto';
@@ -32,6 +34,12 @@ export type MenuNode = {
   userPermissions: string | null;
   children: MenuNode[];
 };
+
+/** 全部合法权限位的并集（与 roles.service 同口径） */
+const ALL_PERMISSION_BITS = (Object.values(Permissions) as { bits: bigint }[]).reduce(
+  (acc, p) => acc | p.bits,
+  0n,
+);
 
 function rowToBase(row: typeof menus.$inferSelect) {
   return {
@@ -299,8 +307,73 @@ export class MenusService {
     }
   }
 
+  /** 校验菜单权限位：必须是合法权限位的组合（或全量位 -1n / 正数 9223372036854775807），与 roles.service 同口径 */
+  private assertValidPermissions(raw: string | undefined | null) {
+    if (raw === undefined || raw === null) return;
+    let bits: bigint;
+    try {
+      bits = BigInt(raw);
+    } catch {
+      throw new BadRequestException({
+        code: 'INVALID_OPERATION',
+        message: 'permissions 不是合法的位掩码',
+      });
+    }
+    if (bits === SUPER_ADMIN_BITS || bits === SUPER_ADMIN_BITS_POSITIVE) return;
+    if (bits < 0n || (bits & ~ALL_PERMISSION_BITS) !== 0n) {
+      throw new BadRequestException({
+        code: 'INVALID_OPERATION',
+        message: 'permissions 包含非法权限位',
+      });
+    }
+  }
+
+  /** 校验父菜单存在性（create / update 移动场景） */
+  private async assertParentExists(parentId: string | null | undefined) {
+    if (!parentId) return;
+    const parent = await db.query.menus.findFirst({ where: eq(menus.id, parentId) });
+    if (!parent) {
+      throw new BadRequestException({
+        code: 'MENU_PARENT_INVALID',
+        message: '父菜单不存在',
+      });
+    }
+  }
+
+  /**
+   * 防环校验：目标父级不得为自身或自身的后代菜单。
+   * 从新 parentId 沿父链向上走，回到自身即成环（与 depts.service 同口径）。
+   */
+  private async assertNotSelfDescendant(id: string, parentId: string | null) {
+    if (!parentId) return;
+    if (parentId === id) {
+      throw new BadRequestException({
+        code: 'MENU_PARENT_INVALID',
+        message: '父菜单不合法（不可移动到自身或自身下级菜单下）',
+      });
+    }
+    const rows = await db
+      .select({ id: menus.id, parentId: menus.parentId })
+      .from(menus);
+    const parentMap = new Map(rows.map((r) => [r.id, r.parentId]));
+    let cursor: string | null | undefined = parentId;
+    const seen = new Set<string>();
+    while (cursor && !seen.has(cursor)) {
+      if (cursor === id) {
+        throw new BadRequestException({
+          code: 'MENU_PARENT_INVALID',
+          message: '父菜单不合法（不可移动到自身或自身下级菜单下）',
+        });
+      }
+      seen.add(cursor);
+      cursor = parentMap.get(cursor) ?? null;
+    }
+  }
+
   private async createMenu(dto: CreateMenuDto, operatorId: string | null) {
+    this.assertValidPermissions(dto.permissions);
     this.assertValidTo(dto.to);
+    await this.assertParentExists(dto.parentId ?? null);
     await this.assertToUnique(dto.to ?? null);
     const [row] = await db
       .insert(menus)
@@ -348,18 +421,28 @@ export class MenusService {
         message: '菜单不存在',
       });
     }
-    const effectiveTo = dto.to === undefined ? existing.to : dto.to;
+    // 未传（undefined）= 保持不变；传 null / 空串 = 清空（契约字段 nullable）
+    const effectiveTo = dto.to === undefined ? existing.to : dto.to || null;
+    const effectiveParentId =
+      dto.parentId === undefined ? existing.parentId : dto.parentId || null;
+    const effectiveI18nKey =
+      dto.i18nKey === undefined ? existing.i18nKey : dto.i18nKey || null;
 
+    this.assertValidPermissions(dto.permissions);
     this.assertValidTo(effectiveTo);
+    if (effectiveParentId) {
+      await this.assertNotSelfDescendant(id, effectiveParentId);
+      await this.assertParentExists(effectiveParentId);
+    }
     await this.assertToUnique(effectiveTo ?? null, id);
     const [row] = await db
       .update(menus)
       .set({
         label: dto.label ?? existing.label,
-        i18nKey: dto.i18nKey ?? existing.i18nKey,
+        i18nKey: effectiveI18nKey,
         icon: dto.icon ?? existing.icon,
-        to: dto.to === undefined ? existing.to : dto.to,
-        parentId: dto.parentId ?? existing.parentId,
+        to: effectiveTo,
+        parentId: effectiveParentId,
         sort: dto.sort ?? existing.sort,
         keepAlive: dto.keepAlive ?? existing.keepAlive,
         hideInMenu: dto.hideInMenu ?? existing.hideInMenu,
