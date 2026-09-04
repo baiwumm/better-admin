@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Card, Chip, Description, Typography } from "@heroui/react";
 
 import { useTranslation } from "@/i18n";
+import { formatDateTime } from "@/lib/format-date";
 
 export interface AccountInfoCardProps {
   profile: AccountProfile;
@@ -11,7 +12,7 @@ export interface AccountInfoCardProps {
 
 /** 只读账号信息卡：角色 / 状态 / 注册时间 / 最近登录 */
 export function AccountInfoCard({ profile }: AccountInfoCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const infoRows: { label: string; value: ReactNode }[] = [
     {
@@ -51,7 +52,7 @@ export function AccountInfoCard({ profile }: AccountInfoCardProps) {
       label: t("features.account.info.createdAt"),
       value: (
         <Description>
-          {new Date(profile.createdAt).toLocaleString()}
+          {formatDateTime(profile.createdAt, i18n.language)}
         </Description>
       ),
     },
@@ -60,7 +61,7 @@ export function AccountInfoCard({ profile }: AccountInfoCardProps) {
       value: (
         <Description>
           {profile.lastLoginAt
-            ? new Date(profile.lastLoginAt).toLocaleString()
+            ? formatDateTime(profile.lastLoginAt, i18n.language)
             : t("features.account.info.never")}
         </Description>
       ),

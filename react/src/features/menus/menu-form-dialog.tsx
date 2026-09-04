@@ -435,6 +435,17 @@ function MenuFormModal({
                         placeholder="house"
                         variant="secondary"
                       />
+                      {/* 输入末尾实时预览：裸 lucide 名有效时渲染图标，为空不渲染 */}
+                      {field.value ? (
+                        <span className="grid size-4 place-items-center">
+                          <DynamicIcon
+                            aria-hidden
+                            className="text-muted"
+                            name={field.value as IconName}
+                            size={16}
+                          />
+                        </span>
+                      ) : null}
                       {fieldState.error && (
                         <FieldError>
                           {t("features.menus.form.iconRequired")}

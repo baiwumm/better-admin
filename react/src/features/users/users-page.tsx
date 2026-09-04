@@ -57,6 +57,7 @@ import { useMenuPermissions } from "@/hooks/use-permissions";
 import { createListStore } from "@/hooks/create-list-store";
 import { useListQuery } from "@/hooks/use-list-query";
 import { useTranslation } from "@/i18n";
+import { formatDateTime } from "@/lib/format-date";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
@@ -80,7 +81,7 @@ const useUsersListStore = createListStore<{ status: string | null }>({
 });
 
 export function UsersPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const currentUserId = useAuthStore((state) => state.user?.id);
   // 规则 3 豁免：当前登录用户自身为 super_admin 时可操作其他 super_admin 用户
@@ -360,7 +361,7 @@ export function UsersPage() {
         cell: ({ row }) => (
           <Typography color="muted" type="body-sm">
             {row.original.lastLoginAt
-              ? new Date(row.original.lastLoginAt).toLocaleString()
+              ? formatDateTime(row.original.lastLoginAt, i18n.language)
               : "—"}
           </Typography>
         ),
@@ -371,7 +372,7 @@ export function UsersPage() {
         header: t("common.column.createdAt"),
         cell: ({ row }) => (
           <Typography color="muted" type="body-sm">
-            {new Date(row.original.createdAt).toLocaleString()}
+            {formatDateTime(row.original.createdAt, i18n.language)}
           </Typography>
         ),
       },

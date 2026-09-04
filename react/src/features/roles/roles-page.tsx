@@ -49,6 +49,7 @@ import { useMenuPermissions } from "@/hooks/use-permissions";
 import { createListStore } from "@/hooks/create-list-store";
 import { useListQuery } from "@/hooks/use-list-query";
 import { useTranslation } from "@/i18n";
+import { formatDateTime } from "@/lib/format-date";
 import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -71,7 +72,7 @@ const useRolesListStore = createListStore<{ enabled: string | null }>({
 });
 
 export function RolesPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);
   const { canAdd, canEdit, canDelete, canGrant } = useMenuPermissions();
@@ -265,7 +266,7 @@ export function RolesPage() {
         header: t("common.column.createdAt"),
         cell: ({ row }) => (
           <Typography color="muted" type="body-sm">
-            {new Date(row.original.createdAt).toLocaleString()}
+            {formatDateTime(row.original.createdAt, i18n.language)}
           </Typography>
         ),
       },

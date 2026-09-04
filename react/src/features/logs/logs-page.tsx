@@ -51,6 +51,7 @@ import { useMenuPermissions } from "@/hooks/use-permissions";
 import { createListStore } from "@/hooks/create-list-store";
 import { useListQuery } from "@/hooks/use-list-query";
 import { useTranslation } from "@/i18n";
+import { formatDateTime } from "@/lib/format-date";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
@@ -70,7 +71,7 @@ const useLogsListStore = createListStore<{ type: string | null }>({
 });
 
 export function LogsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const currentUserId = useAuthStore((state) => state.user?.id);
 
@@ -219,7 +220,7 @@ export function LogsPage() {
         header: t("common.column.createdAt"),
         cell: ({ row }) => (
           <Typography color="muted" type="body-sm">
-            {new Date(row.original.createdAt).toLocaleString()}
+            {formatDateTime(row.original.createdAt, i18n.language)}
           </Typography>
         ),
       },

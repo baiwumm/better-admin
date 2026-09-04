@@ -9,6 +9,7 @@ import { logTypeColor } from "./log-type";
 
 import { UserInfo } from "@/components/common/user-info/user-info";
 import { useTranslation } from "@/i18n";
+import { formatDateTime } from "@/lib/format-date";
 
 export interface LogDetailDrawerProps {
   isOpen: boolean;
@@ -47,7 +48,7 @@ export function LogDetailDrawer({
   log,
   typeLabel,
 }: LogDetailDrawerProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <Drawer.Backdrop isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -97,7 +98,7 @@ export function LogDetailDrawer({
                   </DetailRow>
                   <DetailRow label={t("common.column.createdAt")}>
                     <Typography type="body-sm">
-                      {new Date(log.createdAt).toLocaleString()}
+                      {formatDateTime(log.createdAt, i18n.language)}
                     </Typography>
                   </DetailRow>
                   <DetailRow label={t("features.logs.detail.extra")}>

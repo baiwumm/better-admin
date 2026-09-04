@@ -52,6 +52,7 @@ import { useMenuPermissions } from "@/hooks/use-permissions";
 import { useListQuery } from "@/hooks/use-list-query";
 import { useDict } from "@/stores/dict-store";
 import { useTranslation } from "@/i18n";
+import { formatDateTime } from "@/lib/format-date";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
@@ -98,7 +99,7 @@ function formatScopeSummary(
 }
 
 export function NoticesPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);
   const currentUserId = useAuthStore((state) => state.user?.id);
@@ -433,7 +434,7 @@ export function NoticesPage() {
         header: t("features.notices.column.publishTime"),
         cell: ({ row }) => (
           <Typography type="body-sm">
-            {new Date(row.original.publishTime).toLocaleString()}
+            {formatDateTime(row.original.publishTime, i18n.language)}
           </Typography>
         ),
       },
