@@ -738,15 +738,15 @@ export class UsersService {
     // v1.4.6 保护：不能重置自己/受保护用户的密码（本人改密走 Auth 模块接口）
     await this.assertTargetOperable(existing, operatorId);
     const passwordHash = await bcrypt.hash(newPassword, 10);
-    // 同步 bump tokenVersion：该用户全部存量 access/refresh token 立即失效（强制重登）
-    await db
-      .update(users)
-      .set({ passwordHash, tokenVersion: existing.tokenVersion + 1 })
-      .where(eq(users.id, id));
-    // 撤销其全部托管 refreshToken，防止改密码后旧刷新链路继续续期
-    await db
-      .delete(refreshTokens)
-      .where(eq(refreshTokens.userId, id));
+    // 同步 bump tokenVersion：该用户全部存量 access/refresh token 立即失效（强制重登）；
+    // 与撤销其全部托管 refreshToken 同一事务（中途失败不留中间态，与 remove 口径一致）
+    await db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ passwordHash, tokenVersion: existing.tokenVersion + 1 })
+        .where(eq(users.id, id));
+      await tx.delete(refreshTokens).where(eq(refreshTokens.userId, id));
+    });
     await this.writeLog('user.reset_password', operatorId, { id });
     return null;
   }
@@ -773,14 +773,18 @@ export class UsersService {
     // 解封不 bump（恢复账号无需追加撤销）。
     const bumpVersion =
       status === 'disabled' ? existing.tokenVersion + 1 : existing.tokenVersion;
-    const [row] = await db
-      .update(users)
-      .set({ status, tokenVersion: bumpVersion })
-      .where(eq(users.id, id))
-      .returning();
-    if (status === 'disabled') {
-      await db.delete(refreshTokens).where(eq(refreshTokens.userId, id));
-    }
+    const [row] = await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(users)
+        .set({ status, tokenVersion: bumpVersion })
+        .where(eq(users.id, id))
+        .returning();
+      // 停用与清空托管会话同一事务（中途失败不留「已停用但会话存活」中间态）
+      if (status === 'disabled') {
+        await tx.delete(refreshTokens).where(eq(refreshTokens.userId, id));
+      }
+      return [updated];
+    });
     await this.writeLog('user.status_update', operatorId, { id, status });
     const rolesMap = await this.loadRoles([id]);
     const extras = await this.loadOrgExtras([id]);

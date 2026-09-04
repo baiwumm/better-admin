@@ -81,7 +81,8 @@ export class NotificationsService {
 
   /** 单条已读（仅限本人通知；非本人 404） */
   async readOne(userId: string, id: string) {
-    const [updated] = await db
+    // 非本人或已读：静默幂等返回（更新 0 行亦视为成功）
+    await db
       .update(notifications)
       .set({ readAt: new Date() })
       .where(
@@ -90,10 +91,8 @@ export class NotificationsService {
           eq(notifications.recipientId, userId),
           isNull(notifications.readAt),
         ),
-      )
-      .returning({ id: notifications.id });
-    // 非本人或已读：静默幂等返回
-    return updated ? null : null;
+      );
+    return null;
   }
 
   private toView(row: typeof notifications.$inferSelect): NotificationView {

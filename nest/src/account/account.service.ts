@@ -199,11 +199,14 @@ export class AccountService {
     await this.assertCurrentPassword(existing.passwordHash, dto.currentPassword);
 
     const passwordHash = await bcrypt.hash(dto.newPassword, 10);
-    await db
-      .update(users)
-      .set({ passwordHash, tokenVersion: existing.tokenVersion + 1 })
-      .where(eq(users.id, userId));
-    await db.delete(refreshTokens).where(eq(refreshTokens.userId, userId));
+    // 写新密码（tokenVersion+1）与清空托管 refreshToken 同一事务（不留中间态）
+    await db.transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ passwordHash, tokenVersion: existing.tokenVersion + 1 })
+        .where(eq(users.id, userId));
+      await tx.delete(refreshTokens).where(eq(refreshTokens.userId, userId));
+    });
     await this.writeLog('account.password_update', userId, null);
     return null;
   }

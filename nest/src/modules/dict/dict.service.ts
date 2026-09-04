@@ -135,7 +135,9 @@ export class DictService {
         .update(dictTypes)
         .set({
           name: dto.name ?? existing.name,
-          description: dto.description ?? existing.description,
+          // === undefined 判别：允许传 null 清空（契约 nullable；与 depts/posts 惯例一致）
+          description:
+            dto.description !== undefined ? dto.description : existing.description,
         })
         .where(eq(dictTypes.code, code))
         .returning();
@@ -251,7 +253,8 @@ export class DictService {
         .set({
           value: dto.value ?? existing.value,
           label: dto.label ?? existing.label,
-          i18nKey: dto.i18nKey ?? existing.i18nKey,
+          // === undefined 判别：允许传 null 清空（契约 nullable；与 depts/posts 惯例一致）
+          i18nKey: dto.i18nKey !== undefined ? dto.i18nKey : existing.i18nKey,
           sort: dto.sort ?? existing.sort,
           enabled: dto.enabled ?? existing.enabled,
         })

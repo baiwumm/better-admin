@@ -131,7 +131,7 @@ export const DeptChartNode = memo(function DeptChartNode({
       </Card.Header>
 
       {/* 负责人区（核心）：圆形头像（有头像显示图片，无头像显示首字）+ 姓名 / 组织编码两行 */}
-      <Card.Content className="min-w-0 p-0">
+      <Card.Content className="min-w-0">
         {leaderName ? (
           <Tooltip>
             <Tooltip.Trigger>

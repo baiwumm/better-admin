@@ -66,11 +66,12 @@ export class AccountController {
 
   /**
    * POST /api/account/avatar（multipart，字段名 file）。
-   * multer 默认内存存储，buffer 直接交由 AvatarStorageService
-   * 做类型/大小校验后中转上传 Supabase Storage。
+   * multer 默认内存存储，limits.fileSize 在读入内存前拦截超大请求
+   * （业务侧 2MB 白名单/大小校验由 AvatarStorageService 兜底），
+   * buffer 直接交由 AvatarStorageService 中转上传 Supabase Storage。
    */
   @Post('avatar')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 2 * 1024 * 1024 } }))
   updateAvatar(
     @Req() req: Request,
     @UploadedFile() file?: Express.Multer.File,
