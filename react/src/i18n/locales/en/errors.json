@@ -9,6 +9,8 @@
   "errors.api.refreshFailed": "Refresh failed. Please sign in again.",
   "errors.api.requestFailed": "Request failed ({{status}})",
   "errors.api.sessionExpired": "Your session has expired. Please sign in again.",
+  "errors.auth.invalidCredentials": "Incorrect username or password",
+  "errors.auth.userDisabled": "This account has been disabled. Contact an administrator",
   "errors.depts.codeExists": "Department code already exists",
   "errors.depts.hasActiveUsers": "This department has active members. Transfer or offboard them first.",
   "errors.depts.hasChildren": "This department has sub-departments. Delete them first.",

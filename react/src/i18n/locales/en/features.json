@@ -1,14 +1,4 @@
 {
-  "errors.depts.postDeptInvalid": "Department does not exist or is disabled",
-  "errors.notices.noUnread": "No unread members to remind",
-  "errors.notices.notFound": "Notice not found",
-  "errors.notices.notPublished": "Only published notices can be withdrawn",
-  "errors.notices.notPublisher": "Only the publisher or a super admin can operate this notice",
-  "errors.notices.notVisible": "You are not in the scope of this notice",
-  "errors.notices.remindTooFrequent": "Already reminded within 24 hours. Please try later",
-  "errors.posts.hasActiveUsers": "This post has active members. Transfer or offboard them first.",
-  "errors.posts.nameExists": "Post name already exists in this department",
-  "errors.posts.notFound": "Post not found",
   "features.account.avatar.cardDescription": "Crop, zoom and rotate supported. webp / png / jpeg only, up to 2MB",
   "features.account.avatar.cardTitle": "Avatar",
   "features.account.avatar.change": "Change avatar",
@@ -580,9 +570,5 @@
   "features.users.resetPassword.success": "Password reset. All sessions of this user have been invalidated.",
   "features.users.resetPassword.title": "Reset Password",
   "features.users.rolesMore": "View all roles",
-  "features.users.searchPlaceholder": "Search users",
-  "layout.header.moreNotifications": "Showing the latest 20 only",
-  "layout.header.noNotifications": "No notifications",
-  "layout.header.notifications": "Notifications",
-  "layout.header.readAll": "Mark all as read"
+  "features.users.searchPlaceholder": "Search users"
 }

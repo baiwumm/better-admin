@@ -1,8 +1,43 @@
 import type { MenuNode } from "@/lib/api-types";
 
-import { fetchApi } from "@/lib/api-client";
+import { ApiClientError, fetchApi } from "@/lib/api-client";
+import { getErrorMessage } from "@/i18n";
 
 /** 菜单模块 API 层：管理树拉取 + CRUD（契约 v1.4，无 target 字段）。 */
+
+/** 菜单错误码 → 本地化文案（未命中回退后端 message） */
+export function getMenuErrorMessage(error: unknown): string {
+  const code = error instanceof ApiClientError ? error.code : undefined;
+
+  switch (code) {
+    case "MENU_NOT_FOUND":
+      return getErrorMessage("errors.menus.menuNotFound", "菜单不存在");
+    case "MENU_TO_EXISTS":
+      return getErrorMessage("errors.menus.menuToExists", "路由路径已存在");
+    case "MENU_TO_INVALID":
+      return getErrorMessage(
+        "errors.menus.menuToInvalid",
+        "路由路径必须以 / 或 https:// 开头",
+      );
+    case "MENU_HAS_CHILDREN":
+      return getErrorMessage(
+        "errors.menus.menuHasChildren",
+        "该菜单存在子菜单，无法删除",
+      );
+    case "MENU_PARENT_INVALID":
+      return getErrorMessage(
+        "errors.menus.menuParentInvalid",
+        "父菜单不合法（不存在或移动到自身及下级菜单下）",
+      );
+    case "INVALID_OPERATION":
+      return getErrorMessage(
+        "errors.menus.invalidOperation",
+        "permissions 不是合法的权限位掩码",
+      );
+    default:
+      return error instanceof Error ? error.message : String(error);
+  }
+}
 
 /** 管理用全量菜单树查询 key（与导航树 MENUS_QUERY_KEY 分离，便于精准失效） */
 export const MENUS_TREE_QUERY_KEY = ["menus", "manageTree"] as const;

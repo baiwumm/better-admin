@@ -25,7 +25,12 @@ import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { addChildMenu, createMenu, updateMenu } from "./menu-api";
+import {
+  addChildMenu,
+  createMenu,
+  getMenuErrorMessage,
+  updateMenu,
+} from "./menu-api";
 import {
   collectSelfAndDescendantIds,
   flattenParentOptions,
@@ -272,9 +277,8 @@ function MenuFormModal({
             ? "features.menus.message.updateSuccess"
             : "features.menus.message.createSuccess",
         ),
-        // 后端错误 message 已本地化（MENU_HAS_CHILDREN / MENU_TO_EXISTS 等）
-        error: (error) =>
-          error instanceof Error ? error.message : String(error),
+        // 错误码 → 本地化文案（MENU_HAS_CHILDREN / MENU_TO_EXISTS 等，未命中回退后端 message）
+        error: (error) => getMenuErrorMessage(error),
       },
     );
   });

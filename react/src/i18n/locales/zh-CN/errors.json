@@ -9,6 +9,8 @@
   "errors.api.refreshFailed": "刷新失败，请重新登录",
   "errors.api.requestFailed": "请求失败（{{status}}）",
   "errors.api.sessionExpired": "会话已失效，请重新登录",
+  "errors.auth.invalidCredentials": "用户名或密码不正确",
+  "errors.auth.userDisabled": "账号已被停用，请联系管理员",
   "errors.depts.codeExists": "组织编码已存在",
   "errors.depts.hasActiveUsers": "该组织下存在在职人员，请先调岗或离职处理",
   "errors.depts.hasChildren": "该组织下存在下级组织，请先删除下级组织",

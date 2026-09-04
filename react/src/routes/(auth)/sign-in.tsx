@@ -21,7 +21,8 @@ import {
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { useState } from "react";
 
-import { useTranslation } from "@/i18n";
+import { getErrorMessage, useTranslation } from "@/i18n";
+import { ApiClientError } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 
 type SignInSearch = {
@@ -127,9 +128,18 @@ function SignInPage() {
         await navigate({ to: "/" });
       }
     } catch (error) {
-      toast.danger(
-        error instanceof Error ? error.message : t("auth.signIn.failed"),
-      );
+      // 后端错误码 → 本地化文案（INVALID_CREDENTIALS / USER_DISABLED），未命中回退后端 message
+      const code = error instanceof ApiClientError ? error.code : undefined;
+      const fallback = t("auth.signIn.failed");
+      const message =
+        code === "INVALID_CREDENTIALS"
+          ? getErrorMessage("errors.auth.invalidCredentials", fallback)
+          : code === "USER_DISABLED"
+            ? getErrorMessage("errors.auth.userDisabled", fallback)
+            : error instanceof Error
+              ? error.message
+              : fallback;
+      toast.danger(message);
     }
   };
 

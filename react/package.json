@@ -15,11 +15,12 @@
     "url": "https://github.com/baiwumm/better-admin/issues"
   },
   "scripts": {
-    "dev": "vite",
     "build": "tsc && vite build",
+    "check-locales": "node scripts/check-locales.mjs",
+    "dev": "vite",
     "lint": "eslint --fix",
-    "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@bprogress/react": "^1.2.7",

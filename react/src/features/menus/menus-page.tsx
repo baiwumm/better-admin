@@ -19,6 +19,7 @@ import { useCallback, useState } from "react";
 import {
   deleteMenu,
   fetchManageMenuTree,
+  getMenuErrorMessage,
   MENUS_TREE_QUERY_KEY,
 } from "./menu-api";
 import { MenuFormDialog, type MenuFormMode } from "./menu-form-dialog";
@@ -114,7 +115,7 @@ export function MenusPage() {
       toast.success(t("features.menus.message.deleteSuccess"));
     },
     onError: (error) => {
-      toast.danger(error instanceof Error ? error.message : String(error));
+      toast.danger(getMenuErrorMessage(error));
     },
   });
 

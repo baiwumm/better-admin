@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import authEn from "../locales/en/auth.json";
 import commonEn from "../locales/en/common.json";
+import dictEn from "../locales/en/dict.json";
 import errorsEn from "../locales/en/errors.json";
+import featuresEn from "../locales/en/features.json";
 import layoutEn from "../locales/en/layout.json";
 import menuEn from "../locales/en/menu.json";
 import authZh from "../locales/zh-CN/auth.json";
 import commonZh from "../locales/zh-CN/common.json";
+import dictZh from "../locales/zh-CN/dict.json";
 import errorsZh from "../locales/zh-CN/errors.json";
+import featuresZh from "../locales/zh-CN/features.json";
 import layoutZh from "../locales/zh-CN/layout.json";
 import menuZh from "../locales/zh-CN/menu.json";
 
@@ -15,7 +19,9 @@ import menuZh from "../locales/zh-CN/menu.json";
 const DOMAINS = [
   ["auth", authZh, authEn],
   ["common", commonZh, commonEn],
+  ["dict", dictZh, dictEn],
   ["errors", errorsZh, errorsEn],
+  ["features", featuresZh, featuresEn],
   ["layout", layoutZh, layoutEn],
   ["menu", menuZh, menuEn],
 ] as const;
