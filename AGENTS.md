@@ -34,7 +34,7 @@ better-admin/
 ├── next/                    # Next.js 全栈实现
 ├── nuxt/                    # Nuxt 全栈实现
 ├── react/                   # React（UI 基准；Hero UI 为主 + Shadcn UI 补充）
-├── vue/                     # Vue + Shadcn UI
+├── vue/                     # Vue + Nuxt UI
 ├── nest/                    # NestJS 后端 API
 ├── docs/                    # 项目文档
 ├── README.md
@@ -56,9 +56,9 @@ better-admin/
 | 技术栈 | 核心约束 |
 | --- | --- |
 | **React** (`/react`) | UI Source of Truth；Hero UI 模板实现，不含 Shadcn UI 组件（§7.2）；通过 NestJS API 访问数据库 |
-| **Vue** (`/vue`) | 还原 React 版本的页面/交互/UX；Shadcn UI 为主；通过 NestJS API 访问数据库 |
+| **Vue** (`/vue`) | 还原 React 版本的页面/交互/UX；Nuxt UI v4 为主（§21）；通过 NestJS API 访问数据库 |
 | **Next.js** (`/next`) | 独立全栈，**不依赖 NestJS**；Hero UI 为主（§7.2） |
-| **Nuxt** (`/nuxt`) | 独立全栈，**不依赖 NestJS**；Shadcn UI 为主（§7.2） |
+| **Nuxt** (`/nuxt`) | 独立全栈，**不依赖 NestJS**；Nuxt UI v4 为主（§21） |
 | **NestJS** (`/nest`) | 为 React 和 Vue 提供 REST API；NestJS + Drizzle ORM + PostgreSQL |
 
 ---
@@ -97,7 +97,7 @@ better-admin/
 | 技术栈 | 主组件库 | 补充 |
 | --- | --- | --- |
 | React / Next.js | **Hero UI** | Shadcn UI（组件优先级：Hero UI > Shadcn UI > Custom Component） |
-| Vue / Nuxt | **Shadcn UI** | 暂不切换 Hero UI，未来是否切换另行评估 |
+| Vue / Nuxt | **Nuxt UI v4** | 唯一组件库，禁止替代库（组件优先级与操作指引见 §21 与 `docs/nuxt-ui-guide.md`） |
 
 - **样式变量**：React / Next.js 以 Hero UI Design System 为参考形成一套项目级 Design Tokens，Hero UI + Shadcn UI + 自定义组件共用（见 §7.3）。
 - **整个项目**：React 仍然是 UI / UX Source of Truth；不同技术栈可以使用不同 UI 组件库，但最终页面必须保持统一的视觉、交互、结构和用户体验。
@@ -411,3 +411,16 @@ Phase 7  统一测试 → 部署全部版本
 
 - 所有 **React / Next.js 代码生成与重构**（新建组件 / 页面、数据获取、重构、性能优化）必须遵循全局安装的 `vercel-react-best-practices` Skill（`~/.agents/skills/vercel-react-best-practices`，规则详情以 Skill 为准）。
 - 触发范围、Skill 优先加载、冲突裁决与适用范围限定等项目政策详见 [`docs/react-performance.md`](docs/react-performance.md)；若与本文档架构约束冲突，以本文档为高优先级。
+
+---
+
+## 21. Vue / Nuxt 全局组件规范（Nuxt UI）
+
+- **组件库唯一**：Vue（`/vue`）与 Nuxt（`/nuxt`）端 UI 组件库统一为 **Nuxt UI v4**（`@nuxt/ui`，Tailwind CSS v4 + Reka UI）。**禁止引入** Vuetify、Quasar、Element Plus、PrimeVue、shadcn-vue 等替代 UI 库。
+- **组件优先级（硬性）**：Nuxt UI 内置组件（`@nuxt/ui`）→ Nuxt UI 没有对应组件 / 不适合当前场景时用项目级自定义组件（基于 Nuxt UI 原子组件拼装，代码注释说明原因）→ 第三方 Vue 组件库（必须先评审：记录理由 + 替代方案评估，批准后方可引入）。
+- **布局硬约束**：侧边栏 / 顶部栏 / 命令面板必须优先使用官方 Dashboard 套件（`UDashboardGroup` / `UDashboardPanel` / `UDashboardSidebar` / `UDashboardNavbar` / `UDashboardSearch` / `UCommandPalette` 等），禁止从零手写布局。命名说明：`UDashboardLayout` 为 v3 名称，v4 对应组件为 `UDashboardGroup`。
+- **代码生成前置检查**：任何涉及 Vue / Nuxt 的代码生成任务，产出代码前必须：① 确认 Skill 可用（`npx skills ls -g` 应列出 `nuxt/ui` 与 antfu/skills 系列，全局安装于 `~/.agents/skills/`）；② 查阅 Nuxt UI 官方文档确认目标组件存在、API 用法正确；**禁止凭记忆或猜测使用 Nuxt UI API**。
+- **主题策略**：直接使用 Nuxt UI 默认 Design Tokens 与 Color System，暗色模式由其内置 color mode（`useColorMode`）提供；不从 React 端移植 `theme.css` token、不建立 `--ui-*` 映射层；品牌定制通过 Nuxt UI 的 `ui({ ui: { colors } })` 配置实现，禁止在业务代码中硬编码色值。
+- **UI 对齐口径**：页面结构、布局骨架、交互行为与 React 端保持一致（侧边栏折叠/展开、Header 操作区顺序、表格工具栏位置等）；组件视觉直接使用 Nuxt UI 默认风格，不刻意模仿 React（HeroUI）样式；品牌标识（Logo、产品名）保持一致；**功能对齐优先于像素级视觉对齐**。
+- **操作指引**：组件优先级、常用组件映射、Dashboard 套件示例、HeroUI 对照表、纯 Vue 安装事实见 [`docs/nuxt-ui-guide.md`](docs/nuxt-ui-guide.md)。
+- 本节为 Vue / Nuxt 范围内的更高优先级规则，与 §7.2 中 Vue / Nuxt 相关表述冲突时以本节为准。
