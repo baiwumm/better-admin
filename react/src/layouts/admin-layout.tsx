@@ -22,7 +22,7 @@ import { useDesignThemeStore } from "@/stores/design-theme-store";
 import { useTabsStore } from "@/stores/tabs-store";
 
 /** 全宽页面白名单（无 main 内边距）：这些页面需要占满主体区域 */
-const FULL_WIDTH_ROUTES = ["/org/chart"];
+const FULL_WIDTH_ROUTES = ["/org/chart", "/my-notices"];
 
 /* 异常态覆盖层：组件化取词（跟随语言切换重渲染），
    外层用 memo 包装保持引用稳定，替代原先的模块级 JSX 常量（hoist-jsx） */

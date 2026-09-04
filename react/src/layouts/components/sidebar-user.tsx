@@ -14,7 +14,14 @@ import {
   useOverlayState,
 } from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronsUpDown, Globe, IdCard, Link2, LogOut } from "lucide-react";
+import {
+  BellRing,
+  ChevronsUpDown,
+  Globe,
+  IdCard,
+  Link2,
+  LogOut,
+} from "lucide-react";
 
 import { GithubIcon, XIcon } from "@/lib/brand-icons";
 import { UserInfo } from "@/components/common/user-info/user-info";
@@ -55,6 +62,9 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
     switch (key) {
       case "account":
         void navigate({ to: "/account" });
+        break;
+      case "my-notices":
+        void navigate({ to: "/my-notices" });
         break;
       case "logout":
         // 先弹出二次确认对话框，不直接退出
@@ -141,6 +151,14 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
             <Dropdown.Item id="account" textValue={t("layout.user.myAccount")}>
               <IdCard className="size-4 shrink-0 text-muted" />
               <Label>{t("layout.user.myAccount")}</Label>
+            </Dropdown.Item>
+
+            <Dropdown.Item
+              id="my-notices"
+              textValue={t("layout.user.myNotices")}
+            >
+              <BellRing className="size-4 shrink-0 text-muted" />
+              <Label>{t("layout.user.myNotices")}</Label>
             </Dropdown.Item>
 
             {/* 个人链接子菜单：AuthUser 三个链接字段全空时整体隐藏 */}

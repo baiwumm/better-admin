@@ -46,6 +46,16 @@ export class NoticeMineQueryDto {
   @IsInt()
   @IsIn([10, 20, 30, 40, 50])
   pageSize?: number = 10;
+
+  /** 标题模糊搜索 */
+  @IsOptional()
+  @IsString()
+  keyword?: string;
+
+  /** 阅读状态筛选：all 缺省，read / unread 为个人维度 */
+  @IsOptional()
+  @IsIn(['all', 'read', 'unread'])
+  readStatus?: 'all' | 'read' | 'unread' = 'all';
 }
 
 /** GET /api/notices/:id/read-stats 查询参数 */

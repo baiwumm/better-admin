@@ -1296,6 +1296,22 @@ components:
           nullable: true
           description: 目标展示名（列表与详情接口均回填；目标已删除时为 null）
 
+    NoticeReader:
+      type: object
+      description: 已读人员摘要（管理列表回填；按已读时间倒序最多 3 个）
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          description: 用户 ID
+        name:
+          type: string
+          description: 用户姓名（display_name）
+        avatar:
+          type: string
+          nullable: true
+          description: 用户头像 URL（未设置时为 null）
+
     Notice:
       type: object
       required: [id, title, status, isTop, publishTime, readCount, totalCount, createdAt, updatedAt]
@@ -1344,6 +1360,11 @@ components:
         readCount:
           type: integer
           description: 已读人数
+        readers:
+          type: array
+          description: 最近已读人员（按已读时间倒序最多 3 个；管理列表接口回填，总数用 readCount）
+          items:
+            $ref: '#/components/schemas/NoticeReader'
         totalCount:
           type: integer
           description: 范围内总人数（去重；动态解析）
@@ -1352,6 +1373,11 @@ components:
           nullable: true
           format: float
           description: 已读率（0-100；totalCount 为 0 时为 null）
+        myReadAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 当前用户首次阅读时间（我的公告列表返回；其它列表场景可能为 null）
         createdAt:
           type: string
           format: date-time
@@ -3796,7 +3822,7 @@ paths:
       summary: 我的公告（全员消费端）
       description: >
         当前用户可见的已发布公告（发布范围三粒度并集解析，递归含下级组织），
-        置顶在前、发布时间降序。仅登录态，无权限位要求。
+        置顶在前、发布时间降序。支持按标题关键字与个人阅读状态筛选。仅登录态，无权限位要求。
       parameters:
         - name: page
           in: query
@@ -3804,6 +3830,14 @@ paths:
         - name: pageSize
           in: query
           schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+        - name: keyword
+          in: query
+          description: 标题关键字（模糊搜索）
+          schema: { type: string }
+        - name: readStatus
+          in: query
+          description: 个人阅读状态筛选（all/read/unread）
+          schema: { type: string, default: all, enum: [all, read, unread] }
       responses:
         '200':
           description: 成功

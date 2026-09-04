@@ -479,6 +479,15 @@ export interface NoticeScope {
   targetName: string | null;
 }
 
+/** 已读人员摘要（管理列表回填；按已读时间倒序最多 3 个） */
+export interface NoticeReader {
+  id: string;
+  /** 用户姓名（display_name） */
+  name: string;
+  /** 用户头像 URL（未设置时为 null） */
+  avatar: string | null;
+}
+
 /** 公告实体（/notices，管理列表与我的公告共用；契约 v1.7.0） */
 export interface Notice {
   id: string;
@@ -501,10 +510,14 @@ export interface Notice {
   scopes?: NoticeScope[];
   /** 已读人数 */
   readCount: number;
+  /** 最近已读人员（按已读时间倒序最多 3 个；管理列表回填，总数用 readCount） */
+  readers?: NoticeReader[];
   /** 范围内总人数（去重） */
   totalCount: number;
   /** 已读率 0-100；totalCount 为 0 时 null */
   readRate: number | null;
+  /** 当前用户首次阅读时间（我的公告列表返回；其它列表可能缺省） */
+  myReadAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

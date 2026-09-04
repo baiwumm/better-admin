@@ -15,6 +15,7 @@ import { Route as R403RouteImport } from './routes/403'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as authRouteRouteImport } from './routes/(auth)/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedMyNoticesRouteImport } from './routes/_authenticated/my-notices'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as authSignInRouteImport } from './routes/(auth)/sign-in'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
@@ -57,6 +58,11 @@ const authRouteRoute = authRouteRouteImport.update({
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMyNoticesRoute = AuthenticatedMyNoticesRouteImport.update({
+  id: '/my-notices',
+  path: '/my-notices',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
@@ -151,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/500': typeof R500Route
   '/sign-in': typeof authSignInRoute
   '/account': typeof AuthenticatedAccountRoute
+  '/my-notices': typeof AuthenticatedMyNoticesRoute
   '/org/chart': typeof AuthenticatedOrgChartRoute
   '/org/depts': typeof AuthenticatedOrgDeptsRoute
   '/org/directory': typeof AuthenticatedOrgDirectoryRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/500': typeof R500Route
   '/sign-in': typeof authSignInRoute
   '/account': typeof AuthenticatedAccountRoute
+  '/my-notices': typeof AuthenticatedMyNoticesRoute
   '/': typeof AuthenticatedIndexRoute
   '/org/chart': typeof AuthenticatedOrgChartRoute
   '/org/depts': typeof AuthenticatedOrgDeptsRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/500': typeof R500Route
   '/(auth)/sign-in': typeof authSignInRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
+  '/_authenticated/my-notices': typeof AuthenticatedMyNoticesRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/org/chart': typeof AuthenticatedOrgChartRoute
   '/_authenticated/org/depts': typeof AuthenticatedOrgDeptsRoute
@@ -219,6 +228,7 @@ export interface FileRouteTypes {
     | '/500'
     | '/sign-in'
     | '/account'
+    | '/my-notices'
     | '/org/chart'
     | '/org/depts'
     | '/org/directory'
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/500'
     | '/sign-in'
     | '/account'
+    | '/my-notices'
     | '/'
     | '/org/chart'
     | '/org/depts'
@@ -262,6 +273,7 @@ export interface FileRouteTypes {
     | '/500'
     | '/(auth)/sign-in'
     | '/_authenticated/account'
+    | '/_authenticated/my-notices'
     | '/_authenticated/'
     | '/_authenticated/org/chart'
     | '/_authenticated/org/depts'
@@ -328,6 +340,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/my-notices': {
+      id: '/_authenticated/my-notices'
+      path: '/my-notices'
+      fullPath: '/my-notices'
+      preLoaderRoute: typeof AuthenticatedMyNoticesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/account': {
@@ -452,6 +471,7 @@ const authRouteRouteWithChildren = authRouteRoute._addFileChildren(
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
+  AuthenticatedMyNoticesRoute: typeof AuthenticatedMyNoticesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedOrgChartRoute: typeof AuthenticatedOrgChartRoute
   AuthenticatedOrgDeptsRoute: typeof AuthenticatedOrgDeptsRoute
@@ -470,6 +490,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
+  AuthenticatedMyNoticesRoute: AuthenticatedMyNoticesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedOrgChartRoute: AuthenticatedOrgChartRoute,
   AuthenticatedOrgDeptsRoute: AuthenticatedOrgDeptsRoute,

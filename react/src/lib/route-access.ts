@@ -9,7 +9,7 @@
  */
 
 /** 「登录即可访问」的路径白名单：不参与菜单权限校验（后端不管理这些页面）。 */
-export const LOGIN_REQUIRED_PATHS = ["/", "/account"] as const;
+export const LOGIN_REQUIRED_PATHS = ["/", "/account", "/my-notices"] as const;
 
 /**
  * 「登录即可访问」的动态路由前缀：仅需登录态，不走菜单权限校验。

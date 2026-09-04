@@ -5,6 +5,7 @@ import type { NoticeFormMode } from "./notice-form-dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense } from "react";
 import {
+  Avatar,
   Button,
   Chip,
   Dropdown,
@@ -299,13 +300,24 @@ export function NoticesPage() {
         },
       },
       {
-        id: "publishTime",
-        enableSorting: true,
-        header: t("features.notices.column.publishTime"),
+        id: "status",
+        enableSorting: false,
+        meta: { align: "center" },
+        header: t("features.notices.column.status"),
         cell: ({ row }) => (
-          <Typography type="body-sm">
-            {new Date(row.original.publishTime).toLocaleString()}
-          </Typography>
+          <Chip
+            color={
+              row.original.status === "published"
+                ? "success"
+                : row.original.status === "draft"
+                  ? "default"
+                  : "danger"
+            }
+            size="sm"
+            variant="soft"
+          >
+            {statusLabel(row.original.status)}
+          </Chip>
         ),
       },
       {
@@ -345,6 +357,50 @@ export function NoticesPage() {
         },
       },
       {
+        id: "readers",
+        enableSorting: false,
+        header: t("features.notices.column.readers"),
+        cell: ({ row }) => {
+          const notice = row.original;
+          const readers = notice.readers ?? [];
+
+          // 无已读人员占位；有则头像堆叠（最多 3 个），超出部分 +N（N = readCount - 3）
+          if (readers.length === 0) {
+            return (
+              <Typography color="muted" type="body-sm">
+                —
+              </Typography>
+            );
+          }
+          const shown = readers.slice(0, 3);
+          const extra = Math.max(notice.readCount - shown.length, 0);
+
+          return (
+            <div className="flex -space-x-2">
+              {shown.map((reader) => (
+                <Avatar
+                  key={reader.id}
+                  className="ring-2 ring-background"
+                  size="sm"
+                >
+                  {reader.avatar ? (
+                    <Avatar.Image alt={reader.name} src={reader.avatar} />
+                  ) : null}
+                  <Avatar.Fallback>{reader.name.slice(0, 1)}</Avatar.Fallback>
+                </Avatar>
+              ))}
+              {extra > 0 && (
+                <Avatar className="ring-2 ring-background" size="sm">
+                  <Avatar.Fallback className="text-xs">
+                    +{extra}
+                  </Avatar.Fallback>
+                </Avatar>
+              )}
+            </div>
+          );
+        },
+      },
+      {
         id: "readRate",
         enableSorting: false,
         header: t("features.notices.column.readRate"),
@@ -373,24 +429,13 @@ export function NoticesPage() {
         },
       },
       {
-        id: "status",
-        enableSorting: false,
-        meta: { align: "center" },
-        header: t("features.notices.column.status"),
+        id: "publishTime",
+        enableSorting: true,
+        header: t("features.notices.column.publishTime"),
         cell: ({ row }) => (
-          <Chip
-            color={
-              row.original.status === "published"
-                ? "success"
-                : row.original.status === "draft"
-                  ? "default"
-                  : "danger"
-            }
-            size="sm"
-            variant="soft"
-          >
-            {statusLabel(row.original.status)}
-          </Chip>
+          <Typography type="body-sm">
+            {new Date(row.original.publishTime).toLocaleString()}
+          </Typography>
         ),
       },
       {

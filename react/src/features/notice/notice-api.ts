@@ -28,13 +28,19 @@ export interface NoticeListParams extends ListQueryParams {
   order?: "asc" | "desc";
 }
 
+/** 我的公告列表查询参数（个人消费端） */
+export interface MyNoticeListParams extends ListQueryParams {
+  keyword?: string;
+  readStatus?: "all" | "read" | "unread";
+}
+
 /** GET /notices — 公告管理列表（分页，含已读率） */
 export function fetchNotices(params: NoticeListParams = {}) {
   return fetchApiList<Notice>("/notices", params);
 }
 
 /** GET /notices/mine — 我的公告（全员消费端，置顶在前） */
-export function fetchMyNotices(params: ListQueryParams = {}) {
+export function fetchMyNotices(params: MyNoticeListParams = {}) {
   return fetchApiList<Notice>("/notices/mine", params);
 }
 
