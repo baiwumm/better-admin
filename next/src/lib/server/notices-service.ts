@@ -361,11 +361,24 @@ async function resolveScopeUserIds(
   return [...collected];
 }
 
-/** 校验公告发布范围目标：三类目标须存在（未删除），无效抛 VALIDATION_ERROR。 */
+/** 校验公告发布范围目标：非空且 ≤100（契约 minItems/maxItems），三类目标须存在（未删除），无效抛 VALIDATION_ERROR。 */
 async function assertScopeTargets(
   scopes: { scopeType: string; targetId: string }[],
 ): Promise<void> {
-  if (scopes.length === 0) return;
+  if (scopes.length === 0) {
+    throw new ServerApiError(
+      400,
+      "VALIDATION_ERROR",
+      "发布范围不能为空（scopeTargets 至少 1 项）",
+    );
+  }
+  if (scopes.length > 100) {
+    throw new ServerApiError(
+      400,
+      "VALIDATION_ERROR",
+      "发布范围目标过多（scopeTargets 至多 100 项）",
+    );
+  }
   const deptIds = scopes
     .filter((s) => s.scopeType === "dept")
     .map((s) => s.targetId);
@@ -793,6 +806,17 @@ export async function findVisibleNotice(
   // 管理可见 = super_admin 或拥有 SEARCH 位（位掩码 1n）
   const hasSearch =
     isSuperAdmin(user) || (BigInt(user.permissions) & 1n) !== 0n;
+
+  // 状态拦截：非管理视角仅可查看已发布公告——
+  // draft（定时未发布）随创建即写发布范围，withdrawn 已收回内容，
+  // 二者对范围 / 站内信凭证用户都必须拦在全文之前（撤回语义不被穿透）。
+  if (!hasSearch && row.status !== "published") {
+    throw new ServerApiError(
+      403,
+      "NOTICE_NOT_VISIBLE",
+      "您不在该公告的发布范围内",
+    );
+  }
 
   const scopeRows = await db
     .select()

@@ -1,4 +1,4 @@
-import { IsArray, IsIn, IsOptional, IsString, MaxLength, Matches, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsIn, IsOptional, IsString, MaxLength, Matches, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /** 发布范围单项（与 NoticeScope 对齐） */
@@ -24,11 +24,14 @@ export class NoticeCreateDto {
   content!: string;
 
   @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
   @Type(() => NoticeScopeInputDto)
   @ValidateNested({ each: true })
   scopeTargets!: NoticeScopeInputDto[];
 
   @IsOptional()
+  @IsBoolean()
   isTop?: boolean;
 
   /** 发布时间；缺省或早于当前时间 = 立即发布，晚于当前时间 = 定时发布 */
@@ -52,11 +55,14 @@ export class NoticeUpdateDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(100)
   @Type(() => NoticeScopeInputDto)
   @ValidateNested({ each: true })
   scopeTargets?: NoticeScopeInputDto[];
 
   @IsOptional()
+  @IsBoolean()
   isTop?: boolean;
 
   @IsOptional()

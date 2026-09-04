@@ -602,6 +602,17 @@ export class NoticesService {
     const hasSearch =
       isSuperAdmin(user) ||
       (BigInt(user.permissions) & 1n) !== 0n;
+
+    // 状态拦截：非管理视角仅可查看已发布公告——
+    // draft（定时未发布）随创建即写发布范围，withdrawn 已收回内容，
+    // 二者对范围 / 站内信凭证用户都必须拦在全文之前（撤回语义不被穿透）。
+    if (!hasSearch && row.status !== 'published') {
+      throw new ForbiddenException({
+        code: 'NOTICE_NOT_VISIBLE',
+        message: '您不在该公告的发布范围内',
+      });
+    }
+
     // 管理可见（SEARCH 位或超管）或范围内用户
     const scopeRows = await db
       .select()

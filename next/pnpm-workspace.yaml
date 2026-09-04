@@ -10,3 +10,7 @@ allowBuilds:
 overrides:
   '@tiptap/extension-bubble-menu': 3.30.5
   '@tiptap/extension-floating-menu': 3.30.5
+  # 收敛传递依赖与顶层声明的双版本（3.12.3/3.12.4）：两份类型声明的 #private
+  # 品牌字段使 CalendarDate/CalendarDateTime 与 HeroUI DatePicker 的 DateValue
+  # 类型不兼容（tsc 报 never），统一锁到顶层 pin 的 3.12.3。
+  '@internationalized/date': 3.12.3
