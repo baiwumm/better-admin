@@ -5,21 +5,25 @@
 
 ---
 
-### 三端全量代码排查（NestJS / React / Next.js）——P1 已全部修复（2026-09-04 排查 / 2026-09-05 修复）
+### 三端全量代码排查（NestJS / React / Next.js）——P1 已修复，P2 已完成（2026-09-04 排查 / 2026-09-05 修复）
 
 - **范围**：按「Nest 逻辑正确性 → React 联调 / 功能对齐 / 交互一致性 → Next 对齐」系统性排查，对照 openapi.yaml 契约、mechanisms.md 机制结论与 feature-matrix.md。共发现 **46 个问题（P0: 0 / P1: 15 / P2: 31）**，无功能不可用 / 安全漏洞 / 数据损坏级问题。
 - **NestJS（17 项，P1×7）**：菜单 `update` 的 parentId 无存在性 / 自环 / 挂到子孙下校验（可构造环致节点从树中消失）且 `??` 使 null 无法清空父节点与 i18nKey（`menus.service.ts:302-372`）；`menus.permissions` 无位范围校验（负数 / 越界可致 500，roles 侧已有 assertValidBits 未复用）；openapi.yaml 契约缺口四类——`SUPER_ADMIN_ROLE_BINDING_PROTECTED` 未声明、`/menus` 系 409 缺失、权限位字段声明 `type: integer` 与实现字符串收发系统性不符、多模块 `@Post` 未 `@HttpCode(200)` 实际 201；公告 `scopeTargets` DTO 缺 `@ArrayMinSize(1)/@ArrayMaxSize(100)`（空范围可发布成无人可见公告）；`findVisibleDetail` 无公告状态拦截（draft / withdrawn 可被范围或站内信凭证用户看全文）。
 - **React（23 项，P1×7）**：列表查询失败静默降级空态（users / roles / logs / notices / directory / posts 六页未接 isError + ErrorContent）；`clearSession`/`resetAuth` 不清 `MENUS_QUERY_KEY`（SPA 内换账号命中上一账号菜单缓存串号）；`create-list-store.setFilters` 无同值幂等（违反 mechanisms §4.2 契约，通讯录重置双 epoch bump 双请求）；公告详情抽屉已读 / 未读页码不随公告切换重置（换公告从旧页码查询致名单误空）；users 删除后未 `resetRowSelection`；菜单表单图标实时预览缺失（注释声称有）；10 处 `new Date().toLocaleString()` 裸调用不受 i18n 语言控制。
 - **Next.js（6 项，P1×1）**：`proxy.ts` 静默刷新无并发去重（并行请求共用 refresh Cookie 竞态，失败方被误踢登录）；`menu-fetch.ts` 死代码残留 `filterAccessibleMenus` 二次过滤（复用即复发分组菜单整组消失缺陷）；`EmptyContent` 的 `className ??` 覆盖默认布局类；登录 / 刷新响应体仍返回双 token（削弱 httpOnly 防线）；约 22 个 layouts / components 文件缺显式 `"use client"`；org-chart-node 多 `p-0` 与 React 基准不一致。
-- **已知限制 / 待办（P1 已于 2026-09-05 分 7 批全部修复，验证：三端 tsc / eslint 0 error / build 全绿 + API 冒烟 19 项全过 + 浏览器走查；P2 与待确认项保留待后续安排）**：
+- **已知限制 / 待办（P1 已于 2026-09-05 分 7 批修复、P2 已于同日分 4 批修复；验证：三端 tsc / eslint 0 error / build 全绿 + React 71 单测 + check-locales 双向一致 + API 冒烟 19 项全过 + 浏览器走查）**：
   - [x] 契约修复四件套：openapi.yaml 补 `SUPER_ADMIN_ROLE_BINDING_PROTECTED`（POST/PUT /users）、`/menus` 系 409、权限位字段改 `type: string`、`/menus` 400 展开 `MENU_PARENT_INVALID` / `INVALID_OPERATION`（各 `@Post` 补 `@HttpCode(200)` 属 P2 仍未改）
   - [x] menus.service 补 parentId 防环 + 存在性校验 + null 清空语义（`=== undefined` 判别）+ 复用 assertValidBits 口径（`INVALID_OPERATION`）
   - [x] notice：scopeTargets DTO 补 `@ArrayMinSize(1)/@ArrayMaxSize(100)`（nest + next 双端）；findVisibleDetail/findVisibleNotice 对非管理视角加 published 状态拦截（draft / withdrawn 不再被范围 / 凭证用户看到全文）
   - [x] react：setFilters 同值幂等；六列表页接错误态（isError + ErrorContent + refetch）；clearSession/resetAuth 清 menus 缓存；format-date 统一替换 10 处 toLocaleString；users 删除后 resetRowSelection；菜单表单图标实时预览补齐；公告详情抽屉切换公告重置名单页码
   - [x] next：proxy 静默刷新按 refresh token 并发去重（in-flight Map，修并行请求竞态误踢登录）；附带收敛 `@internationalized/date` 双版本类型冲突（pnpm-workspace.yaml overrides 3.12.3）
-  - [ ] 既有待办保持：PUT /users roleIds 全量替换摘除 super_admin 绑定（v1.4.6，已由 assertValidRoleBindingChange 部分拦截，mechanisms §5 措辞需同步）
-- **待确认（评审定口径，不修）**：refresh 并发重放短窗口双活（Nest 与 Next 同病）；`findTree` 是否过滤 enabled=false 菜单；dict label 不设唯一（契约如此）；删除公告保留 read_records（有意，审计数据）；改密码无「新旧相同」校验；菜单 i18nKey 前端必填严于契约（存量空 key 菜单无法编辑）；`/settings` 空壳页 Next 缺失（父级分组 to='' 正常导航不可达，影响极低）。
-- **文档更新触发**：`docs/routing.md` 路由表缺失组织中心 7 条路由且 §4 引用已删除的 route-paths.ts，需重写；`docs/ui-spec.md` §1.3（日志 Tabs）/§2.1（Cookie 持久化）/§9.1（首末页按钮）/§14.2（表格骨架）与实现不符，需更新；EmptyContent 三态 / SearchReset 权限位 / 列设置 key 格式等机制建议补入 ui-spec 或 mechanisms。
+- **P2 修复记录（2026-09-05，4 批次提交）**：
+  - **P2-A 契约与文档**（`4739d56`）：Nest 14 处 `@Post` 补 `@HttpCode(200)` 对齐契约；errors 语言包补 `errors.users.*` 5 键与 `errors.menus.*` 命名空间（react/next × zh-CN/en 四套一致）；`docs/routing.md` 按现状重写（三层访问控制模型 + 完整 20 条路由表 + route-access.ts 真源）；`docs/ui-spec.md` §1.3 路由表/日志模式/权限只读、§2.1 主题抽屉 localStorage 与 bprogress 对齐。
+  - **P2-B 交互与体验**（`c00c147`）：menus/depts/posts/dicts(类型)/notices 五页删除确认补 `confirmKeyword` 强确认；公告范围选择器岗位/人员候选改 `useInfiniteQuery` + `ListBoxLoadMoreItem`（不再截断首页 50 条）；用户表单取消勾选岗位联动清空 mainPostId（避免后端 400）；通讯录导出按钮补 SEARCH 位门控；菜单表单 i18nKey 放宽可选（对齐契约）；分页条补首/末页按钮（窄屏隐藏）；DataTable 首屏加载改 6 行骨架屏（refetch 仍用遮罩保留旧数据）。
+  - **P2-C i18n 与格式化**（`8a5acb7`）：菜单管理/登录页错误码走 `getMenuErrorMessage` 与 `errors.auth.*` 映射（补 `invalidCredentials`/`userDisabled` 键 ×4 语言包）；locales.test 补 features/dict 两域前缀与键集校验（并借此清理 features.json 中 13 个跨域死键：errors.* 10 个 + layout.header.* 3 个，react/next 同步）；React 端补 `scripts/check-locales.mjs`（与 Next 双向一致）+ `pnpm check-locales`。
+  - **P2-D 性能与架构**（`c8777e4`）：users 页 columns useMemo / openForm 依赖收敛到 useOverlayState 的稳定方法引用（`.open`，修搜索击键重建列定义）；公告定时发布前端提交带本地时区偏移的 RFC3339（`toISOWithOffset`）+ Nest 正则收紧为时区必选（契约 date-time 对齐，openapi 描述同步）；React 四页列设置 key 统一真实路由全路径（/settings/*）；Next `menu-fetch.ts` 移除 `filterAccessibleMenus` 死代码二次过滤；Next `EmptyContent` 恢复 `cn()` 合并语义；Next layouts/components 19 个交互组件补显式 `"use client"`。
+- **待确认（评审定口径，不修）**：refresh 并发重放短窗口双活（Nest 与 Next 同病，Next proxy 已做并发去重缓解）；`findTree` 是否过滤 enabled=false 菜单；dict label 不设唯一（契约如此）；删除公告保留 read_records（有意，审计数据）；改密码无「新旧相同」校验；`/settings` 空壳页 Next 缺失（父级分组 to='' 正常导航不可达，影响极低）。菜单 i18nKey 前端必填问题已随 P2-B 放宽解决。
+- **P2 未同步项（Next 端）**：P2-B 中五页强确认 / mainPostId 联动 / 导出门控 / i18nKey 放宽 / 分页首末页 / 表格骨架为 React 端（UI Source of Truth）先行修复，Next 端 features 同构文件待下一轮同步（键集已随语言包同步）。
 
 ### 公告/站内信功能 React + Next 双端对齐（含 Nest 接口增强）（2026-09-06）
 
