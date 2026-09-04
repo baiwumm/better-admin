@@ -1,3 +1,5 @@
+"use client";
+
 import type { ColorVisionMode } from "@/stores/design-theme-store";
 
 import { Description, Radio, RadioGroup } from "@heroui/react";

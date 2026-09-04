@@ -1,3 +1,5 @@
+"use client";
+
 import { Button, ColorSwatchPicker, parseColor } from "@heroui/react";
 import { Shuffle } from "lucide-react";
 import { useCallback, useEffect } from "react";

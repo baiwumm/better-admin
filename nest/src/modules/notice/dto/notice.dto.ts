@@ -36,8 +36,8 @@ export class NoticeCreateDto {
 
   /** 发布时间；缺省或早于当前时间 = 立即发布，晚于当前时间 = 定时发布 */
   @IsOptional()
-  @Matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})?$/, {
-    message: 'publishTime 必须是合法的 ISO 日期时间',
+  @Matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/, {
+    message: 'publishTime 必须是带时区的 ISO 日期时间（RFC3339，如 2026-01-01T09:00:00+08:00 或 Z）',
   })
   publishTime?: string | null;
 }
@@ -66,8 +66,8 @@ export class NoticeUpdateDto {
   isTop?: boolean;
 
   @IsOptional()
-  @Matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})?$/, {
-    message: 'publishTime 必须是合法的 ISO 日期时间',
+  @Matches(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/, {
+    message: 'publishTime 必须是带时区的 ISO 日期时间（RFC3339，如 2026-01-01T09:00:00+08:00 或 Z）',
   })
   publishTime?: string | null;
 }

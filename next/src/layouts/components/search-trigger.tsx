@@ -1,3 +1,5 @@
+"use client";
+
 import { Button, Kbd } from "@heroui/react";
 import { Search } from "lucide-react";
 

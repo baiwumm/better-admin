@@ -1,3 +1,5 @@
+"use client";
+
 import type { Key } from "react";
 
 import { useCallback, useMemo, useRef, useState } from "react";

@@ -172,7 +172,9 @@ export function UsersPage() {
       setFormContext({ mode, user });
       userDialog.open();
     },
-    [userDialog],
+    // 依赖收敛到 useOverlayState 的稳定方法引用（对象字面量每次渲染都是新的，
+    // 会使本回调与 columns useMemo 每次渲染失效重建）
+    [userDialog.open],
   );
 
   // ---------------- 变更操作 ----------------
@@ -489,9 +491,9 @@ export function UsersPage() {
       canResetPassword,
       isProtectedUser,
       openForm,
-      resetPwdDialog,
-      deleteDialog,
-      statusDialog,
+      resetPwdDialog.open,
+      deleteDialog.open,
+      statusDialog.open,
     ],
   );
 

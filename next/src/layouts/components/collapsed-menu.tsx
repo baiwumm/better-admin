@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "@bprogress/next/app";

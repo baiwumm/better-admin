@@ -410,7 +410,7 @@ export function RolesPage() {
     <div className="flex w-full flex-col pb-8">
       <DataTableToolbar
         columnSettingKey={
-          userId ? buildColumnSettingKey(userId, "/roles") : undefined
+          userId ? buildColumnSettingKey(userId, "/settings/roles") : undefined
         }
         table={table}
       >

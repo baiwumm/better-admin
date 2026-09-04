@@ -1,3 +1,5 @@
+"use client";
+
 import { Dropdown, Header, Label, Button } from "@heroui/react";
 import { Languages } from "lucide-react";
 

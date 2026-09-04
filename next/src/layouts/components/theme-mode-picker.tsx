@@ -1,3 +1,5 @@
+"use client";
+
 import { Radio, RadioGroup, Description, cn } from "@heroui/react";
 import { Monitor, Moon, Sun, Check } from "lucide-react";
 

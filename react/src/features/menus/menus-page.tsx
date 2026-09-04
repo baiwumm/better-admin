@@ -154,7 +154,7 @@ export function MenusPage() {
     <div className="flex w-full flex-col pb-8">
       <DataTableToolbar
         columnSettingKey={
-          userId ? buildColumnSettingKey(userId, "/menus") : undefined
+          userId ? buildColumnSettingKey(userId, "/settings/menus") : undefined
         }
         table={table}
       >

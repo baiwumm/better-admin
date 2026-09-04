@@ -3,7 +3,7 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Description } from "@heroui/react";
+import { cn, Description } from "@heroui/react";
 import { Inbox } from "lucide-react";
 
 import { useTranslation } from "@/i18n";
@@ -35,10 +35,10 @@ export function EmptyContent({
 
   return (
     <div
-      className={
-        className ??
-        "flex flex-col items-center justify-center gap-2 py-20 text-muted"
-      }
+      className={cn(
+        "flex flex-col items-center justify-center gap-2 py-20 text-muted",
+        className,
+      )}
     >
       <Icon aria-hidden className="size-10" />
       <Description>{title ?? t("common.datatable.empty")}</Description>

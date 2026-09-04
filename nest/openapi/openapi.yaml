@@ -1351,7 +1351,7 @@ components:
         publishTime:
           type: string
           format: date-time
-          description: 发布时间（定时发布为计划时间）
+          description: 发布时间（定时发布为计划时间）；须带时区（RFC3339），无时区值会被 400 拒绝
         scopeCount:
           type: integer
           description: 范围目标条数（组织/岗位/人员并集来源数）

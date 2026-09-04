@@ -1,3 +1,5 @@
+"use client";
+
 import { Description, Radio, RadioGroup, cn } from "@heroui/react";
 import {
   Aperture,

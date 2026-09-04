@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@heroui/react";
 import { Maximize, Minimize } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";

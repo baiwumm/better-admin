@@ -1,3 +1,5 @@
+"use client";
+
 import type { Key } from "react";
 import type { AuthUser } from "@/lib/api-types";
 

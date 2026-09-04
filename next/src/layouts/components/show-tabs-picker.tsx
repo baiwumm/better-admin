@@ -1,3 +1,5 @@
+"use client";
+
 import { Switch } from "@heroui/react";
 import { Check, X } from "lucide-react";
 

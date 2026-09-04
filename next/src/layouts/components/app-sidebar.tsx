@@ -1,3 +1,5 @@
+"use client";
+
 import type { ComponentType, Key } from "react";
 import type { AuthUser, MenuNode } from "@/lib/api-types";
 

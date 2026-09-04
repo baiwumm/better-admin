@@ -1,3 +1,5 @@
+"use client";
+
 import type { AuthUser, MenuNode } from "@/lib/api-types";
 
 import { useEffect } from "react";

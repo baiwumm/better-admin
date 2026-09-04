@@ -1,3 +1,5 @@
+"use client";
+
 import { Button, Drawer, toast, useOverlayState } from "@heroui/react";
 import { PaintBucket, RotateCcw } from "lucide-react";
 import { useCallback } from "react";

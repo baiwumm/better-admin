@@ -1,3 +1,5 @@
+"use client";
+
 import { Description, Radio, RadioGroup } from "@heroui/react";
 import { Gauge, Rabbit, Snail, type LucideIcon } from "lucide-react";
 

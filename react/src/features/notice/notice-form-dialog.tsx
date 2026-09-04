@@ -84,6 +84,27 @@ function toLocalMinuteInput(iso: string | null | undefined): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/**
+ * DatePicker 本地值 → 带本地时区偏移的 ISO 时间戳。
+ * 无时区的 "YYYY-MM-DDTHH:mm" 会被服务端按**服务器时区**解释，
+ * 服务器与用户时区不一致时定时发布时间漂移（契约 format: date-time 要求 RFC3339）。
+ */
+function toISOWithOffset(localMinute: string): string {
+  if (!localMinute) return "";
+  const d = new Date(localMinute);
+
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(Math.abs(n)).padStart(2, "0");
+  const offset = -d.getTimezoneOffset();
+  const sign = offset >= 0 ? "+" : "-";
+
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}:00` +
+    `${sign}${pad(Math.floor(offset / 60))}:${pad(offset % 60)}`
+  );
+}
+
 const noticeFormSchema = z
   .object({
     title: z.string().trim().min(1).max(50),
@@ -270,7 +291,7 @@ function NoticeFormModal({
           content: values.content,
           scopeTargets,
           isTop: values.isTop,
-          publishTime: values.publishDate || null,
+          publishTime: toISOWithOffset(values.publishDate) || null,
         };
 
         return updateNotice(noticeId!, input);
@@ -281,7 +302,7 @@ function NoticeFormModal({
         content: values.content,
         scopeTargets,
         isTop: values.isTop,
-        publishTime: values.publishDate || null,
+        publishTime: toISOWithOffset(values.publishDate) || null,
       };
 
       return createNotice(input);

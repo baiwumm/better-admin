@@ -1,3 +1,5 @@
+"use client";
+
 import { Description, RadioGroup, Radio, cn } from "@heroui/react";
 import {
   ArrowDownUp,
