@@ -64,19 +64,41 @@ async function getSessionUser(request: NextRequest): Promise<AuthUser | null> {
   }
 }
 
-/** 用 refresh Cookie 尝试静默轮换（复用 /api/auth/refresh 的轮换逻辑）。 */
-async function trySilentRefresh(
+/**
+ * 静默刷新并发去重：access 过期瞬间，并行页面请求（多标签 / prefetch /
+ * 导航与水合后 XHR 同时发起）携带同一 refresh Cookie 各自触发轮换——
+ * refresh 是「删旧插新」语义，仅第一个成功，其余因托管行已删而失败，
+ * 会把会话有效的用户误踢到登录页。模块级 in-flight Map 按 refresh token
+ * 归并并发调用：后续请求共享第一次轮换的 Promise，拿到同一组新令牌
+ * （各自 setAuthCookies 写回相同 Cookie，幂等）。本 proxy 恒定运行于
+ * Node.js runtime（见文件头注释），模块状态在同一实例的并发请求间有效。
+ */
+const inFlightRefreshes = new Map<
+  string,
+  Promise<{ accessToken: string; refreshToken: string } | null>
+>();
+
+/** 用 refresh Cookie 尝试静默轮换（复用 /api/auth/refresh 的轮换逻辑，并发去重）。 */
+function trySilentRefresh(
   request: NextRequest,
 ): Promise<{ accessToken: string; refreshToken: string } | null> {
   const token = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
 
-  if (!token) return null;
+  if (!token) return Promise.resolve(null);
 
-  try {
-    return await refresh(token);
-  } catch {
-    return null;
-  }
+  const inFlight = inFlightRefreshes.get(token);
+
+  if (inFlight) return inFlight;
+
+  const promise = refresh(token)
+    .catch(() => null)
+    .finally(() => {
+      inFlightRefreshes.delete(token);
+    });
+
+  inFlightRefreshes.set(token, promise);
+
+  return promise;
 }
 
 /**
