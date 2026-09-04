@@ -18,7 +18,7 @@ better-admin
 
 Better Admin 是一个基于现代 Web 技术栈构建的全栈 Admin 系统。
 
-项目以 **React 版本（基于 Hero UI 实现）** 作为前端 UI / UX 的基准（UI Source of Truth）；不同技术栈采用各自的 UI 组件库（React / Next.js：**Hero UI 为主 + Shadcn UI 补充**；Vue / Nuxt：**Shadcn UI 为主**），在保持整体视觉风格、页面结构和交互体验一致的前提下，分别使用不同的前端及全栈技术进行实现。
+项目以 **React 版本（基于 Hero UI 实现）** 作为前端 UI / UX 的基准（UI Source of Truth）；不同技术栈采用各自的 UI 组件库（React / Next.js：**Hero UI 为主 + Shadcn UI 补充**；Vue / Nuxt：**Nuxt UI v4 为主**），在保持整体视觉风格、页面结构和交互体验一致的前提下，分别使用不同的前端及全栈技术进行实现。
 
 项目的核心目标不是开发多套不同的后台系统，而是：
 
@@ -71,7 +71,7 @@ better-admin/
 ├── next/                    # Next.js 全栈实现
 ├── nuxt/                    # Nuxt 全栈实现
 ├── react/                   # React（UI 基准；Hero UI 为主 + Shadcn UI 补充）
-├── vue/                     # Vue + Shadcn UI（shadcn-vue）
+├── vue/                     # Vue + Nuxt UI
 ├── nest/                    # NestJS 后端 API
 ├── docs/                    # 项目文档
 ├── README.md
@@ -381,7 +381,7 @@ React 版本（`/react`）基于 Hero UI 模板实现（UI 组件库策略见 §
 
 Vue、Next.js、Nuxt.js 版本按照 React 版本实现页面结构与交互。
 
-UI 组件库策略（§7.3）：React / Next.js 以 **Hero UI 为主 + Shadcn UI 为补充**；Vue / Nuxt 以 **Shadcn UI 为主**，暂不切换 Hero UI。
+UI 组件库策略（§7.3）：React / Next.js 以 **Hero UI 为主 + Shadcn UI 为补充**；Vue / Nuxt 以 **Nuxt UI v4 为主**（唯一组件库，规则见 `AGENTS.md` §21）。
 
 ---
 
@@ -444,8 +444,8 @@ UI 组件库策略（§7.3）：React / Next.js 以 **Hero UI 为主 + Shadcn UI
 ```text
 React       → Hero UI 为主 + Shadcn UI 补充
 Next.js     → Hero UI 为主 + Shadcn UI 补充
-Vue         → Shadcn UI 为主（暂不调整）
-Nuxt.js     → Shadcn UI 为主（暂不调整）
+Vue         → Nuxt UI v4（唯一组件库）
+Nuxt.js     → Nuxt UI v4（唯一组件库）
 ```
 
 ### 组件选择优先级（React / Next.js）
@@ -496,8 +496,10 @@ React / Next.js 表单保持 **React Hook Form + Zod**，不因 UI 组件库改�
 
 ### Vue / Nuxt
 
-- Vue / Nuxt 当前保持 **Shadcn UI 为主要 UI 体系**，不主动切换到 Hero UI。
-- 未来若实际开发发现 Hero UI 更适合 Vue / Nuxt，再单独进行技术评估，不因 React / Next.js 使用 Hero UI 而自动同步修改。
+- Vue / Nuxt 以 **Nuxt UI v4（`@nuxt/ui`）为唯一 UI 组件库**（2026-09 评审决策，替代原 Shadcn UI 策略）。
+- 组件优先级：Nuxt UI 内置组件 → 项目级自定义组件（基于 Nuxt UI 原子拼装）→ 第三方组件库（需评审）；禁止引入 Vuetify、Quasar、Element Plus、PrimeVue、shadcn-vue 等替代 UI 库。
+- 主题直接使用 Nuxt UI 默认 Design Tokens 与 Color System，暗色模式由其内置 color mode 提供；页面结构、布局骨架、交互行为与 React 基准一致，组件视觉使用 Nuxt UI 默认风格。
+- 硬性规则与操作指引见 `AGENTS.md` §21 与 [`nuxt-ui-guide.md`](nuxt-ui-guide.md)。
 
 ---
 
@@ -907,13 +909,13 @@ Better Admin
 │   └── Hero UI（主）+ Shadcn UI（补充）
 │
 ├── Vue
-│   └── Shadcn UI
+│   └── Nuxt UI v4
 │
 ├── Next.js
 │   └── Hero UI（主）+ Shadcn UI（补充）· Full-stack
 │
 ├── Nuxt
-│   └── Shadcn UI · Full-stack
+│   └── Nuxt UI v4 · Full-stack
 │
 └── NestJS
     └── API Backend
