@@ -2990,6 +2990,21 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '409':
+          description: 同类型下 value / label 已存在（DICT_ITEM_VALUE_EXISTS / DICT_ITEM_LABEL_EXISTS，v0.9 起 label 亦唯一）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                valueExists:
+                  value:
+                    code: DICT_ITEM_VALUE_EXISTS
+                    message: 该字典类型下 value 已存在
+                labelExists:
+                  value:
+                    code: DICT_ITEM_LABEL_EXISTS
+                    message: 该字典类型下 label 已存在
 
   /dict/items/{id}:
     parameters:
@@ -3024,6 +3039,12 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: 同类型下 value / label 已存在（DICT_ITEM_VALUE_EXISTS / DICT_ITEM_LABEL_EXISTS，v0.9 起 label 亦唯一）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       tags: [Dict]
       summary: 删除字典项
