@@ -2,7 +2,7 @@
 
 > 本文档定义 Better Admin 的页面结构、组件行为、视觉 Token 与交互规范；`/react`（Hero UI 基准版本）是 UI Source of Truth，Vue / Next.js / Nuxt 按此规范对齐。
 >
-> **UI 组件库策略**：React / Next.js 采用 **Hero UI 为主 + Shadcn UI 为补充**，Vue / Nuxt 保持 **Shadcn UI 为主**（详见 §18.3）；样式变量以 **Hero UI 设计体系为主要参考**对齐。
+> **UI 组件库策略**：React / Next.js 采用 **Hero UI 为主 + Shadcn UI 为补充**，Vue / Nuxt 采用 **Nuxt UI v4**（唯一组件库，详见 §18.3 与 `AGENTS.md` §21 / `nuxt-ui-guide.md`）；React / Next.js 样式变量以 **Hero UI 设计体系为主要参考**对齐，Vue / Nuxt 直接使用 Nuxt UI 默认 Design Tokens。
 
 ---
 
@@ -84,7 +84,7 @@
 | `/sign-in` 等 | 认证页 | 认证 | 认证模式（居中卡片布局） | ✅ 已实现 |
 | `/403` `/404` `/500` | 错误页 | 系统 | 全屏错误模式 | ✅ 已实现 |
 
-> **UI 组件库差异说明**：React / Next.js 使用 **Hero UI** 组件（Button / Modal / Tabs 等），Vue / Nuxt 使用 **Shadcn UI** 组件；组件库不同，但**页面功能、布局结构、交互逻辑、数据流保持一致**。
+> **UI 组件库差异说明**：React / Next.js 使用 **Hero UI** 组件（Button / Modal / Tabs 等），Vue / Nuxt 使用 **Nuxt UI** 组件（布局用 Dashboard 套件）；组件库不同，但**页面功能、布局结构、交互逻辑、数据流保持一致**。
 
 **页面结构规范（Better Admin）**：
 
@@ -581,7 +581,7 @@ Sidebar
 
 ## 18.3 UI 组件库策略（Hero UI 为主 + Shadcn UI 补充）
 
-> 本小节为项目级 UI 组件库核心规则（与 `AGENTS.md` §7.2 / `requirements.md` §7.3 一致），React / Next.js 必须遵循；Vue / Nuxt 保持 Shadcn UI 为主。
+> 本小节为项目级 UI 组件库核心规则（与 `AGENTS.md` §7.2 / `requirements.md` §7.3 一致），React / Next.js 必须遵循；Vue / Nuxt 采用 **Nuxt UI v4**（规则见 `AGENTS.md` §21 与 `nuxt-ui-guide.md`）。
 
 **组件优先级（React / Next.js）**：
 
@@ -627,7 +627,7 @@ Shadcn UI
 
 - `/react` 基于 Hero UI 模板实现，**不含 Shadcn UI 组件**；新增功能一律使用 Hero UI，不一次性重构。
 - 业务能力优先于组件库替换：不为了组件库统一破坏页面结构、交互、业务逻辑与 DataTable / Form 等基础设施。
-- Vue / Nuxt（shadcn-vue / shadcn-nuxt）保持 **Shadcn UI 为主**，暂不引入 Hero UI（Hero UI 官方暂无 Vue 实现，社区方案非官方，切换需单独评估）。
+- Vue / Nuxt 以 **Nuxt UI v4（`@nuxt/ui`）为唯一 UI 组件库**（2026-09 评审决策，替代原 shadcn-vue / shadcn-nuxt 策略）：组件优先级 Nuxt UI 内置 → 项目级自定义组件 → 第三方库（需评审）；布局必须优先使用官方 Dashboard 套件（`UDashboardGroup` / `UDashboardSidebar` / `UDashboardNavbar` / `UDashboardSearch` 等）；主题直接使用 Nuxt UI 默认 Design Tokens 与 Color System，暗色模式由其内置 color mode 提供；禁止引入 Vuetify、Quasar、Element Plus、PrimeVue、shadcn-vue 等替代库。硬性规则见 `AGENTS.md` §21，操作指引见 `nuxt-ui-guide.md`。
 
 ---
 
@@ -653,5 +653,6 @@ Shadcn UI
 | 2026-08-21 | v0.1 | 基于 Shadcn Admin v2.2.1 源码分析产出初版 UI Spec |
 | 2026-08-21 | v0.2 | Phase 1B 落地记录：品牌化、Sidebar 调整、页面占位、Demo 清理、中文化 |
 | 2026-08-22 | v0.3 | UI 组件库策略更新：React / Next.js 以 Hero UI 为主 + Shadcn UI 补充（§18.3）；样式变量以 Hero UI 设计体系为主要参考；Vue / Nuxt 保持 Shadcn UI |
+| 2026-09-05 | v1.2 | Vue / Nuxt 组件库策略切换为 **Nuxt UI v4**（头部策略、§1.1 差异注、§18.3）；同步 `AGENTS.md` §21 与 `docs/nuxt-ui-guide.md` |
 | 2026-09-02 | v1.0 | 文档重构：基于当前 React Hero UI 基准版本更新，移除 Shadcn Admin 历史引用与 Phase 1B 规划表述，同步页面结构与技术栈现状 |
 | 2026-09-03 | v1.1 | 新增组织架构图谱页面规划与交互边界（§1.3，阶段 4，未实施）；明确四端图谱 / 图表一致性原则：实现库可不同（React/Next → @xyflow/react + Recharts；Vue/Nuxt 待其对应阶段决策），视觉靠本规范对齐 |
