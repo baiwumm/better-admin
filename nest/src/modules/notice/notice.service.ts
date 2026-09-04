@@ -31,6 +31,8 @@ import {
 import {
   assertScopeTargets,
   buildDeptPathMap,
+  collectDeptSubtreeIds,
+  DbOrTx,
   resolveScopeUserIds,
   toDirectoryEntryView,
 } from '../org/org-views';
@@ -84,30 +86,6 @@ export type NoticeScopeView = {
 };
 
 const SORTABLE = new Set(['title', 'status', 'publishTime', 'createdAt', 'updatedAt']);
-
-/**
- * 简单并发限制：以固定并发数执行 mapper，避免大量 Promise.all
- * 同时发起查询打满数据库连接池（pg Pool 默认 max 10）。
- */
-async function mapWithConcurrency<T, R>(
-  items: T[],
-  concurrency: number,
-  mapper: (item: T, index: number) => Promise<R>,
-): Promise<R[]> {
-  const results = new Array<R>(items.length);
-  let cursor = 0;
-  const workers = Array.from(
-    { length: Math.min(concurrency, items.length) },
-    async () => {
-      while (cursor < items.length) {
-        const index = cursor++;
-        results[index] = await mapper(items[index], index);
-      }
-    },
-  );
-  await Promise.all(workers);
-  return results;
-}
 
 /** 全量权限位（对外正数形态，super_admin 判定与守卫一致） */
 const SUPER_ADMIN_POSITIVE = '9223372036854775807';
@@ -202,6 +180,154 @@ export class NoticesService {
       readRate: Math.round((readCount / totalCount) * 10000) / 100,
     };
   }
+  /** 管理列表统计视图（批量版返回结构，口径与逐条 computeStats 完全一致） */
+  private async computeStatsBatch(
+    noticeIds: string[],
+  ): Promise<
+    Map<string, { readCount: number; totalCount: number; readRate: number | null }>
+  > {
+    type Stats = { readCount: number; totalCount: number; readRate: number | null };
+    const map = new Map<string, Stats>();
+    for (const id of noticeIds) {
+      map.set(id, { readCount: 0, totalCount: 0, readRate: null });
+    }
+    if (noticeIds.length === 0) return map;
+
+    // 1. 全页 scope 行一次取出并按公告分组，同时合并三粒度目标（跨公告去重）
+    const scopeRows = await db
+      .select()
+      .from(noticeScopes)
+      .where(inArray(noticeScopes.noticeId, noticeIds));
+    const scopesByNotice = new Map<
+      string,
+      { scopeType: 'dept' | 'post' | 'user'; targetId: string }[]
+    >();
+    for (const id of noticeIds) scopesByNotice.set(id, []);
+    const allDeptIds = new Set<string>();
+    const allPostIds = new Set<string>();
+    const allUserIds = new Set<string>();
+    for (const r of scopeRows) {
+      scopesByNotice.get(r.noticeId)?.push({
+        scopeType: r.scopeType as 'dept' | 'post' | 'user',
+        targetId: r.targetId,
+      });
+      if (r.scopeType === 'dept') allDeptIds.add(r.targetId);
+      else if (r.scopeType === 'post') allPostIds.add(r.targetId);
+      else allUserIds.add(r.targetId);
+    }
+
+    // 2. 部门子树：每个**不同**部门目标一次递归 CTE（页内共享目标自然去重）
+    const subtreeByDept = new Map<string, string[]>();
+    for (const deptId of allDeptIds) {
+      subtreeByDept.set(deptId, await collectDeptSubtreeIds(deptId));
+    }
+
+    // 3. 范围解析三段合并（各 1 次查询，替代每公告 3 次）：
+    //    dept 过滤 users（子树并集）、post join users、直接目标 users
+    const usersByDept = new Map<string, Set<string>>();
+    const allSubtreeIds = new Set<string>();
+    for (const ids of subtreeByDept.values()) {
+      for (const id of ids) allSubtreeIds.add(id);
+    }
+    if (allSubtreeIds.size > 0) {
+      const rows = await db
+        .select({ id: users.id, deptId: users.deptId })
+        .from(users)
+        .where(
+          and(isNull(users.deletedAt), inArray(users.deptId, [...allSubtreeIds])),
+        );
+      for (const r of rows) {
+        if (!r.deptId) continue;
+        let set = usersByDept.get(r.deptId);
+        if (!set) {
+          set = new Set<string>();
+          usersByDept.set(r.deptId, set);
+        }
+        set.add(r.id);
+      }
+    }
+
+    const usersByPost = new Map<string, Set<string>>();
+    if (allPostIds.size > 0) {
+      const rows = await db
+        .select({ userId: userPosts.userId, postId: userPosts.postId })
+        .from(userPosts)
+        .innerJoin(
+          users,
+          and(eq(userPosts.userId, users.id), isNull(users.deletedAt)),
+        )
+        .where(inArray(userPosts.postId, [...allPostIds]));
+      for (const r of rows) {
+        let set = usersByPost.get(r.postId);
+        if (!set) {
+          set = new Set<string>();
+          usersByPost.set(r.postId, set);
+        }
+        set.add(r.userId);
+      }
+    }
+
+    const validDirectUsers = new Set<string>();
+    if (allUserIds.size > 0) {
+      const rows = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(isNull(users.deletedAt), inArray(users.id, [...allUserIds])));
+      for (const r of rows) validDirectUsers.add(r.id);
+    }
+
+    // 4. 内存组装每公告范围用户集合（口径同逐条版：三类并集、含离职），
+    //    同时求全页并集供已读明细查询圈定
+    const scopeUsersByNotice = new Map<string, Set<string>>();
+    const unionUsers = new Set<string>();
+    for (const id of noticeIds) {
+      const users0 = new Set<string>();
+      for (const s of scopesByNotice.get(id) ?? []) {
+        if (s.scopeType === 'dept') {
+          for (const deptId of subtreeByDept.get(s.targetId) ?? []) {
+            for (const u of usersByDept.get(deptId) ?? []) users0.add(u);
+          }
+        } else if (s.scopeType === 'post') {
+          for (const u of usersByPost.get(s.targetId) ?? []) users0.add(u);
+        } else if (validDirectUsers.has(s.targetId)) {
+          users0.add(s.targetId);
+        }
+      }
+      scopeUsersByNotice.set(id, users0);
+      for (const u of users0) unionUsers.add(u);
+    }
+
+    // 5. 已读明细一次取出（限定全页范围用户并集），内存按公告求交集计数——
+    //    与逐条版 WHERE notice_id = ? AND user_id IN (该公告范围) 完全同口径
+    if (unionUsers.size > 0) {
+      const readRows = await db
+        .select({
+          noticeId: noticeReadRecords.noticeId,
+          userId: noticeReadRecords.userId,
+        })
+        .from(noticeReadRecords)
+        .where(
+          and(
+            inArray(noticeReadRecords.noticeId, noticeIds),
+            inArray(noticeReadRecords.userId, [...unionUsers]),
+          ),
+        );
+      for (const r of readRows) {
+        const scope = scopeUsersByNotice.get(r.noticeId);
+        const stats = map.get(r.noticeId);
+        if (scope && stats && scope.has(r.userId)) stats.readCount += 1;
+      }
+    }
+
+    // 6. 分母与已读率（readRate = 百分比两位小数，与逐条版一致）
+    for (const [id, stats] of map) {
+      const total = scopeUsersByNotice.get(id)?.size ?? 0;
+      stats.totalCount = total;
+      stats.readRate =
+        total === 0 ? null : Math.round((stats.readCount / total) * 10000) / 100;
+    }
+    return map;
+  }
 
   /** 范围明细（targetName 回填） */
   private async loadScopes(noticeId: string): Promise<NoticeScopeView[]> {
@@ -241,14 +367,20 @@ export class NoticesService {
     }));
   }
 
-  /** 给范围内全员写站内信（新公告发布）：title 直接用公告标题，content 存纯文本摘要 */
+  /**
+   * 给范围内全员写站内信（新公告发布）：title 直接用公告标题，content 存纯文本摘要。
+   * client：库客户端或调用方事务——create 时须传事务，通知写入与公告/范围写入
+   * 原子化（通知写失败整体回滚）；且范围行由该事务写入，解析读取必须同源，
+   * 否则读不到未提交的范围行。
+   */
   async notifyScopePublish(
+    client: DbOrTx,
     noticeId: string,
     title: string,
     content: string | null,
   ) {
     const summary = content ? summarizeNoticeContent(content) : null;
-    const scopeRows = await db
+    const scopeRows = await client
       .select()
       .from(noticeScopes)
       .where(eq(noticeScopes.noticeId, noticeId));
@@ -257,14 +389,15 @@ export class NoticesService {
         scopeType: r.scopeType as 'dept' | 'post' | 'user',
         targetId: r.targetId,
       })),
+      client,
     );
     if (userIds.length === 0) return 0;
 
-    // 分批写入（每批 1000），避免单条 INSERT 过大
+    // 分批写入（每批 1000），避免单条 INSERT 过大；批必须落在同一事务内，不能拆出
     const BATCH = 1000;
     for (let i = 0; i < userIds.length; i += BATCH) {
       const batch = userIds.slice(i, i + BATCH);
-      await db.insert(notifications).values(
+      await client.insert(notifications).values(
         batch.map((recipientId) => ({
           recipientId,
           type: 'notice_publish',
@@ -329,10 +462,13 @@ export class NoticesService {
     const scopesByNotice = await this.loadScopesBatch(noticeIds);
     const readersByNotice = await this.loadReadersBatch(noticeIds);
 
-    // 当页逐条统计已读率：并发限制（同时 4 条），避免连接池被瞬间耗尽
-    const statsList = await mapWithConcurrency(rows, 4, async (row) => {
+    // 已读统计整页一次批量（口径与逐条 computeStats 完全一致），
+    // 查询数从「行数 × 5-6」降为「页内不同部门目标数 + 4」，内存组装修复视图
+    const statsByNotice = await this.computeStatsBatch(noticeIds);
+    const statsList = rows.map((row) => {
       const scopes = scopesByNotice.get(row.id) ?? [];
-      const stats = await this.computeStats(row.id);
+      const stats =
+        statsByNotice.get(row.id) ?? { readCount: 0, totalCount: 0, readRate: null };
       return {
         ...row,
         content: undefined,
@@ -717,6 +853,18 @@ export class NoticesService {
           targetId: s.targetId,
         })),
       );
+
+      // 立即发布：范围内全员站内信与公告/范围写入同一事务——
+      // 通知写失败整体回滚，避免「公告已发布但无人收到」中间态；
+      // 范围行由本事务写入，解析读取必须走同一 tx（分批保持在事务内不拆出）
+      if (status === 'published') {
+        await this.notifyScopePublish(
+          tx,
+          row.id,
+          row.title,
+          row.content ?? null,
+        );
+      }
       return row;
     });
 
@@ -725,15 +873,6 @@ export class NoticesService {
       title: created.title,
       status,
     });
-
-    // 立即发布：给范围内全员写新公告通知；定时发布由 @Cron 扫描后写入
-    if (status === 'published') {
-      await this.notifyScopePublish(
-        created.id,
-        created.title,
-        created.content ?? null,
-      );
-    }
 
     const scopes = await this.loadScopes(created.id);
     const stats = await this.computeStats(created.id);
@@ -1068,6 +1207,7 @@ export class NoticesService {
         .set({ status: 'published' })
         .where(eq(notices.id, notice.id));
       await this.notifyScopePublish(
+        db,
         notice.id,
         notice.title,
         notice.content ?? null,

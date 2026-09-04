@@ -51,10 +51,17 @@ export async function buildDeptPathMap(): Promise<Map<string, string>> {
 }
 
 /** 收集组织及其全部下级组织 ID（未删除；递归 CTE，两步查询实现） */
+
+/** 库客户端或事务客户端：需与调用方事务同源读写时传入 tx（默认全局 db）。 */
+export type DbOrTx =
+  | typeof db
+  | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 export async function collectDeptSubtreeIds(
   deptId: string,
+  client: DbOrTx = db,
 ): Promise<string[]> {
-  const result = await db.execute(sql`
+  const result = await client.execute(sql`
     WITH RECURSIVE dept_tree AS (
       SELECT id FROM depts WHERE id = ${deptId} AND deleted_at IS NULL
       UNION ALL
@@ -278,6 +285,7 @@ export async function assertScopeTargets(
  */
 export async function resolveScopeUserIds(
   scopes: { scopeType: string; targetId: string }[],
+  client: DbOrTx = db,
 ): Promise<string[]> {
   const collected = new Set<string>();
 
@@ -291,7 +299,7 @@ export async function resolveScopeUserIds(
       for (const id of await collectDeptSubtreeIds(deptId)) subtreeIds.add(id);
     }
     if (subtreeIds.size > 0) {
-      const rows = await db
+      const rows = await client
         .select({ id: users.id })
         .from(users)
         .where(
@@ -305,7 +313,7 @@ export async function resolveScopeUserIds(
   }
 
   if (postIds.length > 0) {
-    const rows = await db
+    const rows = await client
       .select({ id: users.id })
       .from(userPosts)
       .innerJoin(
@@ -317,7 +325,7 @@ export async function resolveScopeUserIds(
   }
 
   if (userIds.length > 0) {
-    const rows = await db
+    const rows = await client
       .select({ id: users.id })
       .from(users)
       .where(and(isNull(users.deletedAt), inArray(users.id, userIds)));
