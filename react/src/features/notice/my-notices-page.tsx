@@ -1,7 +1,7 @@
 import type { Notice } from "@/lib/api-types";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
@@ -107,6 +107,7 @@ function NoticeDetailSkeleton() {
 export function MyNoticesPage({ urlNoticeId }: MyNoticesPageProps) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const queryClient = useQueryClient();
 
   const page = useMyNoticesListStore((s) => s.page);
@@ -137,6 +138,14 @@ export function MyNoticesPage({ urlNoticeId }: MyNoticesPageProps) {
 
   const updateSelectedNotice = useCallback(
     (noticeId: string | null) => {
+      // KeepAlive 转场守卫：本页为实例池「临时驻留」成员，切走后的过渡帧里
+      // 组件仍在渲染，此时 strict:false 读到的 urlNoticeId 已失真（变为目标
+      // 页的 search），“自动选中”effect 会误触发本回调并把路由 replace 拉
+      // 回 /my-notices（表现为点「控制台」等菜单跳不过去）。路由已不在本页
+      // 时必须忽略一切 URL 回写。
+      if (pathname !== "/my-notices") {
+        return;
+      }
       setIsDetailClosed(noticeId === null);
       void navigate({
         to: "/my-notices",
@@ -147,7 +156,7 @@ export function MyNoticesPage({ urlNoticeId }: MyNoticesPageProps) {
         }),
       });
     },
-    [navigate],
+    [navigate, pathname],
   );
 
   useEffect(() => {
