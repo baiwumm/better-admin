@@ -10,6 +10,7 @@
 const ROUTE_TITLE_KEY_BY_PATH: Record<string, string> = {
   // 登录白名单页（不在菜单树中的管理区路由）
   "/account": "menu.pageTitle.account",
+  "/my-notices": "menu.pageTitle.myNotices",
 };
 
 /** 获取路径的标题 i18n key（无登记返回 undefined）。 */

@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
     const result = await listMyNotices(user.id, {
       page: Number(searchParams.get("page") ?? 1),
       pageSize: Number(searchParams.get("pageSize") ?? 10),
+      keyword: searchParams.get("keyword") ?? undefined,
+      readStatus: searchParams.get("readStatus") ?? undefined,
     });
 
     return jsonList(result.data, result.pagination);

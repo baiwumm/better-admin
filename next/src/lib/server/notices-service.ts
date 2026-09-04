@@ -59,12 +59,21 @@ export interface NoticeView {
   scopes?: NoticeScopeView[];
   scopeCount?: number;
   readCount: number;
+  /** 最近已读人员（管理列表回填；按已读时间倒序最多 3 个） */
+  readers?: NoticeReaderView[];
   totalCount: number;
   readRate: number | null;
   /** 当前用户的首次阅读时间（详情返回；管理视角或范围外查看为 null） */
   myReadAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/** 已读人员摘要（窗口函数取最近 3 条；总数复用 readCount） */
+export interface NoticeReaderView {
+  id: string;
+  name: string;
+  avatar: string | null;
 }
 
 /** 范围明细（targetName 由调用方回填） */
@@ -189,6 +198,50 @@ async function loadScopesBatch(
         postMap.get(r.targetId) ??
         userMap.get(r.targetId) ??
         null,
+    });
+  }
+
+  return map;
+}
+
+/** 批量装载多条公告的最近已读人员（窗口函数每组取 3 条）：全页 1 组查询 */
+async function loadReadersBatch(
+  noticeIds: string[],
+): Promise<Map<string, NoticeReaderView[]>> {
+  const map = new Map<string, NoticeReaderView[]>();
+
+  if (noticeIds.length === 0) return map;
+  for (const id of noticeIds) map.set(id, []);
+
+  const result = await db.execute(sql`
+    SELECT t.notice_id, t.user_id, t.display_name, t.avatar
+    FROM (
+      SELECT rr.notice_id, rr.user_id, u.display_name, u.avatar,
+             row_number() OVER (
+               PARTITION BY rr.notice_id
+               ORDER BY rr.read_at DESC, rr.user_id
+             ) AS rn
+      FROM notice_read_records rr
+      INNER JOIN users u ON u.id = rr.user_id
+      WHERE rr.notice_id IN (${sql.join(
+        noticeIds.map((id) => sql`${id}`),
+        sql`, `,
+      )})
+    ) t
+    WHERE t.rn <= 3
+  `);
+  const rows = result as unknown as {
+    notice_id: string;
+    user_id: string;
+    display_name: string;
+    avatar: string | null;
+  }[];
+
+  for (const row of rows) {
+    map.get(row.notice_id)?.push({
+      id: row.user_id,
+      name: row.display_name,
+      avatar: row.avatar,
     });
   }
 
@@ -422,11 +475,28 @@ async function loadNoticeRow(id: string) {
   return row;
 }
 
-/** 给范围内全员写站内信（新公告发布/定时发布共用）。 */
+/** 公告 HTML → 通知摘要纯文本（剥标签 + 解常见实体 + 折叠空白 + 截断） */
+function summarizeNoticeContent(html: string, max = 140): string {
+  const text = html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+/** 给范围内全员写站内信（新公告发布/定时发布共用）：title 直接用公告标题，content 存纯文本摘要。 */
 export async function notifyScopePublish(
   noticeId: string,
   title: string,
+  content: string | null,
 ): Promise<number> {
+  const summary = content ? summarizeNoticeContent(content) : null;
   const scopeRows = await db
     .select()
     .from(noticeScopes)
@@ -451,7 +521,8 @@ export async function notifyScopePublish(
         id: generateRecordId(),
         recipientId,
         type: "notice_publish",
-        title: `新公告：${title}`,
+        title,
+        content: summary,
         link: `/org/notices/${noticeId}`,
       })),
     );
@@ -479,7 +550,7 @@ export async function publishDueNotices(): Promise<number> {
       .update(notices)
       .set({ status: "published" })
       .where(eq(notices.id, notice.id));
-    await notifyScopePublish(notice.id, notice.title);
+    await notifyScopePublish(notice.id, notice.title, notice.content ?? null);
     await writeLog("notice.auto_publish", null, {
       id: notice.id,
       title: notice.title,
@@ -556,6 +627,7 @@ export async function listNotices(params: NoticeListParams): Promise<{
 
   const noticeIds = rows.map((r) => r.id);
   const scopesByNotice = await loadScopesBatch(noticeIds);
+  const readersByNotice = await loadReadersBatch(noticeIds);
 
   const data: NoticeView[] = [];
 
@@ -568,6 +640,7 @@ export async function listNotices(params: NoticeListParams): Promise<{
       content: undefined,
       scopes,
       scopeCount: scopes.length,
+      readers: readersByNotice.get(row.id) ?? [],
       readCount: stats.readCount,
       totalCount: stats.totalCount,
       readRate: stats.readRate,
@@ -577,19 +650,24 @@ export async function listNotices(params: NoticeListParams): Promise<{
   return { data, pagination: { page, pageSize, total } };
 }
 
-/** GET /notices/mine — 我的公告（全员消费端；置顶在前、发布时间降序）。 */
+/** GET /notices/mine — 我的公告（全员消费端；置顶在前、发布时间降序）。
+ * 支持 keyword（标题模糊）与 readStatus（all/read/unread，个人维度）：
+ * LEFT JOIN 当前用户的已读记录做过滤并回填 myReadAt（与 Nest 端 findMine 对齐）。 */
 export async function listMyNotices(
   userId: string,
-  params: NoticeListParams,
+  params: NoticeListParams & { readStatus?: string },
 ): Promise<{
   data: NoticeView[];
   pagination: { page: number; pageSize: number; total: number };
 }> {
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.max(1, params.pageSize ?? 10);
+  const keyword = params.keyword?.trim() ?? "";
+  const readStatus = params.readStatus ?? "all";
 
   await publishDueNotices();
 
+  // 可见公告集合：三段 UNION（user 直接 / post 经 user_posts / dept 递归子树）
   const visibleSql = sql`
     SELECT notice_id FROM notice_scopes WHERE scope_type = 'user' AND target_id = ${userId}
     UNION
@@ -612,43 +690,78 @@ export async function listMyNotices(
       )
   `;
 
-  const [{ count: total }] = await db
-    .select({ count: count() })
-    .from(notices)
-    .where(
-      and(
-        isNull(notices.deletedAt),
-        eq(notices.status, "published"),
-        sql`${notices.id} IN (${visibleSql})`,
-      ),
-    );
+  // 阅读态过滤（LEFT JOIN 当前用户已读记录）：read = 已读 / unread = 未读
+  const readFilterSql =
+    readStatus === "read"
+      ? sql`rr.read_at IS NOT NULL`
+      : readStatus === "unread"
+        ? sql`rr.read_at IS NULL`
+        : sql`TRUE`;
+  const keywordFilterSql = keyword
+    ? sql`n.title ILIKE ${`%${keyword}%`}`
+    : sql`TRUE`;
 
-  const rows = await db
-    .select({
-      id: notices.id,
-      title: notices.title,
-      publisherId: notices.publisherId,
-      publisherName: users.displayName,
-      publisherEmail: users.email,
-      publisherAvatar: users.avatar,
-      isTop: notices.isTop,
-      status: notices.status,
-      publishTime: notices.publishTime,
-      createdAt: notices.createdAt,
-      updatedAt: notices.updatedAt,
-    })
-    .from(notices)
-    .leftJoin(users, eq(notices.publisherId, users.id))
-    .where(
-      and(
-        isNull(notices.deletedAt),
-        eq(notices.status, "published"),
-        sql`${notices.id} IN (${visibleSql})`,
-      ),
-    )
-    .orderBy(desc(notices.isTop), desc(notices.publishTime))
-    .limit(pageSize)
-    .offset((page - 1) * pageSize);
+  const visible = await db.execute(sql`
+    SELECT DISTINCT n.id, n.is_top, n.publish_time
+    FROM notices n
+    LEFT JOIN notice_read_records rr
+      ON rr.notice_id = n.id AND rr.user_id = ${userId}
+    WHERE n.deleted_at IS NULL AND n.status = 'published'
+      AND ${keywordFilterSql}
+      AND ${readFilterSql}
+      AND n.id IN (${visibleSql})
+    ORDER BY n.is_top DESC, n.publish_time DESC
+    LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}
+  `);
+  const visibleRows = visible as unknown as {
+    id: string;
+    is_top: boolean;
+    publish_time: Date;
+  }[];
+
+  const totalResult = await db.execute(sql`
+    SELECT COUNT(DISTINCT n.id)::int AS total
+    FROM notices n
+    LEFT JOIN notice_read_records rr
+      ON rr.notice_id = n.id AND rr.user_id = ${userId}
+    WHERE n.deleted_at IS NULL AND n.status = 'published'
+      AND ${keywordFilterSql}
+      AND ${readFilterSql}
+      AND n.id IN (${visibleSql})
+  `);
+  const total = Number(
+    (totalResult as unknown as { total?: number | string }[])[0]?.total ?? 0,
+  );
+
+  const ids = visibleRows.map((r) => r.id);
+  const rows = ids.length
+    ? await db
+        .select({
+          id: notices.id,
+          title: notices.title,
+          publisherId: notices.publisherId,
+          publisherName: users.displayName,
+          publisherEmail: users.email,
+          publisherAvatar: users.avatar,
+          isTop: notices.isTop,
+          status: notices.status,
+          publishTime: notices.publishTime,
+          myReadAt: noticeReadRecords.readAt,
+          createdAt: notices.createdAt,
+          updatedAt: notices.updatedAt,
+        })
+        .from(notices)
+        .leftJoin(users, eq(notices.publisherId, users.id))
+        .leftJoin(
+          noticeReadRecords,
+          and(
+            eq(notices.id, noticeReadRecords.noticeId),
+            eq(noticeReadRecords.userId, userId),
+          ),
+        )
+        .where(inArray(notices.id, ids))
+        .orderBy(desc(notices.isTop), desc(notices.publishTime))
+    : [];
 
   return {
     data: rows.map((row) => ({
@@ -657,6 +770,7 @@ export async function listMyNotices(
       readCount: 0,
       totalCount: 0,
       readRate: null,
+      myReadAt: row.myReadAt ? new Date(row.myReadAt).toISOString() : null,
     })),
     pagination: { page, pageSize, total },
   };
@@ -821,7 +935,7 @@ export async function createNotice(
 
   // 立即发布：给范围内全员写新公告通知；定时发布由 publishDueNotices 到点触发
   if (status === "published") {
-    await notifyScopePublish(id, input.title);
+    await notifyScopePublish(id, input.title, input.content ?? null);
   }
 
   return findVisibleNotice(id, user);

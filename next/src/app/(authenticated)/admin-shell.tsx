@@ -21,7 +21,7 @@ import { useMenuStore } from "@/stores/menu-store";
 import { useTabsStore } from "@/stores/tabs-store";
 
 /** 全宽页面白名单（无 main 内边距）：这些页面需要占满主体区域 */
-const FULL_WIDTH_ROUTES = ["/org/chart"];
+const FULL_WIDTH_ROUTES = ["/org/chart", "/my-notices"];
 
 type AdminShellProps = {
   /** 服务端注入的可见菜单树（权限过滤后，含固定控制台节点） */

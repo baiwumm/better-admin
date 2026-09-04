@@ -5,6 +5,37 @@
 
 ---
 
+### 公告/站内信功能 React + Next 双端对齐（含 Nest 接口增强）（2026-09-06）
+
+- **范围**：将 React + Nest 端的公告/站内信增强同步到 Next.js 独立实现，两端功能一致；另含 React 端若干体验修复。
+- **NestJS（契约同步更新 `openapi.yaml`）**：
+  - `Notice` 新增 `readers`（`NoticeReader`：id/name/avatar，按已读时间倒序最多 3 个，仅管理列表回填）；`findAll` 新增 `loadReadersBatch`（`row_number()` 窗口函数每页 1 次查询），`+N` 复用已有 `readCount` 口径。
+  - `notifyScopePublish`：通知 title 去掉「新公告：」前缀（直接用公告标题），`content` 写入纯文本摘要（`summarizeNoticeContent`：HTML 剥标签 + 实体解码 + 截断 140 字符）——修复通知 content 恒为 null 的问题。
+- **React（UI Source of Truth）**：
+  - 「我的公告」页交互修复：ListBox 点击切换失效根因为 React Aria 默认 toggle 行为下单击不触发 `onAction`，改用 `selectionBehavior="replace"` + `onSelectionChange` 兜底（与 sidebar-menu 同款）；列表项/详情发布人统一 `UserInfo`；置顶 Chip 移至底部状态行右侧；去重置按钮（SearchField `onClear` 提交空搜索）；刷新进度条定位筛选区下边框（`h-px` 同边框高，零位移）。
+  - 通知抽屉美化：类型图标锚点（BellRing/AlarmClock/Settings）+ HeroUI Badge dot 未读角标 + content 通栏两行摘要 + 通栏 `divide-y` 分隔；Tabs（未读/全部）移入 `Drawer.Header` 固定、去掉 `Tabs.Panel`（筛选器语义，无内容联动）；侧边栏用户菜单新增「我的公告」入口。
+  - 公告管理：新增「已读人员」头像堆叠列（`-space-x-2` + `ring-background`，空显示 —）；「发布时间/状态」列位置互换（状态前移）。
+- **Next.js（同步实现）**：
+  - server：`notices-service` 同步 `notifyScopePublish` 修复与 `loadReadersBatch`（注意 Next 端 `db.execute` 直接返回行数组，与 Nest 端 `result.rows` 不同）。
+  - 新增 `/(authenticated)/my-notices` 页面（URL 同步采用 `usePathname + 原生 router.replace`，避免 bprogress 闪烁）与 `my-notices-page` 组件；`notice-bell` 全量对齐 React 最终版；公告管理列同步（readers 列 + 列顺序）；`format-date` 补 `formatRelativeTime`；i18n 中英文补 `features.myNotices.*`、`column.readers`、`menu.pageTitle.myNotices`、layout 抽屉相关 key。
+- **验证**：两端 `tsc`/ESLint 通过；React 71 单测通过；`next build` 成功（`/my-notices` 路由注册）；Nest 端 `/api/notices` 实测返回 `readers`。
+- **已知限制**：存量通知 title（带前缀）与 content（null）不回改，新发布公告生效。
+
+### 我的公告白名单入口上线（React + Nest，公告消费端补齐）（2026-09-03）
+
+- **背景**：公告模块已有管理端 `/org/notices`、铃铛通知抽屉与消费详情 `/org/notices/:id`，但缺少一个稳定的个人消费入口；已读公告会被新通知挤出铃铛最近 20 条列表，用户难以回看历史公告。
+- **方案定稿**：不把个人消费场景塞进左侧菜单，也不继续扩张铃铛职责；改为在**侧边栏头像下拉**新增「我的公告」入口，落地独立登录白名单页 `/my-notices`。语义分层固定为：`公告管理 = 发布/统计`、`铃铛 = 最近提醒`、`我的公告 = 历史消费入口`。
+- **NestJS**：
+  - `GET /notices/mine` 查询参数从仅分页扩展为 `page/pageSize/keyword/readStatus(all|read|unread)`，支持标题模糊搜索与个人阅读态筛选。
+  - 列表响应 `Notice` 新增可选 `myReadAt`（当前用户首次阅读时间）；实现上以 `notice_read_records` LEFT JOIN 当前用户，按个人维度判断已读/未读，不借用 notifications 通知流倒推。
+  - OpenAPI 同步补充 `Notice.myReadAt` 与 `/notices/mine` 的 `keyword/readStatus` 参数说明。
+- **React**：
+  - `sidebar-user.tsx` 在 `我的账户` 下新增 `我的公告` 菜单项，仍复用 HeroUI `Dropdown` 体系。
+  - `route-access.ts` 将 `/my-notices` 加入 `LOGIN_REQUIRED_PATHS`，与 `/account` 同级，明确“不走菜单权限，只要求登录态”。
+  - 新增路由 `/my-notices`（带 `noticeId` URL Query 恢复当前选中公告），页面采用 **HeroUI 双栏公告中心**：左侧 `Tabs + SearchField + ScrollShadow` 列表，右侧详情卡复用现有消费端视觉语言；选中公告后拉详情并自动记首读，成功后失效 `["my-notices"]` 与 `["notifications"]` 缓存，左侧阅读态与铃铛未读数即时刷新。
+  - 文案补充：`layout.user.myNotices`、`menu.pageTitle.myNotices`、`features.myNotices.*` 中英文键。
+- **文档同步**：`docs/feature-matrix.md` 在「站内信通知」备注追加 React 端 `我的公告` 白名单入口说明。
+
 ### 架构图谱负责人头像显示修复（2026-09-06）
 
 - **问题**：架构图谱中，用户有头像，但卡片名称左侧的头像还是显示的是第一个字（首字 Fallback），没有显示用户实际头像。

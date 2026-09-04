@@ -104,6 +104,11 @@
   "layout.user.linkX": "X",
   "layout.header.moreNotifications": "仅显示最近 20 条",
   "layout.header.noNotifications": "暂无通知",
+  "layout.header.noUnreadNotifications": "暂无未读通知",
   "layout.header.notifications": "通知",
-  "layout.header.readAll": "全部已读"
+  "layout.header.readAll": "全部已读",
+  "layout.header.unreadTab": "未读",
+  "layout.header.allTab": "全部",
+  "layout.header.viewMyNotices": "查看我的公告",
+  "layout.user.myNotices": "我的公告"
 }
