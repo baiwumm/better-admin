@@ -524,3 +524,24 @@
 - UI 基础建立：Layout / Sidebar / Header / Theme / Dark Mode / shadcn/ui 组件可用。
 - `pnpm install` / `pnpm dev` / `pnpm build` / `pnpm lint` 已实测通过，项目可独立运行。
 - 未接入 NestJS、数据库、真实认证与 RBAC；当前页面为官方 Demo 与 Mock 数据。
+
+---
+
+## 附：待确认项决策记录（2026-09-05 评审定稿）
+
+> 三端排查报告中的「待确认」项，经评审后定案如下。本章节为决策存档，追加于文件底部，不随时间线倒序调整。
+
+| 项 | 决策 | 落点 |
+| --- | --- | --- |
+| refresh 并发重放短窗口双活 | ❌ 不修，记录在案（触发条件苛刻，ROI 极低） | 无代码改动；Next proxy 已有并发去重缓解 |
+| `GET /menus`（侧边栏）过滤 enabled=false | ✅ 已实现，保持现状 | `buildAllowedMenuIds` 等 |
+| `GET /menus/tree`（管理页）过滤 enabled=false | ✅ 保持现状（不过滤，契约未承诺） | 无代码改动 |
+| dict label 不设唯一 | ⚠️ 原决策推翻：同一 type_code 下 label 唯一 | `dict_items_type_label_unique` 索引（drizzle 0009）；409 `DICT_ITEM_LABEL_EXISTS` + 前端 i18n 映射 |
+| 删除公告保留 read_records | ✅ 接受（审计数据需要），保持现状 | 无代码改动 |
+| 改密码无「新旧相同」校验 | 方案 C：新旧相同时不 bump tokenVersion，静默成功 | `account.service.updatePassword`（`bcrypt.compare` 命中即幂等返回，仅记审计日志） |
+| /settings 空壳页 Next 端缺失 | ❌ 忽略（父级分组 to=''，正常导航不可达，无业务价值） | 无代码改动 |
+
+**实施与验证**：
+- dict label 唯一：drizzle 迁移 `drizzle/0009_sudden_khan.sql` 已生成并在 Supabase 工作库应用（`pg_indexes` 核对三索引齐全），重跑幂等；两端 dict-api 补 `DICT_ITEM_LABEL_EXISTS` → `errors.dict.labelExists` 映射（×4 语言包）。
+- 改密码静默成功：API 冒烟 7/7——新旧相同 200 且会话不被踢、原密码仍可登录；真实改密后旧 token 401、新密码可登录。
+- EXPORT 门控：GET /permissions 含 EXPORT(512)；角色授权含/不含 512 时通讯录菜单 userPermissions 位掩码随授权变化（API 冒烟 6/6）。

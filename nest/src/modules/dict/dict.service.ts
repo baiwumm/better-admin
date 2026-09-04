@@ -47,6 +47,12 @@ export class DictService {
         message: '该字典类型下 value 已存在',
       });
     }
+    if (constraint.includes('dict_items_type_label_unique')) {
+      throw new ConflictException({
+        code: 'DICT_ITEM_LABEL_EXISTS',
+        message: '该字典类型下 label 已存在',
+      });
+    }
     throw err;
   }
 

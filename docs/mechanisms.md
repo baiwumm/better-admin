@@ -167,8 +167,12 @@ SUPER_ADMIN_USER_PROTECTED）；前端只做入口隐藏止损，后端为契约
   `assertBatchOperable`——任一目标命中规则即整体拒绝，错误码取最高优先级命中项。
 - **编辑旁路已关闭**：`PUT /users/{id}` 的 DTO 含 `status`，目标为受保护用户且
   请求 `status=disabled` 时同权拦截（编辑邮箱/昵称/角色不受限）。
-  已知未拦点：`roleIds` 全量替换可摘除 super_admin 绑定（摘绑定不锁死系统，
-  见 progress.md v1.4.6 条目待办）。
+- **super_admin 角色绑定变更已拦截**：`POST /users` 与 `PUT /users/{id}` 的
+  `roleIds`（含全量替换）经 `assertValidRoleBindingChange` 校验——非超管操作者
+  移除或添加 super_admin 绑定一律 403 `SUPER_ADMIN_ROLE_BINDING_PROTECTED`，
+  操作者自身绑定 super_admin 时豁免（超管间互操作不锁死系统）。
+  组合场景口径（如「先摘后挂」分两次请求的中间态、并发授权竞态）待评审，
+  当前以「单请求内最终 roleIds 集合」为判定粒度。
 
 ## 6. 前端权限快照与同步机制：登录快照 + 挂载时 /auth/me（React 端）
 

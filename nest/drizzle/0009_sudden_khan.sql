@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "dict_items_type_label_unique" ON "dict_items" USING btree ("type_code","label");

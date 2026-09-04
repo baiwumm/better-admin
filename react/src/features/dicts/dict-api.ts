@@ -119,6 +119,11 @@ export function getDictErrorMessage(error: unknown): string {
         "errors.dict.itemValueExists",
         "该字典类型下 value 已存在",
       );
+    case "DICT_ITEM_LABEL_EXISTS":
+      return getErrorMessage(
+        "errors.dict.labelExists",
+        "该字典类型下 label 已存在",
+      );
     case "DICT_TYPE_NOT_FOUND":
       return getErrorMessage("errors.dict.typeNotFound", "字典类型不存在");
     case "DICT_ITEM_NOT_FOUND":

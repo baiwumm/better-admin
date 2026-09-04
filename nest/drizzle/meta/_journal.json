@@ -64,6 +64,13 @@
       "when": 1788248065692,
       "tag": "0008_robust_living_tribunal",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788547101360,
+      "tag": "0009_sudden_khan",
+      "breakpoints": true
     }
   ]
 }

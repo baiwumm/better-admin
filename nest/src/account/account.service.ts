@@ -198,6 +198,13 @@ export class AccountService {
     const existing = await this.loadRow(userId);
     await this.assertCurrentPassword(existing.passwordHash, dto.currentPassword);
 
+    // 新旧密码相同：静默成功（v0.9 决策）——不 bump tokenVersion、不清托管会话，
+    // 避免无谓的全端下线；仅记审计日志
+    if (await bcrypt.compare(dto.newPassword, existing.passwordHash)) {
+      await this.writeLog('account.password_update_noop', userId, null);
+      return null;
+    }
+
     const passwordHash = await bcrypt.hash(dto.newPassword, 10);
     // 写新密码（tokenVersion+1）与清空托管 refreshToken 同一事务（不留中间态）
     await db.transaction(async (tx) => {

@@ -373,6 +373,12 @@ Sidebar
 4. 表格容器外层统一 `rounded-md border`，横向溢出滚动。
 5. 空态文案不得直接写 `No results.`，统一走 Empty State 组件（见 §14）。
 6. 分页默认 `pageSize 10`，可选 10/20/30/40/50。
+7. **搜索/重置按钮权限位门控**（`DataTableSearchReset` 内置）：搜索按钮消费
+   `SEARCH` 位、重置按钮消费 `RESET` 位，两位均缺失时整组不渲染；`RESET`
+   为纯前端清筛选动作，按 v1.3 约定仅控制显隐、不挂后端守卫。
+8. **列设置持久化 key 格式**：`buildColumnSettingKey(userId, <真实路由全路径>)`，
+   路径一律使用完整路由（如 `/settings/roles`、`/settings/logs`），禁止短路径
+   （`/roles`）——历史短路径 key 已统一迁移，新增页面遵循全路径口径。
 
 ---
 
@@ -459,6 +465,13 @@ Sidebar
 1. **统一 `EmptyState` 组件**：图标（lucide，如 `Inbox`/`SearchX`）+ 标题（`font-semibold`）+ 描述（`text-sm text-muted-foreground`）+ 可选操作按钮，居中布局。
 2. 表格空态：筛选无结果 → 图标 `SearchX` + 「未找到匹配结果」+ Reset 按钮；列表无数据 → 图标 `Inbox` + 「暂无数据」+ 新建按钮（有权限时）。
 3. 页面占位（未开发模块）沿用 `ComingSoon`，文案统一「该页面尚未开发」。
+4. **空/错误/加载三态互斥约定**（`EmptyContent` / `ErrorContent` / 骨架或遮罩）：
+   - 空态（`EmptyContent`，Inbox 图标）：请求成功但无数据；
+   - 错误态（`ErrorContent`，TriangleAlert 图标）：请求失败——列表页必须接
+     `isError` + 重试按钮（`refetch`），不得把错误渲染成空态；
+   - 加载态：首屏用骨架/遮罩（见 §14.2），有数据的 refetch 用半透明遮罩保留旧数据；
+   - 同一区域同一时刻只呈现一种状态；操作按钮与状态匹配（空态给「新建」、
+     错误态给「重试」）。
 
 ---
 
