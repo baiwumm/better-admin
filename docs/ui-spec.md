@@ -473,7 +473,7 @@ Sidebar
 
 ### 14.2 Better Admin Loading 规范
 
-1. 列表页加载：表格区域显示骨架（表头 + 5~8 行 `Skeleton h-10`），或整页 `Skeleton` 卡片。
+1. 列表页加载：表格区域显示骨架（表头 + 6 行 `Skeleton`，React 端 `DataTable` 内置）；**Next 端为刻意差异**——保持 Spinner 遮罩（blur）不变（Next 无 KeepAlive，页面切换即卸载重挂，首屏骨架价值有限；见 `next/src/components/common/data-table/data-table.tsx` 注释）。
 2. Dashboard 加载：统计卡片与图表区域分别显示骨架卡片。
 3. 按钮加载：提交/保存中显示 spinner（lucide `LoaderCircle` 旋转）+ 禁用，文案保持动作含义。
 4. 路由切换保留顶部进度条；`refetchOnWindowFocus` 生产开启。

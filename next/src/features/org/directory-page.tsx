@@ -32,6 +32,7 @@ import { UserInfo } from "@/components/common/user-info/user-info";
 import { createListStore } from "@/hooks/create-list-store";
 import { useListQuery } from "@/hooks/use-list-query";
 import { useTranslation } from "@/i18n";
+import { useMenuPermissions } from "@/hooks/use-permissions";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
@@ -56,6 +57,8 @@ const useDirectoryListStore = createListStore<{
 
 export function DirectoryPage() {
   const { t } = useTranslation();
+  // 导出为敏感操作（批量数据外带）：按 EXPORT 位门控（v1.7.1，仅通讯录菜单声明）
+  const { canExport } = useMenuPermissions();
   const userId = useAuthStore((state) => state.user?.id);
 
   // 组织树（左栏筛选；与组织/岗位页共享缓存）
@@ -380,15 +383,17 @@ export function DirectoryPage() {
               onReset={resetFilters}
               onSearch={applySearch}
             />
-            <Button
-              isPending={isExporting}
-              size="sm"
-              variant="outline"
-              onPress={handleExport}
-            >
-              <Download aria-hidden className="size-4" />
-              {t("features.directory.export.button")}
-            </Button>
+            {canExport && (
+              <Button
+                isPending={isExporting}
+                size="sm"
+                variant="outline"
+                onPress={handleExport}
+              >
+                <Download aria-hidden className="size-4" />
+                {t("features.directory.export.button")}
+              </Button>
+            )}
           </DataTableToolbar>
 
           <DataTable

@@ -17,7 +17,14 @@ import {
   toast,
   useOverlayState,
 } from "@heroui/react";
-import { BellRing, ChevronsUpDown, Globe, IdCard, Link2, LogOut } from "lucide-react";
+import {
+  BellRing,
+  ChevronsUpDown,
+  Globe,
+  IdCard,
+  Link2,
+  LogOut,
+} from "lucide-react";
 
 import { GithubIcon, XIcon } from "@/lib/brand-icons";
 import { UserInfo } from "@/components/common/user-info/user-info";

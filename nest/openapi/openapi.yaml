@@ -16,6 +16,7 @@ info:
     返回 403 SUPER_ADMIN_ROLE_PROTECTED（其 role_menus 授权为全量权限载体，禁止修改/删除）；
     v1.4.4 新增 GRANT(256) 权限点（菜单授权）；PUT /roles/{id}/menus 权限要求由 EDIT
     收敛为 GRANT（角色管理菜单声明位同步补录，见 nest/scripts/migrate-menus-add-grant-bit.ts）；
+    v1.7.1 新增 EXPORT(512) 权限点（通讯录 Excel 导出按钮前端门控，无独立端点；仅人员通讯录菜单声明该位，存量库经 migrate-menus-add-export-bit.ts 补录）；
     v1.4.5 用户关联角色数量上限：UserCreateRequest / UserUpdateRequest 的 roleIds
     maxItems=5（超限 400 VALIDATION_ERROR）；
     v1.4.6 用户写操作保护：DELETE /users/{id}、DELETE /users、PUT /users/{id}/status、

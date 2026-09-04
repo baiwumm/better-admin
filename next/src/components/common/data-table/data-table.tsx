@@ -155,6 +155,9 @@ export function DataTable<TData extends RowData>({
           </Table.Content>
         </Table.ScrollContainer>
       </Table>
+      {/* 加载态采用 Spinner 遮罩（与 React 端骨架屏为刻意差异）：
+       * Next 端无 KeepAlive，页面切换即卸载重挂，首屏骨架价值有限；
+       * 详见 docs/ui-spec.md §14。 */}
       {isLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-default/20 backdrop-blur-[1px]">
           <Spinner size="md" />

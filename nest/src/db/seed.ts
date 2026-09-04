@@ -154,6 +154,9 @@ async function seed() {
   // 菜单授权（GRANT）仅角色管理页使用：只有角色管理菜单声明该位
   const rolesMenuBits = menuFullBits | Permissions.GRANT.bits;
 
+  // 通讯录 Excel 导出仅通讯录页使用：只有人员通讯录菜单声明该位（存量库经 migrate-menus-add-export-bit.ts 补录）
+  const directoryMenuBits = menuFullBits | Permissions.EXPORT.bits;
+
   type MenuInsertValues = Omit<typeof menus.$inferInsert, 'id' | 'i18nKey'>;
 
   const resolveMenu = (i18nKey: string, values: MenuInsertValues) =>
@@ -274,7 +277,7 @@ async function seed() {
     parentId: mOrg,
     sort: 2,
     enabled: true,
-    permissions: menuFullBits,
+    permissions: directoryMenuBits,
   });
   const mNotices = await resolveMenu('menu.notices', {
     label: '公告管理',

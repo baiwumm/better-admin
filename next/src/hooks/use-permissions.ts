@@ -71,7 +71,7 @@ function useCurrentMenuPermissions(): string | null {
  * 使用当前菜单的 userPermissions（精确到菜单）。
  *
  * @example
- * const { canAdd, canEdit, canDelete } = useMenuPermissions();
+ * const { canAdd, canEdit, canDelete, canExport } = useMenuPermissions();
  */
 export function useMenuPermissions() {
   const menuPermissions = useCurrentMenuPermissions();
@@ -98,6 +98,7 @@ export function useMenuPermissions() {
       canReset: false,
       canResetPassword: false,
       canGrant: false,
+      canExport: false,
     };
   }
 
@@ -118,5 +119,6 @@ export function useMenuPermissions() {
       bitsMap.get("RESET_PASSWORD") ?? 0n,
     ),
     canGrant: hasPermission(menuPermissions, bitsMap.get("GRANT") ?? 0n),
+    canExport: hasPermission(menuPermissions, bitsMap.get("EXPORT") ?? 0n),
   };
 }

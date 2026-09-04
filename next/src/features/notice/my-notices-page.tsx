@@ -148,6 +148,7 @@ export function MyNoticesPage() {
         params.delete("noticeId");
       }
       const qs = params.toString();
+
       router.replace(qs ? `${pathname}?${qs}` : pathname);
     },
     [pathname, router, searchParams],

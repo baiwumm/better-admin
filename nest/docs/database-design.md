@@ -53,6 +53,7 @@
 | RESET | reset | 64 | lucide:rotate-ccw | 重置（前端「重置」按钮显隐，纯前端位） |
 | RESET_PASSWORD | resetPassword | 128 | lucide:key-round | 重置密码（守卫 `POST /users/:id/reset-password`） |
 | GRANT | grant | 256 | lucide:shield-check | 菜单授权（v1.4.4，守卫 `PUT /roles/:id/menus`；仅角色管理菜单声明该位） |
+| EXPORT | export | 512 | lucide:download | 通讯录 Excel 导出（v1.7.1，前端导出按钮显隐，无独立端点；仅人员通讯录菜单声明该位） |
 
 ### 1.3 权限判定链路
 
@@ -453,6 +454,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | --- | --- | --- |
 | 2026-09-01 | v0.6 | 契约 v1.6.0（组织中心阶段 1/2）：迁移 0007 新增 8 张表——`depts` / `posts` / `user_posts` / `notices` / `notice_scopes` / `notice_read_records` / `notice_remind_logs` / `notifications`（后 5 张阶段 3 实现业务）；`users` 表新增 `dept_id` / `employee_no` / `employment_status` / `entry_date` 四个可空列（向前兼容）。组织/岗位软删 + 部分唯一索引；depts↔users 循环外键以 AnyPgColumn 惰性回调声明；岗位不参与权限聚合（架构决策）。存量库需执行 `pnpm db:migrate`（0007）与 `nest/scripts/migrate-menus-add-org.ts`（菜单补录）。 |
 | 2026-08-30 | v0.5 | 契约 v1.4.4：新增 `GRANT`(256) 权限点（菜单授权，守卫 `PUT /roles/:id/menus`，原为 EDIT）；仅角色管理菜单声明该位，存量库经 `nest/scripts/migrate-menus-add-grant-bit.ts` 幂等补录；super_admin 全量位自动覆盖，无需迁移数据。权限点共 9 个。 |
+| 2026-09-05 | v0.9 | 契约 v1.7.1：新增 `EXPORT`(512) 权限点（通讯录 Excel 导出按钮前端门控，无独立端点）；仅人员通讯录菜单声明该位，存量库经 `nest/scripts/migrate-menus-add-export-bit.ts` 幂等补录；super_admin 全量位自动覆盖。权限点共 10 个。 |
 | 2026-08-28 | v0.4 | 契约 v1.4：`menus.target` 列移除（真实库已 DROP COLUMN），外链打开方式由前端按 `to` 是否外链推导，菜单字段与权限位无其它变化。 |
 | 2026-08-21 | v0.1 | Phase 2 数据库设计方案：位掩码 RBAC、9 张表（无 i18n 表）、日志 4 类型、设置预置、字典、纯前端 i18n 约定。仅文档，未开发。 |
 | 2026-08-21 | v0.2 | 六项关键改进：超级管理员全量位(`9223372036854775807`)、主键 `nanoid(12)` 强制服务端生成、users 软删部分唯一索引、新增 `SETTINGS_UPDATE` 独立位、日志自动清理策略、字典/菜单 i18n 管理规范。仅文档，未开发。 |

@@ -457,11 +457,13 @@ export function DeptsPage() {
 
       <ConfirmDialog
         destructive
+        confirmKeyword={deleteTarget?.name}
         confirmText={t("common.delete")}
         description={t("features.depts.message.deleteDesc", {
           name: deleteTarget?.name ?? "",
         })}
         isLoading={deleteMutation.isPending}
+        keywordLabel={t("features.depts.message.deleteKeyword")}
         state={{
           isOpen: deleteDialog.isOpen,
           setOpen: deleteDialog.setOpen,

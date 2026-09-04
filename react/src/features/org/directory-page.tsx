@@ -64,8 +64,8 @@ export function DirectoryPage({
   urlDeptId?: string | null;
 }) {
   const { t } = useTranslation();
-  // 导出是 SEARCH 接口的批量调用：与搜索/重置一致按 SEARCH 位门控（全站操作按钮门控口径统一）
-  const { canSearch: canExport } = useMenuPermissions();
+  // 导出为敏感操作（批量数据外带）：按 EXPORT 位门控（v1.7.1，仅通讯录菜单声明）
+  const { canExport } = useMenuPermissions();
   const navigate = useNavigate();
   const userId = useAuthStore((state) => state.user?.id);
   // 组织树（左栏筛选；与组织/岗位页共享缓存）
