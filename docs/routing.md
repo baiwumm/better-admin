@@ -1,10 +1,12 @@
-# Better Admin — 路由功能说明（React 版）
+# Better Admin — 路由功能说明（React / Vue）
 
-> 范围：本文档描述 `/react`（Hero UI 基准版本）的约定式路由体系：目录约定、完整路由表、三层访问控制模型、登录鉴权、404/错误页与路由-菜单契约。
-> 状态：已落地实现（TanStack Router 文件式路由 + NestJS 真实后端）。Vue / Next.js / Nuxt 后续按本文档的**路由表与行为约定**对齐。
+> 范围：本文档描述 `/react`（Hero UI 基准版本）与 `/vue`（Nuxt UI 版本）的约定式路由体系：目录约定、完整路由表、三层访问控制模型、登录鉴权、404/错误页与路由-菜单契约。**Vue 端 URL 与 React 端逐条一致**，实现方式各异、行为对齐。
+> 状态：已落地实现。React：TanStack Router 文件式路由 + NestJS 真实后端；Vue：vue-router + unplugin-vue-router 文件式路由（M0）。
 >
-> 相关代码：`react/src/routes/`、`react/src/router.ts`、`react/src/lib/route-access.ts`（访问控制唯一语义源）、`react/src/lib/api-client.ts`、`react/src/stores/auth-store.ts`
-> 依赖：`@tanstack/react-router`、`@tanstack/react-query`、`zustand`（详见 `react/package.json`）
+> 相关代码：
+> - React：`react/src/routes/`、`react/src/router.ts`、`react/src/lib/route-access.ts`（访问控制唯一语义源）、`react/src/lib/api-client.ts`、`react/src/stores/auth-store.ts`
+> - Vue：`vue/src/pages/`、`vue/src/router/guards.ts`、`vue/src/lib/route-access.ts`、`vue/src/lib/permission.ts`、`vue/src/composables/use-menus.ts`、`vue/src/stores/auth-store.ts`
+> 依赖：React——`@tanstack/react-router`、`@tanstack/react-query`、`zustand`；Vue——`vue-router`（内置 unplugin-vue-router 集成）、`@tanstack/vue-query`、`pinia`（详见各端 `package.json`）
 
 ---
 
@@ -75,6 +77,41 @@ src/routes/
 | `(group)` | 路由组，**不进入 URL** | `(auth)` |
 | `_layout` | pathless 布局，**不进入 URL** | `_authenticated` |
 | `$param` / `notices_.$noticeId` | 动态段 | 公告详情 `/org/notices/:noticeId` |
+
+### 2.2 Vue（unplugin-vue-router，`vue/src/pages/`）
+
+```text
+src/pages/
+├── (auth)/sign-in.vue             # /sign-in（登录，公开）
+├── (errors)/                      # 全屏错误页（公开）
+│   ├── 403.vue / 404.vue / 500.vue
+├── (authenticated)/               # 分组目录：URL 不含该段，语义对应 React _authenticated
+│   ├── index.vue                  # /                （控制台占位，登录可达）
+│   ├── account.vue                # /account         （我的账户，登录可达）
+│   ├── my-notices.vue             # /my-notices      （我的公告，登录可达）
+│   ├── org/
+│   │   ├── depts.vue / posts.vue / directory.vue / notices.vue / chart.vue
+│   │   └── notices.[noticeId].vue # /org/notices/:noticeId（点号扁平化，等价 React notices_.$noticeId）
+│   └── settings/
+│       ├── index.vue / users.vue / roles.vue / permissions.vue
+│       ├── menus.vue / dicts.vue / logs.vue
+└── [...all].vue                   # catch-all → 全屏 404
+```
+
+约定语法（unplugin-vue-router）：
+
+| 语法 | 含义 | 本项目的用法 |
+| --- | --- | --- |
+| `index.vue` | 目录索引页 | `/`、`/settings` |
+| `[param].vue` | 动态段 | 公告详情 |
+| `a.[param].vue` | 点号扁平化（不嵌套进 `a.vue`） | `notices.[noticeId].vue` → `/org/notices/:noticeId` |
+| `(group)/` | 分组目录，**不进入 URL** | `(auth)`、`(errors)`、`(authenticated)` |
+| `[...all].vue` | catch-all | 未匹配 → 全屏 404 |
+| `typed-router.d.ts` | 构建期类型声明 | 路由 name / params 类型安全（勿手改，建议提交） |
+
+- 路由表由 `vue-router/vite` 插件生成，`main.ts` 经 `vue-router/auto-routes` 导入。
+- 无 pathless 布局文件：认证态共享布局由 `App.vue` 按「非公共页且非 catch-all」挂载 `layouts/AdminLayout.vue`（Nuxt UI Dashboard 套件），等价 React `_authenticated/route.tsx`。
+- 三层守卫集中在 `router/beforeEach`（`src/router/guards.ts`）：公开页放行 → 登录拦截（带 redirect）→ `ensureSession`（F5 恢复 `/auth/me` 快照与菜单缓存）→ 菜单权限（白名单豁免；菜单未加载不校验）。
 
 ---
 
@@ -217,3 +254,4 @@ useMenus()（GET /api/menus，后端 buildAllowedMenuIds 按角色关联过滤 +
 - ⚠️ `src/routeTree.gen.ts` 为自动生成文件：勿手改；新增路由后由 Vite 插件自动重建。
 - ℹ️ 管理页详情规范：列表详情一律用 Drawer/Dialog（见 `docs/ui-spec.md` §1.3）；唯一的消费端详情路由是公告详情（登录可达前缀）。
 - ℹ️ Next 端路由与本文档路由表逐页对应（App Router 目录 `next/src/app/(authenticated)/`），差异仅实现层（httpOnly Cookie + `proxy.ts` 门卫，见 `docs/feature-matrix.md`）。
+- ✅ Vue 端（M0）路由表与本文档逐条对齐：文件树见 §2.2；`lib/route-access.ts` 与 React 同构（`PUBLIC_PATHS` / `LOGIN_REQUIRED_PATHS` / `LOGIN_REQUIRED_PREFIXES` / `MENU_REQUIRED_PATHS`）；守卫为全局 `beforeEach`（§2.2）；`pnpm dev` / `build` / `lint` / `test` 均通过。

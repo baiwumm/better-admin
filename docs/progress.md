@@ -5,6 +5,23 @@
 
 ---
 
+### Vue 端启动（Phase 4）：M0 工程基建与骨架完成（2026-09-05）
+
+- **范围**：`/vue` 从零搭建（vue-plan v1.2，评审 5 条微调 + 路由选型修正落地）；`pnpm dev` / `build`（vite build + vue-tsc type-check）/ `lint` / `test`（16 用例）四绿；dev 冒烟（`/`、`/sign-in`、SPA 路由回退 200）。
+- **技术栈落地**：Vue 3.5 + Vite 8 + TS strict + **Nuxt UI v4.11**（`@nuxt/ui/vite` + `@nuxt/ui/vue-plugin` + Tailwind v4）+ `vue-router/vite` 文件式路由（`src/pages/`，URL 与 React 逐条一致，`typed-router.d.ts` 提交入库）+ Pinia 4 + `@tanstack/vue-query` + vue-i18n 11 + @vueuse/core 14。布局用 Nuxt UI Dashboard 套件（`UDashboardGroup` / `UDashboardSidebar` / `UDashboardPanel` / `UDashboardNavbar` / `UDashboardSearch`），折叠/移动端抽屉/Cmd+K 由套件内置；暗色模式用 @vueuse/core `useColorMode`（默认 tokens，无 React token 移植）。
+- **认证链路闭环**：登录页（受控表单 + `isSafeRedirect` 回跳 + rememberMe 长短会话）→ Pinia auth-store（localStorage 持久化语义对齐 React zustand persist）→ fetch 版 api-client（Bearer 注入、401 refresh 并发去重重试一次、`{data}` 信封解包）→ 守卫 `ensureSession`（F5 恢复 `/auth/me` 快照 + 菜单缓存）→ 登出清缓存。路由守卫三层（公开页放行 / 登录拦截 / 菜单权限 + 白名单豁免）+ 文档标题 i18n。
+- **关键决策 / 机制偏差（与 React 端实现差异）**：
+  - `@nuxt/ui/vue-plugin` 子路径在 rolldown-vite 8 下由插件 `resolveId` 重定向虚拟模块，`ui()` 必须置于 `vue()` **之前**才能生效（官方文档顺序相反，以实测为准）；
+  - `@vueuse/core` 14 的 `useColorMode` 返回 **Ref 本身**（`.value` 读写偏好，无 `preference` 属性，三态值是 `auto/light/dark`）；
+  - vue-i18n 用 `messageResolver: (obj, key) => obj[key]` 扁平查表 + 构建期把 `{{x}}` 归一为 `{x}`，兼容 React 语言包的共存键（`menu.settings` 组/叶子）与 i18next 插值语法，JSON 零改动复用（`scripts/sync-locales.mjs` 同步）；
+  - 菜单名翻译 `getMenuLabel`（i18nKey 优先）与 `fetchMenus` 合并固定「控制台」节点、侧边栏仅 `filterHiddenMenus` 不做二次权限过滤——均平移 React 端结论；
+  - 页面 meta 采用集中常量（`route-access.ts` 的 `MENU_REQUIRED_PATHS` / `ROUTE_TITLE_KEYS`），`definePage()` 宏路线留待 M1 评估；
+  - pnpm 11 的依赖构建脚本许可在 `vue/pnpm-workspace.yaml`（`allowBuilds`，非 workspace 依赖提升）。
+- **文档同步**：`docs/vue-plan.md`（v1.2）；`AGENTS.md` §7.2 更新 + 新增 §21（Vue/Nuxt 全局组件规范：Nuxt UI 唯一组件库）；`requirements.md` §7.3 及关联表述；`ui-spec.md` §18.3（v1.2）；新建 `docs/nuxt-ui-guide.md`；`docs/routing.md` 补 Vue 端对齐（§2.2）；本文件与 feature-matrix（Vue 列 🔧：认证/i18n/主题/命令面板/错误页/路由守卫）。
+- **已知限制**：Dashboard 保持占位（各端均未实现）；React 端 ConfigDrawer 的侧栏变体/Layout 模式偏好由 Dashboard 套件内置行为接管，页面级偏好抽屉 M0 仅主题+语言两项（M3 评审补齐）；登录第三方 OAuth 仍为占位 Toast（与 React 端一致）；组件测试与 KeepAlive 多标签页随 M1/M3 落地。
+
+---
+
 ### 三端全量代码排查（NestJS / React / Next.js）——P1 已修复，P2 已完成（2026-09-04 排查 / 2026-09-05 修复）
 
 - **范围**：按「Nest 逻辑正确性 → React 联调 / 功能对齐 / 交互一致性 → Next 对齐」系统性排查，对照 openapi.yaml 契约、mechanisms.md 机制结论与 feature-matrix.md。共发现 **46 个问题（P0: 0 / P1: 15 / P2: 31）**，无功能不可用 / 安全漏洞 / 数据损坏级问题。
