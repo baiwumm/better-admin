@@ -1,7 +1,8 @@
 import type { DeptTreeNode, NoticeScopeType } from "@/lib/api-types";
 import type { Key } from "react";
 
-import { Label, ListBox, Select, Tabs } from "@heroui/react";
+import { ListBoxLoadMoreItem } from "react-aria-components";
+import { Label, ListBox, Select, Spinner, Tabs } from "@heroui/react";
 import { useMemo, useState } from "react";
 
 import { useTranslation } from "@/i18n";
@@ -12,9 +13,16 @@ import { useTranslation } from "@/i18n";
  * 受控值 NoticeScope[]（三类目标合并数组，切换页签不丢已选）。
  *
  * - 停用组织/岗位禁选；
- * - 人员候选与负责人选择器共用 /users 首页 50 条缓存（量级内可用，
- *   全量分页选择随阶段 4 优化）。
+ * - 岗位/人员候选为无限分页（postsPaging / usersPaging 由调用方提供
+ *   useInfiniteQuery 的分页状态，滚动到列表底部自动加载下一页）。
  */
+
+/** 候选列表滚动加载分页状态（由 useInfiniteQuery 派生） */
+export interface ScopePaging {
+  hasMore: boolean;
+  loading: boolean;
+  loadMore: () => void;
+}
 
 export interface NoticeScopeSelectorProps {
   /** 三类目标分别受控（并集语义，提交时合成 NoticeScope[]） */
@@ -26,8 +34,10 @@ export interface NoticeScopeSelectorProps {
   onUserIdsChange: (ids: string[]) => void;
   tree: DeptTreeNode[];
   posts: { id: string; name: string; deptPath: string; status: string }[];
+  postsPaging: ScopePaging;
   users: { id: string; username: string; displayName: string }[];
   usersLoading: boolean;
+  usersPaging: ScopePaging;
 }
 
 export function NoticeScopeSelector({
@@ -39,8 +49,10 @@ export function NoticeScopeSelector({
   onUserIdsChange,
   tree,
   posts,
+  postsPaging,
   users,
   usersLoading,
+  usersPaging,
 }: NoticeScopeSelectorProps) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<NoticeScopeType>("dept");
@@ -182,6 +194,16 @@ export function NoticeScopeSelector({
                     <ListBox.ItemIndicator />
                   </ListBox.Item>
                 ))}
+                <ListBoxLoadMoreItem
+                  isLoading={postsPaging.loading}
+                  onLoadMore={postsPaging.loadMore}
+                >
+                  {postsPaging.hasMore ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Spinner size="sm" />
+                    </div>
+                  ) : null}
+                </ListBoxLoadMoreItem>
               </ListBox>
             </Select.Popover>
           </Select>
@@ -220,6 +242,16 @@ export function NoticeScopeSelector({
                     <ListBox.ItemIndicator />
                   </ListBox.Item>
                 ))}
+                <ListBoxLoadMoreItem
+                  isLoading={usersPaging.loading}
+                  onLoadMore={usersPaging.loadMore}
+                >
+                  {usersPaging.hasMore ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Spinner size="sm" />
+                    </div>
+                  ) : null}
+                </ListBoxLoadMoreItem>
               </ListBox>
             </Select.Popover>
           </Select>

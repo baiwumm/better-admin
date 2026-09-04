@@ -462,11 +462,13 @@ export function PostsPage() {
 
       <ConfirmDialog
         destructive
+        confirmKeyword={deleteTarget?.name}
         confirmText={t("common.delete")}
         description={t("features.posts.message.deleteDesc", {
           name: deleteTarget?.name ?? "",
         })}
         isLoading={deleteMutation.isPending}
+        keywordLabel={t("features.posts.message.deleteKeyword")}
         state={{
           isOpen: deleteDialog.isOpen,
           setOpen: deleteDialog.setOpen,

@@ -4,10 +4,13 @@ import type { ReactNode } from "react";
 import type { SortingState } from "@tanstack/react-table";
 import type { AppTable } from "./table-types";
 
-import { Spinner, Table, cn } from "@heroui/react";
+import { Skeleton, Spinner, Table, cn } from "@heroui/react";
 import { flexRender } from "@tanstack/react-table";
 
 import { EmptyContent } from "@/components/common/empty-content/empty-content";
+
+/** 首屏加载骨架行数（ui-spec §14.2：表头 + 若干骨架行） */
+const SKELETON_ROWS = 6;
 
 /**
  * TanStack Table（逻辑层）→ HeroUI Table（渲染层）桥接。
@@ -66,6 +69,10 @@ export function DataTable<TData extends RowData>({
   contentClassName,
 }: DataTableProps<TData>) {
   const sorting = table.state.sorting;
+  const rows = table.getRowModel().rows;
+  const columnCount = table.getVisibleLeafColumns().length;
+  // 首屏加载（当前无任何数据）渲染骨架行；有数据时的 refetch 仍用遮罩保留旧数据
+  const showSkeleton = isLoading && rows.length === 0;
 
   return (
     <div className={cn("relative", className)}>
@@ -128,32 +135,48 @@ export function DataTable<TData extends RowData>({
                 ))}
             </Table.Header>
             <Table.Body renderEmptyState={() => emptyState ?? <EmptyContent />}>
-              {table.getRowModel().rows.map((row) => (
-                <Table.Row key={row.id} id={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <Table.Cell key={cell.id}>
-                      {cell.column.columnDef.meta?.align === "center" ? (
-                        <div className="flex w-full justify-center">
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
+              {showSkeleton
+                ? Array.from({ length: SKELETON_ROWS }, (_, rowIndex) => (
+                    <Table.Row
+                      key={`skeleton-${rowIndex}`}
+                      id={`skeleton-${rowIndex}`}
+                    >
+                      {Array.from({ length: columnCount }, (_, colIndex) => (
+                        <Table.Cell key={colIndex}>
+                          <Skeleton
+                            className="h-4 rounded-medium"
+                            style={{ width: colIndex === 0 ? "55%" : "78%" }}
+                          />
+                        </Table.Cell>
+                      ))}
+                    </Table.Row>
+                  ))
+                : rows.map((row) => (
+                    <Table.Row key={row.id} id={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <Table.Cell key={cell.id}>
+                          {cell.column.columnDef.meta?.align === "center" ? (
+                            <div className="flex w-full justify-center">
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
+                            </div>
+                          ) : (
+                            flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )
                           )}
-                        </div>
-                      ) : (
-                        flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )
-                      )}
-                    </Table.Cell>
+                        </Table.Cell>
+                      ))}
+                    </Table.Row>
                   ))}
-                </Table.Row>
-              ))}
             </Table.Body>
           </Table.Content>
         </Table.ScrollContainer>
       </Table>
-      {isLoading && (
+      {isLoading && !showSkeleton && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-default/20 backdrop-blur-[1px]">
           <Spinner size="md" />
         </div>

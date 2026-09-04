@@ -599,10 +599,12 @@ export function DictsPage() {
 
       <ConfirmDialog
         destructive
+        confirmKeyword={deleteTypeTarget?.code}
         confirmText={t("common.delete")}
         description={t("features.dicts.message.deleteTypeDesc", {
           code: deleteTypeTarget?.code ?? "",
         })}
+        keywordLabel={t("features.dicts.message.deleteTypeKeyword")}
         state={{
           isOpen: typeDeleteDialog.isOpen,
           setOpen: typeDeleteDialog.setOpen,

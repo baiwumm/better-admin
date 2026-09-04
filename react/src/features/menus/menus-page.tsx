@@ -212,11 +212,13 @@ export function MenusPage() {
 
       <ConfirmDialog
         destructive
+        confirmKeyword={deleteTarget?.label}
         confirmText={t("common.delete")}
         description={t("features.menus.message.deleteDesc", {
           label: deleteTarget?.label ?? "",
         })}
         isLoading={deleteMutation.isPending}
+        keywordLabel={t("features.menus.message.deleteKeyword")}
         state={{
           isOpen: deleteDialog.isOpen,
           setOpen: deleteDialog.setOpen,

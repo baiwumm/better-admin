@@ -23,8 +23,8 @@ import {
 } from "@heroui/react";
 import { parseDate } from "@internationalized/date";
 import { Check, X } from "lucide-react";
-import { Controller, useForm } from "react-hook-form";
-import { useMemo } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { useEffect, useMemo } from "react";
 import { z } from "zod";
 
 import {
@@ -173,7 +173,7 @@ function UserFormModal({
         !currentUserIsSuperAdmin));
 
   const formSchema = useMemo(() => buildUserFormSchema(isEdit), [isEdit]);
-  const { control, handleSubmit, watch } = useForm<UserFormValues>({
+  const { control, handleSubmit, setValue, watch } = useForm<UserFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: user?.username ?? "",
@@ -228,6 +228,17 @@ function UserFormModal({
     staleTime: 60_000,
   });
   const postOptions = postOptionsRes?.data ?? [];
+
+  // 取消勾选已设为主岗的岗位时联动清空 mainPostId：
+  // 否则残留值随载荷提交，被后端 assertValidMainPost 400 拒绝
+  const watchedPostIds = useWatch({ control, name: "postIds" });
+  const watchedMainPostId = useWatch({ control, name: "mainPostId" });
+
+  useEffect(() => {
+    if (watchedMainPostId && !watchedPostIds.includes(watchedMainPostId)) {
+      setValue("mainPostId", "");
+    }
+  }, [watchedPostIds, watchedMainPostId, setValue]);
 
   const mutation = useMutation({
     mutationFn: (values: UserFormValues) => {

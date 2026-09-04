@@ -31,6 +31,7 @@ import { UserInfo } from "@/components/common/user-info/user-info";
 import { createListStore } from "@/hooks/create-list-store";
 import { useListQuery } from "@/hooks/use-list-query";
 import { useTranslation } from "@/i18n";
+import { useMenuPermissions } from "@/hooks/use-permissions";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
@@ -63,6 +64,8 @@ export function DirectoryPage({
   urlDeptId?: string | null;
 }) {
   const { t } = useTranslation();
+  // 导出是 SEARCH 接口的批量调用：与搜索/重置一致按 SEARCH 位门控（全站操作按钮门控口径统一）
+  const { canSearch: canExport } = useMenuPermissions();
   const navigate = useNavigate();
   const userId = useAuthStore((state) => state.user?.id);
   // 组织树（左栏筛选；与组织/岗位页共享缓存）
@@ -387,15 +390,17 @@ export function DirectoryPage({
               onReset={resetFilters}
               onSearch={applySearch}
             />
-            <Button
-              isPending={isExporting}
-              size="sm"
-              variant="outline"
-              onPress={handleExport}
-            >
-              <Download aria-hidden className="size-4" />
-              {t("features.directory.export.button")}
-            </Button>
+            {canExport && (
+              <Button
+                isPending={isExporting}
+                size="sm"
+                variant="outline"
+                onPress={handleExport}
+              >
+                <Download aria-hidden className="size-4" />
+                {t("features.directory.export.button")}
+              </Button>
+            )}
           </DataTableToolbar>
 
           {isError ? (

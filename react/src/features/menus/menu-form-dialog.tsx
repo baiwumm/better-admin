@@ -73,7 +73,13 @@ const I18N_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/;
 const menuFormSchema = z.object({
   parentId: z.string(),
   label: z.string().trim().min(1).max(50),
-  i18nKey: z.string().trim().min(1).regex(I18N_KEY_PATTERN),
+  // 可选：与契约对齐（MenuSaveInput.i18nKey 可空）；非空时必须为合法点分格式
+  i18nKey: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || I18N_KEY_PATTERN.test(value), {
+      message: "i18nKey 格式不合法",
+    }),
   icon: z.string().trim().min(1),
   to: z
     .string()

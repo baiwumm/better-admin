@@ -2,6 +2,7 @@ import type { RowData } from "@tanstack/react-table";
 import type { AppTable } from "./table-types";
 
 import { ListBox, Pagination, Select } from "@heroui/react";
+import { ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { useTranslation } from "@/i18n";
 
@@ -82,6 +83,14 @@ export function DataTablePagination<TData extends RowData>({
       <div className="flex items-center justify-start sm:justify-center">
         <Pagination size="sm">
           <Pagination.Content>
+            <Pagination.Item className="hidden sm:block">
+              <Pagination.Link
+                isDisabled={!table.getCanPreviousPage()}
+                onPress={() => table.setPageIndex(0)}
+              >
+                <ChevronsLeft className="size-4" />
+              </Pagination.Link>
+            </Pagination.Item>
             <Pagination.Item>
               <Pagination.Previous
                 isDisabled={!table.getCanPreviousPage()}
@@ -113,6 +122,14 @@ export function DataTablePagination<TData extends RowData>({
               >
                 <Pagination.NextIcon />
               </Pagination.Next>
+            </Pagination.Item>
+            <Pagination.Item className="hidden sm:block">
+              <Pagination.Link
+                isDisabled={!table.getCanNextPage()}
+                onPress={() => table.setPageIndex(pageCount - 1)}
+              >
+                <ChevronsRight className="size-4" />
+              </Pagination.Link>
             </Pagination.Item>
           </Pagination.Content>
         </Pagination>

@@ -645,11 +645,13 @@ export function NoticesPage() {
 
       <ConfirmDialog
         destructive
+        confirmKeyword={deleteTarget?.title}
         confirmText={t("common.delete")}
         description={t("features.notices.message.deleteDesc", {
           title: deleteTarget?.title ?? "",
         })}
         isLoading={deleteMutation.isPending}
+        keywordLabel={t("features.notices.message.deleteKeyword")}
         state={{
           isOpen: deleteDialog.isOpen,
           setOpen: deleteDialog.setOpen,

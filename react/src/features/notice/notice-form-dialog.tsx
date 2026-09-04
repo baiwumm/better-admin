@@ -8,7 +8,12 @@ import type {
 } from "@/lib/api-types";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+} from "@tanstack/react-query";
 import {
   Button,
   Calendar,
@@ -29,7 +34,7 @@ import {
 import { parseDateTime } from "@internationalized/date";
 import { Check, X } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { z } from "zod";
 
 import { createNotice, fetchNoticeDetail, updateNotice } from "./notice-api";
@@ -188,25 +193,55 @@ function NoticeFormModal({
     });
   }, [notice, reset]);
 
-  // 数据源：岗位选项 + 人员候选（首页 50 条，与负责人选择器同源）
-  const { data: postOptionsRes } = useQuery({
+  // 数据源：岗位选项 + 人员候选（无限分页加载，第 51+ 条滚动加载，
+  // 不再截断在首页 50 条——长列表组织的岗位/人员全量可选）
+  const SCOPE_PAGE_SIZE = 50;
+  const postOptionsQuery = useInfiniteQuery({
     queryKey: ["org", "posts", "options"],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       fetchApiList<{
         id: string;
         name: string;
         deptPath: string;
         status: string;
-      }>("/org/posts", { page: 1, pageSize: 50 }),
+      }>("/org/posts", { page: pageParam, pageSize: SCOPE_PAGE_SIZE }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) =>
+      allPages.length * SCOPE_PAGE_SIZE < lastPage.pagination.total
+        ? allPages.length + 1
+        : undefined,
     staleTime: 60_000,
+    placeholderData: keepPreviousData,
   });
-  const postOptions = postOptionsRes?.data ?? [];
-  const { data: usersRes } = useQuery({
+  const postOptions =
+    postOptionsQuery.data?.pages.flatMap((page) => page.data) ?? [];
+  const usersQuery = useInfiniteQuery({
     queryKey: ["users", "notice-scope-options"],
-    queryFn: () => fetchApiList<User>("/users", { page: 1, pageSize: 50 }),
+    queryFn: ({ pageParam }) =>
+      fetchApiList<User>("/users", {
+        page: pageParam,
+        pageSize: SCOPE_PAGE_SIZE,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) =>
+      allPages.length * SCOPE_PAGE_SIZE < lastPage.pagination.total
+        ? allPages.length + 1
+        : undefined,
     staleTime: 60_000,
+    placeholderData: keepPreviousData,
   });
-  const userOptions = usersRes?.data ?? [];
+  const userOptions = usersQuery.data?.pages.flatMap((page) => page.data) ?? [];
+  // ListBoxLoadMoreItem 进入视口可能连续触发，翻页中不重复 fetchNextPage
+  const loadMorePosts = useCallback(() => {
+    if (postOptionsQuery.hasNextPage && !postOptionsQuery.isFetchingNextPage) {
+      void postOptionsQuery.fetchNextPage();
+    }
+  }, [postOptionsQuery]);
+  const loadMoreUsers = useCallback(() => {
+    if (usersQuery.hasNextPage && !usersQuery.isFetchingNextPage) {
+      void usersQuery.fetchNextPage();
+    }
+  }, [usersQuery]);
 
   const mutation = useMutation({
     mutationFn: (values: NoticeFormValues) => {
@@ -382,10 +417,20 @@ function NoticeFormModal({
                         deptIds={watch("scopeDeptIds") ?? []}
                         postIds={watch("scopePostIds") ?? []}
                         posts={postOptions}
+                        postsPaging={{
+                          hasMore: postOptionsQuery.hasNextPage,
+                          loading: postOptionsQuery.isFetchingNextPage,
+                          loadMore: loadMorePosts,
+                        }}
                         tree={tree}
                         userIds={watch("scopeUserIds") ?? []}
                         users={userOptions}
                         usersLoading={false}
+                        usersPaging={{
+                          hasMore: usersQuery.hasNextPage,
+                          loading: usersQuery.isFetchingNextPage,
+                          loadMore: loadMoreUsers,
+                        }}
                         onDeptIdsChange={(ids) => setValue("scopeDeptIds", ids)}
                         onPostIdsChange={(ids) => setValue("scopePostIds", ids)}
                         onUserIdsChange={(ids) => setValue("scopeUserIds", ids)}
