@@ -294,6 +294,7 @@ https://nest.baiwumm.com
 3. **React / Next.js 代码生成与重构必须遵循 `vercel-react-best-practices` Skill**（详见 §20）。该 Skill 已全局安装（`~/.agents/skills/vercel-react-best-practices`），是所有 React / Next.js 代码产出（新建组件 / 页面、数据获取、重构、性能优化）的硬性性能与正确性规范；若与其冲突，以本文档的架构约束与 UI 组件库策略（§7.2）为更高优先级，但性能模式不得无故违反。
 4. **全局语言规则（跨会话持久生效）**：所有 AI Agent 在本项目中的**全部对话、思考过程与回复一律使用中文**。代码注释、文档、提交信息（Conventional Commits 描述）也以中文为主；仅在代码标识符、命令、API 字段等必须使用英文的场合保留英文。此规则覆盖所有会话，不局限于单一对话。
 5. **功能矩阵同步（跨会话持久生效）**：每次新增功能模块、完成模块迁移、或功能状态发生变化时，**必须同步更新 `docs/feature-matrix.md`**。更新时机：功能开发完成后立即更新对应技术栈的状态标记（✅/🔧/❌），并在提交信息中体现。该文件是四种前端实现功能对齐状态的唯一追踪源。
+6. **Skill 安装位置统一（跨会话持久生效）**：项目级 Agent Skill 一律安装到 `.agents/skills/<skill-name>/`（universal skill 约定路径，现有 `heroui-react`、`vercel-react-best-practices` 即在此）。禁止生成或保留 `.claude/skills/`、`agent/` 等其他位置的重复副本；安装 / 更新 Skill 时只维护 `.agents/skills/` 一份，避免多副本漂移。
 
 ### 需求优先级
 
