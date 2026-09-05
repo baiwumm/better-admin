@@ -52,6 +52,7 @@ import {
   buildColumnSettingKey,
 } from "@/components/common/data-table";
 import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog";
+import { ErrorContent } from "@/components/common/error-content/error-content";
 import { appTableFeatures } from "@/components/common/data-table/table-types";
 import { UserInfo } from "@/components/common/user-info/user-info";
 import { useMenuPermissions } from "@/hooks/use-permissions";
@@ -119,15 +120,13 @@ export function UsersPage() {
   const setFilters = useUsersListStore((s) => s.setFilters);
   const resetStore = useUsersListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching } = useListQuery<
-    User,
-    { status: string | null }
-  >({
-    store: useUsersListStore,
-    queryKeyPrefix: USERS_QUERY_KEY,
-    path: "/users",
-    buildFilters: (f) => (f.status ? { status: f.status } : {}),
-  });
+  const { data, pagination, isLoading, isFetching, isError, refetch } =
+    useListQuery<User, { status: string | null }>({
+      store: useUsersListStore,
+      queryKeyPrefix: USERS_QUERY_KEY,
+      path: "/users",
+      buildFilters: (f) => (f.status ? { status: f.status } : {}),
+    });
 
   // 搜索（提交式后端过滤，后端匹配 username/email/displayName 三字段）
   const [searchInput, setSearchInput] = useState(search);
@@ -182,29 +181,6 @@ export function UsersPage() {
   const invalidateList = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY });
   }, [queryClient]);
-
-  const confirmDelete = useCallback(async () => {
-    if (!deleteTarget) return;
-    try {
-      await deleteUser(deleteTarget.id);
-    } catch (error) {
-      toast.danger(getUserErrorMessage(error));
-      throw error; // ConfirmDialog 约定：抛错保持弹窗打开
-    }
-    invalidateList();
-    toast.success(t("features.users.message.deleteSuccess"));
-  }, [deleteTarget, invalidateList, t]);
-
-  const confirmBatchDelete = useCallback(async () => {
-    try {
-      await batchDeleteUsers(batchDeleteIds);
-    } catch (error) {
-      toast.danger(getUserErrorMessage(error));
-      throw error;
-    }
-    invalidateList();
-    toast.success(t("features.users.message.deleteSuccess"));
-  }, [batchDeleteIds, invalidateList, t]);
 
   /**
    * 状态切换（单个/批量共用）：Promise.allSettled 逐行调用，
@@ -593,6 +569,32 @@ export function UsersPage() {
     }
   }, [statusTarget, invalidateList, table, t]);
 
+  const confirmDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteUser(deleteTarget.id);
+    } catch (error) {
+      toast.danger(getUserErrorMessage(error));
+      throw error; // ConfirmDialog 约定：抛错保持弹窗打开
+    }
+    invalidateList();
+    // 与 logs 页口径一致：删除后清理勾选残留（表头全选框据此判定）
+    table.resetRowSelection();
+    toast.success(t("features.users.message.deleteSuccess"));
+  }, [deleteTarget, invalidateList, table, t]);
+
+  const confirmBatchDelete = useCallback(async () => {
+    try {
+      await batchDeleteUsers(batchDeleteIds);
+    } catch (error) {
+      toast.danger(getUserErrorMessage(error));
+      throw error;
+    }
+    invalidateList();
+    table.resetRowSelection();
+    toast.success(t("features.users.message.deleteSuccess"));
+  }, [batchDeleteIds, invalidateList, table, t]);
+
   return (
     <div className="flex w-full flex-col pb-8">
       <DataTableToolbar
@@ -646,13 +648,28 @@ export function UsersPage() {
         )}
       </DataTableToolbar>
 
-      <DataTable
-        aria-label={t("menu.pageTitle.users")}
-        className="w-full"
-        contentClassName="min-w-[860px]"
-        isLoading={isLoading || isFetching}
-        table={table}
-      />
+      {isError ? (
+        <ErrorContent
+          action={
+            <Button
+              size="sm"
+              variant="secondary"
+              onPress={() => void refetch()}
+            >
+              {t("common.retry")}
+            </Button>
+          }
+          title={t("common.loadError")}
+        />
+      ) : (
+        <DataTable
+          aria-label={t("menu.pageTitle.users")}
+          className="w-full"
+          contentClassName="min-w-[860px]"
+          isLoading={isLoading || isFetching}
+          table={table}
+        />
+      )}
 
       <DataTablePagination table={table} total={total} />
 

@@ -136,5 +136,7 @@ export function useListQuery<
     isFetching: query.isFetching,
     isError: query.isError,
     error: query.error,
+    /** 手动重取（列表页错误态的重试按钮） */
+    refetch: query.refetch,
   };
 }

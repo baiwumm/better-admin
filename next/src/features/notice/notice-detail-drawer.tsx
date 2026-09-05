@@ -23,7 +23,7 @@ import {
   useOverlayState,
 } from "@heroui/react";
 import { BellRing } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   fetchNoticeDetail,
@@ -71,6 +71,13 @@ export function NoticeDetailDrawer({
   const [readTab, setReadTab] = useState<"read" | "unread">("unread");
   const [readPage, setReadPage] = useState(1);
   const [unreadPage, setUnreadPage] = useState(1);
+
+  // 切换公告时重置名单页码：页码在 queryKey 中，沿用上一公告翻到的
+  // 第 N 页会使新公告从中间页查询（名单误显为空）
+  useEffect(() => {
+    setReadPage(1);
+    setUnreadPage(1);
+  }, [notice?.id]);
 
   // 已读 / 未读名单分别独立查询：queryKey 各自固定（只含自身页码），
   // 切换 Tab 仅切换取哪个查询的数据，不触发另一 Tab 重新请求；
