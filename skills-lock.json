@@ -1,17 +1,35 @@
 {
   "version": 1,
   "skills": {
+    "drizzle-orm": {
+      "source": "oakoss/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/drizzle-orm/SKILL.md",
+      "computedHash": "4cc62414eb3e24d3ca5682bb2463309eb26ab917c0fcf46b125d6a00d475d112"
+    },
     "heroui-react": {
       "source": "heroui-inc/heroui",
       "sourceType": "github",
       "skillPath": "skills/heroui-react/SKILL.md",
       "computedHash": "c3633cb324aef2a51a9828c96776897ec2273d8d092cfcfb4dfa754006c7b8df"
     },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/composition-patterns/SKILL.md",
+      "computedHash": "10eb4ec94577b79ae98c63ce3e7f35f8a6a06436a4011bff083b397de6960eeb"
+    },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/react-best-practices/SKILL.md",
       "computedHash": "ca7b0c0c6e5f2750043f7f0cd72d16ac4e2abc48f9b5500d047a4b77a2506212"
+    },
+    "vercel-react-view-transitions": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/react-view-transitions/SKILL.md",
+      "computedHash": "12f8e118b8ca5fa45e3f0b56c269fb2e35251b705d2320b26b0727a0f58adefc"
     }
   }
 }

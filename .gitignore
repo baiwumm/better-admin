@@ -1,2 +1,6 @@
 # heroui-agents-md
 .heroui-docs/
+
+# 根目录约定仅元数据（AGENTS §15）；node_modules 只应存在于各子应用内
+/node_modules
+/pnpm-lock.yaml
