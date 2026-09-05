@@ -281,3 +281,28 @@ export interface UpdateUserInput {
   postIds?: string[];
   mainPostId?: string | null;
 }
+
+/* ---------------------------------------------------------------------------
+ * 字典模块（/dict/*，契约 v1.4：类型/项均无分页，全量数组）
+ * ------------------------------------------------------------------------- */
+
+/** 字典类型（以 code 定位，code 创建后不可变更） */
+export interface DictType {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 字典项（挂在类型下，按 sort、创建时间升序） */
+export interface DictItem {
+  id: string;
+  typeCode: string;
+  value: string;
+  label: string;
+  i18nKey: string | null;
+  sort: number;
+  enabled: boolean;
+}

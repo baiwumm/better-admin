@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import PlaceholderPage from "@/components/PlaceholderPage.vue";
+import DictsPage from "@/features/dicts/DictsPage.vue";
 </script>
 
 <template>
-  <PlaceholderPage
-    icon="i-lucide-book-marked"
-    title-key="menu.pageTitle.dicts"
-  />
+  <DictsPage />
 </template>
