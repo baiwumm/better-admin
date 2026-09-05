@@ -154,7 +154,7 @@ export const DeptChartNode = memo(function DeptChartNode({
                     {leaderName}
                   </span>
                   {dept.code && (
-                    <span className="truncate font-mono text-[11px] leading-4 text-default-500">
+                    <span className="truncate font-mono text-[11px] leading-4 text-muted">
                       {dept.code}
                     </span>
                   )}
@@ -166,7 +166,7 @@ export const DeptChartNode = memo(function DeptChartNode({
             </Tooltip.Content>
           </Tooltip>
         ) : (
-          <div className="flex items-center gap-2 text-xs text-default-500">
+          <div className="flex items-center gap-2 text-xs text-muted">
             <UserRound aria-hidden className="size-3.5 shrink-0 opacity-60" />
             <span className="truncate">{t("features.chart.noLeader")}</span>
           </div>
@@ -198,7 +198,7 @@ export const DeptChartNode = memo(function DeptChartNode({
               ? "features.chart.node.expand"
               : "features.chart.node.collapse",
           )}
-          className="absolute -bottom-3.5 left-1/2 z-10 h-6 min-w-6 -translate-x-1/2 gap-0.5 rounded-full border border-border bg-content1 px-1.5 shadow-sm transition-colors data-[hover=true]:border-primary/40 data-[hover=true]:bg-default/60 dark:bg-content2 dark:data-[hover=true]:bg-default/40"
+          className="absolute -bottom-3.5 left-1/2 z-10 h-6 min-w-6 -translate-x-1/2 gap-0.5 rounded-full border border-border bg-surface px-1.5 shadow-sm transition-colors data-[hover=true]:border-accent/40 data-[hover=true]:bg-default/60 dark:bg-surface-secondary dark:data-[hover=true]:bg-default/40"
           size="sm"
           variant="ghost"
           onPress={() => onToggle(dept.id)}

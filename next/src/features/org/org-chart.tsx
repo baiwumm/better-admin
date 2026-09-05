@@ -1,5 +1,5 @@
 import type { DeptTreeNode } from "@/lib/api-types";
-import type { Edge, Node, ColorMode } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
 
 import {
   Background,
@@ -8,11 +8,12 @@ import {
   ReactFlow,
 } from "@xyflow/react";
 import { useMemo } from "react";
-import { useTheme } from "@heroui/react";
 import "@xyflow/react/dist/style.css";
 
 import { CHART_ROOT_ID, layoutDeptForest } from "./org-chart-layout";
 import { DeptChartNode, type DeptNodeData } from "./org-chart-node";
+
+import { useResolvedTheme } from "@/stores/design-theme-store";
 
 /**
  * 组织架构图谱（React Flow 只读封装，随图谱页面懒加载）。
@@ -65,7 +66,11 @@ export function OrgChart({
   onToggle,
   onNodeClick,
 }: OrgChartProps) {
-  const { theme } = useTheme();
+  // 暗色适配：colorMode 必须用应用内主题真源（design-theme-store 的 resolved 值，
+  // 与 <html> 的 dark/light 类一致）。HeroUI 的 useTheme().theme 读的是它自己的
+  // localStorage key（本项目从不写入，恒为 "system"），会让 React Flow 跟随
+  // OS 偏好——系统浅色 + 应用深色时容器被强制回亮色 token，节点卡片变白底。
+  const colorMode = useResolvedTheme();
   const nodes = useMemo<Node<DeptNodeData>[]>(() => {
     const positions = layoutDeptForest(filterVisible(tree, collapsed));
     const list: Node<DeptNodeData>[] = [];
@@ -130,7 +135,7 @@ export function OrgChart({
   return (
     <ReactFlow
       fitView
-      colorMode={theme as ColorMode}
+      colorMode={colorMode}
       edges={edges}
       edgesFocusable={false}
       elementsSelectable={false}

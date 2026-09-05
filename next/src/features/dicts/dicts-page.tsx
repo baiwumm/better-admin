@@ -455,7 +455,7 @@ export function DictsPage() {
                     key={type.code}
                     className={cn(
                       "group flex w-full cursor-pointer items-center gap-2 rounded-2xl px-3 py-2 text-start transition-colors",
-                      "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+                      "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus",
                       isActive ? "bg-default" : "hover:bg-default/60",
                     )}
                     role="button"

@@ -171,7 +171,7 @@ export function NoticeDetailPage() {
           <Separator />
 
           {/* 正文：限高滚动容器防超长内容撑爆页面；content 缺失回退标题文本 */}
-          <ScrollShadow className="max-h-[480px] rounded-2xl bg-content2 p-5">
+          <ScrollShadow className="max-h-[480px] rounded-2xl bg-surface-secondary p-5">
             {notice.content ? (
               <div
                 // 内容来自 Tiptap 编辑并经 DOMPurify 消毒（sanitizeNoticeHtml）

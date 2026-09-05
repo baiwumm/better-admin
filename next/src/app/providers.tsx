@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { I18nextProvider } from "react-i18next";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toast } from "@heroui/react";
+import { usePathname } from "next/navigation";
 import { ProgressProvider } from "@bprogress/next/app";
 import { useProgress } from "@bprogress/next";
 
 import { createI18nInstance, i18n as sessionI18n, initI18n } from "@/i18n";
 import { initDesignTheme } from "@/stores/design-theme-store";
 import { queryClient } from "@/lib/query-client";
-import { bindProgress } from "@/lib/progress";
+import { bindProgress, progressRouteBegin } from "@/lib/progress";
 
 export interface ProvidersProps {
   /** 启动语言（根 layout 从语言 Cookie 读出，缺省简体中文） */
@@ -19,15 +20,47 @@ export interface ProvidersProps {
 }
 
 /**
- * 将 useProgress 的 start/stop 注入非 React 模块（api-client）。
- * 必须在 AppProgressProvider 子树内调用。
+ * 将 useProgress 的 start/stop 注入非 React 模块（api-client），
+ * 并监听 pathname 驱动「路由过渡段」。必须在 AppProgressProvider 子树内调用。
+ *
+ * 路由过渡与请求计数共用同一状态机（lib/progress）：@bprogress/next 在
+ * pathname 变化时自动 stop，而页面 client 请求不在此生命周期内——请求存在
+ * 期间由状态机经 disableAutoStop 拦截自动收尾，全部结束后统一 stop。
  */
 function ProgressBinder() {
-  const { start, stop } = useProgress();
+  const {
+    start,
+    stop,
+    startPosition,
+    delay,
+    stopDelay,
+    disableAutoStop,
+    enableAutoStop,
+  } = useProgress();
+  const pathname = usePathname();
+  const prevPathnameRef = useRef(pathname);
 
   useEffect(() => {
-    bindProgress({ start, stop });
-  }, [start, stop]);
+    bindProgress(
+      { start, stop, disableAutoStop, enableAutoStop },
+      { startPosition, startDelayMs: delay, stopDelayMs: stopDelay },
+    );
+  }, [
+    start,
+    stop,
+    startPosition,
+    delay,
+    stopDelay,
+    disableAutoStop,
+    enableAutoStop,
+  ]);
+
+  useEffect(() => {
+    if (pathname !== prevPathnameRef.current) {
+      prevPathnameRef.current = pathname;
+      progressRouteBegin();
+    }
+  }, [pathname]);
 
   return null;
 }
