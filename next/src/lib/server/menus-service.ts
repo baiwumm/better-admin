@@ -8,7 +8,9 @@ import { count } from "drizzle-orm";
 import { db } from "@/db/client";
 import { logs, menus, roleMenus, userRoles, roles } from "@/db/schema";
 import {
+  ALL_PERMISSION_BITS,
   normalizePermissionBits,
+  SUPER_ADMIN_BITS,
   SUPER_ADMIN_BITS_POSITIVE,
 } from "@/lib/server/permissions";
 
@@ -317,21 +319,95 @@ async function writeMenuLog(
   }
 }
 
-async function createMenuRow(
-  dto: MenuSaveInput,
-  operatorId: string | null,
-  parentId?: string,
-): Promise<MenuNode> {
-  assertValidTo(dto.to);
-  await assertToUnique(dto.to ?? null);
+/** 校验菜单权限位：必须是合法权限位的组合（或全量位 -1n / 正数 2^63-1），与 roles.service 同口径 */
+function assertValidPermissions(raw: string | undefined | null): void {
+  if (raw === undefined || raw === null) return;
 
-  if (BigInt(dto.permissions ?? "0") < 0n) {
+  let bits: bigint;
+
+  try {
+    bits = BigInt(raw);
+  } catch {
+    throw new ServerApiError(
+      400,
+      "INVALID_OPERATION",
+      "permissions 不是合法的位掩码",
+    );
+  }
+
+  if (bits === SUPER_ADMIN_BITS || bits === SUPER_ADMIN_BITS_POSITIVE) return;
+
+  if (bits < 0n || (bits & ~ALL_PERMISSION_BITS) !== 0n) {
     throw new ServerApiError(
       400,
       "INVALID_OPERATION",
       "permissions 包含非法权限位",
     );
   }
+}
+
+/** 校验父菜单存在性（create / update 移动场景） */
+async function assertParentExists(
+  parentId: string | null | undefined,
+): Promise<void> {
+  if (!parentId) return;
+
+  const parent = await db.query.menus.findFirst({
+    where: eq(menus.id, parentId),
+  });
+
+  if (!parent) {
+    throw new ServerApiError(400, "MENU_PARENT_INVALID", "父菜单不存在");
+  }
+}
+
+/**
+ * 防环校验：目标父级不得为自身或自身的后代菜单。
+ * 从新 parentId 沿父链向上走，回到自身即成环（与 depts.service 同口径）。
+ */
+async function assertNotSelfDescendant(
+  id: string,
+  parentId: string | null,
+): Promise<void> {
+  if (!parentId) return;
+
+  if (parentId === id) {
+    throw new ServerApiError(
+      400,
+      "MENU_PARENT_INVALID",
+      "父菜单不合法（不可移动到自身或自身下级菜单下）",
+    );
+  }
+
+  const rows = await db
+    .select({ id: menus.id, parentId: menus.parentId })
+    .from(menus);
+  const parentMap = new Map(rows.map((r) => [r.id, r.parentId]));
+  let cursor: string | null | undefined = parentId;
+  const seen = new Set<string>();
+
+  while (cursor && !seen.has(cursor)) {
+    if (cursor === id) {
+      throw new ServerApiError(
+        400,
+        "MENU_PARENT_INVALID",
+        "父菜单不合法（不可移动到自身或自身下级菜单下）",
+      );
+    }
+    seen.add(cursor);
+    cursor = parentMap.get(cursor) ?? null;
+  }
+}
+
+async function createMenuRow(
+  dto: MenuSaveInput,
+  operatorId: string | null,
+  parentId?: string,
+): Promise<MenuNode> {
+  assertValidPermissions(dto.permissions);
+  assertValidTo(dto.to);
+  await assertToUnique(dto.to ?? null);
+  await assertParentExists(parentId ?? dto.parentId ?? null);
 
   const [row] = await db
     .insert(menus)
@@ -419,16 +495,17 @@ export async function updateMenu(
     (dto as { to?: string | null }).to === undefined
       ? existing.to
       : (dto.to ?? null);
+  // 未传 = 保持不变；传 null / 空串 = 清空父级（契约字段 nullable）
+  const effectiveParentId =
+    dto.parentId === undefined ? existing.parentId : dto.parentId || null;
 
+  assertValidPermissions(dto.permissions);
   assertValidTo(effectiveTo);
   await assertToUnique(effectiveTo, id);
 
-  if (BigInt(dto.permissions ?? existing.permissions.toString()) < 0n) {
-    throw new ServerApiError(
-      400,
-      "INVALID_OPERATION",
-      "permissions 包含非法权限位",
-    );
+  if (effectiveParentId) {
+    await assertNotSelfDescendant(id, effectiveParentId);
+    await assertParentExists(effectiveParentId);
   }
 
   const [row] = await db
@@ -439,7 +516,7 @@ export async function updateMenu(
         dto.i18nKey === undefined ? existing.i18nKey : (dto.i18nKey ?? null),
       icon: dto.icon ?? existing.icon,
       to: effectiveTo,
-      parentId: dto.parentId === undefined ? existing.parentId : dto.parentId,
+      parentId: effectiveParentId,
       sort: dto.sort ?? existing.sort,
       keepAlive: dto.keepAlive ?? existing.keepAlive,
       hideInMenu: dto.hideInMenu ?? existing.hideInMenu,

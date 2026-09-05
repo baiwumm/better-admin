@@ -5,6 +5,16 @@
 
 ---
 
+### Next.js 端同步修复：进度条 / 图谱暗色 / 失效 token + web 与 server 双向对齐（2026-09-05）
+
+- **同步 React 端当轮修复**：进度条并发竞态（`lib/progress.ts` 重构为「请求数 + 路由过渡」统一状态机；与 React 端差异：`@bprogress/next` 内置 pathname 变化自动 stop，故请求存在期间先 `disableAutoStop()` 拦截库收尾、状态机接管 stop + `enableAutoStop()`，`ProgressBinder` 监听 pathname 驱动过渡段；`api-client.ts` try/finally 收口计数）；图谱暗色（`org-chart.tsx` 改 `useResolvedTheme()` 下发 React Flow `colorMode`）；失效 token 类名清理（`bg-content1/2`、`text-default-500`、`ring-ring`、`border-primary/40` 共 8 处，扫描脚本复制至 `next/scripts/`）。
+- **web 端对齐 React（排查：页面清单 21/21 一致；confirmKeyword / mainPostId 联动 / 导出门控 / 图标预览 / 分页组件已对齐）**：data-table 补首屏 6 行骨架（取消「刻意差异」，`ui-spec.md` §14.2 同步；refetch 仍用遮罩）；`use-list-query` 补 `refetch` 透出；六列表页（users/roles/logs/notices/posts/directory）补错误态接线（isError + ErrorContent + 重试）；users 删除 / 批量删除后补 `resetRowSelection`（两个回调顺带移到 table 声明后，修复 TDZ）；公告详情抽屉补「切换公告重置名单页码」。
+- **server 端对齐 nest（系统性排查 42 条契约路径：端点完整性与权限校验矩阵一致，无端点缺失）**：menus 补 parentId 存在性 + 防环校验（`MENU_PARENT_INVALID`，此前无效 parentId 静默落库可构造环）+ permissions 位范围校验（非法 BigInt 500 → 400）+ parentId 空串归一；permissions 枚举补 `EXPORT(512n)` 并导出 `ALL_PERMISSION_BITS` 共享（此前经 nest 授予 EXPORT 后 next 再授权会误判 400）；dict 补 label 唯一冲突 409；account 补改密「新旧相同静默成功」分支（不再无谓全端下线）+ 改密双写事务化 + avatar 缺 file 400 `AVATAR_FILE_INVALID` + profile 字段级校验与链接前缀剥离（对齐 nest DTO）；posts create/update 补 category/rank/status 校验（此前非法 category 静默默认 management）；notices 补 publishTime RFC3339 校验（非法 500 → 400）+ 站内信通知并入发布事务（对齐 nest，不出现「已发布但无人收到」）+ read-stats status 严格校验；新建共享 `lib/server/pagination.ts` 接入全部 11 处列表（page/pageSize/order 非法一律 400，对齐 nest DTO，替换原静默钳制/回落）。
+- **已知差异（记录不修）**：notices 定时发布为惰性触发（访问时 `publishDueNotices()`），nest 为 @Cron 后台扫描——Next serverless 环境的架构适配；`type=api` 访问日志 nest 有全局拦截器、next 无等价机制（日志页 type=api 过滤为空），待 middleware Node runtime 方案评估；dict 可选字段「清空」语义两端实际行为一致（前端传空串），API 层 null 支持差异不修（避免 ""/null 数据形状分裂）。
+- **验证**：tsc / eslint 0 error、`check-locales` 与 React 端完全一致、build 全绿。
+
+---
+
 ### React 端修复：进度条并发竞态 + 架构图谱暗色模式 + 失效 token 类名清理（2026-09-05）
 
 - **进度条提前消失（用户报障）**：路由切换后 `use-route-progress` 以 rAF+50ms 无条件 `stop()`，绕过 `progress.ts` 的请求引用计数——页面并发请求仍在飞行时进度条即结束。`progress.ts` 重构为统一状态机（「飞行中请求数 > 0」或「路由过渡未结束」任一活跃即展示，双双归零才 stop；路由过渡计时收进模块，快速连切自动取消旧定时器）；`api-client.ts` 改 try/finally 收口计数（顺带修复 401 重试计数泄漏 + 网络异常 / JSON 解析异常泄漏）；Provider 的 delay / startPosition / stopDelay 经 `bindProgress` 下发后对手动调用生效（BProgress 的这三个 props 仅锚点场景自动生效，此前配置形同虚设），`delay=200`「短导航不闪进度条」真正落地。

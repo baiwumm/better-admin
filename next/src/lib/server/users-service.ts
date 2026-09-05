@@ -29,6 +29,7 @@ import {
 import { SUPER_ADMIN_ROLE_CODE } from "@/lib/server/permissions";
 import { ServerApiError } from "@/lib/server/http";
 import { generateRecordId } from "@/lib/server/ids";
+import { normalizePaging } from "@/lib/server/pagination";
 
 /**
  * 用户管理服务（与 nest/src/modules/users/users.service.ts 对齐）。
@@ -53,8 +54,6 @@ const SORTABLE = [
 ] as const;
 
 type SortableColumn = (typeof SORTABLE)[number] | "createdAt";
-
-const PAGE_SIZES = [10, 20, 30, 40, 50];
 
 /** 角色 → 用户的批量联查（一次查询，避免 N+1），按 roles.sort/name 排序。 */
 async function attachRoles(rows: Omit<User, "roles">[]): Promise<User[]> {
@@ -203,17 +202,16 @@ export async function listUsers(params: UserListParams): Promise<{
   data: User[];
   pagination: { page: number; pageSize: number; total: number };
 }> {
-  const page = Math.max(1, params.page ?? 1);
-  const pageSize = PAGE_SIZES.includes(params.pageSize ?? 10)
-    ? (params.pageSize ?? 10)
-    : 10;
+  const { page, pageSize, order } = normalizePaging(params, {
+    withOrder: true,
+  });
 
   const sortField: SortableColumn = (SORTABLE as readonly string[]).includes(
     params.sort ?? "",
   )
     ? (params.sort as SortableColumn)
     : "createdAt";
-  const isAsc = params.order === "asc";
+  const isAsc = order === "asc";
   const sortColumn =
     sortField === "createdAt"
       ? users.createdAt

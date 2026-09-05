@@ -112,34 +112,128 @@ export interface UpdateAccountProfileInput {
   xUsername?: string | null;
 }
 
-/** PUT /account/profile — 更新基本信息（个人链接裸值已由 DTO 剥前缀）。 */
+/** 剥离可选协议与平台主页前缀，trim 后返回剩余裸值；空串归一为 null（语义 = 清空） */
+function stripPrefix(pattern: RegExp, value: string): string | null {
+  const stripped = value.trim().replace(pattern, "");
+
+  return stripped === "" ? null : stripped;
+}
+
+function assertMatches(
+  value: string | null,
+  pattern: RegExp,
+  message: string,
+): void {
+  if (value !== null && !pattern.test(value)) {
+    throw new ServerApiError(400, "VALIDATION_ERROR", message);
+  }
+}
+
+/**
+ * profile 字段级校验与前缀剥离（对齐 nest account.dto.ts 的 Transform + Matches）：
+ * 个人链接字段接受裸值或平台主页 URL，入库前剥离为裸值；null = 清空放行。
+ */
+function normalizeProfileInput(
+  dto: UpdateAccountProfileInput,
+): UpdateAccountProfileInput {
+  // 对齐 nest @Length(1, 50)：校验原始字符串长度（不 trim）
+  if (
+    dto.displayName !== undefined &&
+    (dto.displayName.length < 1 || dto.displayName.length > 50)
+  ) {
+    throw new ServerApiError(
+      400,
+      "VALIDATION_ERROR",
+      "displayName 长度须为 1-50 个字符",
+    );
+  }
+
+  let phone: string | null | undefined;
+
+  if (dto.phone !== undefined) {
+    phone = dto.phone === null ? null : dto.phone.trim() || null;
+    assertMatches(phone, /^\+?[0-9][0-9\- ]{3,19}$/, "电话格式不正确");
+  }
+
+  let website: string | null | undefined;
+
+  if (dto.website !== undefined) {
+    website =
+      dto.website === null ? null : stripPrefix(/^https?:\/\//i, dto.website);
+    assertMatches(
+      website,
+      /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,63}(?::\d{1,5})?(?:\/\S*)?$/,
+      "网站格式不正确，示例：baidu.com",
+    );
+  }
+
+  let githubUsername: string | null | undefined;
+
+  if (dto.githubUsername !== undefined) {
+    githubUsername =
+      dto.githubUsername === null
+        ? null
+        : stripPrefix(
+            /^(?:https?:\/\/)?(?:www\.)?github\.com\//i,
+            dto.githubUsername,
+          );
+    assertMatches(
+      githubUsername,
+      /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/,
+      "GitHub 用户名格式不正确",
+    );
+  }
+
+  let xUsername: string | null | undefined;
+
+  if (dto.xUsername !== undefined) {
+    xUsername =
+      dto.xUsername === null
+        ? null
+        : stripPrefix(
+            /^(?:https?:\/\/)?(?:www\.)?(?:x|twitter)\.com\//i,
+            dto.xUsername,
+          );
+    assertMatches(xUsername, /^[a-zA-Z0-9_]{4,15}$/, "X 用户名格式不正确");
+  }
+
+  return {
+    ...dto,
+    ...(phone !== undefined ? { phone } : {}),
+    ...(website !== undefined ? { website } : {}),
+    ...(githubUsername !== undefined ? { githubUsername } : {}),
+    ...(xUsername !== undefined ? { xUsername } : {}),
+  };
+}
+
+/** PUT /account/profile — 更新基本信息（个人链接剥前缀 + 字段级校验，对齐 nest DTO）。 */
 export async function updateAccountProfile(
   userId: string,
   dto: UpdateAccountProfileInput,
 ): Promise<AccountProfile> {
-  // 仅校验用户存在（未软删），字段级联更新见下
   await loadRow(userId);
 
+  const normalized = normalizeProfileInput(dto);
   const patch: Partial<typeof users.$inferInsert> = {};
 
-  if (dto.displayName !== undefined) {
-    patch.displayName = dto.displayName;
+  if (normalized.displayName !== undefined) {
+    patch.displayName = normalized.displayName;
   }
-  if (dto.phone !== undefined) {
-    patch.phone = dto.phone;
+  if (normalized.phone !== undefined) {
+    patch.phone = normalized.phone;
   }
-  if (dto.tags !== undefined) {
-    patch.tags = normalizeTags(dto.tags);
+  if (normalized.tags !== undefined) {
+    patch.tags = normalizeTags(normalized.tags);
   }
   // 个人链接三字段（v1.5.2）：undefined = 未修改；null = 清空
-  if (dto.website !== undefined) {
-    patch.website = dto.website;
+  if (normalized.website !== undefined) {
+    patch.website = normalized.website;
   }
-  if (dto.githubUsername !== undefined) {
-    patch.githubUsername = dto.githubUsername;
+  if (normalized.githubUsername !== undefined) {
+    patch.githubUsername = normalized.githubUsername;
   }
-  if (dto.xUsername !== undefined) {
-    patch.xUsername = dto.xUsername;
+  if (normalized.xUsername !== undefined) {
+    patch.xUsername = normalized.xUsername;
   }
 
   if (Object.keys(patch).length > 0) {
@@ -199,13 +293,24 @@ export async function updateAccountPassword(
 
   await assertCurrentPassword(existing.passwordHash, dto.currentPassword);
 
+  // 新旧密码相同：静默成功（v0.9 决策）——不 bump tokenVersion、不清托管会话，
+  // 避免无谓的全端下线；仅记审计日志
+  if (await bcrypt.compare(dto.newPassword, existing.passwordHash)) {
+    await writeLog("account.password_update_noop", userId, null);
+
+    return null;
+  }
+
   const passwordHash = await bcrypt.hash(dto.newPassword, 10);
 
-  await db
-    .update(users)
-    .set({ passwordHash, tokenVersion: existing.tokenVersion + 1 })
-    .where(eq(users.id, userId));
-  await db.delete(refreshTokens).where(eq(refreshTokens.userId, userId));
+  // 写新密码（tokenVersion+1）与清空托管 refreshToken 同一事务（不留中间态）
+  await db.transaction(async (tx) => {
+    await tx
+      .update(users)
+      .set({ passwordHash, tokenVersion: existing.tokenVersion + 1 })
+      .where(eq(users.id, userId));
+    await tx.delete(refreshTokens).where(eq(refreshTokens.userId, userId));
+  });
 
   await writeLog("account.password_update", userId, null);
 

@@ -15,8 +15,11 @@ export async function GET(request: NextRequest) {
     const user = await requireAuthUser(request, Permissions.SEARCH);
 
     const search = request.nextUrl.searchParams.get("search") ?? undefined;
+    // 契约 v1.3：order=desc 支持（视图倒序），非法值回落 asc
+    const order =
+      request.nextUrl.searchParams.get("order") === "desc" ? "desc" : "asc";
 
-    return jsonOk(await findManageMenuTree(user, search));
+    return jsonOk(await findManageMenuTree(user, search, order));
   } catch (error) {
     return handleRouteError(error, { path: "/api/menus/tree", method: "GET" });
   }

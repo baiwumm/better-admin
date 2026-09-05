@@ -48,22 +48,51 @@ export async function POST(request: NextRequest) {
     if (
       typeof body?.name !== "string" ||
       body.name.trim().length === 0 ||
+      body.name.trim().length > 100 ||
       typeof body?.deptId !== "string" ||
       body.deptId.length === 0
     ) {
-      throw new ServerApiError(400, "VALIDATION_ERROR", "name/deptId 为必填");
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "name/deptId 为必填（name ≤ 100 字符）",
+      );
+    }
+    if (typeof body?.rank === "string" && body.rank.length > 20) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "rank 不能超过 20 个字符",
+      );
+    }
+    if (
+      body?.category !== "management" &&
+      body?.category !== "professional" &&
+      body?.category !== "production"
+    ) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "category 必须是 management、professional 或 production 之一",
+      );
+    }
+    if (
+      body?.status !== undefined &&
+      body?.status !== "enabled" &&
+      body?.status !== "disabled"
+    ) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "status 仅支持 enabled / disabled",
+      );
     }
 
     const post = await createPost(
       {
         name: body.name.trim(),
         deptId: body.deptId,
-        category:
-          body.category === "management" ||
-          body.category === "professional" ||
-          body.category === "production"
-            ? body.category
-            : "management",
+        category: body.category,
         rank: typeof body.rank === "string" ? body.rank : undefined,
         status:
           body.status === "enabled" || body.status === "disabled"

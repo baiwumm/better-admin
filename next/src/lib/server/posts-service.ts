@@ -18,6 +18,7 @@ import { db } from "@/db/client";
 import { depts, logs, posts, userPosts, users } from "@/db/schema";
 import { ServerApiError } from "@/lib/server/http";
 import { generateRecordId } from "@/lib/server/ids";
+import { normalizePaging } from "@/lib/server/pagination";
 
 /**
  * 岗位管理服务（与 nest/src/modules/org/posts.service.ts + org-views.ts 对齐）。
@@ -212,8 +213,9 @@ export async function listPosts(params: PostListParams): Promise<{
   data: PostView[];
   pagination: { page: number; pageSize: number; total: number };
 }> {
-  const page = Math.max(1, params.page ?? 1);
-  const pageSize = Math.max(1, params.pageSize ?? 10);
+  const { page, pageSize, order } = normalizePaging(params, {
+    withOrder: true,
+  });
 
   const conditions = [isNull(posts.deletedAt)];
 
@@ -242,7 +244,7 @@ export async function listPosts(params: PostListParams): Promise<{
   // 排序白名单避免注入；默认创建时间降序
   const sortCol =
     params.sort && SORTABLE.has(params.sort) ? params.sort : "createdAt";
-  const dir = params.order === "asc" ? asc : desc;
+  const dir = order === "asc" ? asc : desc;
   const orderBy = dir(
     posts[sortCol as "name" | "category" | "rank" | "status"],
   );
@@ -562,8 +564,7 @@ export async function listPostMembers(
   data: DirectoryEntryView[];
   pagination: { page: number; pageSize: number; total: number };
 }> {
-  const page = Math.max(1, params.page ?? 1);
-  const pageSize = Math.max(1, params.pageSize ?? 10);
+  const { page, pageSize } = normalizePaging(params);
 
   const post = await db.query.posts.findFirst({
     where: and(eq(posts.id, id), isNull(posts.deletedAt)),
@@ -643,8 +644,9 @@ export async function listDirectory(params: DirectoryListParams): Promise<{
   data: DirectoryEntryView[];
   pagination: { page: number; pageSize: number; total: number };
 }> {
-  const page = Math.max(1, params.page ?? 1);
-  const pageSize = Math.max(1, params.pageSize ?? 10);
+  const { page, pageSize, order } = normalizePaging(params, {
+    withOrder: true,
+  });
 
   const conditions = [isNull(users.deletedAt)];
 
@@ -697,7 +699,7 @@ export async function listDirectory(params: DirectoryListParams): Promise<{
     params.sort && DIRECTORY_SORTABLE.has(params.sort)
       ? params.sort
       : "createdAt";
-  const dir = params.order === "asc" ? asc : desc;
+  const dir = order === "asc" ? asc : desc;
   const orderBy = dir(
     users[sortCol as "username" | "displayName" | "employeeNo" | "entryDate"],
   );

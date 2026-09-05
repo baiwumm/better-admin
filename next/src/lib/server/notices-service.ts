@@ -29,6 +29,7 @@ import {
   userPosts,
 } from "@/db/schema";
 import { generateRecordId } from "@/lib/server/ids";
+import { normalizePaging } from "@/lib/server/pagination";
 import { ServerApiError } from "@/lib/server/http";
 import { insertNotification } from "@/lib/server/notifications-service";
 
@@ -503,14 +504,18 @@ function summarizeNoticeContent(html: string, max = 140): string {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
+/** 事务客户端类型（db 本体或 db.transaction 的 tx），供事务内复用写入逻辑 */
+type DbClient = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 /** 给范围内全员写站内信（新公告发布/定时发布共用）：title 直接用公告标题，content 存纯文本摘要。 */
 export async function notifyScopePublish(
   noticeId: string,
   title: string,
   content: string | null,
+  client: DbClient = db,
 ): Promise<number> {
   const summary = content ? summarizeNoticeContent(content) : null;
-  const scopeRows = await db
+  const scopeRows = await client
     .select()
     .from(noticeScopes)
     .where(eq(noticeScopes.noticeId, noticeId));
@@ -529,7 +534,7 @@ export async function notifyScopePublish(
   for (let i = 0; i < userIds.length; i += BATCH) {
     const batch = userIds.slice(i, i + BATCH);
 
-    await db.insert(notifications).values(
+    await client.insert(notifications).values(
       batch.map((recipientId) => ({
         id: generateRecordId(),
         recipientId,
@@ -588,8 +593,9 @@ export async function listNotices(params: NoticeListParams): Promise<{
   data: NoticeView[];
   pagination: { page: number; pageSize: number; total: number };
 }> {
-  const page = Math.max(1, params.page ?? 1);
-  const pageSize = Math.max(1, params.pageSize ?? 10);
+  const { page, pageSize, order } = normalizePaging(params, {
+    withOrder: true,
+  });
 
   // 访问列表前先惰性发布到期定时公告（next 无 @Cron，等价的按需语义）
   await publishDueNotices();
@@ -611,7 +617,7 @@ export async function listNotices(params: NoticeListParams): Promise<{
 
   const sortCol =
     params.sort && SORTABLE.has(params.sort) ? params.sort : "createdAt";
-  const dir = params.order === "asc" ? asc : desc;
+  const dir = order === "asc" ? asc : desc;
 
   // 置顶在前、其次按排序列
   const rows = await db
@@ -673,8 +679,7 @@ export async function listMyNotices(
   data: NoticeView[];
   pagination: { page: number; pageSize: number; total: number };
 }> {
-  const page = Math.max(1, params.page ?? 1);
-  const pageSize = Math.max(1, params.pageSize ?? 10);
+  const { page, pageSize } = normalizePaging(params);
   const keyword = params.keyword?.trim() ?? "";
   const readStatus = params.readStatus ?? "all";
 
@@ -906,6 +911,22 @@ export interface NoticeCreateInput {
   publishTime?: string | null;
 }
 
+/** nest NoticeCreateDto/UpdateDto 同款校验：publishTime 必须是带时区的 RFC3339 */
+const RFC3339_PATTERN =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?(Z|[+-]\d{2}:\d{2})$/;
+
+function assertPublishTime(value: string | null | undefined): void {
+  if (value === undefined || value === null) return;
+
+  if (!RFC3339_PATTERN.test(value)) {
+    throw new ServerApiError(
+      400,
+      "VALIDATION_ERROR",
+      "publishTime 必须是带时区的 ISO 日期时间（RFC3339，如 2026-01-01T09:00:00+08:00 或 Z）",
+    );
+  }
+}
+
 /** POST /notices — 创建公告（立即发布或定时草稿）。 */
 export async function createNotice(
   input: NoticeCreateInput,
@@ -919,6 +940,7 @@ export async function createNotice(
     );
   }
   await assertScopeTargets(input.scopeTargets);
+  assertPublishTime(input.publishTime);
 
   const publishTime = input.publishTime
     ? new Date(input.publishTime).toISOString()
@@ -928,6 +950,8 @@ export async function createNotice(
 
   const id = generateRecordId();
 
+  // 公告 / 范围 / 站内信通知同事务（对齐 nest：写失败整体回滚，不出现
+  // 「已发布但无人收到」的中间态）
   await db.transaction(async (tx) => {
     await tx.insert(notices).values({
       id,
@@ -949,6 +973,11 @@ export async function createNotice(
         })),
       );
     }
+
+    // 立即发布：给范围内全员写新公告通知（同事务）；定时发布由 publishDueNotices 到点触发
+    if (status === "published") {
+      await notifyScopePublish(id, input.title, input.content ?? null, tx);
+    }
   });
 
   await writeLog("notice.create", user.id, {
@@ -956,11 +985,6 @@ export async function createNotice(
     title: input.title,
     status,
   });
-
-  // 立即发布：给范围内全员写新公告通知；定时发布由 publishDueNotices 到点触发
-  if (status === "published") {
-    await notifyScopePublish(id, input.title, input.content ?? null);
-  }
 
   return findVisibleNotice(id, user);
 }
@@ -995,6 +1019,7 @@ export async function updateNotice(
       "公告标题不能超过 50 个字符",
     );
   }
+  assertPublishTime(input.publishTime);
 
   if (existing.status === "withdrawn") {
     throw new ServerApiError(
@@ -1226,8 +1251,7 @@ export async function listNoticeReadStats(
   }[];
   pagination: { page: number; pageSize: number; total: number };
 }> {
-  const page = Math.max(1, params.page ?? 1);
-  const pageSize = Math.max(1, params.pageSize ?? 10);
+  const { page, pageSize } = normalizePaging(params);
 
   const notice = await db.query.notices.findFirst({
     where: and(eq(notices.id, id), isNull(notices.deletedAt)),

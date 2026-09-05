@@ -5,6 +5,7 @@ import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
 import { notifications } from "@/db/schema";
 import { generateRecordId } from "@/lib/server/ids";
+import { normalizePaging } from "@/lib/server/pagination";
 
 /** 站内信通知视图（与 openapi.yaml Notification 对齐） */
 export interface NotificationView {
@@ -28,8 +29,7 @@ export async function listNotifications(
   data: NotificationView[];
   pagination: { page: number; pageSize: number; total: number };
 }> {
-  const page = Math.max(1, query.page ?? 1);
-  const pageSize = Math.max(1, query.pageSize ?? 10);
+  const { page, pageSize } = normalizePaging(query);
 
   const conditions = [eq(notifications.recipientId, userId)];
 

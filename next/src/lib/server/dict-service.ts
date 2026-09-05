@@ -58,6 +58,13 @@ function handleUniqueError(error: unknown): never {
       "该字典类型下 value 已存在",
     );
   }
+  if (constraint.includes("dict_items_type_label_unique")) {
+    throw new ServerApiError(
+      409,
+      "DICT_ITEM_LABEL_EXISTS",
+      "该字典类型下 label 已存在",
+    );
+  }
 
   throw new ServerApiError(500, "INTERNAL_ERROR", "服务器内部错误");
 }

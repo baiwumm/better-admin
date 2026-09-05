@@ -17,6 +17,7 @@ import { db } from "@/db/client";
 import { depts, logs, posts, users } from "@/db/schema";
 import { ServerApiError } from "@/lib/server/http";
 import { generateRecordId } from "@/lib/server/ids";
+import { normalizePaging } from "@/lib/server/pagination";
 
 /**
  * 组织管理服务（与 nest/src/modules/org/depts.service.ts 一一对齐）。
@@ -352,8 +353,9 @@ export async function listDepts(params: DeptListParams): Promise<{
   data: DeptView[];
   pagination: { page: number; pageSize: number; total: number };
 }> {
-  const page = Math.max(1, params.page ?? 1);
-  const pageSize = Math.max(1, params.pageSize ?? 10);
+  const { page, pageSize, order } = normalizePaging(params, {
+    withOrder: true,
+  });
 
   const conditions = [isNull(depts.deletedAt)];
 
@@ -384,7 +386,7 @@ export async function listDepts(params: DeptListParams): Promise<{
   // 排序白名单避免注入；默认同级排序号降序（数字越大越靠前）
   const sortCol =
     params.sort && SORTABLE.has(params.sort) ? params.sort : "sort";
-  const dir = params.order === "asc" ? asc : desc;
+  const dir = order === "asc" ? asc : desc;
   const orderBy = dir(depts[sortCol as "sort" | "name" | "code" | "status"]);
 
   const rows = await baseSelect()

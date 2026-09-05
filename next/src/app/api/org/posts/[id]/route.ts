@@ -39,6 +39,38 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "请求体不是合法 JSON");
     }
 
+    // 对齐 nest post-update.dto：传了就必须合法（undefined = 不修改）
+    if (
+      body.category !== undefined &&
+      body.category !== "management" &&
+      body.category !== "professional" &&
+      body.category !== "production"
+    ) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "category 必须是 management、professional 或 production 之一",
+      );
+    }
+    if (
+      body.status !== undefined &&
+      body.status !== "enabled" &&
+      body.status !== "disabled"
+    ) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "status 仅支持 enabled / disabled",
+      );
+    }
+    if (typeof body.rank === "string" && body.rank.length > 20) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "rank 不能超过 20 个字符",
+      );
+    }
+
     const post = await updatePost(
       id,
       {

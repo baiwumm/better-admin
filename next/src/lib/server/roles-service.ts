@@ -7,7 +7,7 @@ import { and, asc, count, eq, ilike, inArray, or } from "drizzle-orm";
 import { db } from "@/db/client";
 import { logs, menus, roleMenus, roles, userRoles } from "@/db/schema";
 import {
-  Permissions,
+  ALL_PERMISSION_BITS,
   SUPER_ADMIN_BITS,
   SUPER_ADMIN_BITS_POSITIVE,
   SUPER_ADMIN_ROLE_CODE,
@@ -15,6 +15,7 @@ import {
 } from "@/lib/server/permissions";
 import { ServerApiError } from "@/lib/server/http";
 import { generateRecordId } from "@/lib/server/ids";
+import { normalizePaging } from "@/lib/server/pagination";
 
 /**
  * 角色管理服务（与 nest/src/modules/roles/roles.service.ts 一一对齐）。
@@ -31,11 +32,6 @@ export interface RoleView {
   createdAt: string;
   updatedAt: string;
 }
-
-/** 所有合法权限位的 OR 聚合（用于校验传入的位掩码是否越界） */
-const ALL_PERMISSION_BITS = (
-  Object.values(Permissions) as { bits: bigint }[]
-).reduce((acc, p) => acc | p.bits, 0n);
 
 function toView(row: typeof roles.$inferSelect): RoleView {
   return {
@@ -133,8 +129,6 @@ async function writeLog(
   }
 }
 
-const PAGE_SIZES = [10, 20, 30, 40, 50];
-
 /** GET /roles — 分页列表（search 匹配 name/code；enabled 筛选；固定 sort+createdAt 排序）。 */
 export async function listRoles(params: {
   page?: number;
@@ -145,10 +139,7 @@ export async function listRoles(params: {
   data: RoleView[];
   pagination: { page: number; pageSize: number; total: number };
 }> {
-  const page = Math.max(1, params.page ?? 1);
-  const pageSize = PAGE_SIZES.includes(params.pageSize ?? 10)
-    ? (params.pageSize ?? 10)
-    : 10;
+  const { page, pageSize } = normalizePaging(params);
 
   const conditions = [];
   const normalizedSearch = params.search?.trim();

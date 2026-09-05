@@ -47,7 +47,13 @@ export const Permissions = {
     icon: "key-round",
   },
   GRANT: { value: "GRANT", label: "grant", bits: 256n, icon: "shield-check" },
+  EXPORT: { value: "EXPORT", label: "export", bits: 512n, icon: "download" },
 } as const satisfies Record<string, PermissionMeta>;
+
+/** 所有合法权限位的 OR 聚合（校验传入位掩码是否越界；roles/menus 共用口径） */
+export const ALL_PERMISSION_BITS = (
+  Object.values(Permissions) as { bits: bigint }[]
+).reduce((acc, p) => acc | p.bits, 0n);
 
 /** 超级管理员全量位（bigint 全 1 掩码，内部表示采用 -1n，见 database-design §1.1）。 */
 export const SUPER_ADMIN_BITS = -1n;

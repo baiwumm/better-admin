@@ -6,6 +6,7 @@ import { db } from "@/db/client";
 import { logs, users } from "@/db/schema";
 import { ServerApiError } from "@/lib/server/http";
 import { generateRecordId } from "@/lib/server/ids";
+import { normalizePaging } from "@/lib/server/pagination";
 
 /**
  * 日志服务（与 nest/src/modules/logs/logs.service.ts 一一对齐）。
@@ -44,8 +45,6 @@ export interface LogView {
   createdAt: string;
 }
 
-const PAGE_SIZES = [10, 20, 30, 40, 50];
-
 /** GET /logs — 分页列表（type 精确筛选；search 仅 ILIKE 匹配 action；固定 createdAt 倒序）。 */
 export async function listLogs(params: {
   page?: number;
@@ -56,10 +55,7 @@ export async function listLogs(params: {
   data: LogView[];
   pagination: { page: number; pageSize: number; total: number };
 }> {
-  const page = Math.max(1, params.page ?? 1);
-  const pageSize = PAGE_SIZES.includes(params.pageSize ?? 10)
-    ? (params.pageSize ?? 10)
-    : 10;
+  const { page, pageSize } = normalizePaging(params);
 
   const conditions = [];
 

@@ -5,6 +5,7 @@ import {
   deleteAccountAvatar,
   updateAccountAvatar,
 } from "@/lib/server/account-service";
+import { ServerApiError } from "@/lib/server/http";
 import { jsonOk, handleRouteError } from "@/lib/server/route-helpers";
 
 /**
@@ -21,10 +22,8 @@ export async function POST(request: NextRequest) {
     const file = form.get("file");
 
     if (!(file instanceof File)) {
-      return handleRouteError(new Error("缺少 file 字段"), {
-        path: "/api/account/avatar",
-        method: "POST",
-      });
+      // 对齐 nest：缺 file 字段 → 400 AVATAR_FILE_INVALID（非 500）
+      throw new ServerApiError(400, "AVATAR_FILE_INVALID", "未提供头像文件");
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
