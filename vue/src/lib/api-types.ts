@@ -235,6 +235,31 @@ export interface CreateUserInput {
   mainPostId?: string | null;
 }
 
+/* ---------------------------------------------------------------------------
+ * 角色模块（/roles）
+ * ------------------------------------------------------------------------- */
+
+/** 角色创建/编辑载荷（code 创建后锁定，UpdateRoleInput 不含 code） */
+export interface SaveRoleInput {
+  name: string;
+  code: string;
+  description?: string;
+  enabled: boolean;
+  sort?: number;
+}
+
+/** 角色-菜单授权记录（位掩码字符串：该角色在此菜单的实际授权位） */
+export interface RoleMenuGrant {
+  menuId: string;
+  permissions: string;
+}
+
+/** 角色菜单授权载荷（GET / PUT /roles/:id/menus） */
+export interface RoleMenusPayload {
+  roleId: string;
+  menus: RoleMenuGrant[];
+}
+
 /** 更新用户请求体（契约 v1.4.4：不含 username/password——
  * 用户名创建后锁定，改密走 POST /users/:id/reset-password）。
  * roleIds 传数组（含空数组）为全量替换语义，缺省表示不修改。

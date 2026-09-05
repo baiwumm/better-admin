@@ -23,6 +23,7 @@
   "errors.depts.postDeptInvalid": "Department does not exist or is disabled",
   "errors.dict.itemNotFound": "Dict item not found",
   "errors.dict.itemValueExists": "Item value already exists in this dict type",
+  "errors.dict.labelExists": "Label already exists under this dictionary type",
   "errors.dict.typeCodeExists": "Dict type code already exists",
   "errors.dict.typeInUse": "This dict type still has items and cannot be deleted",
   "errors.dict.typeNotFound": "Dict type not found",

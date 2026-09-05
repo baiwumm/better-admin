@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import PlaceholderPage from "@/components/PlaceholderPage.vue";
+import PermissionsPage from "@/features/permissions/PermissionsPage.vue";
 </script>
 
 <template>
-  <PlaceholderPage
-    icon="i-lucide-key-round"
-    title-key="menu.pageTitle.permissions"
-  />
+  <PermissionsPage />
 </template>

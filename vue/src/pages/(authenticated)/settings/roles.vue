@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import PlaceholderPage from "@/components/PlaceholderPage.vue";
+import RolesPage from "@/features/roles/RolesPage.vue";
 </script>
 
 <template>
-  <PlaceholderPage icon="i-lucide-shield" title-key="menu.pageTitle.roles" />
+  <RolesPage />
 </template>

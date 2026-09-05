@@ -16,6 +16,7 @@ describe("list-store epoch contract", () => {
     store.setPage(3);
 
     const epoch0 = store.epoch;
+
     store.setSearch("foo");
 
     expect(store.epoch).toBe(epoch0 + 1);
@@ -31,6 +32,7 @@ describe("list-store epoch contract", () => {
     const store = createListStore<{ status: string | null }>({ status: null });
 
     const epoch0 = store.epoch;
+
     store.setFilters({ status: "active" });
 
     expect(store.epoch).toBe(epoch0 + 1);
@@ -45,6 +47,7 @@ describe("list-store epoch contract", () => {
     const store = createListStore<{ status: string | null }>({ status: null });
 
     const epoch0 = store.epoch;
+
     store.setPage(2);
     store.setPageSize(20);
     store.setSorting([{ id: "createdAt", desc: true }]);
@@ -71,6 +74,7 @@ describe("list-store epoch contract", () => {
     expect(store.page).toBe(1);
 
     const epochAfterReset = store.epoch;
+
     store.reset();
 
     expect(store.epoch).toBe(epochAfterReset);
