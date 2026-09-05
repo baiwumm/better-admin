@@ -259,7 +259,7 @@ export function MyNoticesPage({ urlNoticeId }: MyNoticesPageProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-surface lg:flex-row">
-      <div className="flex h-[44%] min-h-80 flex-col border-b border-separator bg-content1 lg:h-full lg:w-90 lg:min-w-90 lg:border-r lg:border-b-0">
+      <div className="flex h-[44%] min-h-80 flex-col border-b border-separator bg-surface lg:h-full lg:w-90 lg:min-w-90 lg:border-r lg:border-b-0">
         {/* 搜索 / 筛选 / 翻页刷新中：keepPreviousData 期间 isLoading 为 false，
             旧数据仍展示，进度条定位在本区下边框处（与边框同高），不产生布局位移；
             首次加载走列表骨架屏 */}

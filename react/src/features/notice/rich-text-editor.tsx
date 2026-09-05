@@ -81,7 +81,7 @@ export function RichTextEditor({
       attributes: {
         "aria-label": ariaLabel ?? "",
         class:
-          "prose-notice min-h-40 max-h-72 overflow-y-auto rounded-2xl border border-border bg-content1 px-3 py-2 text-sm outline-hidden",
+          "prose-notice min-h-40 max-h-72 overflow-y-auto rounded-2xl border border-border bg-surface px-3 py-2 text-sm outline-hidden",
       },
     },
     onUpdate: ({ editor: current }) => {

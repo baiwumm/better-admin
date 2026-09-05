@@ -5,6 +5,15 @@
 
 ---
 
+### React 端修复：进度条并发竞态 + 架构图谱暗色模式 + 失效 token 类名清理（2026-09-05）
+
+- **进度条提前消失（用户报障）**：路由切换后 `use-route-progress` 以 rAF+50ms 无条件 `stop()`，绕过 `progress.ts` 的请求引用计数——页面并发请求仍在飞行时进度条即结束。`progress.ts` 重构为统一状态机（「飞行中请求数 > 0」或「路由过渡未结束」任一活跃即展示，双双归零才 stop；路由过渡计时收进模块，快速连切自动取消旧定时器）；`api-client.ts` 改 try/finally 收口计数（顺带修复 401 重试计数泄漏 + 网络异常 / JSON 解析异常泄漏）；Provider 的 delay / startPosition / stopDelay 经 `bindProgress` 下发后对手动调用生效（BProgress 的这三个 props 仅锚点场景自动生效，此前配置形同虚设），`delay=200`「短导航不闪进度条」真正落地。
+- **架构图谱暗色模式失效（用户报障）**：`org-chart.tsx` 将 HeroUI `useTheme().theme` 强转传给 React Flow `colorMode`——该 hook 读 `heroui-theme` localStorage key（本项目主题真源是 design-theme-store 的 `better-admin-theme-mode`，从不写它），恒返回 `"system"`，React Flow 遂跟随 OS 偏好而非应用内选择：系统浅色 + 应用深色时容器被加 `.light` 类、强制回亮色 token（暗画布 + 白卡片）。改用 `useResolvedTheme()`（与 `<html>` 的 dark/light 类一致）。
+- **失效 token 类名全量清理（排查任务）**：以 `@heroui/styles` `@theme inline` 的 65 个 v3 合法颜色 token 建白名单，脚本扫描 + v2 特征 grep 交叉验证。修复 5 类 8 处：`bg-content1`→`bg-surface`、`bg-content2`→`bg-surface-secondary`、`text-default-500`→`text-muted`（v2 色阶，即图谱卡片次要文字不可见的另一成因）、`ring-ring`→`ring-focus`（shadcn 写法残留）、`border-primary/40`→`border-accent/40`；`bg-gradient-to-br` 为 Tailwind v4 兼容别名，有效保留。扫描脚本留存 `react/scripts/scan-stale-tokens.cjs` 供其他端复用。
+- **验证**：tsc / eslint 0 error、build 全绿；进度条与图谱暗色行为经用户浏览器确认。
+
+---
+
 ### Vue 端启动（Phase 4）：M0 工程基建与骨架完成（2026-09-05）
 
 - **范围**：`/vue` 从零搭建（vue-plan v1.2，评审 5 条微调 + 路由选型修正落地）；`pnpm dev` / `build`（vite build + vue-tsc type-check）/ `lint` / `test`（16 用例）四绿；dev 冒烟（`/`、`/sign-in`、SPA 路由回退 200）。
