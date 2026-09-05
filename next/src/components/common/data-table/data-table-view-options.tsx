@@ -112,14 +112,14 @@ function mergeColumnOrder(
   return allIds.map((id) => (isHideable(id) ? (queue.shift() ?? id) : id));
 }
 
-/** 面板内可见性 Checkbox 的 variant（跟随 HeroUI Checkbox 定义，默认不传） */
+/** 面板内可见性 Checkbox 的 variant（跟随 HeroUI Checkbox 定义） */
 type CheckboxVariant = ComponentProps<typeof Checkbox>["variant"];
 
 export interface DataTableViewOptionsProps<TData extends RowData> {
   table: AppTable<TData>;
   /** 持久化 key（buildColumnSettingKey 生成）；不传则不持久化 */
   storageKey?: string;
-  /** 可见性 Checkbox 的 variant（如 "secondary"；缺省为组件默认样式） */
+  /** 可见性 Checkbox 的 variant（默认 "secondary"） */
   checkboxVariant?: CheckboxVariant;
   className?: string;
 }
@@ -127,7 +127,7 @@ export interface DataTableViewOptionsProps<TData extends RowData> {
 export function DataTableViewOptions<TData extends RowData>({
   table,
   storageKey,
-  checkboxVariant,
+  checkboxVariant = "secondary",
   className,
 }: DataTableViewOptionsProps<TData>) {
   const { t } = useTranslation();

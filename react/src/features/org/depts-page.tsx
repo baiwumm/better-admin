@@ -395,7 +395,6 @@ export function DeptsPage() {
                       </Button>
                     )}
                     <DataTableViewOptions
-                      checkboxVariant="secondary"
                       storageKey={
                         userId
                           ? buildColumnSettingKey(userId, "/org/depts")
