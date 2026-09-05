@@ -214,7 +214,7 @@ ci: CI 配置变更
 | `docs/ui-spec.md` | UI 规范真源（AGENTS.md §7 只留策略级规则） |
 | `docs/feature-matrix.md` | **功能矩阵**：四种前端实现的功能对齐状态（✅/❌），新增功能必须同步更新 |
 | `docs/react.md` / `docs/routing.md` | React 版本说明 / 路由说明 |
-| `docs/react-performance.md` | `vercel-react-best-practices` Skill 的项目适用政策 |
+| `docs/react-performance.md` | Vercel 官方 React / Next Skills（性能 / 组合模式 / View Transitions）的项目适用政策 |
 | `nest/docs/*` | 后端数据库设计、OpenAPI Contract 设计说明 |
 
 **更新触发**：
@@ -291,10 +291,11 @@ https://nest.baiwumm.com
 
 1. **不允许为了方便而修改既定的项目架构**（架构约束见本文档与 requirements.md）。
 2. **不要为了实现某一个版本而破坏其他版本的设计一致性**。
-3. **React / Next.js 代码生成与重构必须遵循 `vercel-react-best-practices` Skill**（详见 §20）。该 Skill 已全局安装（`~/.agents/skills/vercel-react-best-practices`），是所有 React / Next.js 代码产出（新建组件 / 页面、数据获取、重构、性能优化）的硬性性能与正确性规范；若与其冲突，以本文档的架构约束与 UI 组件库策略（§7.2）为更高优先级，但性能模式不得无故违反。
+3. **React / Next.js 代码生成与重构必须遵循 Vercel 官方 React Skills 三件套**（详见 §20）：`vercel-react-best-practices`（性能与正确性）、`vercel-composition-patterns`（组件组合模式与组件 API 设计）、`vercel-react-view-transitions`（View Transition API 动画）。三个 Skill 均安装于项目 `.agents/skills/`，是所有 React / Next.js 代码产出（新建组件 / 页面、数据获取、重构、性能优化、动画过渡）的硬性规范；若与其冲突，以本文档的架构约束与 UI 组件库策略（§7.2）为更高优先级，但性能模式不得无故违反。
 4. **全局语言规则（跨会话持久生效）**：所有 AI Agent 在本项目中的**全部对话、思考过程与回复一律使用中文**。代码注释、文档、提交信息（Conventional Commits 描述）也以中文为主；仅在代码标识符、命令、API 字段等必须使用英文的场合保留英文。此规则覆盖所有会话，不局限于单一对话。
 5. **功能矩阵同步（跨会话持久生效）**：每次新增功能模块、完成模块迁移、或功能状态发生变化时，**必须同步更新 `docs/feature-matrix.md`**。更新时机：功能开发完成后立即更新对应技术栈的状态标记（✅/🔧/❌），并在提交信息中体现。该文件是四种前端实现功能对齐状态的唯一追踪源。
-6. **Skill 安装位置统一（跨会话持久生效）**：项目级 Agent Skill 一律安装到 `.agents/skills/<skill-name>/`（universal skill 约定路径，现有 `heroui-react`、`vercel-react-best-practices` 即在此）。禁止生成或保留 `.claude/skills/`、`agent/` 等其他位置的重复副本；安装 / 更新 Skill 时只维护 `.agents/skills/` 一份，避免多副本漂移。
+6. **Skill 安装位置统一（跨会话持久生效）**：项目级 Agent Skill 一律安装到 `.agents/skills/<skill-name>/`（universal skill 约定路径）。禁止生成或保留 `.claude/skills/`、`agent/` 等其他位置的重复副本；安装 / 更新 Skill 时只维护 `.agents/skills/` 一份，避免多副本漂移。现有清单：`heroui-react`；Vercel 三件套（`vercel-react-best-practices` / `vercel-composition-patterns` / `vercel-react-view-transitions`）+ `web-design-guidelines`；`drizzle-orm`（社区 oakoss 维护，见第 7 条）；Vue / Nuxt 技术栈全套（`nuxt-ui` / `nuxt` / `nitro` / `vue` / `vue-best-practices` / `vue-router-best-practices` / `vue-testing-best-practices` / `pinia` / `vueuse-functions` / `vite` / `vitest` / `pnpm`）。
+7. **Server 端数据库代码生成必须参考 `drizzle-orm` Skill（跨会话持久生效）**：涉及 NestJS / Next.js 的 **schema 定义、查询、事务、迁移（drizzle-kit）、relations** 的代码任务，动手前先查阅 `.agents/skills/drizzle-orm/SKILL.md` 及其 `references/` 分册；重点吸收其 Common Mistakes 反模式（`update`/`delete` 必带 `.where()`、事务包裹多表写入、`.returning()` 取回写入行等）。**参考定位**：该 Skill 为社区维护（oakoss，非 Drizzle 官方），内容可能按更新版本的 API 编写——与项目实际行为冲突时，以**项目既有代码与 drizzle-orm 0.45 的实际行为为准**（如新式 `generatedAlwaysAsIdentity` 不擅自引入，沿用项目既定列定义风格）。
 
 ### 需求优先级
 
@@ -403,14 +404,18 @@ Phase 7  统一测试 → 部署全部版本
 - **React 端已完成模块**：登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）。
 - **Next.js 端已完成模块**：与 React 端对齐（认证 / Admin 布局 / 用户 / 角色 / 菜单 / 字典 / 日志 / 我的账户 / 组织中心全套）。
 - **当前待办**：Dashboard 概览页（React / Next.js 均未实现，图表库已定 Recharts）；Next.js Vercel 部署 + CI 挂接；`docs/mechanisms.md` 沉淀 Next 期机制结论。Vue / Nuxt 后续实现时直接跟上最新契约版本（详见 progress.md 各阶段条目）。
+- **TanStack 官方 Agent Skills（已评估、暂缓安装，勿遗忘）**：官方 SKILL.md 内嵌于 npm 包（`skills/<name>/SKILL.md`，随包版本更新，机制见 tanstack.com/intent）；项目已装版本（react-query 5.99 / 5.102.8、table 9.2.x、router 1.168）**尚不含 skills 目录**，须升级依赖才可获得。安排：待三端下次例行升级 react-query / react-table / react-router（含 vue-query / vue-table 对应版本）时随包带入，升级后在 §20 补指路条目；**不要为获取 Skill 而单独发起依赖升级**（§15 锁版本约定）。
 - **super_admin 保护设计依据（重要，勿推翻）**：超管的"全量权限"不是代码身份判定，而是 seed 写入 role_menus 的 -1n 全量位经登录/每请求实时 OR 聚合而来（`auth.service.aggregatePermissions`）；PermissionsGuard 与菜单可见性的"超管免检"分支判据都是聚合值。清空其授权 = 全后台立即 403 且无自助恢复手段，故 `PUT /roles/{id}/menus` 与 `DELETE /roles/{id}` 对 `code === 'super_admin'` 必须返回 403 `SUPER_ADMIN_ROLE_PROTECTED`（详细背景见 progress.md 契约 v1.4.2/v1.4.3 条目）。
 
 ---
 
-## 20. React / Next.js 全局性能规范（vercel-react-best-practices）
+## 20. React / Next.js 全局规范（Vercel Skills：性能 / 组合模式 / View Transitions）
 
-- 所有 **React / Next.js 代码生成与重构**（新建组件 / 页面、数据获取、重构、性能优化）必须遵循全局安装的 `vercel-react-best-practices` Skill（`~/.agents/skills/vercel-react-best-practices`，规则详情以 Skill 为准）。
-- 触发范围、Skill 优先加载、冲突裁决与适用范围限定等项目政策详见 [`docs/react-performance.md`](docs/react-performance.md)；若与本文档架构约束冲突，以本文档为高优先级。
+- 所有 **React / Next.js 代码生成与重构**（新建组件 / 页面、数据获取、重构、性能优化）必须遵循项目安装的 `vercel-react-best-practices` Skill（`.agents/skills/vercel-react-best-practices`，性能与正确性规范，规则详情以 Skill 为准）。
+- **组件设计与重构**（复合组件、组件 API 设计、状态提升、消除 prop drilling / 布尔 prop 泛滥）必须遵循 `vercel-composition-patterns` Skill（`.agents/skills/vercel-composition-patterns`，含 React 19 API 变更）。
+- **动画过渡**（页面 / 路由过渡、共享元素过渡、方向性导航动画、View Transition API 相关任务）必须先查 `vercel-react-view-transitions` Skill（`.agents/skills/vercel-react-view-transitions`）；项目主题切换揭示动画与路由过渡（§7 / `route-transitions`）即基于该 API，扩展时以 Skill 为准、不引入第三方动画库。
+- **Next.js 框架 API / 行为**（App Router、RSC、缓存语义、路由、中间件、server API 等）**以包内内置官方文档为准**：`next/node_modules/next/dist/docs/`（421 篇，版本与项目 16.2.6 精确匹配，随 `pnpm install` 到位）——先查文档再写 Next API，不凭训练记忆；涉及框架行为不确定时引用文档路径佐证。背景：官方 `next-best-practices` skill 已停发、知识改走内置 docs 路线（`vercel-labs/next-skills` 已弃包，勿安装旧副本）；升级 Next 16.3+ 后 `next dev` 会自动生成/更新 agent 规则文件，届时须人工核对其不覆盖本文档自定义条目。
+- 触发范围、Skill 优先加载、冲突裁决与适用范围限定等项目政策详见 [`docs/react-performance.md`](docs/react-performance.md)；若与本文档架构约束冲突，以本文档为高优先级。Vue / Nuxt 端不适用本节 React 专属规则（见 §21）。
 
 ---
 
