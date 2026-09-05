@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import PlaceholderPage from "@/components/PlaceholderPage.vue";
+import MenusPage from "@/features/menus/MenusPage.vue";
 </script>
 
 <template>
-  <PlaceholderPage icon="i-lucide-list-tree" title-key="menu.pageTitle.menus" />
+  <MenusPage />
 </template>
