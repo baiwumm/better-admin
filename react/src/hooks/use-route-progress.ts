@@ -1,46 +1,27 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "@tanstack/react-router";
-import { useProgress } from "@bprogress/react";
+
+import { progressRouteBegin } from "@/lib/progress";
 
 /**
  * 路由导航进度条 Hook。
  *
- * 监听 TanStack Router 的 pathname 变化，在路由切换时自动 start/stop 进度条。
- *
- * 实现原理：
- * - useLocation() 订阅路由状态，pathname 变化时 start()。
- * - 路由变化后，用 requestAnimationFrame + 短延迟 stop()，确保页面渲染完成后才结束。
- * - disableSameURL 配置已在 ProgressProvider 中开启，相同 URL 不会重复触发。
+ * 监听 TanStack Router 的 pathname 变化，在路由切换时开启「路由过渡段」：
+ * - 过渡段与 api-client 的请求引用计数共用同一个进度条状态机（progress.ts），
+ *   过渡段结束条件是「新页面渲染完成（rAF + 短延迟）」，且请求仍在飞行时
+ *   进度条会持续到全部请求结束，不会提前消失。
+ * - 计时器由 progress.ts 模块级管理（重复触发自动取消旧的），本 Hook
+ *   无需在 cleanup 里 stop——清理动作会与页面并发请求的计数互相干扰。
+ * - 相同 URL 不重复触发（pathname 未变化时直接跳过）。
  */
 export function useRouteProgress() {
   const location = useLocation();
-  const { start, stop } = useProgress();
   const prevPathnameRef = useRef(location.pathname);
 
   useEffect(() => {
-    const { pathname } = location;
-
-    // 仅在 pathname 实际变化时触发
-    if (pathname !== prevPathnameRef.current) {
-      prevPathnameRef.current = pathname;
-      start();
-
-      // 用 rAF + 短延迟确保页面渲染完成后才停止
-      const raf = requestAnimationFrame(() => {
-        const timer = setTimeout(() => {
-          stop();
-        }, 50);
-
-        return () => clearTimeout(timer);
-      });
-
-      return () => {
-        cancelAnimationFrame(raf);
-        stop();
-      };
+    if (location.pathname !== prevPathnameRef.current) {
+      prevPathnameRef.current = location.pathname;
+      progressRouteBegin();
     }
-
-    // pathname 未变化时不需要清理（组件未卸载、路由未切换）
-    return undefined;
   }, [location.pathname]);
 }

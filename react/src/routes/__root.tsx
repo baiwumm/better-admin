@@ -24,12 +24,16 @@ function RootComponent() {
   // 路由导航进度条
   useRouteProgress();
 
-  // 将 useProgress 的 start/stop 注入非 React 模块（api-client）
-  const { start, stop } = useProgress();
+  // 将 useProgress 的 start/stop 注入非 React 模块（api-client / 路由进度），
+  // 时序配置（startPosition / delay / stopDelay）同步下发，保证单一来源
+  const { start, stop, startPosition, delay, stopDelay } = useProgress();
 
   useEffect(() => {
-    bindProgress({ start, stop });
-  }, [start, stop]);
+    bindProgress(
+      { start, stop },
+      { startPosition, startDelayMs: delay, stopDelayMs: stopDelay },
+    );
+  }, [start, stop, startPosition, delay, stopDelay]);
 
   return (
     <>

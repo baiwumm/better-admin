@@ -168,87 +168,90 @@ export async function fetchApiRaw(
 ): Promise<{ data: unknown; pagination?: unknown }> {
   const { body, auth = true, allowRetry = true, headers, ...rest } = options;
 
-  // 进度条：仅业务请求触发（auth: false 为登录/刷新等内部请求，跳过）
+  // 进度条：仅业务请求触发（auth: false 为登录/刷新等内部请求，跳过）。
+  // try/finally 保证所有退出路径（含网络异常、解析异常）都配对释放计数；
+  // 401 重试分支不提前释放本层计数，避免重试间隙进度条归零闪烁。
   if (auth) progressStart();
 
-  const requestHeaders: Record<string, string> = {
-    ...(headers as Record<string, string> | undefined),
-  };
+  try {
+    const requestHeaders: Record<string, string> = {
+      ...(headers as Record<string, string> | undefined),
+    };
 
-  if (body !== undefined && !(body instanceof FormData)) {
-    requestHeaders["Content-Type"] = "application/json";
-  }
+    if (body !== undefined && !(body instanceof FormData)) {
+      requestHeaders["Content-Type"] = "application/json";
+    }
 
-  if (auth) {
-    const token = authSnapshot?.accessToken ?? null;
+    if (auth) {
+      const token = authSnapshot?.accessToken ?? null;
 
-    if (token) requestHeaders["Authorization"] = `Bearer ${token}`;
-  }
+      if (token) requestHeaders["Authorization"] = `Bearer ${token}`;
+    }
 
-  const finalBody =
-    body === undefined || body instanceof FormData
-      ? body
-      : JSON.stringify(body);
+    const finalBody =
+      body === undefined || body instanceof FormData
+        ? body
+        : JSON.stringify(body);
 
-  const response = await fetch(`${ENV.apiBaseUrl}${path}`, {
-    ...rest,
-    headers: requestHeaders,
-    body: finalBody as BodyInit | undefined,
-  });
+    const response = await fetch(`${ENV.apiBaseUrl}${path}`, {
+      ...rest,
+      headers: requestHeaders,
+      body: finalBody as BodyInit | undefined,
+    });
 
-  // 401：尝试刷新 token 并重试一次（避免无限递归：重试请求 allowRetry=false）
-  if (response.status === 401 && auth && allowRetry) {
-    try {
-      await refreshAccessToken();
-    } catch {
-      progressStop();
-      redirectToSignIn();
+    // 401：尝试刷新 token 并重试一次（避免无限递归：重试请求 allowRetry=false）
+    if (response.status === 401 && auth && allowRetry) {
+      try {
+        await refreshAccessToken();
+      } catch {
+        redirectToSignIn();
+        throw new ApiClientError(
+          401,
+          "UNAUTHORIZED",
+          getErrorMessage("errors.api.loginExpired", "登录已过期，请重新登录"),
+        );
+      }
+
+      // 重试请求递归进入 fetchApiRaw（allowRetry=false）自行计数；
+      // 本层计数在整条重试链完成后由 finally 释放（进度条连续不闪烁）
+      return fetchApiRaw(path, { ...options, allowRetry: false });
+    }
+
+    if (response.status === 204) {
+      // 无内容响应（如 logout）
+      return { data: null };
+    }
+
+    const text = await response.text();
+    const json = text ? (JSON.parse(text) as unknown) : null;
+
+    if (!response.ok) {
+      const err = (json ?? {}) as ApiErrorBody;
+
       throw new ApiClientError(
-        401,
-        "UNAUTHORIZED",
-        getErrorMessage("errors.api.loginExpired", "登录已过期，请重新登录"),
+        response.status,
+        err.code,
+        err.message ??
+          getErrorMessage(
+            "errors.api.requestFailed",
+            "请求失败（{{status}}）",
+            {
+              status: response.status,
+            },
+          ),
       );
     }
 
-    // 重试请求会递归进入 fetchApiRaw（allowRetry=false），进度条由重试请求接管
-    return fetchApiRaw(path, { ...options, allowRetry: false });
+    // 信封约定：{ data } 或 { data, pagination }
+    if (json && typeof json === "object" && "data" in json) {
+      return json as { data: unknown; pagination?: unknown };
+    }
+
+    // 非信封结构（兜底）
+    return { data: json };
+  } finally {
+    if (auth) progressStop();
   }
-
-  if (response.status === 204) {
-    // 无内容响应（如 logout）
-    progressStop();
-
-    return { data: null };
-  }
-
-  const text = await response.text();
-  const json = text ? (JSON.parse(text) as unknown) : null;
-
-  if (!response.ok) {
-    const err = (json ?? {}) as ApiErrorBody;
-
-    progressStop();
-    throw new ApiClientError(
-      response.status,
-      err.code,
-      err.message ??
-        getErrorMessage("errors.api.requestFailed", "请求失败（{{status}}）", {
-          status: response.status,
-        }),
-    );
-  }
-
-  // 信封约定：{ data } 或 { data, pagination }
-  if (json && typeof json === "object" && "data" in json) {
-    progressStop();
-
-    return json as { data: unknown; pagination?: unknown };
-  }
-
-  // 非信封结构（兜底）
-  progressStop();
-
-  return { data: json };
 }
 
 /** 将查询参数对象序列化为 query string（跳过 undefined / null / 空字符串）。 */
