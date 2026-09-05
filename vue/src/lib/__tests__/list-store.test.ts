@@ -50,7 +50,8 @@ describe("list-store epoch contract", () => {
     store.setSorting([{ id: "createdAt", desc: true }]);
 
     expect(store.epoch).toBe(epoch0);
-    expect(store.page).toBe(2);
+    // 切换 pageSize 回到第 1 页（契约：避免越界空页，React 端同语义）
+    expect(store.page).toBe(1);
     expect(store.pageSize).toBe(20);
     expect(store.sorting).toEqual([{ id: "createdAt", desc: true }]);
   });
