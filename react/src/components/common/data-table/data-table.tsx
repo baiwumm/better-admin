@@ -144,7 +144,7 @@ export function DataTable<TData extends RowData>({
                       {Array.from({ length: columnCount }, (_, colIndex) => (
                         <Table.Cell key={colIndex}>
                           <Skeleton
-                            className="h-4 rounded-medium"
+                            className="h-4 rounded-3xl"
                             style={{ width: colIndex === 0 ? "55%" : "78%" }}
                           />
                         </Table.Cell>
