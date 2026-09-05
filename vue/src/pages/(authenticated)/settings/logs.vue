@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import PlaceholderPage from "@/components/PlaceholderPage.vue";
+import LogsPage from "@/features/logs/LogsPage.vue";
 </script>
 
 <template>
-  <PlaceholderPage
-    icon="i-lucide-scroll-text"
-    title-key="menu.pageTitle.logs"
-  />
+  <LogsPage />
 </template>

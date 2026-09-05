@@ -306,3 +306,24 @@ export interface DictItem {
   sort: number;
   enabled: boolean;
 }
+/* ---------------------------------------------------------------------------
+ * 日志模块（/logs）
+ * ------------------------------------------------------------------------- */
+
+export type LogType = "operation" | "login" | "api" | "error";
+
+/** 日志（系统自动写入；操作人摘要为 left join users，可空） */
+export interface Log {
+  id: string;
+  type: LogType;
+  userId: string | null;
+  username: string | null;
+  displayName: string | null;
+  email: string | null;
+  avatar: string | null;
+  action: string;
+  ip: string | null;
+  userAgent: string | null;
+  detail: unknown;
+  createdAt: string;
+}
