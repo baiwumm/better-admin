@@ -24,6 +24,17 @@
 
 ---
 
+### Vue 端 M1 阶段二：menus / dicts / logs 三模块落地，M1 六模块全量完成（2026-09-05）
+
+- **范围**：vue-plan M1 后三模块。 `pnpm build`（含 vue-tsc）/ lint / test（20 用例）四绿。M1 六模块（users / roles / permissions / menus / dicts / logs）全部完成，页面挂载于 /settings/*（URL 与 React 端一致）。
+- **菜单管理**：树形表格（TanStack expanded 模型，getSubRows = children、初始全展开）；搜索为后端模糊过滤（结果保留祖先链）；增删改失效导航树 + 管理树双缓存（导航树必须 exact，避免在途管理树被取消重发）；addChild 锁定父级、edit 父级候选排除自身及后代（防环）；按钮权限位 OR 多选、图标裸名实时预览。
+- **字典管理**：双栏布局（左类型右项）；选中类型为派生态（selectedCode 失效自动回退首个）；字典项保存后用本次请求结果回填业务侧 dict-store（下拉实时更新、单次请求）；类型删除 409（被引用）拦截 + 清业务缓存 + 不 removeQueries（激活观察者立即重发会 404）的语义平移。
+- **日志管理**：列表 + 详情抽屉（UA / JSON extra）+ 单条/批量删除（批量后清勾选残留）；类型筛选与显示名以字典 log_type 为真源，字典不可用时回退内置四枚举 i18n 文案（log-type.ts 平移）。
+- **新增业务缓存**：`stores/dict-store.ts`（Pinia 版全局字典缓存：fetchDict / clearDict / setDict / refreshDict，语义对齐 React 端 zustand 版）。
+- **待办**：六页与 React 端并排走查验收（M1 验收标准）；列显隐/拖拽列设置、vee-validate 两项延后决策不变。
+
+---
+
 ### Vue 端 M1 阶段一：RBAC 核心三模块落地（用户/角色/权限）（2026-09-05）
 
 - **范围**：vue-plan M1 前三模块（users / roles / permissions）+ 全部列表基建；pnpm build（含 vue-tsc）/ lint / test（20 用例）四绿。menus / dicts / logs 留待 M1 阶段二（范式已立，照搬加速）。
