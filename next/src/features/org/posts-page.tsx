@@ -161,17 +161,19 @@ export function PostsPage() {
     void queryClient.invalidateQueries({ queryKey: DEPTS_TREE_QUERY_KEY });
   }, [queryClient]);
 
+  // openXxx 依赖收敛到 useOverlayState 的稳定方法引用（对象字面量每次渲染都是
+  // 新的，会使回调与 columns useMemo 每次渲染失效重建、整表重渲染）
   const openCreate = useCallback(() => {
     setFormContext({ mode: "create", post: null });
     formDialog.open();
-  }, [formDialog]);
+  }, [formDialog.open]);
 
   const openEdit = useCallback(
     (post: Post) => {
       setFormContext({ mode: "edit", post });
       formDialog.open();
     },
-    [formDialog],
+    [formDialog.open],
   );
 
   const openDelete = useCallback(
@@ -179,7 +181,7 @@ export function PostsPage() {
       setDeleteTarget(post);
       deleteDialog.open();
     },
-    [deleteDialog],
+    [deleteDialog.open],
   );
 
   const openMembers = useCallback(
@@ -187,7 +189,7 @@ export function PostsPage() {
       setMembersTarget(post);
       membersDrawer.open();
     },
-    [membersDrawer],
+    [membersDrawer.open],
   );
 
   const deleteMutation = useMutation({

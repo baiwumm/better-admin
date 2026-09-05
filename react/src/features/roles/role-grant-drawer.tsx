@@ -203,44 +203,12 @@ function GrantPanel({
     }
   }
 
-  /**
-   * 节点勾选状态：**纯由子节点推导**（Antd Tree 语义）——权限位视为叶子的
-   * 子节点，与子菜单同等参与：
-   * - checked：全部子级（子菜单 + 声明位）checked（无子级无位的叶子看自身可见性）；
-   * - indeterminate：子级部分选中；
-   * - unchecked：所有子级都未选中。
-   */
-  function checkState(node: MenuNode): CheckState {
-    const children = node.children ?? [];
-    const items = children.length === 0 ? declaredItems(node) : [];
-
-    if (children.length === 0 && items.length === 0) {
-      return isVisible(node.id) ? "checked" : "unchecked";
-    }
-
-    const states: CheckState[] = children.map(checkState);
-
-    if (items.length > 0) {
-      const current = BigInt(getBits(node.id) || "0");
-
-      for (const item of items) {
-        states.push(
-          (current & BigInt(item.bits)) === BigInt(item.bits)
-            ? "checked"
-            : "unchecked",
-        );
-      }
-    }
-
-    if (states.every((s) => s === "checked")) return "checked";
-    if (states.some((s) => s !== "unchecked")) return "indeterminate";
-
-    return "unchecked";
-  }
-
   /** 主勾选切换：未全选（含半选）→ 勾选整棵子树；已全选 → 取消整棵子树 */
   function toggleMaster(node: MenuNode) {
-    setSubtreeChecked(node, checkState(node) !== "checked");
+    setSubtreeChecked(
+      node,
+      (checkStateMap.get(node.id) ?? "unchecked") !== "checked",
+    );
   }
 
   /** 菜单声明位 → 可授权的权限点列表（声明位 ∩ 权限点枚举） */
@@ -263,6 +231,54 @@ function GrantPanel({
     },
     [permissionItems],
   );
+
+  /**
+   * 全树勾选状态一次计算成 Map<menuId, CheckState>。
+   * 此前渲染期每节点递归整棵子树判状态（整体 O(n²)），勾选/展开任一变更
+   * 都全树重算；收敛为一次 O(n) 遍历，渲染与 toggleMaster 只查表。
+   */
+  const checkStateMap = useMemo(() => {
+    const map = new Map<string, CheckState>();
+
+    const compute = (node: MenuNode): CheckState => {
+      const children = node.children ?? [];
+      const items = children.length === 0 ? declaredItems(node) : [];
+
+      let state: CheckState;
+
+      if (children.length === 0 && items.length === 0) {
+        state = isVisible(node.id) ? "checked" : "unchecked";
+      } else {
+        const states: CheckState[] = children.map(compute);
+
+        if (items.length > 0) {
+          const current = BigInt(getBits(node.id) || "0");
+
+          for (const item of items) {
+            states.push(
+              (current & BigInt(item.bits)) === BigInt(item.bits)
+                ? "checked"
+                : "unchecked",
+            );
+          }
+        }
+
+        state = states.every((s) => s === "checked")
+          ? "checked"
+          : states.some((s) => s !== "unchecked")
+            ? "indeterminate"
+            : "unchecked";
+      }
+
+      map.set(node.id, state);
+
+      return state;
+    };
+
+    for (const root of menuTree) compute(root);
+
+    return map;
+  }, [menuTree, declaredItems, isVisible, getBits]);
 
   /** 已勾选菜单数（checked + 半选均计入，仅统计展示） */
   const selectedCount = useMemo(() => {
@@ -348,7 +364,7 @@ function GrantPanel({
     nodes.map((node) => {
       const children = node.children ?? [];
       const hasChildren = children.length > 0;
-      const state = checkState(node);
+      const state = checkStateMap.get(node.id) ?? "unchecked";
       const leafItems = hasChildren ? [] : declaredItems(node);
       const name = getMenuLabel(node, t);
       // 渲染上的非叶子节点：有子菜单**或**有权限位子行，均可折叠

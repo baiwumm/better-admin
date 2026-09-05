@@ -180,7 +180,9 @@ function SignInPage() {
               />
             </InputGroup.Prefix>
             <InputGroup.Input
+              autoComplete="username"
               placeholder={t("auth.signIn.usernamePlaceholder")}
+              spellCheck={false}
             />
           </InputGroup>
           <FieldError />
@@ -205,6 +207,7 @@ function SignInPage() {
               />
             </InputGroup.Prefix>
             <InputGroup.Input
+              autoComplete="current-password"
               placeholder={t("auth.signIn.passwordPlaceholder")}
             />
             <InputGroup.Suffix>

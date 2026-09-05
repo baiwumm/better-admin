@@ -111,6 +111,9 @@ function isGroupActive(item: MenuNode, pathname: string): boolean {
   return findActivePath(item.children ?? [], pathname).length > 0;
 }
 
+/** 收起分组的共享空 Set（受控 Accordion 对引用敏感，空态不每帧新建） */
+const EMPTY_EXPANDED_KEYS: ReadonlySet<string> = new Set();
+
 /** 递归渲染一层菜单：叶子 → 可点击行，分组 → Accordion；子层级叶子集合用 ListBox。 */
 function MenuLevel({
   items,
@@ -289,11 +292,21 @@ function SidebarGroup({
   const isActive = isGroupActive(item, pathname);
   const { t } = useTranslation();
 
+  // 受控 expandedKeys 按引用比较：不 memo 的话父组件任意渲染都会以新 Set
+  // 触发 Accordion 受控态同步（侧边栏常驻，随路由变化反复发生）
+  const expandedKeys = useMemo(
+    () =>
+      expandedIds.has(item.id)
+        ? new Set([item.id])
+        : (EMPTY_EXPANDED_KEYS as Set<string>),
+    [expandedIds, item.id],
+  );
+
   return (
     <Accordion
       allowsMultipleExpanded
       hideSeparator
-      expandedKeys={new Set(expandedIds.has(item.id) ? [item.id] : [])}
+      expandedKeys={expandedKeys}
       onExpandedChange={(keys) => {
         const next = new Set(expandedIds);
         const expanded = Array.from(keys).some((k) => String(k) === item.id);

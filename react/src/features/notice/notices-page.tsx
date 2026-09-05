@@ -197,17 +197,19 @@ export function NoticesPage() {
   const [detailTarget, setDetailTarget] = useState<Notice | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Notice | null>(null);
 
+  // openXxx 依赖收敛到 useOverlayState 的稳定方法引用（对象字面量每次渲染都是
+  // 新的，会使回调与 columns useMemo 每次渲染失效重建、整表重渲染）
   const openCreate = useCallback(() => {
     setFormContext({ mode: "create", noticeId: null });
     formDialog.open();
-  }, [formDialog]);
+  }, [formDialog.open]);
 
   const openEdit = useCallback(
     (notice: Notice) => {
       setFormContext({ mode: "edit", noticeId: notice.id });
       formDialog.open();
     },
-    [formDialog],
+    [formDialog.open],
   );
 
   const openDetail = useCallback(
@@ -215,7 +217,7 @@ export function NoticesPage() {
       setDetailTarget(notice);
       detailDrawer.open();
     },
-    [detailDrawer],
+    [detailDrawer.open],
   );
 
   const openDelete = useCallback(
@@ -223,7 +225,7 @@ export function NoticesPage() {
       setDeleteTarget(notice);
       deleteDialog.open();
     },
-    [deleteDialog],
+    [deleteDialog.open],
   );
 
   const withdrawMutation = useMutation({

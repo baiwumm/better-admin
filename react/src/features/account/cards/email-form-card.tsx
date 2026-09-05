@@ -101,8 +101,10 @@ export function EmailFormCard({ profile, onSaved }: EmailFormCardProps) {
               >
                 <Label>{t("features.account.email.newEmail")}</Label>
                 <Input
+                  autoComplete="email"
                   maxLength={254}
                   placeholder={t("features.account.email.emailPlaceholder")}
+                  type="email"
                   variant="secondary"
                 />
                 {fieldState.error ? (
@@ -128,7 +130,7 @@ export function EmailFormCard({ profile, onSaved }: EmailFormCardProps) {
                   onChange={field.onChange}
                 />
                 {fieldState.error ? (
-                  <p className="text-xs text-danger">
+                  <p className="text-xs text-danger" role="alert">
                     {t("features.account.currentPasswordRequired")}
                   </p>
                 ) : null}

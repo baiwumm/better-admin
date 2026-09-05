@@ -5,7 +5,15 @@
 
 ---
 
-### Next.js 端同步修复：进度条 / 图谱暗色 / 失效 token + web 与 server 双向对齐（2026-09-05）
+### React + Next 代码审查修复：列表页记忆化收敛 + Intl 缓存 + 无障碍属性级补齐（2026-09-06）
+
+- **背景**：项目级装齐 Vercel 三件套 + drizzle-orm + web-design-guidelines 后，按新规范维度对 react / next 做只读审查（性能模式 + 无障碍，代理扫描、行号逐一验证），产出 backlog 后全部修复属性级条目；行为级 6 项 + 进度条 aria（库 DOM 注入不可挂 role）留存 `docs/code-review-backlog.md` 单独决策。
+- **性能 P1（一个根因 × 六页 × 双端）**：`useOverlayState()` 每次渲染返回新对象，被 logs / roles / notices / posts / dicts / depts 列表页直接或经 `openXxx` 回调放进 `columns` 的 useMemo/useCallback 依赖 → 记忆化全失效、打字 / 勾选 / refetch 均整表重渲染。修复：依赖统一收敛到 `.open` 稳定方法引用（users-page 既有示范模式，directory-page 本已合规）。
+- **性能 P2（双端）**：`format-date` 两个 Intl formatter 按 locale 模块级 Map 缓存（原每行每帧重建）；公告正文 `sanitizeNoticeHtml`（DOMPurify 全文解析）三处渲染期直调改 `useMemo` 按内容缓存；role-grant-drawer 全树勾选状态由渲染期逐节点递归（O(n²)）收敛为一次 `checkStateMap` useMemo（O(n)）查表；sidebar-menu 受控 `expandedKeys` 空态用模块级共享 Set + useMemo（受控 Accordion 对引用敏感）。
+- **无障碍属性级（双端）**：分页条首 / 末页图标 Link 补 aria-label（新增 `common.datatable.firstPage/lastPage` 四语言键）；my-notices 翻页箭头补 aria-label（复用既有 `paginationPrev/Next` 键）；users 外链图标按钮 aria-label 从 `Tooltip.Trigger` 移到真实 Button（Trigger 渲染的外层 div 不透传名称——组件库陷阱，已核实实现）；登录页补 `autoComplete="username"/"current-password"` + `spellCheck={false}`；account 邮箱补 `type="email"+autoComplete`、电话补 `type="tel"+inputMode`；account 裸 `<p>` 错误提示（密码 ×3、邮箱 ×1、标签输入 ×1）补 `role="alert"` 使 SR 可感知；通知铃铛 aria-label 动态拼接未读数、未读红点 Badge 补 sr-only 文本；command-menu 移除焦点环处补 `focus-within:border-focus` 底边框高亮替代（WCAG 2.4.7）；sort-field 用 useId 建立 Label-htmlFor/输入 id 关联；dept-tree 树节点补 `aria-pressed` 传达选中态；menus 树展开按钮 aria-label 随展开态切换（新增 `features.menus.tree.collapse/expand` 四语言键）。
+- **验证**：双端 tsc / eslint 0 error、build 全绿；react 71 单测全过；`check-locales` 双端一致。行为零变更：全部改动为依赖数组引用、useMemo 包裹与 ARIA 属性。
+
+---
 
 - **同步 React 端当轮修复**：进度条并发竞态（`lib/progress.ts` 重构为「请求数 + 路由过渡」统一状态机；与 React 端差异：`@bprogress/next` 内置 pathname 变化自动 stop，故请求存在期间先 `disableAutoStop()` 拦截库收尾、状态机接管 stop + `enableAutoStop()`，`ProgressBinder` 监听 pathname 驱动过渡段；`api-client.ts` try/finally 收口计数）；图谱暗色（`org-chart.tsx` 改 `useResolvedTheme()` 下发 React Flow `colorMode`）；失效 token 类名清理（`bg-content1/2`、`text-default-500`、`ring-ring`、`border-primary/40` 共 8 处，扫描脚本复制至 `next/scripts/`）。
 - **web 端对齐 React（排查：页面清单 21/21 一致；confirmKeyword / mainPostId 联动 / 导出门控 / 图标预览 / 分页组件已对齐）**：data-table 补首屏 6 行骨架（取消「刻意差异」，`ui-spec.md` §14.2 同步；refetch 仍用遮罩）；`use-list-query` 补 `refetch` 透出；六列表页（users/roles/logs/notices/posts/directory）补错误态接线（isError + ErrorContent + 重试）；users 删除 / 批量删除后补 `resetRowSelection`（两个回调顺带移到 table 声明后，修复 TDZ）；公告详情抽屉补「切换公告重置名单页码」。

@@ -2,22 +2,36 @@
  * 按语言环境格式化日期时间（长日期 + 短时间）：
  * zh-CN →「2026年9月3日 10:46」，en →「September 3, 2026 at 10:46」。
  * locale 由调用方从 i18n 当前语言传入，保持函数纯净可复用。
+ *
+ * Intl formatter 构造涉及 ICU 解析（列表页每帧每行调用），按
+ * locale+options 在模块级缓存实例（js-cache-function-results）。
  */
+const dateTimeFormatCache = new Map<string, Intl.DateTimeFormat>();
+
 export function formatDateTime(value: string | Date, locale: string): string {
-  return new Intl.DateTimeFormat(locale, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date(value));
+  let formatter = dateTimeFormatCache.get(locale);
+
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    dateTimeFormatCache.set(locale, formatter);
+  }
+
+  return formatter.format(new Date(value));
 }
 
 /**
  * 相对时间格式化：根据与当前时间的差值输出「3 分钟前 / in 2 hours」。
  * 适用于公告列表与详情中的轻量时间提示。
  */
+const relativeTimeFormatCache = new Map<string, Intl.RelativeTimeFormat>();
+
 export function formatRelativeTime(
   value: string | Date,
   locale: string,
@@ -43,7 +57,12 @@ export function formatRelativeTime(
     { unit: "minute", ms: 60 * 1000 },
   ];
 
-  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  let formatter = relativeTimeFormatCache.get(locale);
+
+  if (!formatter) {
+    formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+    relativeTimeFormatCache.set(locale, formatter);
+  }
 
   for (const { unit, ms } of intervals) {
     if (absMs >= ms) {

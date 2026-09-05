@@ -4,6 +4,7 @@ import type { FC } from "react";
 
 import { Label, NumberField } from "@heroui/react";
 import { z } from "zod";
+import { useId } from "react";
 
 import { useTranslation } from "@/i18n";
 
@@ -34,10 +35,12 @@ export const SortField: FC<SortFieldProps> = ({
   max = 999,
 }) => {
   const { t } = useTranslation();
+  // Label 与真实输入框显式关联（点击标签可聚焦；aria-label 保留兜底可及名）
+  const inputId = useId();
 
   return (
     <div className="flex flex-col gap-1">
-      <Label>{t("common.column.sort")}</Label>
+      <Label htmlFor={inputId}>{t("common.column.sort")}</Label>
       <NumberField
         aria-label={t("common.column.sort")}
         maxValue={max}
@@ -48,7 +51,7 @@ export const SortField: FC<SortFieldProps> = ({
       >
         <NumberField.Group>
           <NumberField.DecrementButton />
-          <NumberField.Input className="w-32" />
+          <NumberField.Input className="w-32" id={inputId} />
           <NumberField.IncrementButton />
         </NumberField.Group>
       </NumberField>

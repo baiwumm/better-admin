@@ -255,8 +255,9 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
       >
         {/* 命令面板输入条不需要字段式聚焦光环：用 ! 后缀压过
             HeroUI search-field__group 聚焦时的 ring-2 ring-focus（组件样式
-            在 utilities 层之后，普通同权重覆盖会被源顺序击败） */}
-        <SearchField.Group className="h-12 rounded-none border-0 border-b border-separator bg-transparent px-3 shadow-none focus-within:ring-0!">
+            在 utilities 层之后，普通同权重覆盖会被源顺序击败）；
+            焦点可见性以底边框高亮替代（WCAG 2.4.7，不可只移除不替代） */}
+        <SearchField.Group className="h-12 rounded-none border-0 border-b border-separator bg-transparent px-3 shadow-none focus-within:border-focus focus-within:ring-0!">
           <SearchField.SearchIcon />
           <SearchField.Input
             placeholder={t("layout.command.placeholder")}

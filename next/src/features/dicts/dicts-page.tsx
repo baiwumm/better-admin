@@ -211,12 +211,14 @@ export function DictsPage() {
     [typeDialog],
   );
 
+  // openXxx 依赖收敛到 useOverlayState 的稳定方法引用（对象字面量每次渲染都是
+  // 新的，会使回调与 columns useMemo 每次渲染失效重建、整表重渲染）
   const openItemForm = useCallback(
     (mode: DictItemFormMode, item: DictItem | null) => {
       setItemFormContext({ mode, item });
       itemDialog.open();
     },
-    [itemDialog],
+    [itemDialog.open],
   );
 
   const onDeleteType = useCallback(
@@ -224,7 +226,7 @@ export function DictsPage() {
       setDeleteTypeTarget(type);
       typeDeleteDialog.open();
     },
-    [typeDeleteDialog],
+    [typeDeleteDialog.open],
   );
 
   const onDeleteItem = useCallback(
@@ -232,7 +234,7 @@ export function DictsPage() {
       setDeleteItemTarget(item);
       itemDeleteDialog.open();
     },
-    [itemDeleteDialog],
+    [itemDeleteDialog.open],
   );
 
   /**

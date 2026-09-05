@@ -71,6 +71,13 @@ export function NoticeDetailPage() {
 
   const notice = detailQuery.data;
 
+  // 正文 DOMPurify 消毒按内容 memo：详情区任意重渲染（上/下一条切换的
+  // 中间态、语言与主题切换）不重复对整篇富文本做全文解析
+  const sanitizedContent = useMemo(
+    () => sanitizeNoticeHtml(notice?.content ?? ""),
+    [notice?.content],
+  );
+
   // 动态路由标题：把公告标题写入标签页元数据快照（tabs meta），
   // 标签页据此显示具体标题，面包屑渲染「公告详情 > 标题」两级结构；
   // 快照随 tabs 持久化，刷新后仍可恢复，关闭标签时随治理清理。
@@ -179,7 +186,7 @@ export function NoticeDetailPage() {
               <div
                 // 内容来自 Tiptap 编辑并经 DOMPurify 消毒（sanitizeNoticeHtml）
                 dangerouslySetInnerHTML={{
-                  __html: sanitizeNoticeHtml(notice.content),
+                  __html: sanitizedContent,
                 }}
                 className="prose-notice text-sm leading-7"
               />

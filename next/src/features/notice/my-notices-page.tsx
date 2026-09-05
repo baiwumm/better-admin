@@ -202,6 +202,12 @@ export function MyNoticesPage() {
     staleTime: 0,
   });
 
+  // 正文 DOMPurify 消毒按内容 memo：详情任意重渲染不重复对整篇富文本做全文解析
+  const sanitizedContent = useMemo(
+    () => sanitizeNoticeHtml(detailQuery.data?.content ?? ""),
+    [detailQuery.data?.content],
+  );
+
   useEffect(() => {
     if (
       !selectedNoticeId ||
@@ -474,6 +480,7 @@ export function MyNoticesPage() {
           <div className="flex items-center gap-2">
             <Button
               isIconOnly
+              aria-label={t("features.myNotices.paginationPrev")}
               isDisabled={!canPrev || isFetching}
               size="sm"
               variant="ghost"
@@ -483,6 +490,7 @@ export function MyNoticesPage() {
             </Button>
             <Button
               isIconOnly
+              aria-label={t("features.myNotices.paginationNext")}
               isDisabled={!canNext || isFetching}
               size="sm"
               variant="ghost"
@@ -594,7 +602,7 @@ export function MyNoticesPage() {
               {detailQuery.data.content ? (
                 <div
                   dangerouslySetInnerHTML={{
-                    __html: sanitizeNoticeHtml(detailQuery.data.content),
+                    __html: sanitizedContent,
                   }}
                   className="prose-notice text-sm leading-7"
                 />

@@ -323,9 +323,12 @@ export function UsersPage() {
             <div className="flex items-center justify-center gap-1">
               {links.map((link) => (
                 <Tooltip key={link.key} delay={0}>
-                  <Tooltip.Trigger aria-label={`${name} ${t(link.labelKey)}`}>
+                  {/* aria-label 必须挂在真实 Button 上：Tooltip.Trigger 渲染的
+                      外层 div[role=button] 不会把名称透传给内层 <button> */}
+                  <Tooltip.Trigger>
                     <Button
                       isIconOnly
+                      aria-label={`${name} ${t(link.labelKey)}`}
                       size="sm"
                       variant="ghost"
                       onPress={() => openExternalLink(link.url)}

@@ -193,7 +193,11 @@ export function useMenusTableColumns({
               {row.getCanExpand() ? (
                 <Button
                   isIconOnly
-                  aria-label={t("features.menus.tree.toggle")}
+                  aria-label={
+                    row.getIsExpanded()
+                      ? t("features.menus.tree.collapse")
+                      : t("features.menus.tree.expand")
+                  }
                   className="shrink-0"
                   size="sm"
                   variant="ghost"

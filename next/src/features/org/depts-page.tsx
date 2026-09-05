@@ -118,17 +118,19 @@ export function DeptsPage() {
   });
   const [deleteTarget, setDeleteTarget] = useState<DeptTreeNode | null>(null);
 
+  // openXxx 依赖收敛到 useOverlayState 的稳定方法引用（对象字面量每次渲染都是
+  // 新的，会使回调与 columns useMemo 每次渲染失效重建、整树重渲染）
   const openCreateRoot = useCallback(() => {
     setFormContext({ mode: "create", dept: null, parentNode: null });
     formDialog.open();
-  }, [formDialog]);
+  }, [formDialog.open]);
 
   const openCreateChild = useCallback(
     (parent: DeptTreeNode) => {
       setFormContext({ mode: "create", dept: null, parentNode: parent });
       formDialog.open();
     },
-    [formDialog],
+    [formDialog.open],
   );
 
   const openEdit = useCallback(
@@ -136,7 +138,7 @@ export function DeptsPage() {
       setFormContext({ mode: "edit", dept: dept as Dept, parentNode: null });
       formDialog.open();
     },
-    [formDialog],
+    [formDialog.open],
   );
 
   const openDelete = useCallback(
@@ -144,7 +146,7 @@ export function DeptsPage() {
       setDeleteTarget(node);
       deleteDialog.open();
     },
-    [deleteDialog],
+    [deleteDialog.open],
   );
 
   const deleteMutation = useMutation({

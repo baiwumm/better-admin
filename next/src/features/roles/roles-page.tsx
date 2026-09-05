@@ -136,7 +136,9 @@ export function RolesPage() {
       setFormContext({ mode, role });
       roleDialog.open();
     },
-    [roleDialog],
+    // 依赖收敛到 useOverlayState 的稳定方法引用（对象字面量每次渲染都是新的，
+    // 会使本回调与 columns useMemo 每次渲染失效重建）
+    [roleDialog.open],
   );
 
   // ---------------- 变更操作 ----------------
@@ -371,14 +373,16 @@ export function RolesPage() {
         },
       },
     ],
+    // 依赖收敛到 useOverlayState 的稳定方法引用（对象字面量每次渲染都是新的，
+    // 会使 columns useMemo 每次渲染失效重建、整表重渲染）
     [
       t,
       canEdit,
       canDelete,
       canGrant,
       openForm,
-      grantDrawer,
-      deleteDialog,
+      grantDrawer.open,
+      deleteDialog.open,
       toggleStatus,
     ],
   );

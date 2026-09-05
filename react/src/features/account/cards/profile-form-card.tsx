@@ -152,8 +152,10 @@ export function ProfileFormCard({ profile, onSaved }: ProfileFormCardProps) {
               >
                 <Label>{t("features.account.profile.phone")}</Label>
                 <Input
+                  inputMode="tel"
                   maxLength={20}
                   placeholder={t("features.account.profile.phonePlaceholder")}
+                  type="tel"
                   variant="secondary"
                 />
                 {fieldState.error ? (

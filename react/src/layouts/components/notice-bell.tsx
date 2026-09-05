@@ -133,7 +133,11 @@ export function NoticeBell() {
       <Badge.Anchor>
         <Button
           isIconOnly
-          aria-label={t("layout.header.notifications")}
+          aria-label={
+            unreadCount > 0
+              ? `${t("layout.header.notifications")} (${unreadCount})`
+              : t("layout.header.notifications")
+          }
           size="sm"
           variant="ghost"
           onPress={openBell}
@@ -256,7 +260,14 @@ export function NoticeBell() {
                                 >
                                   <Icon className="size-4" />
                                 </div>
-                                {isUnread && <Badge color="danger" size="sm" />}
+                                {/* 未读状态不能只靠视觉红点传达，SR 补播报 */}
+                                {isUnread && (
+                                  <Badge color="danger" size="sm">
+                                    <span className="sr-only">
+                                      {t("features.myNotices.filter.unread")}
+                                    </span>
+                                  </Badge>
+                                )}
                               </Badge.Anchor>
 
                               <div className="flex min-w-0 flex-1 items-center justify-between gap-2">

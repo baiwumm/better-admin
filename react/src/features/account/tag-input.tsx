@@ -105,7 +105,11 @@ export function TagInput({
           </InputGroup.Suffix>
         </InputGroup>
       </TextField>
-      {error ? <p className="text-xs text-danger">{error}</p> : null}
+      {error ? (
+        <p className="text-xs text-danger" role="alert">
+          {error}
+        </p>
+      ) : null}
       {!error && value.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1 pt-1">
           {value.map((tag) => (

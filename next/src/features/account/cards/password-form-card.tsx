@@ -98,7 +98,7 @@ export function PasswordFormCard() {
                   onChange={field.onChange}
                 />
                 {fieldState.error ? (
-                  <p className="text-xs text-danger">
+                  <p className="text-xs text-danger" role="alert">
                     {t("features.account.currentPasswordRequired")}
                   </p>
                 ) : null}
@@ -124,7 +124,7 @@ export function PasswordFormCard() {
                 {/* 5 档强度指示（未输入不渲染，见 PasswordStrength） */}
                 <PasswordStrength password={field.value ?? ""} />
                 {fieldState.error ? (
-                  <p className="text-xs text-danger">
+                  <p className="text-xs text-danger" role="alert">
                     {t("features.account.password.newPasswordInvalid")}
                   </p>
                 ) : null}
@@ -148,7 +148,7 @@ export function PasswordFormCard() {
                   onChange={field.onChange}
                 />
                 {fieldState.error ? (
-                  <p className="text-xs text-danger">
+                  <p className="text-xs text-danger" role="alert">
                     {t("features.account.password.confirmPasswordMismatch")}
                   </p>
                 ) : null}

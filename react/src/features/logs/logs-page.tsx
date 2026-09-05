@@ -276,7 +276,9 @@ export function LogsPage() {
         ),
       },
     ],
-    [t, getTypeLabel, canDelete, detailDrawer, deleteDialog],
+    // 依赖收敛到 useOverlayState 的稳定方法引用（对象字面量每次渲染都是新的，
+    // 会使 columns useMemo 每次渲染失效重建、整表重渲染）
+    [t, getTypeLabel, canDelete, detailDrawer.open, deleteDialog.open],
   );
 
   const total = pagination.total;

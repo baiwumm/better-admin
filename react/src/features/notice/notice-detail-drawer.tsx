@@ -67,6 +67,13 @@ export function NoticeDetailDrawer({
   });
   const detail = detailQuery.data ?? notice;
 
+  // 正文 DOMPurify 消毒按内容 memo：抽屉任意重渲染（名单查询/主题切换等）
+  // 不重复对整篇富文本做全文解析
+  const sanitizedContent = useMemo(
+    () => sanitizeNoticeHtml(detail?.content ?? ""),
+    [detail?.content],
+  );
+
   const [readTab, setReadTab] = useState<"read" | "unread">("unread");
   const [readPage, setReadPage] = useState(1);
   const [unreadPage, setUnreadPage] = useState(1);
@@ -226,7 +233,7 @@ export function NoticeDetailDrawer({
                     <div
                       // 内容来自 Tiptap 编辑并经 DOMPurify 消毒（sanitizeNoticeHtml）
                       dangerouslySetInnerHTML={{
-                        __html: sanitizeNoticeHtml(detail.content ?? ""),
+                        __html: sanitizedContent,
                       }}
                       className="prose-notice max-h-96 overflow-y-auto rounded-3xl border border-border px-4 py-3 text-sm"
                     />

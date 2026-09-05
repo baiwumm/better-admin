@@ -85,6 +85,7 @@ export function DataTablePagination<TData extends RowData>({
           <Pagination.Content>
             <Pagination.Item className="hidden sm:block">
               <Pagination.Link
+                aria-label={t("common.datatable.firstPage")}
                 isDisabled={!table.getCanPreviousPage()}
                 onPress={() => table.setPageIndex(0)}
               >
@@ -125,6 +126,7 @@ export function DataTablePagination<TData extends RowData>({
             </Pagination.Item>
             <Pagination.Item className="hidden sm:block">
               <Pagination.Link
+                aria-label={t("common.datatable.lastPage")}
                 isDisabled={!table.getCanNextPage()}
                 onPress={() => table.setPageIndex(pageCount - 1)}
               >
