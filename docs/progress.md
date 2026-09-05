@@ -24,6 +24,26 @@
 
 ---
 
+### Vue 端 M1 阶段一：RBAC 核心三模块落地（用户/角色/权限）（2026-09-05）
+
+- **范围**：vue-plan M1 前三模块（users / roles / permissions）+ 全部列表基建；pnpm build（含 vue-tsc）/ lint / test（20 用例）四绿。menus / dicts / logs 留待 M1 阶段二（范式已立，照搬加速）。
+- **列表基建（六模块共用，全部平移 React 端机制）**：
+  - `lib/list-store.ts`：列表状态工厂（模块级 reactive 单例，语义对齐 zustand 版）；epoch 硬约定（搜索/筛选/重置 bump、同值幂等、切 pageSize 回首页）+ 契约测试；
+  - `composables/use-list-query.ts`：vue-query 装配（queryKey 含全部影响字段、epoch 居 prefix 后、keepPreviousData 保旧数据）；
+  - `components/data-table/`：DataTable（TanStack vue-table v9 渲染层：服务端分页/排序受控、行选择、骨架/刷新进度条/空态三态）、Toolbar、SearchReset、Pagination（受控分页：pageIndex/pageSize 由页面 store 传入）、BulkActions（浮动批量条）；
+  - `composables/use-permissions.ts`：权限点缓存（staleTime 5min）+ useMenuPermissions（当前路由菜单 userPermissions 位 → 按钮/操作门控）。
+- **用户管理**：列表 + 状态筛选 + CRUD + 启停/重置密码 + 批量（allSettled 部分成功）+ 写保护三层口径（本人/内置 admin/super_admin 绑定，超管操作者豁免，受保护行禁勾选）+ 表单全字段（含契约 v1.6.0 组织关联：DeptTreeSelect/岗位多选/主岗联动清空/工号/入职日期/在职状态/性别）。
+- **角色管理**：列表 + CRUD（code 创建后锁定；super_admin 编辑仅 description）+ 授权抽屉（**Antd Tree 勾选模型**：权限位为叶子子行、勾选向下级联/位与可见性向上联动、状态纯由子级推导、半选、保存 PUT 全量替换并失效导航菜单缓存——当前用户自己的角色授权立即生效）。
+- **权限管理**：只读列表（bits 升序 + 前端过滤，i18n 名称映射回退后端 label）。
+- **关键机制结论（纯 Vue 环境，沉淀给后续模块）**：
+  - **v9 vue-table 类型**：Table 对 TData 标注 in out（不变），跨 TData 赋值不可行；通用渲染组件用非同构 mapped type（AppTableLike）打破 variance，业务页以 `const table: AppTable<TData> = useTable({...})` 显式注解供模板推断；v9 新 API（useTable / features / 移除 getCoreRowModel）与 React 端同款；
+  - **#imports shim**：@nuxt/ui 4.11.0 stubs/vue-router.js 缺 onServerPrefetch/useAsyncData/defineComponent，rolldown 对 #imports re-export 链严格校验失败——vite 插件 enforce:pre 抢先解析 #imports 到项目 shim（`src/shims/nuxt-ui-imports.ts`）；
+  - **#build/nuxt-icon-client-bundle shim**：@nuxt/icon 可选 bundle 在纯 Vue 下以空 init 代替（图标走已安装的 @iconify-json/lucide）；
+  - 表单校验暂用手动 validate（规则与 React zod schema 一一对应），vee-validate 引入延后评审；列显隐/拖拽列设置延后（React 端 buildColumnSettingKey 对应能力 M1 未做）。
+- **文档**：feature-matrix 用户/角色/权限 Vue 列置 🔧。
+
+---
+
 ### Vue 端启动（Phase 4）：M0 工程基建与骨架完成（2026-09-05）
 
 - **范围**：`/vue` 从零搭建（vue-plan v1.2，评审 5 条微调 + 路由选型修正落地）；`pnpm dev` / `build`（vite build + vue-tsc type-check）/ `lint` / `test`（16 用例）四绿；dev 冒烟（`/`、`/sign-in`、SPA 路由回退 200）。
