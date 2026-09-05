@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import PlaceholderPage from "@/components/PlaceholderPage.vue";
+import UsersPage from "@/features/users/UsersPage.vue";
 </script>
 
 <template>
-  <PlaceholderPage icon="i-lucide-users" title-key="menu.pageTitle.users" />
+  <UsersPage />
 </template>

@@ -1,0 +1,136 @@
+import type { ListQueryParams } from "@/lib/api-types";
+import type { ListStore } from "@/lib/list-store";
+
+import { keepPreviousData, useQuery } from "@tanstack/vue-query";
+
+import { fetchApiList } from "@/lib/api-client";
+
+/**
+ * 列表页通用装配（与 React 端 use-list-query.ts 同构平移）：
+ * 从列表 store 读取分页/搜索/排序/筛选，组装请求参数与 queryKey
+ * （key 包含所有影响列表结果的字段），经 vue-query 发起服务端分页请求。
+ *
+ * epoch 硬约定：必须放在 prefix 之后、其余字段之前——搜索提交 / 筛选变更 /
+ * 重置使 epoch +1，条件重构必然产生全新 key，无缓存可回放，由
+ * keepPreviousData 保住旧条件结果直到新数据返回（消除 stale 缓存闪回）；
+ * 翻页 / 排序 / pageSize 不变 epoch，目标 key 仍可命中缓存加速。
+ */
+
+/** 构建列表页 queryKey（供 useListQuery 与单测共用）。 */
+export function buildListQueryKey<
+  TFilters extends Record<string, unknown>,
+>(options: {
+  queryKeyPrefix: readonly unknown[];
+  epoch: number;
+  page: number;
+  pageSize: number;
+  search: string;
+  sortField: string;
+  sortOrder: string;
+  filters: TFilters;
+  extraParams?: ListQueryParams | null;
+}): readonly unknown[] {
+  return [
+    ...options.queryKeyPrefix,
+    "list",
+    options.epoch,
+    options.page,
+    options.pageSize,
+    options.search,
+    options.sortField,
+    options.sortOrder,
+    options.filters,
+    options.extraParams ?? null,
+  ];
+}
+
+export function useListQuery<
+  TData,
+  Filters extends Record<string, unknown>,
+>(options: {
+  /** 列表 store（createListStore 的返回值） */
+  store: ListStore<Filters>;
+  /** queryKey 前缀，如 ["users"] */
+  queryKeyPrefix: readonly unknown[];
+  /** 请求路径，如 "/users" */
+  path: string;
+  /** 搜索参数名：后端各接口命名不一（/users 为 search，/org/* 为 keyword） */
+  searchParam?: string;
+  /** 由 filters 派生的额外请求参数（如 status/roleId），与 filters 同步变化 */
+  buildFilters?: (filters: Filters) => ListQueryParams;
+  /** 额外固定参数（合并进请求；同时并入 queryKey） */
+  extraParams?: ListQueryParams;
+}) {
+  const {
+    store,
+    queryKeyPrefix,
+    path,
+    searchParam = "search",
+    buildFilters,
+    extraParams,
+  } = options;
+
+  // 后端排序为 sort + order 两参数（单列排序语义）
+  const sortField = store.sorting[0]?.id ?? "";
+  const sortOrder = store.sorting[0]
+    ? store.sorting[0].desc
+      ? "desc"
+      : "asc"
+    : "";
+
+  const filterParams: ListQueryParams = buildFilters
+    ? buildFilters(store.filters)
+    : {};
+
+  const params: ListQueryParams = {
+    page: store.page,
+    pageSize: store.pageSize,
+    ...(store.search ? { [searchParam]: store.search } : {}),
+    ...(sortField ? { sort: sortField, order: sortOrder } : {}),
+    ...filterParams,
+    ...extraParams,
+  };
+
+  const query = useQuery({
+    queryKey: computed(() =>
+      buildListQueryKey({
+        queryKeyPrefix,
+        epoch: store.epoch,
+        page: store.page,
+        pageSize: store.pageSize,
+        search: store.search,
+        sortField,
+        sortOrder,
+        filters: store.filters,
+        extraParams: extraParams ?? null,
+      }),
+    ),
+    queryFn: () => fetchApiList<TData>(path, params),
+    placeholderData: keepPreviousData,
+  });
+
+  return {
+    /** 当前页数据 */
+    data: computed(() => query.data.value?.data ?? []),
+    /** 服务端分页信息（请求未返回时按当前分页参数兜底，保证分页条可渲染） */
+    pagination: computed(
+      () =>
+        query.data.value?.pagination ?? {
+          page: store.page,
+          pageSize: store.pageSize,
+          total: 0,
+        },
+    ),
+    /** 当前 key 从未有过数据（空表 + 全量加载态） */
+    isLoading: computed(() => query.isLoading.value),
+    /** 后台刷新中（当前数据 + 半透明遮罩；与 keepPreviousData 占位互斥） */
+    isFetching: computed(() => query.isFetching.value),
+    isError: computed(() => query.isError.value),
+    error: computed(() => query.error.value),
+    /** 手动重试（错误态 ErrorContent 的重试按钮） */
+    refetch: () => query.refetch(),
+  };
+}
+
+// computed 自动导入依赖（unplugin-auto-import 未覆盖纯 ts 文件），显式引入
+import { computed } from "vue";

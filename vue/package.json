@@ -28,6 +28,7 @@
   "dependencies": {
     "@nuxt/ui": "^4.11.0",
     "@tanstack/vue-query": "^5.102.8",
+    "@tanstack/vue-table": "^9.2.4",
     "@vueuse/core": "^14.4.0",
     "lucide-vue-next": "^1.0.0",
     "pinia": "^4.0.3",
