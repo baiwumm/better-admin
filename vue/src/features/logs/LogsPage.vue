@@ -236,7 +236,7 @@ const columns = computed<AppColumnDef<Log>[]>(() => [
           detailOpen.value = true;
         },
       });
-      if (canDelete) {
+      if (canDelete.value) {
         items.push({
           key: "delete",
           label: t("common.delete"),
@@ -269,7 +269,9 @@ const table: AppTable<Log> = useTable({
   get data() {
     return data.value;
   },
-  columns: columns.value,
+  get columns() {
+    return columns.value;
+  },
   features: appTableFeatures,
   getRowId: (row: Log) => row.id,
   // 服务端分页：分页状态由列表 store 驱动（受控）；列表固定倒序，无排序交互

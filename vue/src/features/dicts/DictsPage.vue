@@ -295,7 +295,7 @@ const columns = computed<AppColumnDef<DictItem>[]>(() => [
     enableHiding: false,
     header: () => t("common.actions"),
     cell: ({ row }) => {
-      if (!canEdit && !canDelete) return null;
+      if (!canEdit.value && !canDelete.value) return null;
 
       const items: Array<{
         key: string;
@@ -305,7 +305,7 @@ const columns = computed<AppColumnDef<DictItem>[]>(() => [
         onSelect: () => void;
       }> = [];
 
-      if (canEdit) {
+      if (canEdit.value) {
         items.push({
           key: "edit",
           label: t("common.edit"),
@@ -313,7 +313,7 @@ const columns = computed<AppColumnDef<DictItem>[]>(() => [
           onSelect: () => openItemForm("edit", row.original),
         });
       }
-      if (canDelete) {
+      if (canDelete.value) {
         items.push({
           key: "delete",
           label: t("common.delete"),
@@ -346,7 +346,9 @@ const table: AppTable<DictItem> = useTable({
   get data() {
     return filteredItems.value;
   },
-  columns: columns.value,
+  get columns() {
+    return columns.value;
+  },
   features: appTableFeatures,
   getRowId: (row: DictItem) => row.id,
   // 全量展示：关闭自动分页切片（本页不渲染分页条）

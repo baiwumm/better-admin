@@ -260,19 +260,20 @@ const columns = computed<AppColumnDef<User>[]>(() => [
       const user = row.original;
       // 写操作保护（v1.4.6）：受保护用户隐藏删除与重置密码；启用不受保护约束
       const isProtected = isProtectedUser(user);
-      const canToggle = canEdit && !(isProtected && user.status === "active");
+      const canToggle =
+        canEdit.value && !(isProtected && user.status === "active");
       const nextStatus: UserStatus =
         user.status === "active" ? "disabled" : "active";
 
-      if (!canEdit && !canDelete && !canResetPassword) {
+      if (!canEdit.value && !canDelete.value && !canResetPassword.value) {
         return null;
       }
 
       return h(UsersRowActions, {
         user,
-        canEdit: canEdit,
-        canDelete: canDelete,
-        canResetPassword: canResetPassword,
+        canEdit: canEdit.value,
+        canDelete: canDelete.value,
+        canResetPassword: canResetPassword.value,
         isProtected,
         nextStatus,
         canToggle,
@@ -286,7 +287,7 @@ const columns = computed<AppColumnDef<User>[]>(() => [
             statusTarget.value = { users: [user], next: nextStatus };
             statusOpen.value = true;
           }
-          if (key === "delete" && canDelete && !isProtected) {
+          if (key === "delete" && canDelete.value && !isProtected) {
             deleteTarget.value = user;
             deleteOpen.value = true;
           }
@@ -300,7 +301,9 @@ const table: AppTable<User> = useTable({
   get data() {
     return data.value;
   },
-  columns: columns.value,
+  get columns() {
+    return columns.value;
+  },
   features: appTableFeatures,
   getRowId: (row: User) => row.id,
   // 写操作保护：受保护用户不可被勾选（从源头排除批量删除/停用命中，v1.4.6）

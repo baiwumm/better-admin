@@ -56,6 +56,8 @@ export default defineConfig({
   // @nuxt/ui 被插件强制排除出预构建（optimizeDeps.exclude），其内部裸依赖
   // 必须显式 include，否则 dev 运行时逐个发现 → 反复 re-optimize → 无限
   // full reload（页面持续闪动）。包已在 package.json 显式声明（可解析）。
+  // 注意：vue-query/vue-table/vue-draggable-plus 必须与业务代码共用同一
+  // vue 响应式实例，缺位会导致跨模块 ref 不触发更新（computed 失灵）。
   optimizeDeps: {
     include: [
       "reka-ui",
@@ -71,6 +73,17 @@ export default defineConfig({
       "@floating-ui/dom",
       "@tanstack/vue-virtual",
       "@standard-schema/spec",
+      "@tanstack/vue-query",
+      "@tanstack/vue-table",
+      "vue-draggable-plus",
+      // 核心运行时显式收口：保证预构建产物与业务源码共用同一 vue 响应式
+      // 实例。缺位时依赖包各自内嵌副本 → 跨包 ref 更新不触发页面渲染
+      // （症状：直开 URL 时 handler 执行、状态更新，但视图不重渲染）。
+      "vue",
+      "vue-router",
+      "pinia",
+      "vue-i18n",
+      "@vueuse/core",
     ],
   },
 });

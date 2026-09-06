@@ -309,7 +309,7 @@ const columns = computed<AppColumnDef<MenuNode>[]>(() => [
         onSelect: () => void;
       }> = [];
 
-      if (canEdit) {
+      if (canEdit.value) {
         items.push({
           key: "edit",
           label: t("common.edit"),
@@ -325,7 +325,7 @@ const columns = computed<AppColumnDef<MenuNode>[]>(() => [
           onSelect: () => openForm("addChild", node),
         });
       }
-      if (canDelete) {
+      if (canDelete.value) {
         items.push({
           key: "delete",
           label: t("common.delete"),
@@ -349,7 +349,9 @@ const table: AppTable<MenuNode> = useTable({
   get data() {
     return data.value ?? [];
   },
-  columns: columns.value,
+  get columns() {
+    return columns.value;
+  },
   features: appTableFeatures,
   // 树形：subRows = children，初始全部展开
   getSubRows: (row: MenuNode) => row.children,

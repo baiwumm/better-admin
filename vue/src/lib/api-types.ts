@@ -196,6 +196,46 @@ export interface DeptTreeNode {
   children: DeptTreeNode[];
 }
 
+/* ---------------------------------------------------------------------------
+ * 组织管理模块（/org/depts*，契约 v1.6.0 阶段 1）
+ * ------------------------------------------------------------------------- */
+
+/** 组织（GET /org/depts 分页列表项） */
+export interface Dept {
+  id: string;
+  parentId: string | null;
+  name: string;
+  code: string | null;
+  leaderId: string | null;
+  leaderName: string | null;
+  sort: number;
+  status: DeptStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 创建组织载荷（parentId null = 顶级组织） */
+export interface DeptCreateInput {
+  name: string;
+  /** null = 不设置编码 */
+  code: string | null;
+  parentId: string | null;
+  /** null = 不设置负责人 */
+  leaderId: string | null;
+  sort: number;
+  status: DeptStatus;
+}
+
+/** 更新组织载荷（字段语义同创建；parentId null = 移为顶级） */
+export type DeptUpdateInput = DeptCreateInput;
+
+/** 组织排序项（PATCH /org/depts/sort 整批提交） */
+export interface DeptSortItem {
+  id: string;
+  parentId: string | null;
+  sort: number;
+}
+
 /** 岗位（/org/posts） */
 export interface Post {
   id: string;

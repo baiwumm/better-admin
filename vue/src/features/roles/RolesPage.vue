@@ -241,15 +241,15 @@ const columns = computed<AppColumnDef<Role>[]>(() => [
     cell: ({ row }) => {
       // 系统内置角色保护：super_admin 的授权/删除/状态切换均不可用
       const isSuperAdmin = row.original.code === SUPER_ADMIN_ROLE_CODE;
-      const canGrantRow = canGrant && !isSuperAdmin;
-      const canToggle = canEdit && !isSuperAdmin;
-      const canDeleteRow = canDelete && !isSuperAdmin;
+      const canGrantRow = canGrant.value && !isSuperAdmin;
+      const canToggle = canEdit.value && !isSuperAdmin;
+      const canDeleteRow = canDelete.value && !isSuperAdmin;
 
-      if (!canGrantRow && !canEdit && !canDeleteRow) return null;
+      if (!canGrantRow && !canEdit.value && !canDeleteRow) return null;
 
       return h(RolesRowActions, {
         role: row.original,
-        canEdit: canEdit,
+        canEdit: canEdit.value,
         canGrantRow,
         canToggle,
         canDeleteRow,
@@ -274,7 +274,9 @@ const table: AppTable<Role> = useTable({
   get data() {
     return data.value;
   },
-  columns: columns.value,
+  get columns() {
+    return columns.value;
+  },
   features: appTableFeatures,
   getRowId: (row: Role) => row.id,
   // 服务端分页：分页状态由列表 store 驱动（受控），仅取数

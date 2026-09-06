@@ -80,19 +80,23 @@ export function useMenuPermissions() {
   const check = (value: string) =>
     hasPermission(bits.value, bitsMap.value.get(value) ?? 0n);
 
-  // 直接返回普通对象：权限位判定在读取时求值（模板/渲染上下文追踪响应）
-  const disabled = bits.value === null;
-
+  // 返回 computed ref：权限查询是页面挂载后的异步请求，一次性求值会让
+  // 「首帧时权限未就绪」的页面按钮/操作永远消失。模板中顶层 ref 自动
+  // 解包；script（columns computed / 回调）中读取需 .value。
   return {
-    canSearch: !disabled && check("SEARCH"),
-    canAdd: !disabled && check("ADD"),
-    canEdit: !disabled && check("EDIT"),
-    canDelete: !disabled && check("DELETE"),
-    canBatchDelete: !disabled && check("BATCH_DELETE"),
-    canAddChild: !disabled && check("ADD_CHILD"),
-    canReset: !disabled && check("RESET"),
-    canResetPassword: !disabled && check("RESET_PASSWORD"),
-    canGrant: !disabled && check("GRANT"),
-    canExport: !disabled && check("EXPORT"),
+    canSearch: computed(() => bits.value !== null && check("SEARCH")),
+    canAdd: computed(() => bits.value !== null && check("ADD")),
+    canEdit: computed(() => bits.value !== null && check("EDIT")),
+    canDelete: computed(() => bits.value !== null && check("DELETE")),
+    canBatchDelete: computed(
+      () => bits.value !== null && check("BATCH_DELETE"),
+    ),
+    canAddChild: computed(() => bits.value !== null && check("ADD_CHILD")),
+    canReset: computed(() => bits.value !== null && check("RESET")),
+    canResetPassword: computed(
+      () => bits.value !== null && check("RESET_PASSWORD"),
+    ),
+    canGrant: computed(() => bits.value !== null && check("GRANT")),
+    canExport: computed(() => bits.value !== null && check("EXPORT")),
   };
 }

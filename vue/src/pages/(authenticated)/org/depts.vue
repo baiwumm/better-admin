@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import PlaceholderPage from "@/components/PlaceholderPage.vue";
+import DeptsPage from "@/features/org/DeptsPage.vue";
 </script>
 
 <template>
-  <PlaceholderPage icon="i-lucide-network" title-key="menu.pageTitle.depts" />
+  <DeptsPage />
 </template>
