@@ -5,6 +5,15 @@
 
 ---
 
+### Vue 端 M1 冒烟验收通过：修复启动整页刷新死循环 + 字典左栏骨架卡死（2026-09-06）
+
+- **结论**：M1 六模块（users / roles / permissions / menus / dicts / logs）GUI 冒烟验收**通过**——登录认证链路（登录 → 预取菜单 → 守卫 → 布局 → F5 会话恢复）、侧边栏导航、六页列表/表格/筛选/分页均正常；build（vite + vue-tsc）/ eslint / vitest（20 用例）四绿。feature-matrix Vue 列七项 🔧/❌ → ✅（角色管理行此前漏更，一并修正）。
+- **P0 修复一：启动整页刷新死循环**（即前一会话遗留的「登录主线程卡死」真因）。`main.ts` 在 `router.isReady()` 之前 `app.mount()`，挂载瞬间 `useRoute()` 仍是初始占位路由（path="/"），AppShell 在 `/sign-in` 误挂 AdminLayout → 无 token 请求 `/menus` → 401 → refresh 失败 → `window.location.assign("/sign-in")` 整页刷新 → 无限循环（实测 ~7 次/秒，每次写一条 error.401 日志，20 分钟累计 2000+ 条）。修复：`router.isReady().then(() => app.mount("#app"))`。排查手法与机制沉淀见 mechanisms.md §8。
+- **P1 修复二：字典管理左栏永远骨架**。`DictsPage.vue` 模板 `v-if="typesQuery.isLoading"` 拿到的是查询信封对象里的 **Ref 本身**（恒 truthy）——接口已 success、计数显示 3，骨架仍永久渲染。改为 `typesQuery.isLoading.value`（其余页面均为解构写法无此坑）。机制沉淀见 mechanisms.md §9。
+- **诊断环境残留清理**：auth-store 登录 trace 打点、AppShell `VITE_LAYOUT_OFF` 二分开关、menu-fetch 栈参数、临时日志代理均已移除还原。本次新增的环境产物：`vue/.env.local`（`VITE_API_BASE_URL=http://localhost:3001/api`，本地联调用，已 gitignore）；本地起 Nest 需带 `PORT=3001 CORS_ORIGINS="http://127.0.0.1:5173,http://localhost:5173"`（vite 只绑 127.0.0.1 时 origin 非 localhost 默认白名单）。
+- **已知残留**：排查期间死循环向共享 Supabase 库写入了约 2400 条 `error.401` 日志（logs 表总量 3.6w），如需可按 `action = 'error.401' AND user_id IS NULL AND created_at >= '2026-09-06'` 清理；登录页 sign-in.vue 的 toast → 页内 Alert 改动与 i18n 键为前一会话调试产物，本轮确认行为合理予以保留，随 M1 收尾提交。
+- **待办不变**：列显隐/拖拽列设置、vee-validate 引入延后决策不变；Dashboard 各端均未实现。
+
 ### website/ 文档站落地：Next 16 + Fumadocs + ogimg 黑白皮肤（2026-09-06）
 
 - **品牌统一（同日第三轮）**：全局字体换成 **Maple Mono CN**——与 react / next 端同源自托管子集（`public/fonts/maple-mono-cn-regular.woff2`，GB2312 常用字 + ASCII，woff2 ≈1.7MB，OFL-1.1），`globals.css` 顶部 `@font-face`（`font-display: swap` + `unicode-range` 限定区段，生僻字回退系统字体，与 react 的 `styles/fonts.css` 规则一致），`--font-sans` 与 `--font-mono` 栈首位均为 `'Maple Mono CN'`。Logo 换成项目实际 Logo：复制 `logo.svg` / `logo-dark.svg`，新增 `components/logo.tsx`（next-themes 按 resolvedTheme 切换亮暗变体，方式对齐 react 的 app-sidebar），navbar（24px）与 footer（32px）替换占位 LogoMark；同时复制 `favicon.svg` / `favicon.ico` / `apple-touch-icon.png` 并在 metadata 挂 icons。tsc 0 error、build 全绿、截图验收。

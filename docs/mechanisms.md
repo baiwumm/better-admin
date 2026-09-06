@@ -264,3 +264,38 @@ SUPER_ADMIN_USER_PROTECTED）；前端只做入口隐藏止损，后端为契约
   `validateSearch` 在 route 文件声明 `deptId?: string`。
 - 效果：图谱跳转 `/org/directory?deptId=xxx` 后，刷新 / 分享 / 前进后退均恢复筛选；
   页内操作地址栏实时跟随。
+
+## 8. Vue 端启动挂载时序：必须 `router.isReady()` 后再 `app.mount()`（Vue 端，M1 验收修复）
+
+**结论：`main.ts` 在 `router.isReady().then(...)` 中挂载应用；提前挂载会在公共页
+（如 `/sign-in`）误挂 AdminLayout 并引发「401 → 整页刷新」死循环。**
+
+- **竞态根因**：`app.mount()` 时 vue-router 的初始导航尚未解析，`useRoute()` 返回
+  初始占位路由（`path: "/"`）。AppShell 的 `useAdminLayout` computed 读 `route.path`
+  → 在 `/sign-in` 上误判为认证页 → 挂载 AdminLayout。
+- **连锁反应**：布局内 `useMenus()` 发起无 token 的 `GET /menus` → 401 →
+  api-client refresh 失败 → `redirectToSignIn()` 执行
+  `window.location.assign("/sign-in")` → 整页刷新 → 回到「挂载时占位路由为 /」
+  → 无限循环（每次刷新写一条 error.401 日志，~7 次/秒打满主线程，表现为
+  「页面卡死 / 白屏」）。
+- **修复**：`vue/src/main.ts` 改为 `router.isReady().then(() => app.mount("#app"))`。
+  挂载时初始导航已完成，`route.path` 即真实路径，公共页不再误挂布局。
+- **排查手法（可复用）**：怀疑页面死循环时，给关键组件 `onMounted` 挂
+  `navigator.sendBeacon` 探针发到本地日志代理（记录 `location.href` /
+  `localStorage` 快照），beacon 在页面卸载/冻结前也能发出，比 console 可靠。
+
+## 9. vue-query 查询信封对象的属性在模板中不会自动解包（Vue 端，M1 验收修复）
+
+**结论：`const q = useQuery(...)` 的返回对象是普通对象，其属性是 Ref；模板里
+`v-if="q.isLoading"` 判定的是 Ref 对象本身（恒 truthy），必须解构（`const { isLoading } =
+useQuery(...)`）或显式 `q.isLoading.value`。**
+
+- **事故**：`DictsPage.vue` 左栏 `v-if="typesQuery.isLoading"` 恒真 → 字典类型列表
+  永远渲染骨架屏（接口实际已 success 且计数显示 3，表象矛盾）。
+- **为什么其他页没事**：MenusPage 等均按官方写法解构 `const { data, isLoading,
+  isFetching } = useQuery(...)`，顶层 ref 在模板中自动解包。
+- **判据技巧**：怀疑此坑时，通过
+  `document.querySelector('#app').__vue_app__._instance` 遍历组件树读
+  `setupState.xxxQuery.isLoading`，若为 `{ isRef: true }` 即中招；同理可读
+  `__vue_app__._context.provides` 中的 QueryClient 直接检查缓存各查询的
+  `status / fetchStatus`，区分「接口问题」与「响应性问题」。
