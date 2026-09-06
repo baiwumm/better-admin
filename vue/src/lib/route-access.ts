@@ -44,6 +44,7 @@ export const MENU_REQUIRED_PATHS = [
 /** 路径 → 文档标题 i18n 键（menu.pageTitle.*）。 */
 export const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/": "menu.pageTitle.console",
+  "/sign-in": "auth.signIn.title",
   "/account": "menu.pageTitle.account",
   "/my-notices": "menu.pageTitle.myNotices",
   "/org/depts": "menu.pageTitle.depts",
@@ -63,6 +64,18 @@ export const ROUTE_TITLE_KEYS: Record<string, string> = {
 /** 全屏公共页判定（App.vue 布局分支 + 守卫放行共用）。 */
 export function isPublicPath(pathname: string): boolean {
   return (PUBLIC_PATHS as readonly string[]).includes(pathname);
+}
+
+/**
+ * 认证布局路径（对应 React 端 (auth) 路由组）：
+ * 整页格子背景 + 品牌区 + 表单卡片的统一外壳（AuthLayout）。
+ * 新增注册 / 忘记密码等认证页时在此登记。
+ */
+export const AUTH_LAYOUT_PATHS = ["/sign-in"] as const;
+
+/** 认证布局判定（AppShell 布局分支用）。 */
+export function isAuthLayoutPath(pathname: string): boolean {
+  return (AUTH_LAYOUT_PATHS as readonly string[]).includes(pathname);
 }
 
 /** 登录可达判定：精确白名单路径，或命中动态前缀（通知消费路由）。 */

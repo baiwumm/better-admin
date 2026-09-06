@@ -4,8 +4,9 @@ import { useRoute } from "vue-router";
 import { useToast } from "@nuxt/ui/composables";
 
 import AdminLayout from "@/layouts/AdminLayout.vue";
+import AuthLayout from "@/layouts/AuthLayout.vue";
 import { ApiClientError, setApiErrorHandler } from "@/lib/api-client";
-import { isPublicPath } from "@/lib/route-access";
+import { isAuthLayoutPath, isPublicPath } from "@/lib/route-access";
 
 /**
  * 应用外壳（挂在 UApp 内，可安全使用 toast 上下文）：
@@ -30,9 +31,13 @@ const route = useRoute();
 const useAdminLayout = computed(
   () => !isPublicPath(route.path) && route.name !== "/[...all]",
 );
+
+// 认证页外壳（React 端 (auth) 路由组对应物）：登录 / 后续注册、忘记密码
+const useAuthLayout = computed(() => isAuthLayoutPath(route.path));
 </script>
 
 <template>
-  <AdminLayout v-if="useAdminLayout" />
+  <AuthLayout v-if="useAuthLayout" />
+  <AdminLayout v-else-if="useAdminLayout" />
   <RouterView v-else />
 </template>
