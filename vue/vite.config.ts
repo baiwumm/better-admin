@@ -31,9 +31,14 @@ export default defineConfig({
   plugins: [
     // 本补丁须位于 ui() 之前：同为 enforce:pre 的 resolveId 按数组顺序命中
     nuxtUiImportsShim(),
+    // 扫描源码中使用的图标名并打进 virtual:nuxt-ui-icons 客户端 bundle：
+    // 纯 Vue 环境没有 Nuxt 模块的自动聚合，不开启扫描时仅注册 appConfig
+    // 默认图标，动态图标名（下拉/菜单 items）会渲染为空白。
     // ui() 必须在 vue() 之前：rolldown-vite 下 "@nuxt/ui/vue-plugin"
     // 虚拟模块重定向依赖其 resolveId 先注册（实测顺序，官方文档相反）
-    ui(),
+    ui({
+      icon: { clientBundle: { scan: true } },
+    }),
     vue(),
     // 官方文件式路由插件（unplugin-vue-router 并入 vue-router 后的形态）；
     // 默认 routesFolder: src/pages，构建期生成 typed-router.d.ts 与路由表

@@ -52,6 +52,7 @@
   "devDependencies": {
     "@eslint/js": "^9.25.1",
     "@iconify-json/lucide": "^1.2.129",
+    "@iconify-json/simple-icons": "^1.2.94",
     "@types/node": "^24.0.0",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/eslint-config-typescript": "^14.9.0",

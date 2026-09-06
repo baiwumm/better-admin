@@ -1,29 +1,38 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
+import { useQueryClient } from "@tanstack/vue-query";
+import type { NavigationMenuItem } from "@nuxt/ui";
 
 import type { MenuNode } from "@/lib/api-types";
 import { useAuthSync } from "@/composables/use-auth-sync";
-import { useMenus } from "@/composables/use-menus";
+import { MENUS_QUERY_KEY, useMenus } from "@/composables/use-menus";
 import { filterHiddenMenus } from "@/lib/permission";
-import AppLogo from "@/components/AppLogo.vue";
+import { findActivePath } from "@/lib/menu-utils";
+import { ROUTE_TITLE_KEYS } from "@/lib/route-access";
 import ConfigDrawer from "@/components/layout/ConfigDrawer.vue";
+import FullscreenButton from "@/components/layout/FullscreenButton.vue";
 import LanguageSwitch from "@/components/layout/LanguageSwitch.vue";
-import ThemeSwitch from "@/components/layout/ThemeSwitch.vue";
+import SidebarBrand from "@/components/layout/SidebarBrand.vue";
 import UserMenu from "@/components/layout/UserMenu.vue";
 
 /**
- * 认证态布局（Nuxt UI Dashboard 套件，vue-plan v1.1 微调 4）：
- * - UDashboardGroup：布局容器 + 侧栏状态持久化（v3 UDashboardLayout 的 v4 对应组件）
- * - UDashboardSidebar：导航 items 注入；折叠 / 移动端抽屉由组件内置
- * - UDashboardPanel + UDashboardNavbar：顶部栏（Header 操作区顺序对齐 React：
- *   Search → ThemeSwitch → ConfigDrawer；Profile 在侧边栏底部）
- * - UDashboardSearch：命令面板（Cmd/Ctrl+K 内置，含明暗切换命令组）
+ * Admin 双栏布局（Nuxt UI Dashboard 套件，结构对齐 React 端 admin-layout）：
+ * - 侧边栏：品牌下拉（技术栈入口）+ 导航菜单（骨架屏 / 失败重试 / 折叠 tooltip
+ *   + 悬浮子菜单）+ 底部快捷链接（GitHub / 博客）+ 用户菜单
+ * - 顶栏：折叠按钮（leading，移动端为打开抽屉）+ 面包屑 + 右侧
+ *   搜索 / 通知占位 / 全屏 / 语言 / 偏好抽屉
+ * - 主体：全宽页面（架构图谱 / 我的公告）去内边距
+ * - useAuthSync：挂载时 /auth/me 快照同步（mechanisms §6）
  */
 useAuthSync();
 
 const { t } = useI18n();
-const { data: menus } = useMenus();
+const route = useRoute();
+const queryClient = useQueryClient();
+
+const { data: menus, isLoading, error } = useMenus();
 
 interface NavLeaf {
   label: string;
@@ -65,6 +74,42 @@ const sidebarItems = computed<NavLeaf[][]>(() => {
   return items;
 });
 
+/** 菜单区底部快捷链接（对齐 React 端 SIDEBAR_LINKS，新窗口跳转）。 */
+const quickLinks = computed<NavigationMenuItem[][]>(() => [
+  [
+    {
+      label: t("layout.sidebar.github"),
+      icon: "i-lucide-github",
+      to: "https://github.com/baiwumm/better-admin",
+      target: "_blank",
+    },
+    {
+      label: t("layout.sidebar.blog"),
+      icon: "i-lucide-globe",
+      to: "https://www.baiwumm.com",
+      target: "_blank",
+    },
+  ],
+]);
+
+/** 面包屑：当前路由在可见菜单树中的「分组 → 页面」链；非菜单路由回退标题键。 */
+const crumbs = computed(() => {
+  const chain = findActivePath(
+    filterHiddenMenus(menus.value ?? []),
+    route.path,
+  );
+
+  if (chain.length > 0) {
+    return chain.map((node) => ({
+      label: node.i18nKey ? t(node.i18nKey) : node.label,
+    }));
+  }
+
+  const titleKey = ROUTE_TITLE_KEYS[route.path];
+
+  return titleKey ? [{ label: t(titleKey) }] : [];
+});
+
 /** 命令面板：菜单叶子 → 可跳转项（明暗切换命令组由 UDashboardSearch 内置）。 */
 const searchGroups = computed(() => {
   const flatten = (nodes: MenuNode[]): MenuNode[] =>
@@ -85,18 +130,81 @@ const searchGroups = computed(() => {
     },
   ];
 });
+
+/** 全宽页面白名单（主体区无内边距，对齐 React 端 FULL_WIDTH_ROUTES）。 */
+const FULL_WIDTH_ROUTES = ["/org/chart", "/my-notices"];
+const isFullWidthPage = computed(() => FULL_WIDTH_ROUTES.includes(route.path));
+
+/** 菜单加载失败重试。 */
+function retryMenus() {
+  void queryClient.refetchQueries({
+    queryKey: MENUS_QUERY_KEY,
+    exact: true,
+  });
+}
 </script>
 
 <template>
   <UDashboardGroup>
     <UDashboardSidebar collapsible>
       <template #header="{ collapsed }">
-        <AppLogo :collapsed="collapsed" />
+        <SidebarBrand :collapsed="collapsed" />
       </template>
 
-      <template #default>
-        <UNavigationMenu :items="sidebarItems" orientation="vertical" />
-        <UDashboardSidebarCollapse />
+      <template #default="{ collapsed }">
+        <!-- 菜单加载骨架屏（图标方块 + 两行文字占位） -->
+        <div v-if="isLoading" class="flex flex-col gap-1">
+          <div
+            v-for="index in 6"
+            :key="index"
+            class="flex items-center gap-3 rounded-lg px-3 py-2"
+          >
+            <USkeleton class="size-5 rounded-lg" />
+            <USkeleton
+              v-if="!collapsed"
+              class="h-3.5 rounded-full"
+              :style="{ width: `${55 + ((index * 13) % 35)}%` }"
+            />
+          </div>
+        </div>
+
+        <!-- 菜单加载失败：提示 + 重试（不误跳 403） -->
+        <UAlert
+          v-else-if="error"
+          class="mt-2"
+          color="error"
+          variant="outline"
+          icon="i-lucide-triangle-alert"
+          :title="t('layout.overlay.permissionCheckFailed')"
+          :actions="[
+            {
+              label: t('common.retry'),
+              icon: 'i-lucide-refresh-cw',
+              color: 'error',
+              onClick: retryMenus,
+            },
+          ]"
+        />
+
+        <UNavigationMenu
+          v-else
+          :collapsed="collapsed"
+          :items="sidebarItems"
+          orientation="vertical"
+          tooltip
+          popover
+          :ui="{ separator: 'hidden' }"
+        />
+
+        <!-- 底部快捷链接：菜单区与用户区之间（mt-auto 贴底） -->
+        <UNavigationMenu
+          :collapsed="collapsed"
+          :items="quickLinks"
+          orientation="vertical"
+          tooltip
+          class="mt-auto"
+          :ui="{ separator: 'hidden' }"
+        />
       </template>
 
       <template #footer="{ collapsed }">
@@ -106,14 +214,35 @@ const searchGroups = computed(() => {
 
     <UDashboardSearch :groups="searchGroups" />
 
-    <UDashboardPanel>
+    <UDashboardPanel
+      :ui="{ body: isFullWidthPage ? 'p-0! sm:p-0!' : undefined }"
+    >
       <template #header>
         <UDashboardNavbar>
+          <!-- 折叠按钮：桌面折叠/展开，移动端打开抽屉（组件内置行为） -->
+          <template #leading>
+            <UDashboardSidebarCollapse />
+          </template>
+
+          <!-- 面包屑：分组 → 页面 -->
+          <template #title>
+            <UBreadcrumb :items="crumbs" />
+          </template>
+
           <template #right>
-            <UDashboardSearchButton />
-            <ThemeSwitch />
-            <LanguageSwitch />
-            <ConfigDrawer />
+            <div class="flex items-center gap-2">
+              <UDashboardSearchButton />
+              <!-- 通知铃铛占位（站内信模块随 M2+ 接入） -->
+              <UButton
+                :aria-label="t('layout.header.notifications')"
+                color="neutral"
+                icon="i-lucide-bell"
+                variant="ghost"
+              />
+              <FullscreenButton />
+              <LanguageSwitch />
+              <ConfigDrawer />
+            </div>
           </template>
         </UDashboardNavbar>
       </template>
