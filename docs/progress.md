@@ -5,6 +5,22 @@
 
 ---
 
+### website/ 文档站落地：Next 16 + Fumadocs + ogimg 黑白皮肤（2026-09-06）
+
+- **品牌统一（同日第三轮）**：全局字体换成 **Maple Mono CN**——与 react / next 端同源自托管子集（`public/fonts/maple-mono-cn-regular.woff2`，GB2312 常用字 + ASCII，woff2 ≈1.7MB，OFL-1.1），`globals.css` 顶部 `@font-face`（`font-display: swap` + `unicode-range` 限定区段，生僻字回退系统字体，与 react 的 `styles/fonts.css` 规则一致），`--font-sans` 与 `--font-mono` 栈首位均为 `'Maple Mono CN'`。Logo 换成项目实际 Logo：复制 `logo.svg` / `logo-dark.svg`，新增 `components/logo.tsx`（next-themes 按 resolvedTheme 切换亮暗变体，方式对齐 react 的 app-sidebar），navbar（24px）与 footer（32px）替换占位 LogoMark；同时复制 `favicon.svg` / `favicon.ico` / `apple-touch-icon.png` 并在 metadata 挂 icons。tsc 0 error、build 全绿、截图验收。
+
+- **范围**：新增第六个独立应用 `website/`（Better Admin 官方文档站，规划经用户逐项确认：Fumadocs 内容引擎 / `website/` 目录名 / `docs.baiwumm.com` 域名）。技术栈：Next 16.2.6 + React 19.2.6 + Tailwind 4.3.3 + fumadocs-ui/core 16.15.7 + fumadocs-mdx 15.4.0 + next-themes。视觉按 `F:\projects\ogimg` 风格移植：shadcn neutral oklch 黑白 token、`--radius: 0.625rem`、全站虚线边框分隔、玻璃岛悬浮导航、pill 按钮、fade-up 入场动效、方角滚动条；暗/亮/系统三态主题。**边界说明**：文档站是独立展示型应用，不属 admin 产品四前端，UI 走 shadcn 体系（用户指定），不适用 §7.2 的 HeroUI 优先策略，也不进 feature-matrix。
+- **内容策略（防双源）**：`docs/` 仍是唯一真源；`website/scripts/sync-docs.mjs` 在 dev/build 前自动同步 14 篇（docs/*.md + nest/docs/*.md + AGENTS.md）→ `content/`，同步时注入 frontmatter（title/description）、重写内部相对链接为站内路由（零遗漏）、生成 meta.json（sidebar 分组：指南/设计/后端/前端实现/进展）与 /docs 概览卡片页；`content/` 与 `.source/` 均 gitignore。MDX 字符安全化：围栏代码块与行内代码之外的裸 `<`、`{` 转义 HTML 实体（progress.md 的「<6 位」曾致 MDX 编译失败），HTML 注释删除。
+- **fumadocs 16.15.7 API 事实（与旧记忆差异大，以包内类型为准）**：`createMDX` 从 `fumadocs-mdx/next` 导入（`/config` 只有 define 系列），且必须两段式 `export default createMDX()(config)`——直接 `default createMDX(config)` 返回函数会被 Next 以 `phase-development-server`（24 字符）调用，产生「Unrecognized keys '0'-'23'」警告；默认配置文件名仍是 `source.config.ts`；codegen 产物是 `.source/server.ts`（无 index.ts，top-level await），loader 接 `docs.toFumadocsSource()`；搜索 `createFromSource(source)` 只导出 `GET`；界面文案无内置中文包，经 RootProvider `i18n.translations` 传「英文键(上下文)」格式翻译（`lib/i18n.ts`）。
+- **Tailwind 版本要求**：fumadocs-ui 的 CSS 使用 `inset-s-*` 等 4.2+ utility，**必须 tailwindcss ≥ 4.2**（4.1.11 下静默编译输出空 CSS、无任何报错；本站装 4.3.3，与 next/ 应用的 4.1.11 互不影响）。
+- **Turbopack 坑**：dev 文件系统缓存会保留编译失败期的空 CSS 产物（`rm -rf .next` 解决）；Windows dev 进程偶发原生崩溃（0xC0000409），生产 build 稳定。
+- **验证**：tsc 0 error；`pnpm build` 全绿——22 个路由全部静态化（15 篇文档 SSG + 首页 + 动态 OG 图（next/og 英文文案规避中文字体依赖）+ robots + sitemap），唯一动态路由 `/api/search`（fumadocs lucene，中文命中正常）；浏览器验收：首页/文档页/搜索对话框（关键词高亮 + 面包屑分组）/sidebar 分组/TOC/暗亮双主题均正常。
+- **ogimg 三件套补齐（同日第二轮）**：① 首页移植 ogimg 的 `LightRays` WebGL 光线背景（`components/background/light-ray.tsx` 原样移植，新增依赖 `ogl@1.0.11`——该组件唯一依赖；fixed z-0 铺底 + 内容层 z-10，亮色下呈柔光、暗色下为标志性顶部光束，跟随鼠标）；② 页脚重构为 ogimg 极简结构（品牌+简介居左、GitHub 图标居右、底行版权 + `TextScramble` 乱码渐显署名 baiwumm）——`TextScramble` 去掉 ogimg 的 motion 依赖改纯 React 重写（`components/text-scramble.tsx`，其动画逻辑本就是 setInterval）；③ 新增 FAQ 模块（CTA 之后、footer 之前，8 条中文常见问题，fumadocs 内置 `Accordions` 组件 + ogimg 虚线边框样式，不引入 Radix 直依赖）。website 加入 prettier（devDep，默认配置）统一格式化全部源码。
+- **已验证**：暗/亮双主题下首页光效、FAQ 展开交互、新页脚均截图验收；tsc 0 error、build 全绿。自动化注意：WebGL 页面上 Playwright click 的 actionability 检查会超时（force click 也可能卡住），用坐标点击绕过；截图偶发瞬态伪影（HMR 中间态），以 computed style 实证层级为准。
+- **待办**：Vercel 部署（Root Directory 指向 `website/`）+ 绑定 docs.baiwumm.com + Git 提交；可选后续：openapi.yaml 自动渲染 API Reference、中英 i18n、RSS。
+
+---
+
 ### React + Next 代码审查修复：列表页记忆化收敛 + Intl 缓存 + 无障碍属性级补齐（2026-09-06）
 
 - **背景**：项目级装齐 Vercel 三件套 + drizzle-orm + web-design-guidelines 后，按新规范维度对 react / next 做只读审查（性能模式 + 无障碍，代理扫描、行号逐一验证），产出 backlog 后全部修复属性级条目；行为级 6 项 + 进度条 aria（库 DOM 注入不可挂 role）留存 `docs/code-review-backlog.md` 单独决策。

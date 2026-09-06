@@ -1,0 +1,206 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Maple Mono CN —— 自托管子集字体（与 react / next 端同源同命名）
+ *
+ * 来源：Maple Mono（开源，OFL-1.1，https://github.com/subframe7536/maple-font v7.9）
+ * 子集：GB2312 常用汉字全集 + ASCII + 常见中文标点（woff2 ≈ 1.7MB）。
+ * unicode-range 之外的生僻字自然回退系统字体，不产生额外加载。
+ */
+@font-face {
+  font-family: "Maple Mono CN";
+  src: url("/fonts/maple-mono-cn-regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  unicode-range:
+    U+0020-007E, U+00B1, U+00B7, U+00D7, U+00F7, U+2014, U+2018-2019,
+    U+201C-201D, U+2026, U+3000-303F, U+4E00-9FFF, U+FF00-FFEF;
+}
+
+/*
+ * Design tokens：以 ogimg（ogimg.art）的 shadcn neutral + oklch 黑白体系为基准。
+ * fumadocs 自身的 --color-fd-* 基底在 :root/.dark 中覆盖为同一套值，
+ * 保证首页与文档区是同一套视觉，而不是两套并行变量。
+ */
+@theme inline {
+  --font-sans: var(--font-sans-stack);
+  --font-mono: var(--font-mono-stack);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+:root {
+  /* 全局字体：Maple Mono CN（自托管子集，react/next 端同款），回退系统字体栈 */
+  --font-sans-stack:
+    "Maple Mono CN", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono-stack:
+    "Maple Mono CN", ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas,
+    "Courier New", monospace;
+
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+
+  /* 对齐 fumadocs 基底：亮色纯白 */
+  --color-fd-background: oklch(1 0 0);
+  --color-fd-foreground: oklch(0.145 0 0);
+  --color-fd-card: oklch(1 0 0);
+  --color-fd-card-foreground: oklch(0.145 0 0);
+  --color-fd-popover: oklch(1 0 0);
+  --color-fd-popover-foreground: oklch(0.145 0 0);
+  --color-fd-muted: oklch(0.97 0 0);
+  --color-fd-muted-foreground: oklch(0.556 0 0);
+  --color-fd-secondary: oklch(0.97 0 0);
+  --color-fd-secondary-foreground: oklch(0.205 0 0);
+  --color-fd-accent: oklch(0.97 0 0);
+  --color-fd-accent-foreground: oklch(0.205 0 0);
+  --color-fd-primary: oklch(0.205 0 0);
+  --color-fd-primary-foreground: oklch(0.985 0 0);
+  --color-fd-border: oklch(0.922 0 0);
+  --color-fd-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+
+  /* 对齐 fumadocs 基底：暗色近黑 */
+  --color-fd-background: oklch(0.145 0 0);
+  --color-fd-foreground: oklch(0.985 0 0);
+  --color-fd-card: oklch(0.205 0 0);
+  --color-fd-card-foreground: oklch(0.985 0 0);
+  --color-fd-popover: oklch(0.205 0 0);
+  --color-fd-popover-foreground: oklch(0.985 0 0);
+  --color-fd-muted: oklch(0.269 0 0);
+  --color-fd-muted-foreground: oklch(0.708 0 0);
+  --color-fd-secondary: oklch(0.269 0 0);
+  --color-fd-secondary-foreground: oklch(0.985 0 0);
+  --color-fd-accent: oklch(0.269 0 0);
+  --color-fd-accent-foreground: oklch(0.985 0 0);
+  --color-fd-primary: oklch(0.985 0 0);
+  --color-fd-primary-foreground: oklch(0.205 0 0);
+  --color-fd-border: oklch(1 0 0 / 10%);
+  --color-fd-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  /* ogimg 风格极简方角滚动条 */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: oklch(0.556 0 0);
+    border-radius: 0;
+  }
+}
+
+/* 首页入场动效（克制的 fade-up，替代 motion 库） */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-up-delay-1 {
+  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+}
+
+.animate-fade-up-delay-2 {
+  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
+}
+
+.animate-fade-up-delay-3 {
+  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.24s both;
+}
+
+.animate-fade-up-delay-4 {
+  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.32s both;
+}

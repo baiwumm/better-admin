@@ -1,0 +1,18 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+next-env.d.ts
+
+# fumadocs-mdx 生成物
+.source/
+
+# sync-docs.mjs 从仓库 docs/ 同步生成（真源在 ../docs，禁止双源）
+content/
+
+# misc
+.DS_Store
+*.tsbuildinfo
+.env*

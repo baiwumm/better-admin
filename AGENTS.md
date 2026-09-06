@@ -400,7 +400,7 @@ Phase 7  统一测试 → 部署全部版本
 
 > 阶段性进度记录已全部移至 [`docs/progress.md`](docs/progress.md)（按时间倒序），本节只保留当前快照；阶段由用户明确安排后再推进。
 
-- **当前阶段**：React + NestJS 全栈已完成，Next.js 全栈版已上线。Vue / Nuxt 尚未启动。
+- **当前阶段**：React + NestJS 全栈已完成，Next.js 全栈版已上线；`website/` 官方文档站已落地（Next 16 + Fumadocs，ogimg 黑白风格，内容由 `docs/` 真源自动同步，详见 progress.md，待 Vercel 部署绑 docs.baiwumm.com）。Vue / Nuxt 尚未启动。
 - **React 端已完成模块**：登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）。
 - **Next.js 端已完成模块**：与 React 端对齐（认证 / Admin 布局 / 用户 / 角色 / 菜单 / 字典 / 日志 / 我的账户 / 组织中心全套）。
 - **当前待办**：Dashboard 概览页（React / Next.js 均未实现，图表库已定 Recharts）；Next.js Vercel 部署 + CI 挂接；`docs/mechanisms.md` 沉淀 Next 期机制结论。Vue / Nuxt 后续实现时直接跟上最新契约版本（详见 progress.md 各阶段条目）。
