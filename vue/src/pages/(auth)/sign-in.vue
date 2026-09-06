@@ -2,7 +2,6 @@
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { useToast } from "@nuxt/ui/composables";
 
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -15,7 +14,6 @@ import { useAuthStore } from "@/stores/auth-store";
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const toast = useToast();
 const auth = useAuthStore();
 
 const username = ref("");
@@ -23,6 +21,8 @@ const password = ref("");
 const remember = ref(true);
 const showPassword = ref(false);
 const fieldErrors = ref({ username: "", password: "" });
+const loginError = ref("");
+const oauthHint = ref("");
 
 const redirectTarget = computed(() => {
   const redirect = route.query.redirect;
@@ -33,10 +33,6 @@ const redirectTarget = computed(() => {
 /** 登录回跳地址校验：仅允许站内绝对路径（以 / 开头且非协议相对 //）。 */
 function isSafeRedirect(target: string): boolean {
   return target.startsWith("/") && !target.startsWith("//");
-}
-
-function toastInfo(title: string) {
-  toast.add({ color: "info", duration: 3000, title });
 }
 
 async function onSubmit() {
@@ -57,25 +53,15 @@ async function onSubmit() {
   try {
     await auth.login(username.value, password.value, remember.value);
 
-    toast.add({
-      color: "success",
-      duration: 3000,
-      title: remember.value
-        ? t("auth.signIn.remembered")
-        : t("auth.signIn.welcomeBack"),
-    });
-
     if (redirectTarget.value && isSafeRedirect(redirectTarget.value)) {
       await router.replace(redirectTarget.value);
     } else {
       await router.replace("/");
     }
   } catch (error) {
-    toast.add({
-      color: "error",
-      duration: 5000,
-      title: error instanceof Error ? error.message : t("auth.signIn.failed"),
-    });
+    // 登录失败用页内 Alert 呈现（错误属持久反馈，不依赖瞬时 toast）
+    loginError.value =
+      error instanceof Error ? error.message : t("auth.signIn.failed");
   }
 }
 </script>
@@ -96,6 +82,13 @@ async function onSubmit() {
       </div>
 
       <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
+        <UAlert
+          v-if="loginError"
+          color="error"
+          icon="i-lucide-circle-alert"
+          :title="loginError"
+        />
+
         <UFormField :error="fieldErrors.username || undefined">
           <UInput
             v-model="username"
@@ -158,7 +151,7 @@ async function onSubmit() {
             color="neutral"
             icon="i-simple-icons-github"
             variant="subtle"
-            @click="toastInfo(t('auth.signIn.githubDeveloping'))"
+            @click="oauthHint = t('auth.signIn.githubDeveloping')"
           />
           <UButton
             :label="`Google`"
@@ -166,7 +159,7 @@ async function onSubmit() {
             color="neutral"
             icon="i-simple-icons-google"
             variant="subtle"
-            @click="toastInfo(t('auth.signIn.googleDeveloping'))"
+            @click="oauthHint = t('auth.signIn.googleDeveloping')"
           />
         </div>
       </form>

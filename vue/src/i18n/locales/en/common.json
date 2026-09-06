@@ -13,6 +13,8 @@
   "common.datatable.columnSettings": "Columns",
   "common.datatable.empty": "No data",
   "common.datatable.filterAll": "All",
+  "common.datatable.firstPage": "First page",
+  "common.datatable.lastPage": "Last page",
   "common.datatable.pageSizeItem": "{{count}} / page",
   "common.datatable.pageSizeLabel": "Page size",
   "common.datatable.rangeTotal": "Showing {{start}} - {{end}} of {{total}}",

@@ -32,4 +32,8 @@ app.use(ui);
 // auth-store 与 api-client 解耦绑定（读取 token 的唯一通道）
 bindAuthToApiClient();
 
-app.mount("#app");
+// 必须等路由初始导航解析完成后再挂载：挂载过早时 useRoute() 仍是初始占位
+// 路由（path="/"），AppShell 会在公共页（如 /sign-in）误挂 AdminLayout，
+// 触发无 token 的 /menus 请求 → 401 → location.assign("/sign-in") 整页刷新，
+// 形成「加载 → 误挂布局 → 401 → 整页刷新」死循环（M1 冒烟验收定位）。
+router.isReady().then(() => app.mount("#app"));

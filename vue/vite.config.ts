@@ -48,4 +48,24 @@ export default defineConfig({
       ),
     },
   },
+  // @nuxt/ui 被插件强制排除出预构建（optimizeDeps.exclude），其内部裸依赖
+  // 必须显式 include，否则 dev 运行时逐个发现 → 反复 re-optimize → 无限
+  // full reload（页面持续闪动）。包已在 package.json 显式声明（可解析）。
+  optimizeDeps: {
+    include: [
+      "reka-ui",
+      "defu",
+      "hookable",
+      "consola",
+      "ohash",
+      "scule",
+      "@unhead/vue",
+      "@iconify/vue",
+      "@internationalized/date",
+      "@internationalized/number",
+      "@floating-ui/dom",
+      "@tanstack/vue-virtual",
+      "@standard-schema/spec",
+    ],
+  },
 });

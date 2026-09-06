@@ -13,6 +13,8 @@
   "common.datatable.columnSettings": "列设置",
   "common.datatable.empty": "暂无数据",
   "common.datatable.filterAll": "全部",
+  "common.datatable.firstPage": "第一页",
+  "common.datatable.lastPage": "最后一页",
   "common.datatable.pageSizeItem": "{{count}} 条/页",
   "common.datatable.pageSizeLabel": "每页条数",
   "common.datatable.rangeTotal": "第 {{start}} - {{end}} 条，共 {{total}} 条",

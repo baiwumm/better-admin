@@ -386,7 +386,7 @@ const table: AppTable<DictItem> = useTable({
           @keyup.enter="applyTypeSearch"
         />
 
-        <div v-if="typesQuery.isLoading" class="flex flex-col gap-1">
+        <div v-if="typesQuery.isLoading.value" class="flex flex-col gap-1">
           <div
             v-for="index in 5"
             :key="index"
