@@ -3,7 +3,7 @@
 > 本文沉淀高频疑问的机制结论，供开发与排查快速查阅。
 > 相关设计文档：`nest/docs/database-design.md`（§1.1 超管全量位、§1.5 菜单可见性）、
 > `docs/progress.md`（keepAlive 路由缓存 + 过渡动画重构条目）、`nest/openapi/openapi.yaml`（API Contract）。
-> 更新日期：2026-08-30（基于当前代码实现梳理，代码为准）。
+> 更新日期：2026-09-07（基于当前代码实现梳理，代码为准）。
 
 ---
 
@@ -299,3 +299,34 @@ useQuery(...)`）或显式 `q.isLoading.value`。**
   `setupState.xxxQuery.isLoading`，若为 `{ isRef: true }` 即中招；同理可读
   `__vue_app__._context.provides` 中的 QueryClient 直接检查缓存各查询的
   `status / fetchStatus`，区分「接口问题」与「响应性问题」。
+
+## 10. KeepAlive 池内路由组件禁止严格匹配 useSearch/useParams（React 端）
+
+**结论：实例池渲染的路由组件脱离了路由树 MatchContext，在「match 已移除但组件
+仍在渲染」的窗口内，`Route.useSearch()` / `Route.useParams()` 等严格匹配 hook 会抛
+`Invariant failed: Could not find an active match from "<routeId>"`。池内路由读
+URL 参数一律用 `useSearch({ strict: false })` / `useParams({ strict: false })`
+全局读取；`validateSearch` 保留负责写入校验。**
+
+- **机制**（`@tanstack/react-router` 1.168.x）：严格匹配经
+  `useMatch({ from })` → `router.stores.getRouteMatchStore(routeId)` 派生 store
+  读 match；导航提交（`setMatches`）会把离开页面的 match 从 `matchStores` /
+  `matchesId` 中删除，snapshot 变 `undefined`，selector 的 `shouldThrow` 分支即抛
+  上述 Invariant（`react/src/routes/_authenticated/my-notices.tsx` 注释为首例记录）。
+- **偶现根因是竞速**：离开页面时池面板的过渡帧仍 visible；开启路由 VT 动画时，
+  池提交（`startViewTransition` 回调，下一帧）晚于 matches 提交（`onReady`
+  微任务）→ 窗口必踩；无动画时 `useLayoutEffect` 同步提交先行 → 不崩。次级路径：
+  hidden 保活实例被全局状态更新（标签增删/刷新、菜单刷新等）拖动被动重渲染
+  （`keep-alive-outlet.tsx` 注释中的已知边界「隐藏实例仍订阅 Router Context」）。
+- **项目先例**：`my-notices.tsx`、`org/directory.tsx` 用
+  `useSearch({ strict: false })`；`notice-detail-page.tsx` 用
+  `useParams({ strict: false })`。登录页 `sign-in.tsx` 的 `Route.useSearch()`
+  在 `(auth)` 布局、不入池，不受影响。
+- **strict:false 的读取路径**：从最近 match（池内即 `_authenticated` 布局
+  match）的 `match.search` 读取；search 自全量 location search 逐层继承，父级
+  match 含 URL 上全部参数（含子路由参数），故能读到。但它**不经过**本路由
+  `validateSearch` 的规整（`?deptId=` 空串原样返回），读取侧需按同样规则自行
+  规整。
+- **Next.js 端无此问题**：App Router 无实例池（页面切走即卸载），且
+  `useSearchParams()`（`next/navigation`）读当前 URL、不依赖 route match。
+
