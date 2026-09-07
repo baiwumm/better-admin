@@ -64,7 +64,7 @@ export function setupRouterGuards(router: Router) {
     const titleKey = ROUTE_TITLE_KEYS[to.path];
     const title = titleKey ? i18n.global.t(titleKey) : "";
 
-    document.title = title ? `${title} · ${ENV.appName}` : ENV.appName;
+    document.title = title ? `${title} - ${ENV.appName}` : ENV.appName;
   });
 }
 
