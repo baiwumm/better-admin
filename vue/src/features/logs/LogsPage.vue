@@ -132,9 +132,11 @@ const detailLog = ref<Log | null>(null);
 
 const deleteOpen = ref(false);
 const deleteTarget = ref<Log | null>(null);
+const deleteSubmitting = ref(false);
 
 const batchDeleteOpen = ref(false);
 const batchDeleteIds = ref<string[]>([]);
+const batchDeleteSubmitting = ref(false);
 
 function invalidateList() {
   void queryClient.invalidateQueries({ queryKey: LOGS_QUERY_KEY });
@@ -303,6 +305,8 @@ const selectedLogs = computed(() =>
 async function confirmDelete() {
   if (!deleteTarget.value) return;
 
+  deleteSubmitting.value = true;
+
   try {
     await deleteLog(deleteTarget.value.id);
   } catch (error) {
@@ -312,6 +316,8 @@ async function confirmDelete() {
     });
 
     return; // 失败保持弹窗打开
+  } finally {
+    deleteSubmitting.value = false;
   }
 
   invalidateList();
@@ -324,6 +330,8 @@ async function confirmDelete() {
 }
 
 async function confirmBatchDelete() {
+  batchDeleteSubmitting.value = true;
+
   try {
     await batchDeleteLogs(batchDeleteIds.value);
   } catch (error) {
@@ -333,6 +341,8 @@ async function confirmBatchDelete() {
     });
 
     return;
+  } finally {
+    batchDeleteSubmitting.value = false;
   }
 
   invalidateList();
@@ -433,6 +443,7 @@ async function confirmBatchDelete() {
         })
       "
       :keyword-label="t('features.logs.message.deleteKeyword')"
+      :loading="deleteSubmitting"
       :title="t('features.logs.message.deleteTitle')"
       destructive
       @confirm="confirmDelete"
@@ -448,6 +459,7 @@ async function confirmBatchDelete() {
         })
       "
       :keyword-label="t('features.logs.message.batchDeleteKeyword')"
+      :loading="batchDeleteSubmitting"
       :title="t('features.logs.message.batchDeleteTitle')"
       destructive
       @confirm="confirmBatchDelete"

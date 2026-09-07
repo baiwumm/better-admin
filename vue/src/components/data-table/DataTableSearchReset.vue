@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 
+import Spinner from "@/components/ui/spinner/index.vue";
+
 /** 搜索 / 重置按钮组：搜索脏标记高亮；重置在存在筛选时显示；刷新指示条。 */
 defineProps<{
   /** 搜索输入与已提交关键词不一致（脏） */
@@ -18,11 +20,7 @@ const { t } = useI18n();
 
 <template>
   <div class="flex items-center gap-2">
-    <UIcon
-      v-if="fetching"
-      class="size-4 animate-spin text-muted"
-      name="i-lucide-loader-circle"
-    />
+    <Spinner v-if="fetching" color="neutral" size="sm" />
     <UButton
       :class="searchDirty ? 'ring-primary/50 ring-2' : ''"
       :label="t('common.datatable.search')"
