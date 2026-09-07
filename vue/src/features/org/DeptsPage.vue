@@ -2,14 +2,13 @@
 import type { DeptSortItem, DeptTreeNode } from "@/lib/api-types";
 import type { AppColumnDef } from "@/components/data-table/table-types";
 
-import { computed, h, ref } from "vue";
+import { computed, h, ref, resolveComponent } from "vue";
 import { useI18n } from "vue-i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
 import { keepPreviousData } from "@tanstack/vue-query";
 import { useToast } from "@nuxt/ui/composables";
-import { useTable } from "@tanstack/vue-table";
-import UButton from "@nuxt/ui/runtime/components/Button.vue";
-import UDropdownMenu from "@nuxt/ui/runtime/components/DropdownMenu.vue";
+import { useVueTable } from "@tanstack/vue-table";
+import { getCoreRowModel } from "@tanstack/vue-table";
 
 import {
   DEPTS_TREE_QUERY_KEY,
@@ -23,10 +22,7 @@ import DeptTreePanel from "./DeptTreePanel.vue";
 
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import DataTable from "@/components/data-table/DataTable.vue";
-import {
-  appTableFeatures,
-  type AppTable,
-} from "@/components/data-table/table-types";
+import { type AppTable } from "@/components/data-table/table-types";
 import { useMenuPermissions } from "@/composables/use-permissions";
 
 /**
@@ -39,6 +35,9 @@ import { useMenuPermissions } from "@/composables/use-permissions";
  * - 删除由后端三级校验 409 拦截（HAS_CHILDREN / HAS_POSTS / HAS_ACTIVE_USERS），
  *   前端关键词确认弹窗 + toast 透出。
  */
+
+const UButton = resolveComponent("UButton");
+const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 const { t } = useI18n();
 const queryClient = useQueryClient();
@@ -85,19 +84,27 @@ const reorderMutation = useMutation({
 });
 
 function handleReorder(items: DeptSortItem[]) {
+  // 加载态 toast（参考 Nuxt UI toast 模式：先显示 loading，
+  // API 完成后通过 toast.update 替换为 success/error）
+  const loadingToast = toast.add({
+    title: t("features.depts.message.sorting"),
+    icon: "i-lucide-loader-circle",
+    color: "info",
+  });
+
   reorderMutation.mutate(items, {
     onSuccess: () => {
-      toast.add({
-        color: "success",
-        duration: 3000,
+      toast.update(loadingToast.id, {
         title: t("features.depts.message.sorted"),
+        icon: "i-lucide-check",
+        color: "success",
       });
     },
     onError: (error) => {
-      toast.add({
-        color: "error",
-        duration: 5000,
+      toast.update(loadingToast.id, {
         title: getDeptErrorMessage(error),
+        icon: "i-lucide-x",
+        color: "error",
       });
     },
   });
@@ -297,14 +304,14 @@ const columns = computed<AppColumnDef<DeptTreeNode>[]>(() => [
   },
 ]);
 
-const table: AppTable<DeptTreeNode> = useTable({
+const table: AppTable<DeptTreeNode> = useVueTable({
   get data() {
     return childNodes.value;
   },
   get columns() {
     return columns.value;
   },
-  features: appTableFeatures,
+  getCoreRowModel: getCoreRowModel(),
   getRowId: (row: DeptTreeNode) => row.id,
   // 全量展示：子组织列表随树派生，不渲染分页条
   manualPagination: true,
@@ -327,6 +334,7 @@ const deleteDescription = computed(() =>
         :can-reorder="canEdit && !reorderMutation.isPending.value"
         :is-fetching="treeQuery.isFetching.value"
         :is-loading="treeQuery.isLoading.value"
+        :is-pending="reorderMutation.isPending.value"
         :nodes="tree"
         :selected-id="selectedNode?.id ?? null"
         :empty-title="t('features.depts.tree.empty')"
@@ -359,7 +367,7 @@ const deleteDescription = computed(() =>
 
       <!-- 右栏：选中组织详情 + 子组织列表 -->
       <div class="flex min-w-0 flex-col gap-6">
-        <UCard class="flex flex-col gap-3 rounded-3xl p-4" variant="outline">
+        <UCard class="flex flex-col gap-3" variant="outline">
           <template v-if="selectedNode">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex min-w-0 items-center gap-2">

@@ -4,15 +4,13 @@ import type { AppColumnDef } from "@/components/data-table/table-types";
 
 import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useTable } from "@tanstack/vue-table";
+import { useVueTable } from "@tanstack/vue-table";
+import { getCoreRowModel } from "@tanstack/vue-table";
 
 import DataTable from "@/components/data-table/DataTable.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
-import {
-  appTableFeatures,
-  type AppRow,
-} from "@/components/data-table/table-types";
+import { type AppRow } from "@/components/data-table/table-types";
 import { usePermissions } from "@/composables/use-permissions";
 
 /**
@@ -106,19 +104,21 @@ const columns = computed<AppColumnDef<PermissionRow>[]>(() => [
   },
 ]);
 
-const table = useTable({
+const table = useVueTable({
   get data() {
     return filtered.value;
   },
   columns: columns.value,
-  features: appTableFeatures,
+  getCoreRowModel: getCoreRowModel(),
   getRowId: (row: AppRow<PermissionRow>["original"]) => row.value,
   // 全量展示：关闭自动分页切片（本页不渲染分页条）
   manualPagination: true,
 });
 
+import { resolveComponent } from "vue";
+
 // UIcon 组件引用（供 h() 使用）
-import UIcon from "@nuxt/ui/runtime/components/Icon.vue";
+const UIcon = resolveComponent("UIcon");
 </script>
 
 <template>

@@ -5,13 +5,15 @@ import type {
   AppTable,
 } from "@/components/data-table/table-types";
 
-import { h, computed, ref } from "vue";
+import { h, computed, ref, resolveComponent } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQueryClient } from "@tanstack/vue-query";
-import { useTable } from "@tanstack/vue-table";
+import { useVueTable } from "@tanstack/vue-table";
+import { getCoreRowModel, getSortedRowModel } from "@tanstack/vue-table";
 import { useToast } from "@nuxt/ui/composables";
-import UBadge from "@nuxt/ui/runtime/components/Badge.vue";
-import UCheckbox from "@nuxt/ui/runtime/components/Checkbox.vue";
+
+const UBadge = resolveComponent("UBadge");
+const UCheckbox = resolveComponent("UCheckbox");
 
 import {
   USERS_QUERY_KEY,
@@ -34,7 +36,6 @@ import DataTableBulkActions from "@/components/data-table/DataTableBulkActions.v
 import DataTablePagination from "@/components/data-table/DataTablePagination.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
-import { appTableFeatures } from "@/components/data-table/table-types";
 import { useMenuPermissions } from "@/composables/use-permissions";
 import { useListQuery } from "@/composables/use-list-query";
 import { createListStore } from "@/lib/list-store";
@@ -297,14 +298,15 @@ const columns = computed<AppColumnDef<User>[]>(() => [
   },
 ]);
 
-const table: AppTable<User> = useTable({
+const table: AppTable<User> = useVueTable({
   get data() {
     return data.value;
   },
   get columns() {
     return columns.value;
   },
-  features: appTableFeatures,
+  getCoreRowModel: getCoreRowModel(),
+  getSortedRowModel: getSortedRowModel(),
   getRowId: (row: User) => row.id,
   // 写操作保护：受保护用户不可被勾选（从源头排除批量删除/停用命中，v1.4.6）
   enableRowSelection: (row: { original: User }) =>

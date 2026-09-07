@@ -2,15 +2,17 @@
 import type { Log, LogType } from "@/lib/api-types";
 import type { AppColumnDef } from "@/components/data-table/table-types";
 
-import { computed, h, ref } from "vue";
+import { computed, h, ref, resolveComponent } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
-import { useTable } from "@tanstack/vue-table";
+import { useVueTable } from "@tanstack/vue-table";
+import { getCoreRowModel } from "@tanstack/vue-table";
 import { useToast } from "@nuxt/ui/composables";
-import UBadge from "@nuxt/ui/runtime/components/Badge.vue";
-import UButton from "@nuxt/ui/runtime/components/Button.vue";
-import UCheckbox from "@nuxt/ui/runtime/components/Checkbox.vue";
-import UDropdownMenu from "@nuxt/ui/runtime/components/DropdownMenu.vue";
+
+const UBadge = resolveComponent("UBadge");
+const UButton = resolveComponent("UButton");
+const UCheckbox = resolveComponent("UCheckbox");
+const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 import {
   batchDeleteLogs,
@@ -35,10 +37,7 @@ import DataTableBulkActions from "@/components/data-table/DataTableBulkActions.v
 import DataTablePagination from "@/components/data-table/DataTablePagination.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
-import {
-  appTableFeatures,
-  type AppTable,
-} from "@/components/data-table/table-types";
+import { type AppTable } from "@/components/data-table/table-types";
 import { dictItemsQueryKey, fetchDictItems } from "@/features/dicts/dict-api";
 import { useMenuPermissions } from "@/composables/use-permissions";
 import { useListQuery } from "@/composables/use-list-query";
@@ -265,14 +264,14 @@ const columns = computed<AppColumnDef<Log>[]>(() => [
   },
 ]);
 
-const table: AppTable<Log> = useTable({
+const table: AppTable<Log> = useVueTable({
   get data() {
     return data.value;
   },
   get columns() {
     return columns.value;
   },
-  features: appTableFeatures,
+  getCoreRowModel: getCoreRowModel(),
   getRowId: (row: Log) => row.id,
   // 服务端分页：分页状态由列表 store 驱动（受控）；列表固定倒序，无排序交互
   manualPagination: true,

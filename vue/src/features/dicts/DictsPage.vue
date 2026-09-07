@@ -2,18 +2,20 @@
 import type { DictItem, DictType } from "@/lib/api-types";
 import type { AppColumnDef } from "@/components/data-table/table-types";
 
-import { computed, h, ref } from "vue";
+import { computed, h, ref, resolveComponent } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   keepPreviousData,
   useQuery,
   useQueryClient,
 } from "@tanstack/vue-query";
-import { useTable } from "@tanstack/vue-table";
+import { useVueTable } from "@tanstack/vue-table";
+import { getCoreRowModel } from "@tanstack/vue-table";
 import { useToast } from "@nuxt/ui/composables";
-import UBadge from "@nuxt/ui/runtime/components/Badge.vue";
-import UButton from "@nuxt/ui/runtime/components/Button.vue";
-import UDropdownMenu from "@nuxt/ui/runtime/components/DropdownMenu.vue";
+
+const UBadge = resolveComponent("UBadge");
+const UButton = resolveComponent("UButton");
+const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 import {
   DICT_TYPES_QUERY_KEY,
@@ -31,10 +33,7 @@ import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import DataTable from "@/components/data-table/DataTable.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
-import {
-  appTableFeatures,
-  type AppTable,
-} from "@/components/data-table/table-types";
+import { type AppTable } from "@/components/data-table/table-types";
 import { useMenuPermissions } from "@/composables/use-permissions";
 import { useDictStore } from "@/stores/dict-store";
 
@@ -342,14 +341,14 @@ const columns = computed<AppColumnDef<DictItem>[]>(() => [
   },
 ]);
 
-const table: AppTable<DictItem> = useTable({
+const table: AppTable<DictItem> = useVueTable({
   get data() {
     return filteredItems.value;
   },
   get columns() {
     return columns.value;
   },
-  features: appTableFeatures,
+  getCoreRowModel: getCoreRowModel(),
   getRowId: (row: DictItem) => row.id,
   // 全量展示：关闭自动分页切片（本页不渲染分页条）
   manualPagination: true,

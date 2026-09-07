@@ -5,7 +5,8 @@ import type { AppColumnDef } from "@/components/data-table/table-types";
 import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQueryClient } from "@tanstack/vue-query";
-import { useTable } from "@tanstack/vue-table";
+import { useVueTable } from "@tanstack/vue-table";
+import { getCoreRowModel, getSortedRowModel } from "@tanstack/vue-table";
 import { useToast } from "@nuxt/ui/composables";
 
 import {
@@ -24,10 +25,7 @@ import DataTable from "@/components/data-table/DataTable.vue";
 import DataTablePagination from "@/components/data-table/DataTablePagination.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
-import {
-  appTableFeatures,
-  type AppTable,
-} from "@/components/data-table/table-types";
+import { type AppTable } from "@/components/data-table/table-types";
 import { MENUS_QUERY_KEY } from "@/composables/use-menus";
 import { useMenuPermissions } from "@/composables/use-permissions";
 import { useListQuery } from "@/composables/use-list-query";
@@ -270,14 +268,15 @@ const columns = computed<AppColumnDef<Role>[]>(() => [
   },
 ]);
 
-const table: AppTable<Role> = useTable({
+const table: AppTable<Role> = useVueTable({
   get data() {
     return data.value;
   },
   get columns() {
     return columns.value;
   },
-  features: appTableFeatures,
+  getCoreRowModel: getCoreRowModel(),
+  getSortedRowModel: getSortedRowModel(),
   getRowId: (row: Role) => row.id,
   // 服务端分页：分页状态由列表 store 驱动（受控），仅取数
   manualPagination: true,
@@ -301,8 +300,10 @@ const table: AppTable<Role> = useTable({
   },
 });
 
+import { resolveComponent } from "vue";
+
 // UBadge 组件引用（供 h() 使用）
-import UBadge from "@nuxt/ui/runtime/components/Badge.vue";
+const UBadge = resolveComponent("UBadge");
 </script>
 
 <template>
