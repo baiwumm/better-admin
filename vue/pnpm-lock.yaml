@@ -22,7 +22,7 @@ importers:
         version: 3.6.8
       '@nuxt/ui':
         specifier: ^4.11.0
-        version: 4.11.0(232c48326bf3188980f004fddab74880)
+        version: 4.11.0(9d866307ec8a68e5d2f928fc18e90102)
       '@standard-schema/spec':
         specifier: ^1.1.0
         version: 1.1.0
@@ -30,8 +30,8 @@ importers:
         specifier: ^5.102.8
         version: 5.102.8(vue@3.5.42(typescript@5.9.3))
       '@tanstack/vue-table':
-        specifier: ^9.2.4
-        version: 9.2.4(vue@3.5.42(typescript@5.9.3))
+        specifier: ^8.21.3
+        version: 8.21.3(vue@3.5.42(typescript@5.9.3))
       '@tanstack/vue-virtual':
         specifier: ^3.13.35
         version: 3.13.36(vue@3.5.42(typescript@5.9.3))
@@ -41,6 +41,9 @@ importers:
       '@vueuse/core':
         specifier: ^14.4.0
         version: 14.4.0(vue@3.5.42(typescript@5.9.3))
+      '@vueuse/integrations':
+        specifier: 14.4.0
+        version: 14.4.0(fuse.js@7.5.0)(sortablejs@1.15.7)(vue@3.5.42(typescript@5.9.3))
       consola:
         specifier: ^3.4.2
         version: 3.4.2
@@ -50,9 +53,6 @@ importers:
       hookable:
         specifier: ^6.1.1
         version: 6.1.1
-      lucide-vue-next:
-        specifier: ^1.0.0
-        version: 1.0.0(vue@3.5.42(typescript@5.9.3))
       ohash:
         specifier: ^2.0.12
         version: 2.0.12
@@ -65,6 +65,9 @@ importers:
       scule:
         specifier: ^1.3.0
         version: 1.3.0
+      sortablejs:
+        specifier: 1.15.7
+        version: 1.15.7
       vue:
         specifier: ^3.5.42
         version: 3.5.42(typescript@5.9.3)
@@ -90,6 +93,9 @@ importers:
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.3
+      '@types/sortablejs':
+        specifier: ^1.15.9
+        version: 1.15.9
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.8(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0))(vue@3.5.42(typescript@5.9.3))
@@ -822,16 +828,9 @@ packages:
   '@tanstack/query-core@5.102.8':
     resolution: {integrity: sha512-ZNjkJ33CqvPNec/6lZBnHqLc3EVGPZ9ySLhYahU9TcuRFdmwXewuj0c4hwSWcGHqEUwcSrKeZ+oGcvPBqXcQcg==}
 
-  '@tanstack/store@0.11.1':
-    resolution: {integrity: sha512-mzTOBhypOuDJAy/D8n2MfUZ1HFkXnmSETviRyhqEC8LUE7/IZQExOTxMANj3KjTofYTkFNpBY67qaVrT41YccA==}
-
   '@tanstack/table-core@8.21.3':
     resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
     engines: {node: '>=12'}
-
-  '@tanstack/table-core@9.2.4':
-    resolution: {integrity: sha512-GwdDyGGr6UXAtubF14yAwcXvdaogqfsQgIk89Suebjxob/Rjq2xvfmXsjDF1rQmKmhHsJm9TOY7myxv3i6geJw==}
-    engines: {node: '>=20'}
 
   '@tanstack/virtual-core@3.17.8':
     resolution: {integrity: sha512-BfEvehNpOT75r5Ksc5xW6NZuXujTfb7nlSEyVu4XHG3gdxNg1KqXruWbDewXOUaUYIo4oRbSfkjIajz4MAT8tA==}
@@ -848,12 +847,6 @@ packages:
   '@tanstack/vue-table@8.21.3':
     resolution: {integrity: sha512-rusRyd77c5tDPloPskctMyPLFEQUeBzxdQ+2Eow4F7gDPlPOB1UnnhzfpdvqZ8ZyX2rRNGmqNnQWm87OI2OQPw==}
     engines: {node: '>=12'}
-    peerDependencies:
-      vue: '>=3.2'
-
-  '@tanstack/vue-table@9.2.4':
-    resolution: {integrity: sha512-GSD6ZkeQvADs6u9KUyhUuiD+qYgA+Lt6hTBDSEadCBIbC8q2SaoHzseLwgDKVUnRClTIMj9+NwCEF+Gp3P7ChQ==}
-    engines: {node: '>=20'}
     peerDependencies:
       vue: '>=3.2'
 
@@ -2185,12 +2178,6 @@ packages:
     resolution: {integrity: sha512-4pfM1Ff0x50o0tQwb5ucw/RzNyD0/YJME6IVcStalZuMWxdt3sR3huStTtxz4PUmvZfRguvDejasvQ2kifR11g==}
     engines: {node: 20 || >=22}
 
-  lucide-vue-next@1.0.0:
-    resolution: {integrity: sha512-V6SPvx1IHTj/UY+FrIYWV5faISsPSb8BnWSFDxAtezWKvWc9ZZ40PDrdu1/Qb5vg4lHWr1hs1BAMGVGm6V1Xdg==}
-    deprecated: Package deprecated. Please use @lucide/vue instead.
-    peerDependencies:
-      vue: '>=3.0.1'
-
   magic-regexp@0.10.0:
     resolution: {integrity: sha512-Uly1Bu4lO1hwHUW0CQeSWuRtzCMNO00CmXtS8N6fyvB3B979GOEEeAkiTUDsmbYLAbvpUS/Kt5c4ibosAzVyVg==}
 
@@ -2549,6 +2536,9 @@ packages:
   sirv@3.0.2:
     resolution: {integrity: sha512-2wcC/oGxHis/BoHkkPwldgiPSYcpZK3JU28WoMVv55yHJgcZ8rlXvuG9iZggz+sU1d4bRgIGASwyWqjxu3FM0g==}
     engines: {node: '>=18'}
+
+  sortablejs@1.15.7:
+    resolution: {integrity: sha512-Kk8wLQPlS+yi1ZEf48a4+fzHa4yxjC30M/Sr2AnQu+f/MPwvvX9XjZ6OWejiz8crBsLwSq8GHqaxaET7u6ux0A==}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -3529,7 +3519,7 @@ snapshots:
       pkg-types: 2.3.2
       std-env: 4.2.0
 
-  '@nuxt/ui@4.11.0(232c48326bf3188980f004fddab74880)':
+  '@nuxt/ui@4.11.0(9d866307ec8a68e5d2f928fc18e90102)':
     dependencies:
       '@floating-ui/dom': 1.8.0
       '@iconify/vue': 5.0.1(vue@3.5.42(typescript@5.9.3))
@@ -3562,7 +3552,7 @@ snapshots:
       '@tiptap/vue-3': 3.31.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.31.2(@tiptap/pm@3.31.2))(@tiptap/pm@3.31.2)(vue@3.5.42(typescript@5.9.3))
       '@unhead/vue': 3.4.0(@oxc-project/types@0.148.0)(esbuild@0.27.7)(lightningcss@1.33.0)(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0))(vue@3.5.42(typescript@5.9.3))
       '@vueuse/core': 14.4.0(vue@3.5.42(typescript@5.9.3))
-      '@vueuse/integrations': 14.4.0(fuse.js@7.5.0)(vue@3.5.42(typescript@5.9.3))
+      '@vueuse/integrations': 14.4.0(fuse.js@7.5.0)(sortablejs@1.15.7)(vue@3.5.42(typescript@5.9.3))
       '@vueuse/shared': 14.4.0(vue@3.5.42(typescript@5.9.3))
       colortranslator: 5.0.0
       consola: 3.4.2
@@ -3807,13 +3797,7 @@ snapshots:
 
   '@tanstack/query-core@5.102.8': {}
 
-  '@tanstack/store@0.11.1': {}
-
   '@tanstack/table-core@8.21.3': {}
-
-  '@tanstack/table-core@9.2.4':
-    dependencies:
-      '@tanstack/store': 0.11.1
 
   '@tanstack/virtual-core@3.17.8': {}
 
@@ -3828,12 +3812,6 @@ snapshots:
   '@tanstack/vue-table@8.21.3(vue@3.5.42(typescript@5.9.3))':
     dependencies:
       '@tanstack/table-core': 8.21.3
-      vue: 3.5.42(typescript@5.9.3)
-
-  '@tanstack/vue-table@9.2.4(vue@3.5.42(typescript@5.9.3))':
-    dependencies:
-      '@tanstack/store': 0.11.1
-      '@tanstack/table-core': 9.2.4
       vue: 3.5.42(typescript@5.9.3)
 
   '@tanstack/vue-virtual@3.13.36(vue@3.5.42(typescript@5.9.3))':
@@ -4413,13 +4391,14 @@ snapshots:
       '@vueuse/shared': 14.4.0(vue@3.5.42(typescript@5.9.3))
       vue: 3.5.42(typescript@5.9.3)
 
-  '@vueuse/integrations@14.4.0(fuse.js@7.5.0)(vue@3.5.42(typescript@5.9.3))':
+  '@vueuse/integrations@14.4.0(fuse.js@7.5.0)(sortablejs@1.15.7)(vue@3.5.42(typescript@5.9.3))':
     dependencies:
       '@vueuse/core': 14.4.0(vue@3.5.42(typescript@5.9.3))
       '@vueuse/shared': 14.4.0(vue@3.5.42(typescript@5.9.3))
       vue: 3.5.42(typescript@5.9.3)
     optionalDependencies:
       fuse.js: 7.5.0
+      sortablejs: 1.15.7
 
   '@vueuse/metadata@10.11.1': {}
 
@@ -5205,10 +5184,6 @@ snapshots:
 
   lru-cache@11.5.2: {}
 
-  lucide-vue-next@1.0.0(vue@3.5.42(typescript@5.9.3)):
-    dependencies:
-      vue: 3.5.42(typescript@5.9.3)
-
   magic-regexp@0.10.0:
     dependencies:
       estree-walker: 3.0.3
@@ -5588,6 +5563,8 @@ snapshots:
       '@polka/url': 1.0.0-next.29
       mrmime: 2.0.1
       totalist: 3.0.1
+
+  sortablejs@1.15.7: {}
 
   source-map-js@1.2.1: {}
 

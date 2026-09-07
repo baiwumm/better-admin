@@ -20,13 +20,15 @@ withDefaults(
     isLoading: boolean;
     /** 有数据时的刷新遮罩（增删改/排序后 refetch 全程可见，数据保留不闪白） */
     isFetching?: boolean;
+    /** 排序请求中（拖拽提交到 API 完成前也显示遮罩） */
+    isPending?: boolean;
     selectedId: string | null;
     /** 同级拖拽排序（可选；通讯录不启用） */
     canReorder?: boolean;
     /** 空态主文案（如「暂无组织」） */
     emptyTitle: string;
   }>(),
-  { isFetching: false, canReorder: false },
+  { isFetching: false, isPending: false, canReorder: false },
 );
 
 const emit = defineEmits<{
@@ -42,7 +44,12 @@ export default { name: "DeptTreePanel" };
 </script>
 
 <template>
-  <UCard class="flex flex-col gap-3 rounded-3xl p-4" variant="outline">
+  <!-- 内边距收口到 body（p-3）：UCard 默认 body p-4 sm:p-6，叠加 root p-4 会双份 -->
+  <UCard
+    class="flex flex-col"
+    variant="outline"
+    :ui="{ body: 'flex flex-col gap-3 p-3' }"
+  >
     <div class="flex items-center justify-between gap-2">
       <span class="text-sm font-medium">
         {{ t("features.depts.tree.title") }}
@@ -76,9 +83,9 @@ export default { name: "DeptTreePanel" };
     </div>
 
     <div v-else class="relative">
-      <!-- 树刷新遮罩：增删改/排序后 refetch 全程可见（数据保留不闪白） -->
+      <!-- 树遮罩：增删改/排序后 refetch 或排序请求中全程可见（数据保留不闪白） -->
       <div
-        v-if="isFetching"
+        v-if="isFetching || isPending"
         class="bg-default/30 absolute inset-0 z-10 grid place-items-center rounded-xl backdrop-blur-[1px]"
       >
         <UIcon

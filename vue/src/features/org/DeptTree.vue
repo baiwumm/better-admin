@@ -1,36 +1,69 @@
 <script setup lang="ts">
 import type { DeptSortItem, DeptTreeNode } from "@/lib/api-types";
 
-import { ref } from "vue";
-
-import DeptTreeItem from "./DeptTreeItem.vue";
+import { computed, ref, watch } from "vue";
+import { useSortable } from "@vueuse/integrations/useSortable";
 
 /**
- * 组织树（左栏，对应 React 端 dept-tree.tsx）：递归渲染 DeptTreeNode，
- * 支持展开/收起与同级拖拽排序（vue-draggable-plus，对应 React 端 @dnd-kit）。
+ * 组织树（左栏，对应 React 端 dept-tree.tsx）：UTree（`:nested="false"` 扁平
+ * 模式）+ useSortable 拖拽，选中 / 展开 / 行交互均使用 reka（Nuxt UI 底层）
+ * 原生链路，不自定义 slot 覆盖。参考：
+ * https://ui.nuxt.com/docs/components/tree#with-drag-and-drop
  *
- * - 展开状态用 Set<string> | null 表达（null = 全展开默认态，随数据动态生效）；
- * - 每组兄弟节点各挂一个 useSortable 实例（不设 group → 仅组内排序，
- *   嵌套子容器不参与），拖拽结束由页面回调整组新顺序
- *   （整组重编号 sort = len-1-idx，数字越大越靠前）；
- * - 拖拽结束先撤销 sortablejs 的 DOM 移动再回调提交：DOM 顺序始终由
- *   数据驱动，提交后失效树缓存 refetch 回真实状态（失败自动回拉）；
- * - 停用组织整行置灰 + 「停用」角标；拖拽把手仅 canReorder 时渲染。
+ * - 节点信息：行内只显示名称（label）；停用状态用 trailingIcon（lucide-x）表达，
+ *   不在行内放复杂元素；
+ * - 拖拽（canReorder）：useSortable 挂 UTree 根元素（$el），按官方 flatten + moveItem
+ *   逻辑处理同级拖拽；跨父级移动由 flatten 的 parent 数组约束（天然禁止）；
+ * - 展开：受控 expanded（初始全展开；refetch 后新节点并入展开集，保留用户收起状态）；
+ * - 停用组织：禁用 select（item.disabled = true）+ trailingIcon 标识。
  */
 
-export interface DeptTreeProps {
+/**
+ * 选项类型：不 extends TreeItem（其 ui 字段引用 ComponentConfig<AppConfig> 深链
+ * 会令 vue-tsc 递归展开爆栈 TS2589）；UTree 接受 TreeItem（带 [key: string]: any），
+ * 结构兼容的普通对象可直接传入。
+ */
+interface DeptTreeOption {
+  label: string;
+  /** 原始树节点（选中回传 / 拖拽组定位用） */
+  dept: DeptTreeNode;
+  children?: DeptTreeOption[];
+  disabled?: boolean;
+  defaultExpanded?: boolean;
+  /** Iconify icon name（停用节点行尾 x 图标） */
+  trailingIcon?: string;
+  [key: string]: unknown;
+}
+
+const props = defineProps<{
   nodes: DeptTreeNode[];
   selectedId: string | null;
   canReorder: boolean;
-  onSelect: (node: DeptTreeNode) => void;
-  /** 同级拖拽结束：整组按新顺序提交（含未移动的兄弟节点，保证编号一致） */
-  onReorder: (items: DeptSortItem[]) => void;
+}>();
+
+const emit = defineEmits<{
+  select: [node: DeptTreeNode];
+  reorder: [items: DeptSortItem[]];
+}>();
+
+// ---- items 镜像（DeptTreeNode[] → TreeItem[]） ----
+
+function toTreeOption(node: DeptTreeNode): DeptTreeOption {
+  return {
+    label: node.name,
+    dept: node,
+    // 停用节点：行内用 lucide-x 角标 + 禁用交互
+    ...(node.status === "disabled"
+      ? { trailingIcon: "i-lucide-x", disabled: true }
+      : {}),
+    ...(node.children.length
+      ? { children: node.children.map(toTreeOption) }
+      : {}),
+  };
 }
 
-const props = defineProps<DeptTreeProps>();
-
-/** 展开集合：null = 全展开（默认态） */
-const expanded = ref<Set<string> | null>(null);
+/** 本地镜像数组：拖拽移动（乐观 UI）落在这里，props 变化（refetch）时重置 */
+const items = ref<DeptTreeOption[]>([]);
 
 function collectIds(nodes: DeptTreeNode[], acc: string[] = []): string[] {
   for (const node of nodes) {
@@ -41,26 +74,103 @@ function collectIds(nodes: DeptTreeNode[], acc: string[] = []): string[] {
   return acc;
 }
 
-function handleToggle(id: string) {
-  if (expanded.value === null) {
-    // 从「全展开」切换到显式集合：先收录全部节点 id 再移除目标
-    expanded.value = new Set(
-      collectIds(props.nodes).filter((nodeId) => nodeId !== id),
-    );
+/** 展开集合（组织 id）；初始化 = 全展开，refetch 只并入新节点、保留用户收起状态 */
+const expandedIds = ref<Set<string>>(new Set());
 
-    return;
+const expandedList = computed(() => [...expandedIds.value]);
+
+watch(
+  () => [props.nodes, props.selectedId] as const,
+  ([nodes]) => {
+    items.value = nodes.map(toTreeOption);
+    const ids = collectIds(nodes);
+
+    expandedIds.value =
+      expandedIds.value.size === 0
+        ? new Set(ids)
+        : new Set([...expandedIds.value, ...ids]);
+  },
+  { immediate: true },
+);
+
+// ---- 选中（reka 原生链路 → TreeItem select 事件 → UTree onSelect prop） ----
+
+function handleSelect(_event: unknown, item: unknown) {
+  if (
+    item &&
+    typeof item === "object" &&
+    "dept" in item &&
+    item.dept &&
+    typeof item.dept === "object" &&
+    "id" in item.dept
+  ) {
+    emit("select", item.dept as DeptTreeNode);
   }
-
-  const next = new Set(expanded.value);
-
-  if (next.has(id)) {
-    next.delete(id);
-  } else {
-    next.add(id);
-  }
-
-  expanded.value = next;
 }
+
+function handleExpandedUpdate(keys: string[]) {
+  expandedIds.value = new Set(keys);
+}
+
+// ---- 拖拽（官方参考示例的 flatten + moveItem） ----
+
+function flatten(
+  list: DeptTreeOption[],
+  parent: DeptTreeOption[] = list,
+): { item: DeptTreeOption; parent: DeptTreeOption[]; index: number }[] {
+  return list.flatMap((item, index) => [
+    { item, parent, index },
+    ...(item.children?.length && expandedIds.value.has(item.dept.id)
+      ? flatten(item.children, item.children)
+      : []),
+  ]);
+}
+
+function moveItem(oldIndex: number, newIndex: number) {
+  if (oldIndex === newIndex) return;
+
+  const flat = flatten(items.value);
+  const source = flat[oldIndex];
+  const target = flat[newIndex];
+
+  if (!source || !target) return;
+
+  const [moved] = source.parent.splice(source.index, 1);
+
+  if (!moved) return;
+
+  const updatedFlat = flatten(items.value);
+  const updatedTarget = updatedFlat.find(({ item }) => item === target.item);
+
+  if (!updatedTarget) return;
+
+  const insertIndex =
+    oldIndex < newIndex ? updatedTarget.index + 1 : updatedTarget.index;
+
+  updatedTarget.parent.splice(insertIndex, 0, moved);
+
+  // 受影响组整组重编号提交；顶级组 parentId 为 null
+  emit(
+    "reorder",
+    updatedTarget.parent.map((sibling, idx) => ({
+      id: sibling.dept.id,
+      parentId: moved.dept.parentId ?? null,
+      sort: updatedTarget.parent.length - 1 - idx,
+    })),
+  );
+}
+
+const tree = ref<HTMLElement | null>(null);
+
+useSortable(tree, items, {
+  animation: 150,
+  ghostClass: "opacity-50",
+  onUpdate: (e) => {
+    if (e.oldIndex !== undefined && e.newIndex !== undefined) {
+      moveItem(e.oldIndex, e.newIndex);
+    }
+  },
+});
 </script>
 
 <script lang="ts">
@@ -68,15 +178,15 @@ export default { name: "DeptTree" };
 </script>
 
 <template>
-  <DeptTreeItem
-    v-for="node in props.nodes"
-    :key="node.id"
-    :can-reorder="props.canReorder"
-    :depth="0"
-    :expanded="expanded"
-    :node="node"
-    :selected-id="props.selectedId"
-    @select="props.onSelect"
-    @toggle="handleToggle"
+  <!-- UTree 原生模式：不覆盖 slot，reka 内部管理选中/展开/箭头交互 -->
+  <UTree
+    ref="tree"
+    :items="items"
+    :expanded="expandedList"
+    :nested="false"
+    :unmount-on-hide="false"
+    :ui="{ linkLeadingIcon: 'hidden' }"
+    @update:expanded="handleExpandedUpdate"
+    @select="handleSelect"
   />
 </template>
