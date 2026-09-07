@@ -303,7 +303,9 @@ export function DeptsPage() {
   return (
     <div className="flex w-full flex-col pb-8">
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
-        {/* 左栏：组织树面板（与人员通讯录共用 DeptTreePanel） */}
+        {/* 左栏：组织树面板（与人员通讯录共用 DeptTreePanel）。
+            排序请求进行中也走刷新遮罩：Spinner 提示 + 遮罩拦截树操作，
+            防止保存期间继续拖拽/点选 */}
         <DeptTreePanel
           canReorder={canEdit && !reorderMutation.isPending}
           emptyAction={
@@ -328,7 +330,7 @@ export function DeptsPage() {
               </Button>
             ) : undefined
           }
-          isFetching={treeQuery.isFetching}
+          isFetching={treeQuery.isFetching || reorderMutation.isPending}
           isLoading={treeQuery.isLoading}
           nodes={tree}
           selectedId={selectedNode?.id ?? null}
