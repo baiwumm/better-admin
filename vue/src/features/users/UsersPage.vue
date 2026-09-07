@@ -362,7 +362,6 @@ async function confirmStatusChange() {
   if (failed.length === 0) {
     toast.add({
       color: "success",
-      duration: 5000,
       title:
         target.users.length === 1
           ? t("features.users.message.statusChangeSuccess")
@@ -376,7 +375,6 @@ async function confirmStatusChange() {
 
   toast.add({
     color: "warning",
-    duration: 5000,
     title: t("features.users.message.batchStatusPartial", {
       ok: target.users.length - failed.length,
       fail: failed.length,
@@ -389,7 +387,6 @@ async function confirmStatusChange() {
   if (firstError.status === "rejected") {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getUserErrorMessage(firstError.reason),
     });
   }
@@ -403,7 +400,6 @@ async function confirmDelete() {
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getUserErrorMessage(error),
     });
 
@@ -416,7 +412,6 @@ async function confirmDelete() {
   deleteOpen.value = false;
   toast.add({
     color: "success",
-    duration: 5000,
     title: t("features.users.message.deleteSuccess"),
   });
 }
@@ -427,7 +422,6 @@ async function confirmBatchDelete() {
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getUserErrorMessage(error),
     });
 
@@ -439,7 +433,6 @@ async function confirmBatchDelete() {
   batchDeleteOpen.value = false;
   toast.add({
     color: "success",
-    duration: 5000,
     title: t("features.users.message.deleteSuccess"),
   });
 }

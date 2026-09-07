@@ -20,7 +20,6 @@ setApiErrorHandler((error) => {
   if (error instanceof ApiClientError && error.status >= 500) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: error.message,
     });
   }

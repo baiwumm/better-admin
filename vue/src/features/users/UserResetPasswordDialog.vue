@@ -71,7 +71,6 @@ async function onSubmit() {
 
     toast.add({
       color: "success",
-      duration: 5000,
       title: t("features.users.resetPassword.success"),
     });
     emit("saved");
@@ -79,7 +78,6 @@ async function onSubmit() {
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getUserErrorMessage(error),
     });
   } finally {

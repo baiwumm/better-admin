@@ -308,7 +308,6 @@ async function confirmDelete() {
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getLogErrorMessage(error),
     });
 
@@ -320,7 +319,6 @@ async function confirmDelete() {
   deleteOpen.value = false;
   toast.add({
     color: "success",
-    duration: 5000,
     title: t("features.logs.message.deleteSuccess"),
   });
 }
@@ -331,7 +329,6 @@ async function confirmBatchDelete() {
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getLogErrorMessage(error),
     });
 
@@ -343,7 +340,6 @@ async function confirmBatchDelete() {
   batchDeleteOpen.value = false;
   toast.add({
     color: "success",
-    duration: 5000,
     title: t("features.logs.message.batchDeleteSuccess"),
   });
 }

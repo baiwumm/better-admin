@@ -192,7 +192,6 @@ async function confirmDeleteType() {
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getDictErrorMessage(error),
     });
 
@@ -204,7 +203,6 @@ async function confirmDeleteType() {
   typeDeleteOpen.value = false;
   toast.add({
     color: "success",
-    duration: 5000,
     title: t("features.dicts.message.typeDeleted"),
   });
 }
@@ -217,7 +215,6 @@ async function confirmDeleteItem() {
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getDictErrorMessage(error),
     });
 
@@ -228,7 +225,6 @@ async function confirmDeleteItem() {
   itemDeleteOpen.value = false;
   toast.add({
     color: "success",
-    duration: 5000,
     title: t("features.dicts.message.itemDeleted"),
   });
 }

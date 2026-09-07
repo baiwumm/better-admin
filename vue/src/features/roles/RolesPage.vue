@@ -119,13 +119,11 @@ async function toggleStatus(role: Role) {
     invalidateList();
     toast.add({
       color: "success",
-      duration: 5000,
       title: t("features.roles.message.statusSuccess"),
     });
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getRoleErrorMessage(error),
     });
   }
@@ -139,7 +137,6 @@ async function confirmDelete() {
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getRoleErrorMessage(error),
     });
 
@@ -150,7 +147,6 @@ async function confirmDelete() {
   deleteOpen.value = false;
   toast.add({
     color: "success",
-    duration: 5000,
     title: t("features.roles.message.deleteSuccess"),
   });
 }

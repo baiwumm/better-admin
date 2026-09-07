@@ -88,14 +88,12 @@ async function onSave() {
     emit("saved");
     toast.add({
       color: "success",
-      duration: 5000,
       title: t("features.roles.grant.saveSuccess"),
     });
     close();
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getRoleErrorMessage(error),
     });
   } finally {

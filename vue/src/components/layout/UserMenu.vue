@@ -22,7 +22,6 @@ async function onLogout() {
 
   toast.add({
     color: "neutral",
-    duration: 3000,
     title: t("layout.user.signedOut"),
   });
 

@@ -94,7 +94,6 @@ async function onSubmit() {
 
     toast.add({
       color: "success",
-      duration: 5000,
       title: t(
         isEdit.value
           ? "features.dicts.message.typeUpdated"
@@ -106,7 +105,6 @@ async function onSubmit() {
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getDictErrorMessage(error),
     });
   } finally {
