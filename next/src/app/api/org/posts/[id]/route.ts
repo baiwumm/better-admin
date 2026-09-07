@@ -40,6 +40,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
 
     // 对齐 nest post-update.dto：传了就必须合法（undefined = 不修改）
+    if (typeof body.name === "string" && body.name.trim().length > 100) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "name 不能超过 100 个字符",
+      );
+    }
     if (
       body.category !== undefined &&
       body.category !== "management" &&

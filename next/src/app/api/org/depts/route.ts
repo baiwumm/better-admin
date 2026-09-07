@@ -47,6 +47,20 @@ export async function POST(request: NextRequest) {
     if (typeof body?.name !== "string" || body.name.trim().length === 0) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "name 为必填");
     }
+    if (body.name.trim().length > 100) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "name 不能超过 100 个字符",
+      );
+    }
+    if (typeof body.code === "string" && body.code.length > 50) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "code 不能超过 50 个字符",
+      );
+    }
 
     const dept = await createDept(
       {
