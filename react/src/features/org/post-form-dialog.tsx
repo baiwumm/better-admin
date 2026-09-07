@@ -10,10 +10,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import {
   Button,
-  Description,
   FieldError,
   Form,
   Input,
+  InputGroup,
   Label,
   ListBox,
   Modal,
@@ -55,6 +55,8 @@ export interface PostFormDialogProps {
 }
 
 const FORM_ID = "post-form";
+
+const NAME_MAX_LENGTH = 100;
 
 const postFormSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -201,22 +203,14 @@ function PostFormModal({
                 control={control}
                 name="deptId"
                 render={({ field, fieldState }) => (
-                  <div className="flex flex-col gap-1">
-                    <Label>{t("features.posts.form.dept")}</Label>
-                    <DeptTreeSelect
-                      ariaLabel={t("features.posts.form.dept")}
-                      className="w-full"
-                      isDisabled={isEdit && Boolean(field.value)}
-                      tree={tree}
-                      value={field.value}
-                      onChange={(key) => field.onChange(key)}
-                    />
-                    {fieldState.error && (
-                      <FieldError>
-                        {t("features.posts.form.deptRequired")}
-                      </FieldError>
-                    )}
-                  </div>
+                  <DeptTreeSelect
+                    showLabel
+                    ariaLabel={t("features.posts.form.dept")}
+                    isInvalid={!!fieldState.error}
+                    tree={tree}
+                    value={field.value}
+                    onChange={(key) => field.onChange(key)}
+                  />
                 )}
               />
 
@@ -224,31 +218,31 @@ function PostFormModal({
                 control={control}
                 name="name"
                 render={({ field, fieldState }) => (
-                  <div className="flex flex-col gap-1">
-                    <TextField
-                      isRequired
-                      className="flex flex-col"
-                      isInvalid={Boolean(fieldState.error)}
-                      value={field.value ?? ""}
-                      onBlur={field.onBlur}
-                      onChange={field.onChange}
-                    >
-                      <Label>{t("features.posts.form.name")}</Label>
-                      <Input
-                        maxLength={100}
+                  <TextField
+                    isRequired
+                    className="flex flex-col gap-1"
+                    isInvalid={Boolean(fieldState.error)}
+                    value={field.value ?? ""}
+                    onBlur={field.onBlur}
+                    onChange={field.onChange}
+                  >
+                    <Label>{t("features.posts.form.name")}</Label>
+                    {/* Suffix 实时字数（上限与后端 @Length(1,100) 对齐） */}
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={NAME_MAX_LENGTH}
                         placeholder={t("features.posts.form.namePlaceholder")}
-                        variant="secondary"
                       />
-                      {fieldState.error && (
-                        <FieldError>
-                          {t("features.posts.form.nameInvalid")}
-                        </FieldError>
-                      )}
-                    </TextField>
-                    <Description>
-                      {t("features.posts.form.nameHint")}
-                    </Description>
-                  </div>
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{NAME_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
+                    {fieldState.error && (
+                      <FieldError>
+                        {t("features.posts.form.nameInvalid")}
+                      </FieldError>
+                    )}
+                  </TextField>
                 )}
               />
 
@@ -358,7 +352,10 @@ function PostFormModal({
             <Button slot="close" variant="secondary">
               {t("common.cancel")}
             </Button>
-            <Button form={FORM_ID} isPending={mutation.isPending} type="submit">
+            <Button
+              isPending={mutation.isPending}
+              onPress={() => void onSubmit()}
+            >
               {({ isPending }) =>
                 isPending ? (
                   <>
