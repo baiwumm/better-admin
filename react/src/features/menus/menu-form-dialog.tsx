@@ -307,63 +307,70 @@ function MenuFormModal({
             >
               <div className="flex flex-col gap-1">
                 <Label>{t("features.menus.form.parent")}</Label>
-                <div className="flex items-center gap-2">
-                  <Select
-                    aria-label={t("features.menus.form.parent")}
-                    className="flex-1"
-                    isDisabled={mode === "addChild"}
-                    placeholder={t("features.menus.form.parentPlaceholder")}
-                    value={values.parentId || null}
-                    variant="secondary"
-                    onChange={(key) =>
-                      setValue("parentId", key ? String(key) : "")
+                <Select
+                  aria-label={t("features.menus.form.parent")}
+                  className="w-full"
+                  isDisabled={mode === "addChild"}
+                  placeholder={t("features.menus.form.parentPlaceholder")}
+                  value={values.parentId || null}
+                  variant="secondary"
+                  onChange={(key) =>
+                    setValue("parentId", key ? String(key) : "")
+                  }
+                  onKeyDown={(e) => {
+                    // 键盘清空补偿：清空图标在 trigger 内不可聚焦（button 内禁嵌套
+                    // 可聚焦元素），Delete/Backspace 触发清空
+                    if (
+                      (e.key === "Delete" || e.key === "Backspace") &&
+                      values.parentId
+                    ) {
+                      setValue("parentId", "");
                     }
-                  >
-                    <Select.Trigger>
-                      <Select.Value />
-                      <Select.Indicator />
-                    </Select.Trigger>
-                    <Select.Popover>
-                      <ListBox>
-                        {parentOptions.map((option) => {
-                          const origin = nodeById.get(option.id);
+                  }}
+                >
+                  <Select.Trigger>
+                    <Select.Value />
+                    {/* 有选中值时 Indicator 渲染为内嵌清空图标：onPointerDown 阻断
+                        trigger 的 press 链防止误开下拉；无值传 undefined 回落默认
+                        下拉箭头 */}
+                    <Select.Indicator className="size-4">
+                      {values.parentId && mode !== "addChild" ? (
+                        <X
+                          onClick={() => setValue("parentId", "")}
+                          onPointerDown={(e) => e.stopPropagation()}
+                        />
+                      ) : undefined}
+                    </Select.Indicator>
+                  </Select.Trigger>
+                  <Select.Popover>
+                    <ListBox>
+                      {parentOptions.map((option) => {
+                        const origin = nodeById.get(option.id);
 
-                          return (
-                            <ListBox.Item
-                              key={option.id}
-                              id={option.id}
-                              textValue={option.label.trim()}
-                            >
-                              <span className="flex items-center gap-1.5">
-                                {origin?.icon ? (
-                                  <DynamicIcon
-                                    aria-hidden
-                                    className="size-4 text-muted"
-                                    name={origin.icon as IconName}
-                                    size={16}
-                                  />
-                                ) : null}
-                                {option.label}
-                              </span>
-                              <ListBox.ItemIndicator />
-                            </ListBox.Item>
-                          );
-                        })}
-                      </ListBox>
-                    </Select.Popover>
-                  </Select>
-                  {values.parentId && mode !== "addChild" && (
-                    <Button
-                      isIconOnly
-                      aria-label={t("features.menus.form.parentClear")}
-                      size="sm"
-                      variant="ghost"
-                      onPress={() => setValue("parentId", "")}
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  )}
-                </div>
+                        return (
+                          <ListBox.Item
+                            key={option.id}
+                            id={option.id}
+                            textValue={option.label.trim()}
+                          >
+                            <span className="flex items-center gap-1.5">
+                              {origin?.icon ? (
+                                <DynamicIcon
+                                  aria-hidden
+                                  className="size-4 text-muted"
+                                  name={origin.icon as IconName}
+                                  size={16}
+                                />
+                              ) : null}
+                              {option.label}
+                            </span>
+                            <ListBox.ItemIndicator />
+                          </ListBox.Item>
+                        );
+                      })}
+                    </ListBox>
+                  </Select.Popover>
+                </Select>
                 <Description>{t("features.menus.form.parentHint")}</Description>
               </div>
 

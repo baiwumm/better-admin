@@ -267,73 +267,80 @@ function DeptFormModal({
                 render={({ field }) => (
                   <div className="flex flex-col gap-1">
                     <Label>{t("features.depts.form.parent")}</Label>
-                    <div className="flex items-center gap-2">
-                      <Select
-                        aria-label={t("features.depts.form.parent")}
-                        className="flex-1"
-                        isDisabled={isCreateChild}
-                        placeholder={t("features.depts.form.parentPlaceholder")}
-                        value={field.value || null}
-                        variant="secondary"
-                        onChange={(key) =>
-                          field.onChange(key === null ? "" : String(key))
+                    <Select
+                      aria-label={t("features.depts.form.parent")}
+                      className="w-full"
+                      isDisabled={isCreateChild}
+                      placeholder={t("features.depts.form.parentPlaceholder")}
+                      value={field.value || null}
+                      variant="secondary"
+                      onChange={(key) =>
+                        field.onChange(key === null ? "" : String(key))
+                      }
+                      onKeyDown={(e) => {
+                        // 键盘清空补偿：清空图标在 trigger 内不可聚焦（button 内
+                        // 禁嵌套可聚焦元素），Delete/Backspace 触发清空
+                        if (
+                          (e.key === "Delete" || e.key === "Backspace") &&
+                          field.value
+                        ) {
+                          field.onChange("");
                         }
-                      >
-                        <Select.Trigger>
-                          <Select.Value />
-                          <Select.Indicator />
-                        </Select.Trigger>
-                        <Select.Popover>
-                          <ListBox>
-                            {parentOptions.map((option) => (
-                              <ListBox.Item
-                                key={option.id}
-                                id={option.id}
-                                isDisabled={option.disabled}
-                                textValue={option.label}
-                              >
-                                <span className="flex min-w-0 items-center gap-1.5">
-                                  {option.avatar ? (
-                                    <Avatar
-                                      aria-hidden
-                                      className="size-5 shrink-0"
-                                      color="accent"
-                                      variant="soft"
-                                    >
-                                      {option.avatar.src ? (
-                                        <Avatar.Image
-                                          alt={option.avatar.alt}
-                                          loading="lazy"
-                                          src={option.avatar.src}
-                                        />
-                                      ) : null}
-                                      <Avatar.Fallback className="text-[10px]">
-                                        {option.avatar.alt.slice(0, 1)}
-                                      </Avatar.Fallback>
-                                    </Avatar>
-                                  ) : null}
-                                  <span className="block truncate">
-                                    {option.label}
-                                  </span>
+                      }}
+                    >
+                      <Select.Trigger>
+                        <Select.Value />
+                        {/* 有选中值时 Indicator 渲染为内嵌清空图标：onPointerDown 阻断
+                            trigger 的 press 链防止误开下拉；无值传 undefined 回落默认
+                            下拉箭头 */}
+                        <Select.Indicator className="size-4">
+                          {field.value && !isCreateChild ? (
+                            <X
+                              onClick={() => field.onChange("")}
+                              onPointerDown={(e) => e.stopPropagation()}
+                            />
+                          ) : undefined}
+                        </Select.Indicator>
+                      </Select.Trigger>
+                      <Select.Popover>
+                        <ListBox>
+                          {parentOptions.map((option) => (
+                            <ListBox.Item
+                              key={option.id}
+                              id={option.id}
+                              isDisabled={option.disabled}
+                              textValue={option.label}
+                            >
+                              <span className="flex min-w-0 items-center gap-1.5">
+                                {option.avatar ? (
+                                  <Avatar
+                                    aria-hidden
+                                    className="size-5 shrink-0"
+                                    color="accent"
+                                    variant="soft"
+                                  >
+                                    {option.avatar.src ? (
+                                      <Avatar.Image
+                                        alt={option.avatar.alt}
+                                        loading="lazy"
+                                        src={option.avatar.src}
+                                      />
+                                    ) : null}
+                                    <Avatar.Fallback className="text-[10px]">
+                                      {option.avatar.alt.slice(0, 1)}
+                                    </Avatar.Fallback>
+                                  </Avatar>
+                                ) : null}
+                                <span className="block truncate">
+                                  {option.label}
                                 </span>
-                                <ListBox.ItemIndicator />
-                              </ListBox.Item>
-                            ))}
-                          </ListBox>
-                        </Select.Popover>
-                      </Select>
-                      {field.value && !isCreateChild && (
-                        <Button
-                          isIconOnly
-                          aria-label={t("features.depts.form.parentClear")}
-                          size="sm"
-                          variant="ghost"
-                          onPress={() => field.onChange("")}
-                        >
-                          <X className="size-4" />
-                        </Button>
-                      )}
-                    </div>
+                              </span>
+                              <ListBox.ItemIndicator />
+                            </ListBox.Item>
+                          ))}
+                        </ListBox>
+                      </Select.Popover>
+                    </Select>
                     <Description>
                       {t("features.depts.form.parentHint")}
                     </Description>
