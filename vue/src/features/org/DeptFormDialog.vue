@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import type { Dept, DeptTreeNode, DeptStatus } from "@/lib/api-types";
+import type { Dept, DeptTreeNode } from "@/lib/api-types";
+import type { FormSubmitEvent } from "@nuxt/ui";
 
-import { computed, reactive, ref, watch } from "vue";
+import * as z from "zod";
+import { computed, reactive, ref, useTemplateRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast } from "@nuxt/ui/composables";
 
@@ -10,7 +12,9 @@ import DeptLeaderSelect from "./DeptLeaderSelect.vue";
 import DeptTreeSelect from "./DeptTreeSelect.vue";
 
 /**
- * 组织新增/编辑弹窗（对应 React 端 dept-form-dialog.tsx，手动校验范式同 M1）。
+ * 组织新增/编辑弹窗（对应 React 端 dept-form-dialog.tsx）：
+ * UForm + zod schema 校验（官方范式，@submit 仅在校验通过后触发，
+ * event.data 为校验转换后的值）。
  *
  * - parentId 用平铺缩进的树选择器（DeptTreeSelect，M1 用户表单共用组件）；
  *   不选 = 顶级组织（提交映射 null）；编辑时禁选自身与后代（防环），
@@ -41,15 +45,34 @@ const toast = useToast();
 
 const FORM_ID = "dept-form";
 
-const form = reactive({
+// 校验消息用函数延迟求值：语言切换后错误文案跟随当前 locale
+const schema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, { error: () => t("features.depts.form.nameInvalid") })
+    .max(100, { error: () => t("features.depts.form.nameInvalid") }),
+  code: z
+    .string()
+    .trim()
+    .max(50, { error: () => t("features.depts.form.codeInvalid") }),
+  parentId: z.string(),
+  leaderId: z.string(),
+  sort: z.number(),
+  status: z.enum(["enabled", "disabled"]),
+});
+
+type Schema = z.output<typeof schema>;
+
+const state = reactive<Schema>({
   name: "",
   code: "",
   parentId: "",
   leaderId: "",
   sort: 0,
-  status: "enabled" as DeptStatus,
+  status: "enabled",
 });
-const errors = reactive({ name: "", code: "" });
+const formRef = useTemplateRef("formRef");
 const submitting = ref(false);
 
 const isEdit = computed(() => props.mode === "edit");
@@ -63,16 +86,15 @@ watch(
   (open) => {
     if (!open) return;
 
-    form.name = props.dept?.name ?? "";
-    form.code = props.dept?.code ?? "";
-    form.parentId = props.dept
+    state.name = props.dept?.name ?? "";
+    state.code = props.dept?.code ?? "";
+    state.parentId = props.dept
       ? (props.dept.parentId ?? "")
       : (props.parentNode?.id ?? "");
-    form.leaderId = props.dept?.leaderId ?? "";
-    form.sort = props.dept?.sort ?? 0;
-    form.status = props.dept?.status ?? "enabled";
-    errors.name = "";
-    errors.code = "";
+    state.leaderId = props.dept?.leaderId ?? "";
+    state.sort = props.dept?.sort ?? 0;
+    state.status = props.dept?.status ?? "enabled";
+    formRef.value?.clear();
   },
   { immediate: true },
 );
@@ -81,30 +103,18 @@ function close() {
   emit("update:open", false);
 }
 
-function validate(): boolean {
-  errors.name =
-    form.name.trim().length >= 1 && form.name.trim().length <= 100
-      ? ""
-      : t("features.depts.form.nameInvalid");
-  errors.code =
-    form.code.trim().length <= 50 ? "" : t("features.depts.form.codeInvalid");
-
-  return !Object.values(errors).some(Boolean);
-}
-
-async function onSubmit() {
-  if (!validate()) return;
-
+async function onSubmit(event: FormSubmitEvent<Schema>) {
   submitting.value = true;
 
   try {
+    // event.data 已过 schema 校验转换（name/code 已 trim）
     const input = {
-      name: form.name.trim(),
-      code: form.code.trim() || null,
-      parentId: form.parentId || null,
-      leaderId: form.leaderId || null,
-      sort: form.sort,
-      status: form.status,
+      name: event.data.name,
+      code: event.data.code || null,
+      parentId: event.data.parentId || null,
+      leaderId: event.data.leaderId || null,
+      sort: event.data.sort,
+      status: event.data.status,
     };
 
     const saved = isEdit.value
@@ -116,7 +126,6 @@ async function onSubmit() {
 
     toast.add({
       color: "success",
-      duration: 3000,
       title: t(
         isEdit.value
           ? "features.depts.message.updated"
@@ -126,7 +135,6 @@ async function onSubmit() {
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getDeptErrorMessage(error),
     });
   } finally {
@@ -156,8 +164,11 @@ export default { name: "DeptFormDialog" };
     <template #body>
       <UForm
         :id="FORM_ID"
+        ref="formRef"
+        :schema="schema"
+        :state="state"
         class="flex flex-col gap-4"
-        @submit.prevent="onSubmit"
+        @submit="onSubmit"
       >
         <UFormField
           :label="t('features.depts.form.parent')"
@@ -166,7 +177,7 @@ export default { name: "DeptFormDialog" };
           :disabled="isCreateChild"
         >
           <DeptTreeSelect
-            v-model="form.parentId"
+            v-model="state.parentId"
             :is-disabled="isCreateChild"
             :self-id="isEdit ? (dept?.id ?? null) : null"
             :placeholder="t('features.depts.form.parentPlaceholder')"
@@ -175,13 +186,9 @@ export default { name: "DeptFormDialog" };
           />
         </UFormField>
 
-        <UFormField
-          :error="errors.name || undefined"
-          :label="t('features.depts.form.name')"
-          required
-        >
+        <UFormField :label="t('features.depts.form.name')" name="name" required>
           <UInput
-            v-model="form.name"
+            v-model="state.name"
             :maxlength="100"
             :placeholder="t('features.depts.form.namePlaceholder')"
             class="w-full"
@@ -189,13 +196,13 @@ export default { name: "DeptFormDialog" };
         </UFormField>
 
         <UFormField
-          :error="errors.code || undefined"
-          :help="errors.code ? undefined : t('features.depts.form.codeHint')"
+          :help="t('features.depts.form.codeHint')"
           :label="t('features.depts.form.code')"
           :ui="{ help: 'text-dimmed text-xs' }"
+          name="code"
         >
           <UInput
-            v-model="form.code"
+            v-model="state.code"
             :maxlength="50"
             placeholder="DEPT-001"
             class="w-full"
@@ -203,7 +210,7 @@ export default { name: "DeptFormDialog" };
         </UFormField>
 
         <DeptLeaderSelect
-          v-model="form.leaderId"
+          v-model="state.leaderId"
           :current-leader="
             isEdit && dept?.leaderId
               ? {
@@ -215,7 +222,7 @@ export default { name: "DeptFormDialog" };
         />
 
         <UFormField :label="t('common.column.sort')">
-          <UInputNumber v-model="form.sort" :min="0" class="w-full" />
+          <UInputNumber v-model="state.sort" :min="0" class="w-full" />
         </UFormField>
 
         <div
@@ -226,9 +233,10 @@ export default { name: "DeptFormDialog" };
           </span>
           <USwitch
             :aria-label="t('features.depts.form.status')"
-            :model-value="form.status === 'enabled'"
+            :model-value="state.status === 'enabled'"
             @update:model-value="
-              (value: boolean) => (form.status = value ? 'enabled' : 'disabled')
+              (value: boolean) =>
+                (state.status = value ? 'enabled' : 'disabled')
             "
           />
         </div>

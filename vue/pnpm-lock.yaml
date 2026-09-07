@@ -22,7 +22,7 @@ importers:
         version: 3.6.8
       '@nuxt/ui':
         specifier: ^4.11.0
-        version: 4.11.0(9d866307ec8a68e5d2f928fc18e90102)
+        version: 4.11.0(1752d42700704dc944306abcb21410d0)
       '@standard-schema/spec':
         specifier: ^1.1.0
         version: 1.1.0
@@ -80,6 +80,9 @@ importers:
       vue-router:
         specifier: ^5.3.1
         version: 5.3.1(@vue/compiler-sfc@3.5.42)(esbuild@0.27.7)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0))(vue@3.5.42(typescript@5.9.3))
+      zod:
+        specifier: ^4.5.4
+        version: 4.5.4
     devDependencies:
       '@eslint/js':
         specifier: ^9.25.1
@@ -2851,6 +2854,14 @@ packages:
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
+  valibot@1.4.2:
+    resolution: {integrity: sha512-gjdCvJ6d3RyHAneqxMYMW9QMCwYMb3jpOO0IyHZV1bnRHFBHrX3VkIILt5XYR0WhwHiH7Mty8ovuPZ/O3gamrg==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   vaul-vue@0.4.1:
     resolution: {integrity: sha512-A6jOWOZX5yvyo1qMn7IveoWN91mJI5L3BUKsIwkg6qrTGgHs1Sb1JF/vyLJgnbN1rH4OOOxFbtqL9A46bOyGUQ==}
     peerDependencies:
@@ -3079,6 +3090,9 @@ packages:
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+
+  zod@4.5.4:
+    resolution: {integrity: sha512-sC95tT5iHHH9gtpj6A81kh+NEaRAUFN+qlUPDUbRfOMvNf5QCBqsb3WgvnpVtK5Y+4UfA6KqufotuTvMGiTlsA==}
 
 snapshots:
 
@@ -3519,7 +3533,7 @@ snapshots:
       pkg-types: 2.3.2
       std-env: 4.2.0
 
-  '@nuxt/ui@4.11.0(9d866307ec8a68e5d2f928fc18e90102)':
+  '@nuxt/ui@4.11.0(1752d42700704dc944306abcb21410d0)':
     dependencies:
       '@floating-ui/dom': 1.8.0
       '@iconify/vue': 5.0.1(vue@3.5.42(typescript@5.9.3))
@@ -3588,7 +3602,9 @@ snapshots:
     optionalDependencies:
       '@internationalized/date': 3.12.4
       '@internationalized/number': 3.6.8
+      valibot: 1.4.2(typescript@5.9.3)
       vue-router: 5.3.1(@vue/compiler-sfc@3.5.42)(esbuild@0.27.7)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0))(vue@3.5.42(typescript@5.9.3))
+      zod: 4.5.4
     transitivePeerDependencies:
       - '@azure/app-configuration'
       - '@azure/cosmos'
@@ -5818,6 +5834,11 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
+  valibot@1.4.2(typescript@5.9.3):
+    optionalDependencies:
+      typescript: 5.9.3
+    optional: true
+
   vaul-vue@0.4.1(reka-ui@2.10.3(vue@3.5.42(typescript@5.9.3)))(vue@3.5.42(typescript@5.9.3)):
     dependencies:
       '@vueuse/core': 10.11.1(vue@3.5.42(typescript@5.9.3))
@@ -6005,3 +6026,5 @@ snapshots:
       lib0: 0.2.117
 
   yocto-queue@0.1.0: {}
+
+  zod@4.5.4: {}

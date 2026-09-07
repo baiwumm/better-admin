@@ -106,7 +106,6 @@
   "features.depts.form.leader": "Leader",
   "features.depts.form.leaderEmpty": "No users available",
   "features.depts.form.leaderLoadFailed": "No permission to read users",
-  "features.depts.form.leaderLoading": "Loading…",
   "features.depts.form.leaderLoadingMore": "Loading more…",
   "features.depts.form.leaderPlaceholder": "Select a leader",
   "features.depts.form.name": "Name",

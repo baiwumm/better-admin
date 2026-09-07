@@ -37,6 +37,7 @@ import { useMenuPermissions } from "@/composables/use-permissions";
  */
 
 const UButton = resolveComponent("UButton");
+const UBadge = resolveComponent("UBadge");
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 const { t } = useI18n();
@@ -171,13 +172,11 @@ async function handleDeleteConfirm() {
 
     toast.add({
       color: "success",
-      duration: 3000,
       title: t("features.depts.message.deleted"),
     });
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getDeptErrorMessage(error),
     });
   } finally {
@@ -216,12 +215,7 @@ const columns = computed<AppColumnDef<DeptTreeNode>[]>(() => [
     enableSorting: false,
     header: () => t("features.depts.column.childCount"),
     cell: ({ row }) =>
-      h(
-        "span",
-        {
-          class:
-            "bg-elevated/60 text-default inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium",
-        },
+      h(UBadge, { color: "neutral", variant: "soft" }, () =>
         String(row.original.children.length),
       ),
   },
@@ -231,19 +225,17 @@ const columns = computed<AppColumnDef<DeptTreeNode>[]>(() => [
     header: () => t("features.depts.column.status"),
     cell: ({ row }) =>
       h(
-        "span",
+        UBadge,
         {
-          class: `inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${
-            row.original.status === "enabled"
-              ? "bg-success/10 text-success"
-              : "bg-error/10 text-error"
-          }`,
+          color: row.original.status === "enabled" ? "success" : "error",
+          variant: "soft",
         },
-        t(
-          row.original.status === "enabled"
-            ? "features.depts.status.enabled"
-            : "features.depts.status.disabled",
-        ),
+        () =>
+          t(
+            row.original.status === "enabled"
+              ? "features.depts.status.enabled"
+              : "features.depts.status.disabled",
+          ),
       ),
   },
   {
@@ -325,160 +317,155 @@ const deleteDescription = computed(() =>
 </script>
 
 <template>
-  <div class="flex w-full flex-col pb-8">
-    <div
-      class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]"
+  <div
+    class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]"
+  >
+    <!-- 左栏：组织树面板（与人员通讯录共用） -->
+    <DeptTreePanel
+      :can-reorder="canEdit && !reorderMutation.isPending.value"
+      :is-fetching="treeQuery.isFetching.value"
+      :is-loading="treeQuery.isLoading.value"
+      :is-pending="reorderMutation.isPending.value"
+      :nodes="tree"
+      :selected-id="selectedNode?.id ?? null"
+      :empty-title="t('features.depts.tree.empty')"
+      @reorder="handleReorder"
+      @select="(node) => (selectedId = node.id)"
     >
-      <!-- 左栏：组织树面板（与人员通讯录共用） -->
-      <DeptTreePanel
-        :can-reorder="canEdit && !reorderMutation.isPending.value"
-        :is-fetching="treeQuery.isFetching.value"
-        :is-loading="treeQuery.isLoading.value"
-        :is-pending="reorderMutation.isPending.value"
-        :nodes="tree"
-        :selected-id="selectedNode?.id ?? null"
-        :empty-title="t('features.depts.tree.empty')"
-        @reorder="handleReorder"
-        @select="(node) => (selectedId = node.id)"
-      >
-        <template v-if="canAdd" #header-action>
-          <UButton
-            :aria-label="t('features.depts.action.addRoot')"
-            class="p-1"
-            color="neutral"
-            icon="i-lucide-plus"
-            size="sm"
-            variant="outline"
-            @click="openCreateRoot"
-          />
-        </template>
-        <template v-if="canAdd" #empty-action>
-          <UButton
-            color="neutral"
-            icon="i-lucide-plus"
-            size="sm"
-            variant="outline"
-            @click="openCreateRoot"
-          >
-            {{ t("features.depts.action.addRoot") }}
-          </UButton>
-        </template>
-      </DeptTreePanel>
+      <template v-if="canAdd" #header-action>
+        <UButton
+          :aria-label="t('features.depts.action.addRoot')"
+          class="p-1"
+          color="neutral"
+          icon="i-lucide-plus"
+          size="sm"
+          variant="outline"
+          @click="openCreateRoot"
+        />
+      </template>
+      <template v-if="canAdd" #empty-action>
+        <UButton
+          color="neutral"
+          icon="i-lucide-plus"
+          size="sm"
+          variant="outline"
+          @click="openCreateRoot"
+        >
+          {{ t("features.depts.action.addRoot") }}
+        </UButton>
+      </template>
+    </DeptTreePanel>
 
-      <!-- 右栏：选中组织详情 + 子组织列表 -->
-      <div class="flex min-w-0 flex-col gap-6">
-        <UCard class="flex flex-col gap-3" variant="outline">
-          <template v-if="selectedNode">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="flex min-w-0 items-center gap-2">
-                <span class="truncate text-sm font-semibold">
-                  {{ selectedNode.name }}
-                </span>
-                <span
-                  :class="
-                    selectedNode.status === 'enabled'
-                      ? 'bg-success/10 text-success'
-                      : 'bg-error/10 text-error'
-                  "
-                  class="inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium"
-                >
-                  {{
-                    t(
-                      selectedNode.status === "enabled"
-                        ? "features.depts.status.enabled"
-                        : "features.depts.status.disabled",
-                    )
-                  }}
-                </span>
-              </div>
-              <!-- 允许换行：窄屏/长名称时按钮折行右对齐，不挤压左侧标题区 -->
-              <div class="flex flex-wrap items-center justify-end gap-2">
-                <UButton
-                  v-if="canAdd"
-                  size="sm"
-                  @click="openCreateChild(selectedNode)"
-                >
-                  <UIcon class="size-4" name="i-lucide-plus" />
-                  {{ t("features.depts.action.add") }}
-                </UButton>
-                <UButton
-                  v-if="canEdit"
-                  color="neutral"
-                  size="sm"
-                  variant="subtle"
-                  @click="openEdit(selectedNode)"
-                >
-                  <UIcon class="size-4" name="i-lucide-pencil" />
-                  {{ t("common.edit") }}
-                </UButton>
-                <UButton
-                  v-if="canDelete"
-                  color="error"
-                  size="sm"
-                  variant="subtle"
-                  @click="openDelete(selectedNode)"
-                >
-                  <UIcon class="size-4" name="i-lucide-trash-2" />
-                  {{ t("common.delete") }}
-                </UButton>
-              </div>
-            </div>
-            <div class="text-muted flex flex-wrap gap-x-6 gap-y-1 text-sm">
-              <span>
-                {{ t("features.depts.column.code") }}：
-                <span class="font-mono">{{ selectedNode.code ?? "—" }}</span>
+    <!-- 右栏：选中组织详情 + 子组织列表 -->
+    <div class="flex min-w-0 flex-col gap-4">
+      <UCard class="flex flex-col gap-3" variant="outline">
+        <template v-if="selectedNode">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex min-w-0 items-center gap-2">
+              <span class="truncate text-sm font-semibold">
+                {{ selectedNode.name }}
               </span>
-              <span>
-                {{ t("features.depts.column.leader") }}：
-                {{ selectedNode.leaderName ?? "—" }}
-              </span>
-              <span>
+              <UBadge
+                :color="selectedNode.status === 'enabled' ? 'success' : 'error'"
+                variant="soft"
+              >
                 {{
-                  t("features.depts.detail.childCount", {
-                    count: selectedNode.children.length,
-                  })
+                  t(
+                    selectedNode.status === "enabled"
+                      ? "features.depts.status.enabled"
+                      : "features.depts.status.disabled",
+                  )
                 }}
-              </span>
+              </UBadge>
             </div>
-          </template>
-          <div
-            v-else
-            class="text-muted flex flex-col items-center justify-center gap-2 py-10"
-          >
-            <p class="text-sm">{{ t("features.depts.detail.unselected") }}</p>
+            <!-- 允许换行：窄屏/长名称时按钮折行右对齐，不挤压左侧标题区 -->
+            <div class="flex flex-wrap items-center justify-end gap-2">
+              <UButton
+                v-if="canAdd"
+                size="sm"
+                @click="openCreateChild(selectedNode)"
+              >
+                <UIcon class="size-4" name="i-lucide-plus" />
+                {{ t("features.depts.action.add") }}
+              </UButton>
+              <UButton
+                v-if="canEdit"
+                color="neutral"
+                size="sm"
+                variant="subtle"
+                @click="openEdit(selectedNode)"
+              >
+                <UIcon class="size-4" name="i-lucide-pencil" />
+                {{ t("common.edit") }}
+              </UButton>
+              <UButton
+                v-if="canDelete"
+                color="error"
+                size="sm"
+                variant="subtle"
+                @click="openDelete(selectedNode)"
+              >
+                <UIcon class="size-4" name="i-lucide-trash-2" />
+                {{ t("common.delete") }}
+              </UButton>
+            </div>
           </div>
-        </UCard>
-
-        <!-- 子组织列表（与详情卡留出呼吸间距，页面底部有 pb-8） -->
-        <div class="flex min-w-0 flex-col">
-          <DataTable
-            :loading="treeQuery.isLoading.value"
-            :min-width="'640px'"
-            :table="table"
-          />
+          <div class="text-muted flex flex-wrap gap-x-6 gap-y-1 text-sm">
+            <span>
+              {{ t("features.depts.column.code") }}：
+              <span class="font-mono">{{ selectedNode.code ?? "—" }}</span>
+            </span>
+            <span>
+              {{ t("features.depts.column.leader") }}：
+              {{ selectedNode.leaderName ?? "—" }}
+            </span>
+            <span>
+              {{
+                t("features.depts.detail.childCount", {
+                  count: selectedNode.children.length,
+                })
+              }}
+            </span>
+          </div>
+        </template>
+        <div
+          v-else
+          class="text-muted flex flex-col items-center justify-center gap-2 py-10"
+        >
+          <p class="text-sm">{{ t("features.depts.detail.unselected") }}</p>
         </div>
+      </UCard>
+
+      <!-- 子组织列表（与详情卡留出呼吸间距，页面底部有 pb-8） -->
+      <div class="flex min-w-0 flex-col">
+        <DataTable
+          :loading="treeQuery.isLoading.value"
+          :min-width="'640px'"
+          :table="table"
+        />
       </div>
     </div>
-
-    <!-- 弹窗集合 -->
-    <DeptFormDialog
-      v-model:open="formOpen"
-      :dept="formDept"
-      :mode="formMode"
-      :parent-node="formParentNode"
-      :tree="tree"
-      @saved="invalidateTree"
-    />
-
-    <ConfirmDialog
-      v-model:open="deleteOpen"
-      :confirm-keyword="deleteTarget?.name"
-      :confirm-text="t('common.delete')"
-      :description="deleteDescription"
-      :keyword-label="t('features.depts.message.deleteKeyword')"
-      :title="t('features.depts.message.deleteTitle')"
-      destructive
-      @confirm="handleDeleteConfirm"
-    />
   </div>
+
+  <!-- 弹窗集合 -->
+  <DeptFormDialog
+    v-model:open="formOpen"
+    :dept="formDept"
+    :mode="formMode"
+    :parent-node="formParentNode"
+    :tree="tree"
+    @saved="invalidateTree"
+  />
+
+  <ConfirmDialog
+    v-model:open="deleteOpen"
+    :confirm-keyword="deleteTarget?.name"
+    :confirm-text="t('common.delete')"
+    :description="deleteDescription"
+    :keyword-label="t('features.depts.message.deleteKeyword')"
+    :loading="deleteSubmitting"
+    :title="t('features.depts.message.deleteTitle')"
+    destructive
+    @confirm="handleDeleteConfirm"
+  />
 </template>

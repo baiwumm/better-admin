@@ -106,7 +106,6 @@
   "features.depts.form.leader": "负责人",
   "features.depts.form.leaderEmpty": "暂无可选人员",
   "features.depts.form.leaderLoadFailed": "无人员数据读取权限",
-  "features.depts.form.leaderLoading": "加载中…",
   "features.depts.form.leaderLoadingMore": "加载更多…",
   "features.depts.form.leaderPlaceholder": "选择负责人",
   "features.depts.form.name": "组织名称",

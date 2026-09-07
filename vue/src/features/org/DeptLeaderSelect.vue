@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { User } from "@/lib/api-types";
-
+import Spinner from "@/components/ui/spinner/index.vue";
 import { computed, useTemplateRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useInfiniteScroll } from "@vueuse/core";
@@ -98,9 +98,7 @@ const selectedOption = computed(
 const placeholder = computed(() => {
   if (failed.value) return t("features.depts.form.leaderLoadFailed");
   if (items.value.length === 0 && !props.currentLeader) {
-    return loading.value
-      ? t("features.depts.form.leaderLoading")
-      : t("features.depts.form.leaderEmpty");
+    return t("features.depts.form.leaderEmpty");
   }
 
   return t("features.depts.form.leaderPlaceholder");
@@ -136,14 +134,18 @@ export default { name: "DeptLeaderSelect" };
     <USelectMenu
       ref="leaderMenu"
       :avatar="selectedOption?.avatar"
+      :clear="!failed"
       :disabled="failed"
       :items="items"
       :model-value="modelValue || undefined"
       :placeholder="placeholder"
       class="w-full"
-      clear
       value-key="value"
       @update:model-value="onSelect"
-    />
+    >
+      <template v-if="loading" #trailing>
+        <Spinner size="sm" />
+      </template>
+    </USelectMenu>
   </UFormField>
 </template>
