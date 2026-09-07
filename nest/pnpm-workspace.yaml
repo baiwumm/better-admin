@@ -2,3 +2,7 @@ allowBuilds:
   '@scarf/scarf': true
   bcrypt: true
   esbuild: false
+# 全局 trustPolicy: no-downgrade 会对"早期版本带 provenance、后发布版本不带"的老包批量误报
+# （如 chokidar@4.0.3、@eslint/core@0.10.0，均为 2024-2025 年发布的已知安全版本）。
+# 此处配置发布超过 1 年（525600 分钟）的包跳过信任检查，保留对新增发布版本的降级防护
+trustPolicyIgnoreAfter: 525600

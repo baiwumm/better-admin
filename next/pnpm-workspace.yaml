@@ -14,3 +14,8 @@ overrides:
   # 品牌字段使 CalendarDate/CalendarDateTime 与 HeroUI DatePicker 的 DateValue
   # 类型不兼容（tsc 报 never），统一锁到顶层 pin 的 3.12.3。
   '@internationalized/date': 3.12.3
+
+# 供应链策略兼容：全局 trustPolicy: no-downgrade 会对"早期版本带 provenance、
+# 后发布版本不带"的老包批量误报（均为多年稳定使用的已知安全版本）。
+# 发布超过 1 年（525600 分钟）的包跳过信任检查，保留对新增发布版本的降级防护。
+trustPolicyIgnoreAfter: 525600
