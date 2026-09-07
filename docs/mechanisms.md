@@ -320,8 +320,14 @@ URL 参数一律用 `useSearch({ strict: false })` / `useParams({ strict: false 
   （`keep-alive-outlet.tsx` 注释中的已知边界「隐藏实例仍订阅 Router Context」）。
 - **项目先例**：`my-notices.tsx`、`org/directory.tsx` 用
   `useSearch({ strict: false })`；`notice-detail-page.tsx` 用
-  `useParams({ strict: false })`。登录页 `sign-in.tsx` 的 `Route.useSearch()`
+  `useParams({ strict: false })`（全仓唯一动态路由
+  `org/notices_.$noticeId.tsx`）。登录页 `sign-in.tsx` 的 `Route.useSearch()`
   在 `(auth)` 布局、不入池，不受影响。
+- **防回归守卫**：`react/src/lib/__tests__/strict-route-hooks.test.ts` 静态
+  扫描池内组件源码范围（`routes/_authenticated` + `features` / `layouts` /
+  `hooks` / `components`），拦截 `Route.useXxx()`、`useXxx({ from })`（含
+  `shouldThrow: false` 豁免）与无参 `useParams()`（池内读到布局层 params
+  恒空对象，静默取值 bug）；`pnpm test`（vitest）阶段即报红，附修复指引。
 - **strict:false 的读取路径**：从最近 match（池内即 `_authenticated` 布局
   match）的 `match.search` 读取；search 自全量 location search 逐层继承，父级
   match 含 URL 上全部参数（含子路由参数），故能读到。但它**不经过**本路由
