@@ -559,13 +559,11 @@ function LeaderSelect({
       className="flex w-full flex-col gap-1"
       isDisabled={failed}
       placeholder={
-        usersQuery.isLoading
-          ? t("features.depts.form.leaderLoading")
-          : failed
-            ? t("features.depts.form.leaderLoadFailed")
-            : items.length === 0 && !currentLeader
-              ? t("features.depts.form.leaderEmpty")
-              : t("features.depts.form.leaderPlaceholder")
+        failed
+          ? t("features.depts.form.leaderLoadFailed")
+          : items.length === 0 && !currentLeader && !usersQuery.isLoading
+            ? t("features.depts.form.leaderEmpty")
+            : t("features.depts.form.leaderPlaceholder")
       }
       value={value || null}
       variant="secondary"
@@ -574,7 +572,14 @@ function LeaderSelect({
       <Label>{t("features.depts.form.leader")}</Label>
       <Select.Trigger>
         <Select.Value />
-        <Select.Indicator />
+        {/* 加载中 Indicator 渲染为 Spinner；其余状态回落默认下拉箭头 */}
+        {usersQuery.isLoading ? (
+          <Select.Indicator>
+            <Spinner size="sm" />
+          </Select.Indicator>
+        ) : (
+          <Select.Indicator />
+        )}
       </Select.Trigger>
       <Select.Popover>
         <ListBox aria-label={t("features.depts.form.leader")}>
