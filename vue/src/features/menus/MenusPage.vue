@@ -39,6 +39,7 @@ import DataTable from "@/components/data-table/DataTable.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
 import { type AppTable } from "@/components/data-table/table-types";
+import LoadingContent from "@/components/ui/loading-content/index.vue";
 import { MENUS_QUERY_KEY } from "@/composables/use-menus";
 import {
   useMenuPermissions,
@@ -122,14 +123,12 @@ async function confirmDelete() {
     handleSaved();
     toast.add({
       color: "success",
-      duration: 5000,
       title: t("features.menus.message.deleteSuccess"),
     });
     deleteOpen.value = false;
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getMenuErrorMessage(error),
     });
   } finally {
@@ -524,7 +523,6 @@ async function submitForm() {
 
     toast.add({
       color: "success",
-      duration: 5000,
       title: t(
         isFormEdit.value
           ? "features.menus.message.updateSuccess"
@@ -536,7 +534,6 @@ async function submitForm() {
   } catch (error) {
     toast.add({
       color: "error",
-      duration: 5000,
       title: getMenuErrorMessage(error),
     });
   } finally {
@@ -577,15 +574,7 @@ async function submitForm() {
     </DataTableToolbar>
 
     <div class="relative">
-      <div
-        v-if="isLoading"
-        class="bg-default/60 absolute inset-0 z-10 grid place-items-center"
-      >
-        <UIcon
-          class="size-6 animate-spin text-muted"
-          name="i-lucide-loader-circle"
-        />
-      </div>
+      <LoadingContent v-if="isLoading" />
       <DataTable
         :loading="isFetching && !isLoading"
         :min-width="'860px'"

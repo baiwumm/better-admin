@@ -5,6 +5,8 @@ import { useI18n } from "vue-i18n";
 
 import DeptTree from "./DeptTree.vue";
 
+import LoadingContent from "@/components/ui/loading-content/index.vue";
+
 /**
  * 组织树面板（组织管理 / 人员通讯录共用，对应 React 端 dept-tree-panel.tsx）：
  * 标题 + 计数 + 头部操作区 + 加载骨架屏 + 空态 + DeptTree。
@@ -84,15 +86,11 @@ export default { name: "DeptTreePanel" };
 
     <div v-else class="relative">
       <!-- 树遮罩：增删改/排序后 refetch 或排序请求中全程可见（数据保留不闪白） -->
-      <div
+      <LoadingContent
         v-if="isFetching || isPending"
-        class="bg-default/30 absolute inset-0 z-10 grid place-items-center rounded-xl backdrop-blur-[1px]"
-      >
-        <UIcon
-          class="size-6 animate-spin text-muted"
-          name="i-lucide-loader-circle"
-        />
-      </div>
+        overlay="bg-default/30"
+        class="rounded-xl backdrop-blur-[1px]"
+      />
       <DeptTree
         :can-reorder="canReorder"
         :nodes="nodes"
