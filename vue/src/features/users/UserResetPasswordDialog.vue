@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import type { User } from "@/lib/api-types";
+import type { FormSubmitEvent } from "@nuxt/ui";
 
-import { computed, reactive, ref, watch } from "vue";
+import * as z from "zod";
+import { computed, h, reactive, ref, useTemplateRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast } from "@nuxt/ui/composables";
 
 import { getUserErrorMessage, resetUserPassword } from "./user-api";
 import PasswordField from "./PasswordField.vue";
+
+import Spinner from "@/components/ui/spinner/index.vue";
 
 /**
  * 重置密码弹窗：POST /users/:id/reset-password（RESET_PASSWORD 位）。
@@ -25,21 +29,42 @@ const emit = defineEmits<{
   saved: [];
 }>();
 
+const FORM_ID = "user-reset-password-form";
+
 const { t } = useI18n();
 const toast = useToast();
 
-const form = reactive({ newPassword: "", confirmPassword: "" });
-const errors = reactive({ newPassword: "", confirmPassword: "" });
+// 一致性跨字段校验：不匹配时错误挂 confirmPassword 字段
+const schema = z
+  .object({
+    newPassword: z.string().min(6, {
+      error: () => t("features.users.form.passwordInvalid"),
+    }),
+    confirmPassword: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.newPassword !== data.confirmPassword) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: t("features.users.form.confirmPasswordMismatch"),
+      });
+    }
+  });
+
+type Schema = z.output<typeof schema>;
+
+const state = reactive<Schema>({ newPassword: "", confirmPassword: "" });
+const formRef = useTemplateRef("formRef");
 const submitting = ref(false);
 
 watch(
   () => props.open,
   (open) => {
     if (open) {
-      form.newPassword = "";
-      form.confirmPassword = "";
-      errors.newPassword = "";
-      errors.confirmPassword = "";
+      state.newPassword = "";
+      state.confirmPassword = "";
+      formRef.value?.clear();
     }
   },
 );
@@ -52,33 +77,37 @@ function close() {
   emit("update:open", false);
 }
 
-async function onSubmit() {
-  errors.newPassword =
-    form.newPassword.length >= 6
-      ? ""
-      : t("features.users.form.passwordInvalid");
-  errors.confirmPassword =
-    form.newPassword === form.confirmPassword
-      ? ""
-      : t("features.users.form.confirmPasswordMismatch");
-
-  if (errors.newPassword || errors.confirmPassword || !props.user) return;
+async function onSubmit(event: FormSubmitEvent<Schema>) {
+  if (!props.user) return;
 
   submitting.value = true;
 
-  try {
-    await resetUserPassword(props.user.id, form.newPassword);
+  // toast.promise 形态（对齐 React 端）：重置全程 loading toast，
+  // 完成后原位替换为成功/失败；duration 0 保证请求返回前不消失
+  //（update 会重置计时回落全局时长）；icon 用 Spinner 组件（toast
+  // 内容支持 VNode），自带旋转动画
+  const savingToast = toast.add({
+    title: t("features.users.resetPassword.saving"),
+    icon: h(Spinner, { size: "sm", class: "mt-0.5" }),
+    color: "info",
+    duration: 0,
+  });
 
-    toast.add({
-      color: "success",
+  try {
+    await resetUserPassword(props.user.id, event.data.newPassword);
+
+    toast.update(savingToast.id, {
       title: t("features.users.resetPassword.success"),
+      icon: "i-lucide-check",
+      color: "success",
     });
     emit("saved");
     close();
   } catch (error) {
-    toast.add({
-      color: "error",
+    toast.update(savingToast.id, {
       title: getUserErrorMessage(error),
+      icon: "i-lucide-x",
+      color: "error",
     });
   } finally {
     submitting.value = false;
@@ -95,7 +124,14 @@ async function onSubmit() {
     @update:open="(value: boolean) => !value && close()"
   >
     <template #body>
-      <UForm class="flex flex-col gap-4" @submit.prevent="onSubmit">
+      <UForm
+        :id="FORM_ID"
+        ref="formRef"
+        :schema="schema"
+        :state="state"
+        class="flex flex-col gap-4"
+        @submit="onSubmit"
+      >
         <p class="text-muted text-sm">
           {{
             t("features.users.resetPassword.desc", {
@@ -105,17 +141,17 @@ async function onSubmit() {
         </p>
 
         <PasswordField
-          v-model="form.newPassword"
-          :error="errors.newPassword || undefined"
+          v-model="state.newPassword"
           :label="t('features.users.resetPassword.newPassword')"
           :placeholder="t('features.users.form.passwordPlaceholder')"
+          name="newPassword"
         />
 
         <PasswordField
-          v-model="form.confirmPassword"
-          :error="errors.confirmPassword || undefined"
+          v-model="state.confirmPassword"
           :label="t('features.users.resetPassword.confirmPassword')"
           :placeholder="t('features.users.resetPassword.confirmPassword')"
+          name="confirmPassword"
         />
       </UForm>
     </template>
@@ -128,6 +164,7 @@ async function onSubmit() {
         @click="onClose"
       />
       <UButton
+        :form="FORM_ID"
         :label="
           submitting
             ? t('features.users.resetPassword.saving')

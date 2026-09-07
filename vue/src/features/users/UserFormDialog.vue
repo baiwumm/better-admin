@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import type { Role, User } from "@/lib/api-types";
+import type { FormSubmitEvent } from "@nuxt/ui";
 
-import { computed, reactive, ref, watch } from "vue";
+import * as z from "zod";
+import { computed, h, reactive, ref, useTemplateRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQuery } from "@tanstack/vue-query";
 import { useToast } from "@nuxt/ui/composables";
+
+import Spinner from "@/components/ui/spinner/index.vue";
 
 import {
   ROLE_OPTIONS_QUERY_KEY,
@@ -22,8 +26,9 @@ import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
- * 用户新增/编辑弹窗（对齐 React 端 user-form-dialog，校验规则与 zod schema
- * 一一对应；Vue 端用手动校验，vee-validate 引入待表单复杂度评审后统一）。
+ * 用户新增/编辑弹窗（对齐 React 端 user-form-dialog）：
+ * UForm + zod schema 校验（官方范式，@submit 仅在校验通过后触发，
+ * event.data 为校验转换后的值）。
  *
  * - username 仅创建时可填且创建后不可变更（后端契约锁定）；
  * - 编辑态不含密码字段：改密走「重置密码」弹窗；
@@ -69,36 +74,97 @@ const isStatusLocked = computed(() => {
   );
 });
 
-const form = reactive({
-  username: "",
-  displayName: "",
-  email: "",
-  password: "",
-  confirmPassword: "",
-  status: "active" as "active" | "disabled",
-  roleIds: [] as string[],
-  deptId: "",
-  employeeNo: "",
-  entryDate: "",
-  employmentStatus: "employed" as "employed" | "resigned",
-  gender: "" as "" | "male" | "female",
-  postIds: [] as string[],
-  mainPostId: "",
-});
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ENTRY_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-const errors = reactive({
-  username: "",
-  displayName: "",
-  email: "",
-  password: "",
-  confirmPassword: "",
-  roleIds: "",
-  postIds: "",
-  entryDate: "",
-});
+// 校验规则与 React 端 buildUserFormSchema 一一对应；消息用函数延迟求值：
+// 语言切换后错误文案跟随当前 locale
+const schema = z
+  .object({
+    username: z
+      .string()
+      .trim()
+      .min(1, { error: () => t("features.users.form.usernameInvalid") })
+      .max(50, { error: () => t("features.users.form.usernameInvalid") }),
+    displayName: z
+      .string()
+      .trim()
+      .min(1, { error: () => t("features.users.form.displayNameInvalid") })
+      .max(50, { error: () => t("features.users.form.displayNameInvalid") }),
+    email: z
+      .string()
+      .max(100, { error: () => t("features.users.form.emailInvalid") })
+      .refine((value) => EMAIL_RE.test(value), {
+        error: () => t("features.users.form.emailInvalid"),
+      }),
+    password: z.string(),
+    confirmPassword: z.string(),
+    status: z.enum(["active", "disabled"]),
+    roleIds: z.array(z.string()).max(5, {
+      error: () => t("features.users.form.rolesMax"),
+    }),
+    postIds: z.array(z.string()).max(20, {
+      error: () => t("features.users.form.postsMax"),
+    }),
+    deptId: z.string(),
+    employeeNo: z.string(),
+    entryDate: z.string(),
+    employmentStatus: z.enum(["employed", "resigned"]),
+    gender: z.enum(["", "male", "female"]),
+    mainPostId: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    // 密码仅创建时校验（编辑态无密码字段：改密走「重置密码」弹窗）
+    if (!isEdit.value) {
+      if (data.password.length < 6) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["password"],
+          message: t("features.users.form.passwordInvalid"),
+        });
+      }
+
+      if (data.password !== data.confirmPassword) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["confirmPassword"],
+          message: t("features.users.form.confirmPasswordMismatch"),
+        });
+      }
+    }
+
+    // 入职日期：空合法，非空须 YYYY-MM-DD
+    if (data.entryDate !== "" && !ENTRY_DATE_RE.test(data.entryDate)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["entryDate"],
+        message: t("features.users.form.entryDateInvalid"),
+      });
+    }
+  });
+
+type Schema = z.output<typeof schema>;
 
 // 打开时按模式回填（编辑回显 User.roles/posts 摘要；主岗取 posts 中 isMain 一条；
 // 在职状态存量 NULL 视为 employed）
+const state = reactive<Schema>({
+  username: "",
+  displayName: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  status: "active",
+  roleIds: [],
+  deptId: "",
+  employeeNo: "",
+  entryDate: "",
+  employmentStatus: "employed",
+  gender: "",
+  postIds: [],
+  mainPostId: "",
+});
+const formRef = useTemplateRef("formRef");
+
 watch(
   () => props.open,
   (open) => {
@@ -106,24 +172,21 @@ watch(
 
     const user = props.user;
 
-    form.username = user?.username ?? "";
-    form.displayName = user?.displayName ?? "";
-    form.email = user?.email ?? "";
-    form.password = "";
-    form.confirmPassword = "";
-    form.status = user?.status ?? "active";
-    form.roleIds = user?.roles.map((role) => role.id) ?? [];
-    form.deptId = user?.deptId ?? "";
-    form.employeeNo = user?.employeeNo ?? "";
-    form.entryDate = user?.entryDate ?? "";
-    form.employmentStatus = user?.employmentStatus ?? "employed";
-    form.gender = user?.gender ?? "";
-    form.postIds = user?.posts.map((post) => post.id) ?? [];
-    form.mainPostId = user?.posts.find((post) => post.isMain)?.id ?? "";
-
-    for (const key of Object.keys(errors)) {
-      errors[key as keyof typeof errors] = "";
-    }
+    state.username = user?.username ?? "";
+    state.displayName = user?.displayName ?? "";
+    state.email = user?.email ?? "";
+    state.password = "";
+    state.confirmPassword = "";
+    state.status = user?.status ?? "active";
+    state.roleIds = user?.roles.map((role) => role.id) ?? [];
+    state.deptId = user?.deptId ?? "";
+    state.employeeNo = user?.employeeNo ?? "";
+    state.entryDate = user?.entryDate ?? "";
+    state.employmentStatus = user?.employmentStatus ?? "employed";
+    state.gender = user?.gender ?? "";
+    state.postIds = user?.posts.map((post) => post.id) ?? [];
+    state.mainPostId = user?.posts.find((post) => post.isMain)?.id ?? "";
+    formRef.value?.clear();
   },
   { immediate: true },
 );
@@ -170,116 +233,89 @@ const postItems = computed(() =>
 const mainPostItems = computed(() => [
   { label: t("features.users.form.mainPostEmpty"), value: "" },
   ...postOptions.value
-    .filter((post) => form.postIds.includes(post.id))
+    .filter((post) => state.postIds.includes(post.id))
     .map((post) => ({ label: post.name, value: post.id })),
 ]);
 
 watch(
-  () => form.postIds,
+  () => state.postIds,
   (postIds) => {
-    if (form.mainPostId && !postIds.includes(form.mainPostId)) {
-      form.mainPostId = "";
+    if (state.mainPostId && !postIds.includes(state.mainPostId)) {
+      state.mainPostId = "";
     }
   },
 );
 
 const submitting = ref(false);
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ENTRY_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-/** 校验规则与 React 端 buildUserFormSchema 一一对应（编辑态跳过密码校验）。 */
-function validate(): boolean {
-  errors.username =
-    form.username.trim() && form.username.trim().length <= 50
-      ? ""
-      : t("features.users.form.usernameInvalid");
-  errors.displayName =
-    form.displayName.trim() && form.displayName.trim().length <= 50
-      ? ""
-      : t("features.users.form.displayNameInvalid");
-  errors.email =
-    form.email.length <= 100 && EMAIL_RE.test(form.email)
-      ? ""
-      : t("features.users.form.emailInvalid");
-  errors.roleIds =
-    form.roleIds.length <= 5 ? "" : t("features.users.form.rolesMax");
-  errors.postIds =
-    form.postIds.length <= 20 ? "" : t("features.users.form.postsMax");
-  errors.entryDate =
-    form.entryDate === "" || ENTRY_DATE_RE.test(form.entryDate)
-      ? ""
-      : t("features.users.form.entryDateInvalid");
-
-  if (!isEdit.value) {
-    errors.password =
-      form.password.length >= 6 ? "" : t("features.users.form.passwordInvalid");
-    errors.confirmPassword =
-      form.password === form.confirmPassword
-        ? ""
-        : t("features.users.form.confirmPasswordMismatch");
-  }
-
-  return !Object.values(errors).some(Boolean);
-}
-
 function close() {
   emit("update:open", false);
 }
 
-async function onSubmit() {
-  if (!validate()) return;
-
+async function onSubmit(event: FormSubmitEvent<Schema>) {
   submitting.value = true;
+
+  // toast.promise 形态（对齐 React 端）：保存全程 loading toast，
+  // 完成后原位替换为成功/失败；duration 0 保证请求返回前不消失
+  //（update 会重置计时回落全局时长）；icon 用 Spinner 组件（toast
+  // 内容支持 VNode），自带旋转动画
+  const savingToast = toast.add({
+    title: t("features.users.form.saving"),
+    icon: h(Spinner, { size: "sm", class: "mt-0.5" }),
+    color: "info",
+    duration: 0,
+  });
 
   try {
     if (isEdit.value && props.user) {
       await updateUser(props.user.id, {
-        email: form.email,
-        displayName: form.displayName,
-        status: form.status,
-        roleIds: form.roleIds,
+        email: event.data.email,
+        displayName: event.data.displayName,
+        status: event.data.status,
+        roleIds: event.data.roleIds,
         // 组织中心关联（契约 v1.6.0）：表单全量下发（含空值 = 清空），所见即所得
-        deptId: form.deptId || null,
-        employeeNo: form.employeeNo || null,
-        entryDate: form.entryDate || null,
-        employmentStatus: form.employmentStatus,
-        gender: form.gender || null,
-        postIds: form.postIds,
-        mainPostId: form.mainPostId || null,
+        deptId: event.data.deptId || null,
+        employeeNo: event.data.employeeNo || null,
+        entryDate: event.data.entryDate || null,
+        employmentStatus: event.data.employmentStatus,
+        gender: event.data.gender || null,
+        postIds: event.data.postIds,
+        mainPostId: event.data.mainPostId || null,
       });
     } else {
       await createUser({
-        username: form.username.trim(),
-        email: form.email,
-        displayName: form.displayName.trim(),
-        password: form.password,
-        status: form.status,
-        roleIds: form.roleIds,
-        deptId: form.deptId || null,
-        employeeNo: form.employeeNo || null,
-        entryDate: form.entryDate || null,
-        employmentStatus: form.employmentStatus,
-        gender: form.gender || null,
-        postIds: form.postIds,
-        mainPostId: form.mainPostId || null,
+        username: event.data.username,
+        email: event.data.email,
+        displayName: event.data.displayName,
+        password: event.data.password,
+        status: event.data.status,
+        roleIds: event.data.roleIds,
+        deptId: event.data.deptId || null,
+        employeeNo: event.data.employeeNo || null,
+        entryDate: event.data.entryDate || null,
+        employmentStatus: event.data.employmentStatus,
+        gender: event.data.gender || null,
+        postIds: event.data.postIds,
+        mainPostId: event.data.mainPostId || null,
       });
     }
 
-    toast.add({
-      color: "success",
+    toast.update(savingToast.id, {
       title: t(
         isEdit.value
           ? "features.users.message.updateSuccess"
           : "features.users.message.createSuccess",
       ),
+      icon: "i-lucide-check",
+      color: "success",
     });
     emit("saved");
     close();
   } catch (error) {
-    toast.add({
-      color: "error",
+    toast.update(savingToast.id, {
       title: getUserErrorMessage(error),
+      icon: "i-lucide-x",
+      color: "error",
     });
   } finally {
     submitting.value = false;
@@ -304,19 +340,22 @@ async function onSubmit() {
     <template #body>
       <UForm
         :id="FORM_ID"
+        ref="formRef"
+        :schema="schema"
+        :state="state"
         class="flex flex-col gap-4"
-        @submit.prevent="onSubmit"
+        @submit="onSubmit"
       >
         <UFormField
           :label="t('features.users.form.username')"
-          :error="errors.username || undefined"
           :description="
             isEdit ? t('features.users.form.usernameHint') : undefined
           "
+          name="username"
           required
         >
           <UInput
-            v-model="form.username"
+            v-model="state.username"
             :disabled="isEdit"
             :maxlength="50"
             :placeholder="t('features.users.form.usernamePlaceholder')"
@@ -327,11 +366,11 @@ async function onSubmit() {
 
         <UFormField
           :label="t('features.users.form.displayName')"
-          :error="errors.displayName || undefined"
+          name="displayName"
           required
         >
           <UInput
-            v-model="form.displayName"
+            v-model="state.displayName"
             :maxlength="50"
             :placeholder="t('features.users.form.displayNamePlaceholder')"
             class="w-full"
@@ -341,11 +380,11 @@ async function onSubmit() {
 
         <UFormField
           :label="t('features.users.form.email')"
-          :error="errors.email || undefined"
+          name="email"
           required
         >
           <UInput
-            v-model="form.email"
+            v-model="state.email"
             :maxlength="100"
             :placeholder="t('features.users.form.emailPlaceholder')"
             class="w-full"
@@ -355,18 +394,18 @@ async function onSubmit() {
 
         <template v-if="!isEdit">
           <PasswordField
-            v-model="form.password"
-            :error="errors.password || undefined"
+            v-model="state.password"
+            :description="t('features.users.form.passwordHint')"
             :label="t('features.users.form.password')"
             :placeholder="t('features.users.form.passwordPlaceholder')"
-            :description="t('features.users.form.passwordHint')"
+            name="password"
           />
 
           <PasswordField
-            v-model="form.confirmPassword"
-            :error="errors.confirmPassword || undefined"
+            v-model="state.confirmPassword"
             :label="t('features.users.form.confirmPassword')"
             :placeholder="t('features.users.form.confirmPassword')"
+            name="confirmPassword"
           />
         </template>
 
@@ -378,19 +417,16 @@ async function onSubmit() {
           </span>
           <USwitch
             :disabled="isStatusLocked"
-            :model-value="form.status === 'active'"
+            :model-value="state.status === 'active'"
             @update:model-value="
-              (value: boolean) => (form.status = value ? 'active' : 'disabled')
+              (value: boolean) => (state.status = value ? 'active' : 'disabled')
             "
           />
         </div>
 
-        <UFormField
-          :label="t('features.users.form.roles')"
-          :error="errors.roleIds || undefined"
-        >
+        <UFormField :label="t('features.users.form.roles')" name="roleIds">
           <USelectMenu
-            v-model="form.roleIds"
+            v-model="state.roleIds"
             :items="roleItems"
             :placeholder="
               roleItems.length === 0
@@ -407,16 +443,16 @@ async function onSubmit() {
           :label="t('features.users.form.dept')"
           :description="t('features.users.form.deptHint')"
         >
-          <DeptTreeSelect v-model="form.deptId" :tree="deptTree ?? []" />
+          <DeptTreeSelect v-model="state.deptId" :tree="deptTree ?? []" />
         </UFormField>
 
         <UFormField
           :label="t('features.users.form.posts')"
-          :error="errors.postIds || undefined"
           :description="t('features.users.form.postsHint')"
+          name="postIds"
         >
           <USelectMenu
-            v-model="form.postIds"
+            v-model="state.postIds"
             :items="postItems"
             :placeholder="
               postItems.length === 0
@@ -434,7 +470,7 @@ async function onSubmit() {
           :description="t('features.users.form.mainPostHint')"
         >
           <USelect
-            v-model="form.mainPostId"
+            v-model="state.mainPostId"
             :disabled="mainPostItems.length <= 1"
             :items="mainPostItems"
             class="w-full"
@@ -445,7 +481,7 @@ async function onSubmit() {
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <UFormField :label="t('features.users.form.employeeNo')">
             <UInput
-              v-model="form.employeeNo"
+              v-model="state.employeeNo"
               :maxlength="50"
               :placeholder="t('features.users.form.employeeNoPlaceholder')"
               class="w-full"
@@ -455,16 +491,16 @@ async function onSubmit() {
 
           <UFormField
             :label="t('features.users.form.entryDate')"
-            :error="errors.entryDate || undefined"
+            name="entryDate"
           >
-            <UInput v-model="form.entryDate" class="w-full" type="date" />
+            <UInput v-model="state.entryDate" class="w-full" type="date" />
           </UFormField>
         </div>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <UFormField :label="t('features.users.form.employmentStatus')">
             <USelect
-              v-model="form.employmentStatus"
+              v-model="state.employmentStatus"
               :items="[
                 {
                   label: t('features.users.employment.employed'),
@@ -482,7 +518,7 @@ async function onSubmit() {
 
           <UFormField :label="t('features.users.form.gender')">
             <USelect
-              v-model="form.gender"
+              v-model="state.gender"
               :items="[
                 { label: t('features.users.gender.unset'), value: '' },
                 { label: t('features.users.gender.male'), value: 'male' },

@@ -123,12 +123,15 @@ const resetTarget = ref<User | null>(null);
 
 const deleteOpen = ref(false);
 const deleteTarget = ref<User | null>(null);
+const deleteSubmitting = ref(false);
 
 const batchDeleteOpen = ref(false);
 const batchDeleteIds = ref<string[]>([]);
+const batchDeleteSubmitting = ref(false);
 
 const statusOpen = ref(false);
 const statusTarget = ref<{ users: User[]; next: UserStatus } | null>(null);
+const statusSubmitting = ref(false);
 
 function openForm(mode: "create" | "edit", user: User | null) {
   formMode.value = mode;
@@ -350,50 +353,58 @@ async function confirmStatusChange() {
 
   if (!target) return;
 
-  const results = await Promise.allSettled(
-    target.users.map((user) => updateUserStatus(user.id, target.next)),
-  );
+  statusSubmitting.value = true;
 
-  invalidateList();
-  table.resetRowSelection();
+  try {
+    const results = await Promise.allSettled(
+      target.users.map((user) => updateUserStatus(user.id, target.next)),
+    );
 
-  const failed = results.filter((result) => result.status === "rejected");
+    invalidateList();
+    table.resetRowSelection();
 
-  if (failed.length === 0) {
+    const failed = results.filter((result) => result.status === "rejected");
+
+    if (failed.length === 0) {
+      toast.add({
+        color: "success",
+        title:
+          target.users.length === 1
+            ? t("features.users.message.statusChangeSuccess")
+            : t("features.users.message.batchStatusSuccess", {
+                count: target.users.length,
+              }),
+      });
+
+      return;
+    }
+
     toast.add({
-      color: "success",
-      title:
-        target.users.length === 1
-          ? t("features.users.message.statusChangeSuccess")
-          : t("features.users.message.batchStatusSuccess", {
-              count: target.users.length,
-            }),
+      color: "warning",
+      title: t("features.users.message.batchStatusPartial", {
+        ok: target.users.length - failed.length,
+        fail: failed.length,
+      }),
     });
 
-    return;
-  }
+    // 首个失败原因透出（多为 USER_NOT_FOUND：该用户已被他人删除）
+    const firstError = failed[0];
 
-  toast.add({
-    color: "warning",
-    title: t("features.users.message.batchStatusPartial", {
-      ok: target.users.length - failed.length,
-      fail: failed.length,
-    }),
-  });
-
-  // 首个失败原因透出（多为 USER_NOT_FOUND：该用户已被他人删除）
-  const firstError = failed[0];
-
-  if (firstError.status === "rejected") {
-    toast.add({
-      color: "error",
-      title: getUserErrorMessage(firstError.reason),
-    });
+    if (firstError.status === "rejected") {
+      toast.add({
+        color: "error",
+        title: getUserErrorMessage(firstError.reason),
+      });
+    }
+  } finally {
+    statusSubmitting.value = false;
   }
 }
 
 async function confirmDelete() {
   if (!deleteTarget.value) return;
+
+  deleteSubmitting.value = true;
 
   try {
     await deleteUser(deleteTarget.value.id);
@@ -404,6 +415,8 @@ async function confirmDelete() {
     });
 
     return; // 失败保持弹窗打开（ConfirmDialog 约定）
+  } finally {
+    deleteSubmitting.value = false;
   }
 
   invalidateList();
@@ -417,6 +430,8 @@ async function confirmDelete() {
 }
 
 async function confirmBatchDelete() {
+  batchDeleteSubmitting.value = true;
+
   try {
     await batchDeleteUsers(batchDeleteIds.value);
   } catch (error) {
@@ -426,6 +441,8 @@ async function confirmBatchDelete() {
     });
 
     return;
+  } finally {
+    batchDeleteSubmitting.value = false;
   }
 
   invalidateList();
@@ -568,6 +585,7 @@ const selectedUsers = computed(() =>
         })
       "
       :keyword-label="t('features.users.message.deleteKeyword')"
+      :loading="deleteSubmitting"
       :title="t('features.users.message.deleteTitle')"
       destructive
       @confirm="confirmDelete"
@@ -583,6 +601,7 @@ const selectedUsers = computed(() =>
         })
       "
       :keyword-label="t('features.users.message.batchDeleteKeyword')"
+      :loading="batchDeleteSubmitting"
       :title="t('features.users.message.batchDeleteTitle')"
       destructive
       @confirm="confirmBatchDelete"
@@ -615,6 +634,7 @@ const selectedUsers = computed(() =>
           : null
       "
       :destructive="statusTarget?.next === 'disabled'"
+      :loading="statusSubmitting"
       :title="
         t(
           statusTarget?.next === 'disabled'
