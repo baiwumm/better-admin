@@ -118,7 +118,7 @@ export function AccountPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl pb-6">
+    <div className="mx-auto w-full max-w-2xl">
       <Tabs aria-label={t("features.account.tabs.label")}>
         <Tabs.ListContainer>
           <Tabs.List aria-label={t("features.account.tabs.label")}>
@@ -136,7 +136,7 @@ export function AccountPage() {
           </Tabs.List>
         </Tabs.ListContainer>
 
-        <Tabs.Panel className="flex flex-col gap-6 pt-4" id="account">
+        <Tabs.Panel className="flex flex-col gap-4 pt-4" id="account">
           <AvatarCard
             profile={profile}
             onPickImage={handlePickImage}
@@ -155,7 +155,7 @@ export function AccountPage() {
           <AccountInfoCard profile={profile} />
         </Tabs.Panel>
 
-        <Tabs.Panel className="flex flex-col gap-6 pt-4" id="security">
+        <Tabs.Panel className="flex flex-col gap-4 pt-4" id="security">
           <EmailFormCard
             key={`email:${profile.updatedAt}`}
             profile={profile}
@@ -181,7 +181,7 @@ export function AccountPage() {
 /** 页面加载骨架屏：模拟「Tabs 条 + 头像卡 + 表单卡」的实际布局形状 */
 function AccountPageSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 pb-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
       {/* Tabs 条 */}
       <div className="grid grid-cols-2 gap-4">
         <Skeleton className="h-9 rounded-full" />
