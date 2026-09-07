@@ -35,8 +35,9 @@ const languageOptions = computed(() => [
     <UButton
       aria-label="Preferences"
       color="neutral"
-      icon="i-lucide-settings-2"
+      icon="i-lucide-paint-bucket"
       variant="ghost"
+      size="sm"
     />
 
     <template #body>

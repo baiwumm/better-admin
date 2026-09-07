@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePreferredDark, useColorMode } from "@vueuse/core";
-import type { DropdownMenuItem } from "@nuxt/ui/runtime/components/DropdownMenu.vue";
+import type { DropdownMenuItem } from "@nuxt/ui";
 
 import { ENV } from "@/lib/env";
 
@@ -31,38 +31,39 @@ const resolvedTheme = computed(() =>
 
 const appName = computed(() => ENV.appName);
 
-/** 技术栈入口（React 端 TECH_STACKS 的 Vue 端对应物），品牌 Logo + 新窗口跳转官网。 */
-const techStacks = [
-  { name: "Vue", url: "https://vuejs.org", icon: "i-simple-icons-vuedotjs" },
-  {
-    name: "Nuxt UI",
-    url: "https://ui.nuxt.com",
-    icon: "i-simple-icons-nuxt",
-  },
-  {
-    name: "TypeScript",
-    url: "https://www.typescriptlang.org",
-    icon: "i-simple-icons-typescript",
-  },
-  { name: "Vite", url: "https://vite.dev", icon: "i-simple-icons-vite" },
-  {
-    name: "Tailwind CSS",
-    url: "https://tailwindcss.com",
-    icon: "i-simple-icons-tailwindcss",
-  },
-];
-
 const brandItems = computed<DropdownMenuItem[][]>(() => [
   [
     // 分组标题（type: 'label' 原生渲染为弹层标题，对齐 React 端弹层头部）
-    { label: t("layout.sidebar.techStack"), type: "label" } as DropdownMenuItem,
-    ...techStacks.map((stack) => ({
-      label: stack.name,
-      icon: stack.icon,
-      onSelect: () => {
-        window.open(stack.url, "_blank", "noopener,noreferrer");
-      },
-    })),
+    {
+      label: t("layout.sidebar.techStack"),
+      type: "label",
+      icon: "lucide:code",
+    } as DropdownMenuItem,
+    {
+      label: "Vue",
+      url: "https://vuejs.org",
+      icon: "i-simple-icons-vuedotjs",
+      target: "_blank",
+    },
+    {
+      label: "Nuxt UI",
+      url: "https://ui.nuxt.com",
+      icon: "i-simple-icons-nuxt",
+      target: "_blank",
+    },
+    {
+      label: "TypeScript",
+      url: "https://www.typescriptlang.org",
+      icon: "i-simple-icons-typescript",
+      target: "_blank",
+    },
+    { label: "Vite", url: "https://vite.dev", icon: "i-simple-icons-vite" },
+    {
+      label: "Tailwind CSS",
+      url: "https://tailwindcss.com",
+      icon: "i-simple-icons-tailwindcss",
+      target: "_blank",
+    },
   ],
 ]);
 </script>
@@ -74,31 +75,34 @@ export default { name: "SidebarBrand" };
 <template>
   <UDropdownMenu
     :items="brandItems"
-    :content="{ align: 'start' }"
-    :ui="{ content: 'min-w-44' }"
+    arrow
+    :content="{ align: 'center', collisionPadding: 12 }"
+    :ui="{
+      content: collapsed ? 'w-40' : 'w-(--reka-dropdown-menu-trigger-width)',
+    }"
   >
     <UButton
       color="neutral"
       variant="ghost"
-      class="w-full"
-      :class="collapsed ? 'justify-center px-2' : 'justify-start'"
-      :aria-label="appName"
+      block
+      :square="collapsed"
+      class="data-[state=open]:bg-elevated"
+      :ui="{
+        trailingIcon: 'text-dimmed',
+      }"
+      :trailing-icon="collapsed ? undefined : 'i-lucide-chevrons-up-down'"
     >
-      <img
-        :key="resolvedTheme"
-        :alt="appName"
-        class="size-8 shrink-0 rounded-lg"
-        :src="resolvedTheme === 'dark' ? '/logo-dark.svg' : '/logo.svg'"
-      />
-      <template v-if="!collapsed">
-        <span class="min-w-0 flex-1 truncate text-left font-bold">
-          {{ appName }}
-        </span>
-        <UIcon
-          class="size-4 shrink-0 text-muted"
-          name="i-lucide-chevrons-up-down"
+      <div class="flex items-center gap-2 font-bold text-base">
+        <img
+          :key="resolvedTheme"
+          :alt="appName"
+          class="size-8 shrink-0 rounded-lg"
+          :src="resolvedTheme === 'dark' ? '/logo-dark.svg' : '/logo.svg'"
         />
-      </template>
+        <template v-if="!collapsed">
+          <span>{{ appName }}</span>
+        </template>
+      </div>
     </UButton>
   </UDropdownMenu>
 </template>

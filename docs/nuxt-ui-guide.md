@@ -57,7 +57,7 @@ Nuxt UI 内置组件（@nuxt/ui）
 | 反馈 | `useToast()` / `UAlert` / `USkeleton` | toast 右上角、`duration: 5000`；区块错误用 `UAlert`；加载骨架 |
 | 键位提示 | `UKbd` | 快捷键展示（如折叠侧栏 `⌘B`） |
 | 日历/日期 | 未内置完整 DatePicker | 出现需求时按 §1 优先级走「自定义组件（基于 Nuxt UI 原子拼装）」并记录原因 |
-| 图标 | `UIcon`（默认 lucide 集合） | 名称形如 `i-lucide-users`；需安装 `@iconify-json/lucide`；与 lucide-vue-next 并存：`U*` 组件 `icon` prop 用字符串名，自定义模板内用 lucide-vue-next 组件 |
+| 图标 | `UIcon`（默认 lucide 集合） | 名称形如 `i-lucide-users`；需安装 `@iconify-json/lucide`；统一走 `icon` prop 字符串名（底层 `@iconify/vue` 由 Nuxt UI 内置），不引入 lucide-vue-next 等独立图标组件库 |
 
 ## 4. Dashboard 套件使用示例（M0 布局骨架）
 

@@ -145,7 +145,7 @@ function retryMenus() {
 </script>
 
 <template>
-  <UDashboardGroup>
+  <UDashboardGroup unit="rem">
     <UDashboardSidebar collapsible>
       <template #header="{ collapsed }">
         <SidebarBrand :collapsed="collapsed" />
@@ -238,6 +238,7 @@ function retryMenus() {
                 color="neutral"
                 icon="i-lucide-bell"
                 variant="ghost"
+                size="sm"
               />
               <FullscreenButton />
               <LanguageSwitch />

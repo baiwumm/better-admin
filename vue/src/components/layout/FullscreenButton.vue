@@ -47,6 +47,7 @@ const label = computed(() =>
     :icon="icon"
     color="neutral"
     variant="ghost"
+    size="sm"
     @click="toggle"
   />
 </template>

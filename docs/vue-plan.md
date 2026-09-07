@@ -82,7 +82,7 @@
 | 路由 | TanStack Router 1.x（文件式） | **Vue Router + unplugin-vue-router（官方文件式路由插件）**：`src/pages/` 为路由根，`index.vue` / `[param].vue` / `(group)/` / 点号扁平化等约定，**URL 与 React 端完全一致**；构建期生成 `typed-router.d.ts`，路由跳转与参数均有类型提示（开发体验对齐 React 端文件式路由与 Nuxt 约定） | 与 React 端 `src/routes/` 文件式心智一致；官方维护（vue-router 5 已内置集成，`import VueRouter from "vue-router/vite"`） | 集中式手写路由表（已否决） |
 | 状态 | Zustand 5 | **Pinia 3（setup store）** | Vue 官方事实标准；React 6 个 store 逐一平移 | — |
 | 数据请求 | fetch 封装 api-client | **@tanstack/vue-query 5 + 复刻 fetch 版 api-client**（React 端实为 fetch 封装而非 axios；401 refresh 并发去重 + 信封解包逻辑平移） | vue-query 与 react-query 同 API，epoch 策略整体平移 | — |
-| 表格 | TanStack Table v9 + 自研 DataTable | **@tanstack/vue-table v9 + Nuxt UI 原子组件拼装 DataTable** | TanStack Table 官方 Vue adapter，逻辑层与 React 几乎同构 | Nuxt UI UTable 整表（定制自由度低） |
+| 表格 | TanStack Table v9 + 自研 DataTable | **@tanstack/vue-table v8 + Nuxt UI UTable** | v8 与 Nuxt UI v4.11 peer 依赖匹配；v9 的 table-core v9 将 getCoreRowModel 改名为 createCoreRowModel 导致 UTable 内部导入失败，故降级至 v8 | Nuxt UI UTable 整表（已接入 DataTable.vue） |
 | 表单 | react-hook-form + zod 4 | **vee-validate 4 + zod 4（`@vee-validate/zod`）**（M1 引入；M0 登录页用受控 refs） | zod schema 框架无关直接平移 | — |
 | i18n | i18next（扁平键） | **vue-i18n v11 + `messageResolver: (obj, key) => obj[key]`** | 官方自定义 resolver 支持扁平字面量键，兼容共存键；locales JSON 直接复用 | — |
 | 富文本 | TipTap 3 | **@tiptap/vue-3 + starter-kit** | 官方双框架，序列化互通 | — |
@@ -91,7 +91,7 @@
 | 图表 | Recharts（已定未实施） | **暂不引入；Dashboard 立项时推荐 ECharts + vue-echarts。若 React 端 Dashboard 先行采用 Recharts，Vue 端 ECharts 必须在配置中强制使用项目 chart tokens（--chart-1..5）确保 Dark/Light 色值与 React 端完全一致；Dashboard 立项时两端共同评审色值映射方案**（ui-spec §1.3「四端图表一致性靠规范保证」的显式色值约束） | Recharts 无 Vue 实现；依赖纪律不提前引入 | unovis / Chart.js |
 | 拖拽 | @dnd-kit | **vue-draggable-plus** | Vue 生态主流 | useSortable（@vueuse/integrations） |
 | 裁剪 | react-easy-crop | **vue-advanced-cropper** | Vue 生态成熟 | cropperjs |
-| 图标 | lucide-react | **lucide-vue-next** + Nuxt UI Icon（`@iconify-json/lucide`，组件 `icon` prop 用 `i-lucide-*` 名） | 同一图标集 | — |
+| 图标 | lucide-react | **不引入独立图标组件库**；Nuxt UI 内置 Icon（底层 `@iconify/vue`）+ `@iconify-json/lucide` 图标集，`icon` prop 用 `i-lucide-*` 名（`lucide-vue-next` 已移除） | 同一图标集 | — |
 | Toast | HeroUI toast | **Nuxt UI `useToast`**（`UApp` 提供上下文；api-client 全局错误经回调注入到 App 层转发） | 统一组件库 | vue-sonner |
 | 主题 | 自研 ThemeProvider + Cookie | **Nuxt UI 内置 color mode（`useColorMode` 自动导入，Vue 端基于 @vueuse/core）+ Nuxt UI 默认 Design Tokens / Color System**；品牌色如需定制走 vite 插件 `ui({ ui: { colors } })` 配置，禁止业务代码硬编码色值 | v1.1 修订：不移植 React token，不建 --ui-* 映射层；暗色模式开箱即用 | — |
 | 保活 | 自研 KeepAliveOutlet（Activity + LRU） | **Vue 原生 `<KeepAlive>`（include 白名单 + max LRU）+ tabs-store** | 原生能力覆盖核心语义，实现大幅简化 | — |

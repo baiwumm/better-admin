@@ -31,6 +31,7 @@ const items = computed(() => [
       aria-label="Language"
       color="neutral"
       icon="i-lucide-languages"
+      size="sm"
       variant="ghost"
     />
   </UDropdownMenu>
