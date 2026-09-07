@@ -13,6 +13,7 @@ import {
   useMutation,
 } from "@tanstack/react-query";
 import {
+  Avatar,
   Button,
   Description,
   FieldError,
@@ -88,10 +89,11 @@ type DeptFormValues = z.infer<typeof deptFormSchema>;
 interface ParentOption {
   id: string;
   label: string;
+  avatar: { src?: string; alt: string } | null;
   disabled: boolean;
 }
 
-/** 树 → 平铺下拉选项（「└ 」前缀表达层级，有编码以「名称(编码)」展示；编辑时自身与后代禁选，停用组织禁选；不选 = 顶级） */
+/** 树 → 平铺下拉选项（「└ 」前缀表达层级，有编码以「名称(编码)」展示，有负责人带小头像；编辑时自身与后代禁选，停用组织禁选；不选 = 顶级） */
 function buildParentOptions(
   tree: DeptTreeNode[],
   selfId: string | null,
@@ -104,8 +106,11 @@ function buildParentOptions(
       const disabled = node.status !== "enabled" || underSelf || isSelf;
       const prefix = "　".repeat(level) + (level > 0 ? "└ " : "");
       const label = node.code ? `${node.name}(${node.code})` : node.name;
+      const avatar = node.leaderName
+        ? { src: node.leaderAvatar ?? undefined, alt: node.leaderName }
+        : null;
 
-      options.push({ id: node.id, label: prefix + label, disabled });
+      options.push({ id: node.id, label: prefix + label, avatar, disabled });
       walk(node.children, level + 1, underSelf || isSelf);
     }
   };
@@ -287,8 +292,29 @@ function DeptFormModal({
                                 isDisabled={option.disabled}
                                 textValue={option.label}
                               >
-                                <span className="block truncate">
-                                  {option.label}
+                                <span className="flex min-w-0 items-center gap-1.5">
+                                  {option.avatar ? (
+                                    <Avatar
+                                      aria-hidden
+                                      className="size-5 shrink-0"
+                                      color="accent"
+                                      variant="soft"
+                                    >
+                                      {option.avatar.src ? (
+                                        <Avatar.Image
+                                          alt={option.avatar.alt}
+                                          loading="lazy"
+                                          src={option.avatar.src}
+                                        />
+                                      ) : null}
+                                      <Avatar.Fallback className="text-[10px]">
+                                        {option.avatar.alt.slice(0, 1)}
+                                      </Avatar.Fallback>
+                                    </Avatar>
+                                  ) : null}
+                                  <span className="block truncate">
+                                    {option.label}
+                                  </span>
                                 </span>
                                 <ListBox.ItemIndicator />
                               </ListBox.Item>

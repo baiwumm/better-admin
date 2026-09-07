@@ -1,6 +1,6 @@
 import type { DeptTreeNode } from "@/lib/api-types";
 
-import { ListBox, Select } from "@heroui/react";
+import { Avatar, ListBox, Select } from "@heroui/react";
 import { useMemo } from "react";
 
 import { useTranslation } from "@/i18n";
@@ -10,16 +10,24 @@ import { useTranslation } from "@/i18n";
  *
  * 组织表单（父级）与用户表单（所属组织）共用：
  * - 选项 = 全量组织树平铺，全角空格逐级缩进、非顶级以「└ 」标记层级，
- *   有编码的组织以「名称(编码)」展示（对齐 Nuxt 端组织下拉）；
+ *   有编码的组织以「名称(编码)」展示（对齐 Nuxt 端组织下拉），
+ *   有负责人时名称前展示小尺寸头像（无图回退负责人首字）；
  *   value 为组织 id，"" 表示未选择
  *   （「顶级组织」或「无组织」的语义由调用方的占位文案/提示表达）；
  * - selfId 传入时禁选自身及其全部后代（组织父级防环）；
  * - 停用组织一律禁选（停用后不可关联新数据）。
  */
 
+/** 下拉项负责人头像（有负责人才生成；alt 为 fallback 首字来源） */
+interface DeptOptionAvatar {
+  src?: string;
+  alt: string;
+}
+
 interface DeptOption {
   id: string;
   label: string;
+  avatar: DeptOptionAvatar | null;
   disabled: boolean;
 }
 
@@ -35,8 +43,11 @@ function buildOptions(
       const disabled = node.status !== "enabled" || underSelf || isSelf;
       const prefix = "　".repeat(level) + (level > 0 ? "└ " : "");
       const label = node.code ? `${node.name}(${node.code})` : node.name;
+      const avatar: DeptOptionAvatar | null = node.leaderName
+        ? { src: node.leaderAvatar ?? undefined, alt: node.leaderName }
+        : null;
 
-      options.push({ id: node.id, label: prefix + label, disabled });
+      options.push({ id: node.id, label: prefix + label, avatar, disabled });
       walk(node.children, level + 1, underSelf || isSelf);
     }
   };
@@ -94,7 +105,28 @@ export function DeptTreeSelect({
               isDisabled={option.disabled}
               textValue={option.label}
             >
-              <span className="block truncate">{option.label}</span>
+              <span className="flex min-w-0 items-center gap-1.5">
+                {option.avatar ? (
+                  <Avatar
+                    aria-hidden
+                    className="size-5 shrink-0"
+                    color="accent"
+                    variant="soft"
+                  >
+                    {option.avatar.src ? (
+                      <Avatar.Image
+                        alt={option.avatar.alt}
+                        loading="lazy"
+                        src={option.avatar.src}
+                      />
+                    ) : null}
+                    <Avatar.Fallback className="text-[10px]">
+                      {option.avatar.alt.slice(0, 1)}
+                    </Avatar.Fallback>
+                  </Avatar>
+                ) : null}
+                <span className="block truncate">{option.label}</span>
+              </span>
               <ListBox.ItemIndicator />
             </ListBox.Item>
           ))}

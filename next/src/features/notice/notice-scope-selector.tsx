@@ -3,7 +3,7 @@
 import type { DeptTreeNode, NoticeScopeType } from "@/lib/api-types";
 import type { Key } from "react";
 
-import { Label, ListBox, Select, Tabs } from "@heroui/react";
+import { Avatar, Label, ListBox, Select, Tabs } from "@heroui/react";
 import { useMemo, useState } from "react";
 
 import { useTranslation } from "@/i18n";
@@ -47,11 +47,12 @@ export function NoticeScopeSelector({
   const { t } = useTranslation();
   const [tab, setTab] = useState<NoticeScopeType>("dept");
 
-  // 组织平铺选项（「└ 」前缀表达层级，有编码以「名称(编码)」展示；含停用禁选）
+  // 组织平铺选项（「└ 」前缀表达层级，有编码以「名称(编码)」展示，有负责人带小头像；含停用禁选）
   const deptOptions = useMemo(() => {
     const options: {
       id: string;
       label: string;
+      avatar: { src?: string; alt: string } | null;
       disabled: boolean;
     }[] = [];
 
@@ -59,10 +60,14 @@ export function NoticeScopeSelector({
       for (const node of nodes) {
         const prefix = "　".repeat(level) + (level > 0 ? "└ " : "");
         const label = node.code ? `${node.name}(${node.code})` : node.name;
+        const avatar = node.leaderName
+          ? { src: node.leaderAvatar ?? undefined, alt: node.leaderName }
+          : null;
 
         options.push({
           id: node.id,
           label: prefix + label,
+          avatar,
           disabled: node.status !== "enabled",
         });
         walk(node.children, level + 1);
@@ -137,7 +142,28 @@ export function NoticeScopeSelector({
                     isDisabled={option.disabled}
                     textValue={option.label}
                   >
-                    <span className="block truncate">{option.label}</span>
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      {option.avatar ? (
+                        <Avatar
+                          aria-hidden
+                          className="size-5 shrink-0"
+                          color="accent"
+                          variant="soft"
+                        >
+                          {option.avatar.src ? (
+                            <Avatar.Image
+                              alt={option.avatar.alt}
+                              loading="lazy"
+                              src={option.avatar.src}
+                            />
+                          ) : null}
+                          <Avatar.Fallback className="text-[10px]">
+                            {option.avatar.alt.slice(0, 1)}
+                          </Avatar.Fallback>
+                        </Avatar>
+                      ) : null}
+                      <span className="block truncate">{option.label}</span>
+                    </span>
                     <ListBox.ItemIndicator />
                   </ListBox.Item>
                 ))}
