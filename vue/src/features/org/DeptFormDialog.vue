@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { Dept, DeptTreeNode } from "@/lib/api-types";
 import type { FormSubmitEvent } from "@nuxt/ui";
-
+import Spinner from "@/components/ui/spinner/index.vue";
 import * as z from "zod";
-import { computed, reactive, ref, useTemplateRef, watch } from "vue";
+import { computed, reactive, ref, useTemplateRef, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast } from "@nuxt/ui/composables";
 
@@ -106,6 +106,17 @@ function close() {
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   submitting.value = true;
 
+  // toast.promise 形态（对齐 React 端）：保存全程 loading toast，
+  // 完成后原位替换为成功/失败；duration 0 保证请求返回前不消失
+  //（update 会重置计时回落全局时长）；icon 用 Spinner 组件（toast
+  // 内容支持 VNode），自带旋转动画
+  const savingToast = toast.add({
+    title: t("features.depts.form.saving"),
+    icon: h(Spinner, { size: "sm", class: "mt-0.5" }),
+    color: "info",
+    duration: 0,
+  });
+
   try {
     // event.data 已过 schema 校验转换（name/code 已 trim）
     const input = {
@@ -121,21 +132,23 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       ? await updateDept(props.dept!.id, input)
       : await createDept(input);
 
-    emit("saved", saved, props.mode);
-    close();
-
-    toast.add({
-      color: "success",
+    toast.update(savingToast.id, {
       title: t(
         isEdit.value
           ? "features.depts.message.updated"
           : "features.depts.message.created",
       ),
+      icon: "i-lucide-check",
+      color: "success",
     });
+
+    emit("saved", saved, props.mode);
+    close();
   } catch (error) {
-    toast.add({
-      color: "error",
+    toast.update(savingToast.id, {
       title: getDeptErrorMessage(error),
+      icon: "i-lucide-x",
+      color: "error",
     });
   } finally {
     submitting.value = false;

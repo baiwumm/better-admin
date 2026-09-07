@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DeptSortItem, DeptTreeNode } from "@/lib/api-types";
 import type { AppColumnDef } from "@/components/data-table/table-types";
-
+import Spinner from "@/components/ui/spinner/index.vue";
 import { computed, h, ref, resolveComponent } from "vue";
 import { useI18n } from "vue-i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
@@ -85,12 +85,15 @@ const reorderMutation = useMutation({
 });
 
 function handleReorder(items: DeptSortItem[]) {
-  // 加载态 toast（参考 Nuxt UI toast 模式：先显示 loading，
-  // API 完成后通过 toast.update 替换为 success/error）
+  // toast.promise 形态（对齐 React 端）：先显示 loading，API 完成后
+  // 通过 toast.update 原位替换为成功/失败；duration 0 保证排序接口
+  // 返回前 loading 不被全局时长提前移除（update 后回落全局时长）；
+  // icon 用 Spinner 组件（toast 内容支持 VNode），自带旋转动画
   const loadingToast = toast.add({
     title: t("features.depts.message.sorting"),
-    icon: "i-lucide-loader-circle",
+    icon: h(Spinner, { size: "sm", class: "mt-0.5" }),
     color: "info",
+    duration: 0,
   });
 
   reorderMutation.mutate(items, {
