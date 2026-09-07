@@ -1,6 +1,6 @@
 import type { DeptTreeNode } from "@/lib/api-types";
 
-import { Avatar, ListBox, Select } from "@heroui/react";
+import { Avatar, ListBox, Select, FieldError, Label } from "@heroui/react";
 import { useMemo } from "react";
 
 import { useTranslation } from "@/i18n";
@@ -68,6 +68,8 @@ export interface DeptTreeSelectProps {
   ariaLabel: string;
   className?: string;
   isDisabled?: boolean;
+  isInvalid?: boolean;
+  showLabel?: boolean;
 }
 
 export function DeptTreeSelect({
@@ -78,20 +80,25 @@ export function DeptTreeSelect({
   ariaLabel,
   className,
   isDisabled = false,
+  isInvalid = false,
+  showLabel = false,
 }: DeptTreeSelectProps) {
   const { t } = useTranslation();
   const options = useMemo(() => buildOptions(tree, selfId), [tree, selfId]);
 
   return (
     <Select
+      isRequired
       aria-label={ariaLabel}
       className={className}
       isDisabled={isDisabled}
+      isInvalid={isInvalid}
       placeholder={t("features.org.deptTreeSelect.placeholder")}
       value={value || null}
       variant="secondary"
       onChange={(key) => onChange(key === null ? "" : String(key))}
     >
+      {showLabel && <Label>{t("features.posts.form.dept")}</Label>}
       <Select.Trigger>
         <Select.Value />
         <Select.Indicator />
@@ -132,6 +139,9 @@ export function DeptTreeSelect({
           ))}
         </ListBox>
       </Select.Popover>
+      {isInvalid && (
+        <FieldError>{t("features.posts.form.deptRequired")}</FieldError>
+      )}
     </Select>
   );
 }
