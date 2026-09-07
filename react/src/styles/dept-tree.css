@@ -15,10 +15,6 @@
 }
 
 .dept-tree__children {
-  /* 与顶层容器（Surface flex flex-col gap-3）一致的纵向间距，层级观感统一 */
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   animation: dept-tree-expand-in 160ms ease-out;
 }
 

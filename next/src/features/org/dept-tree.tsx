@@ -90,7 +90,7 @@ function TreeItem({
   return (
     <div
       ref={setNodeRef}
-      className={cn("mb-1", isDragging && "z-10 opacity-80")}
+      className={cn("my-1", isDragging && "z-10 opacity-80")}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
