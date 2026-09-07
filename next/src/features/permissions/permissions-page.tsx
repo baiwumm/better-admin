@@ -4,11 +4,10 @@ import type { TFunction } from "i18next";
 import type { IconName } from "lucide-react/dynamic";
 import type { PermissionItem } from "@/lib/api-types";
 
-import { Typography } from "@heroui/react";
+import { Typography, SearchField } from "@heroui/react";
 import { useTable } from "@tanstack/react-table";
 import { DynamicIcon } from "lucide-react/dynamic";
 import { useMemo, useState } from "react";
-import { SearchField } from "@heroui/react";
 
 import { DataTable } from "@/components/common/data-table";
 import {
