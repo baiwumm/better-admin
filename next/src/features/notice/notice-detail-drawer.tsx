@@ -20,7 +20,7 @@ import {
   Tabs,
   Typography,
   toast,
-  useOverlayState,
+  type UseOverlayStateReturn,
 } from "@heroui/react";
 import { BellRing } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -51,7 +51,7 @@ export function NoticeDetailDrawer({
   state,
   notice,
 }: {
-  state: ReturnType<typeof useOverlayState>;
+  state: UseOverlayStateReturn;
   notice: NoticeDetail | null;
 }) {
   const { t } = useTranslation();
