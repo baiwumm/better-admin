@@ -9,7 +9,7 @@ import { useTranslation } from "@/i18n";
 
 /**
  * 公告发布范围选择器（契约 v1.7.0 三粒度并集）：
- * Tabs 三页签——组织（平铺缩进多选）/ 岗位（多选）/ 人员（多选），
+ * Tabs 三页签——组织（「└ 」前缀层级多选）/ 岗位（多选）/ 人员（多选），
  * 受控值 NoticeScope[]（三类目标合并数组，切换页签不丢已选）。
  *
  * - 停用组织/岗位禁选；
@@ -57,24 +57,24 @@ export function NoticeScopeSelector({
   const { t } = useTranslation();
   const [tab, setTab] = useState<NoticeScopeType>("dept");
 
-  // 组织平铺选项（含停用禁选）
+  // 组织平铺选项（「└ 」前缀表达层级；含停用禁选）
   const deptOptions = useMemo(() => {
     const options: {
       id: string;
       label: string;
-      depth: number;
       disabled: boolean;
     }[] = [];
 
-    const walk = (nodes: DeptTreeNode[], depth: number) => {
+    const walk = (nodes: DeptTreeNode[], level: number) => {
       for (const node of nodes) {
+        const prefix = "　".repeat(level) + (level > 0 ? "└ " : "");
+
         options.push({
           id: node.id,
-          label: node.name,
-          depth,
+          label: prefix + node.name,
           disabled: node.status !== "enabled",
         });
-        walk(node.children, depth + 1);
+        walk(node.children, level + 1);
       }
     };
 
@@ -146,12 +146,7 @@ export function NoticeScopeSelector({
                     isDisabled={option.disabled}
                     textValue={option.label}
                   >
-                    <span
-                      className="block truncate"
-                      style={{ paddingInlineStart: option.depth * 16 }}
-                    >
-                      {option.label}
-                    </span>
+                    <span className="block truncate">{option.label}</span>
                     <ListBox.ItemIndicator />
                   </ListBox.Item>
                 ))}

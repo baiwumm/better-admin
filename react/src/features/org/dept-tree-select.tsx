@@ -6,10 +6,11 @@ import { useMemo } from "react";
 import { useTranslation } from "@/i18n";
 
 /**
- * 组织树下拉选择器（平铺缩进表达树形层级；HeroUI 无 Tree 组件）。
+ * 组织树下拉选择器（前缀符号表达树形层级；HeroUI 无 Tree 组件）。
  *
  * 组织表单（父级）与用户表单（所属组织）共用：
- * - 选项 = 全量组织树平铺，逐级缩进；value 为组织 id，"" 表示未选择
+ * - 选项 = 全量组织树平铺，全角空格逐级缩进、非顶级以「└ 」标记层级；
+ *   value 为组织 id，"" 表示未选择
  *   （「顶级组织」或「无组织」的语义由调用方的占位文案/提示表达）；
  * - selfId 传入时禁选自身及其全部后代（组织父级防环）；
  * - 停用组织一律禁选（停用后不可关联新数据）。
@@ -18,7 +19,6 @@ import { useTranslation } from "@/i18n";
 interface DeptOption {
   id: string;
   label: string;
-  depth: number;
   disabled: boolean;
 }
 
@@ -28,13 +28,14 @@ function buildOptions(
 ): DeptOption[] {
   const options: DeptOption[] = [];
 
-  const walk = (nodes: DeptTreeNode[], depth: number, underSelf: boolean) => {
+  const walk = (nodes: DeptTreeNode[], level: number, underSelf: boolean) => {
     for (const node of nodes) {
       const isSelf = node.id === selfId;
       const disabled = node.status !== "enabled" || underSelf || isSelf;
+      const prefix = "　".repeat(level) + (level > 0 ? "└ " : "");
 
-      options.push({ id: node.id, label: node.name, depth, disabled });
-      walk(node.children, depth + 1, underSelf || isSelf);
+      options.push({ id: node.id, label: prefix + node.name, disabled });
+      walk(node.children, level + 1, underSelf || isSelf);
     }
   };
 
@@ -91,12 +92,7 @@ export function DeptTreeSelect({
               isDisabled={option.disabled}
               textValue={option.label}
             >
-              <span
-                className="block truncate"
-                style={{ paddingInlineStart: option.depth * 16 }}
-              >
-                {option.label}
-              </span>
+              <span className="block truncate">{option.label}</span>
               <ListBox.ItemIndicator />
             </ListBox.Item>
           ))}

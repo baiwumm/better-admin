@@ -51,7 +51,7 @@ import { useTranslation } from "@/i18n";
  * - 父级候选排除自身及后代（防成环），编辑态允许变更父级，不选默认顶级；
  * - 按钮权限位：下拉多选（图标 + 中文名，复用权限页 i18n 映射），存 OR 位掩码；
  * - 外链打开方式不落库：to 以 https:// 开头时由导航层新窗口打开（契约 v1.4 已移除 target）；
- * - 父级下拉按树形层级缩进（flattenParentOptions 的 depth）；
+ * - 父级下拉以全角空格缩进 + 「└ 」符号表达树形层级（flattenParentOptions）；
  * - 图标输入末尾实时预览（裸 lucide 名，为空不渲染预览）。
  */
 
@@ -334,12 +334,7 @@ function MenuFormModal({
                               id={option.id}
                               textValue={option.label.trim()}
                             >
-                              <span
-                                className="flex items-center gap-1.5"
-                                style={{
-                                  paddingInlineStart: option.depth * 16,
-                                }}
-                              >
+                              <span className="flex items-center gap-1.5">
                                 {origin?.icon ? (
                                   <DynamicIcon
                                     aria-hidden

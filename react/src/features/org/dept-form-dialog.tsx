@@ -46,7 +46,7 @@ import { useTranslation } from "@/i18n";
 /**
  * 组织新增/编辑弹窗（react-hook-form + zod + HeroUI Form）。
  *
- * - parentId 用平铺缩进的 Select 表达树形层级（HeroUI 无 Tree 组件）；
+ * - parentId 用「└ 」前缀符号 + 全角空格缩进的 Select 表达树形层级（HeroUI 无 Tree 组件）；
  *   不选 = 顶级组织（提交映射 null）；编辑时禁用自身与后代（防环），
  *   停用组织不可作父级；「新增子组织」入口进入时上级锁定为所选父级；
  * - leaderId 拉取 /users（page 1, pageSize 50）选择（UserInfo 带头像展示）；
@@ -88,24 +88,24 @@ type DeptFormValues = z.infer<typeof deptFormSchema>;
 interface ParentOption {
   id: string;
   label: string;
-  depth: number;
   disabled: boolean;
 }
 
-/** 树 → 平铺下拉选项（缩进层级；编辑时自身与后代禁选，停用组织禁选；不选 = 顶级） */
+/** 树 → 平铺下拉选项（「└ 」前缀表达层级；编辑时自身与后代禁选，停用组织禁选；不选 = 顶级） */
 function buildParentOptions(
   tree: DeptTreeNode[],
   selfId: string | null,
 ): ParentOption[] {
   const options: ParentOption[] = [];
 
-  const walk = (nodes: DeptTreeNode[], depth: number, underSelf: boolean) => {
+  const walk = (nodes: DeptTreeNode[], level: number, underSelf: boolean) => {
     for (const node of nodes) {
       const isSelf = node.id === selfId;
       const disabled = node.status !== "enabled" || underSelf || isSelf;
+      const prefix = "　".repeat(level) + (level > 0 ? "└ " : "");
 
-      options.push({ id: node.id, label: node.name, depth, disabled });
-      walk(node.children, depth + 1, underSelf || isSelf);
+      options.push({ id: node.id, label: prefix + node.name, disabled });
+      walk(node.children, level + 1, underSelf || isSelf);
     }
   };
 
@@ -286,12 +286,7 @@ function DeptFormModal({
                                 isDisabled={option.disabled}
                                 textValue={option.label}
                               >
-                                <span
-                                  className="block truncate"
-                                  style={{
-                                    paddingInlineStart: option.depth * 16,
-                                  }}
-                                >
+                                <span className="block truncate">
                                   {option.label}
                                 </span>
                                 <ListBox.ItemIndicator />
