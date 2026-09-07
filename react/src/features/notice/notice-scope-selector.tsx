@@ -57,7 +57,7 @@ export function NoticeScopeSelector({
   const { t } = useTranslation();
   const [tab, setTab] = useState<NoticeScopeType>("dept");
 
-  // 组织平铺选项（「└ 」前缀表达层级；含停用禁选）
+  // 组织平铺选项（「└ 」前缀表达层级，有编码以「名称(编码)」展示；含停用禁选）
   const deptOptions = useMemo(() => {
     const options: {
       id: string;
@@ -68,10 +68,11 @@ export function NoticeScopeSelector({
     const walk = (nodes: DeptTreeNode[], level: number) => {
       for (const node of nodes) {
         const prefix = "　".repeat(level) + (level > 0 ? "└ " : "");
+        const label = node.code ? `${node.name}(${node.code})` : node.name;
 
         options.push({
           id: node.id,
-          label: prefix + node.name,
+          label: prefix + label,
           disabled: node.status !== "enabled",
         });
         walk(node.children, level + 1);

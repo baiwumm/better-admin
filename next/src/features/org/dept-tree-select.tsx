@@ -11,7 +11,8 @@ import { useTranslation } from "@/i18n";
  * 组织树下拉选择器（前缀符号表达树形层级；HeroUI 无 Tree 组件）。
  *
  * 组织表单（父级）与用户表单（所属组织）共用：
- * - 选项 = 全量组织树平铺，全角空格逐级缩进、非顶级以「└ 」标记层级；
+ * - 选项 = 全量组织树平铺，全角空格逐级缩进、非顶级以「└ 」标记层级，
+ *   有编码的组织以「名称(编码)」展示（对齐 Nuxt 端组织下拉）；
  *   value 为组织 id，"" 表示未选择
  *   （「顶级组织」或「无组织」的语义由调用方的占位文案/提示表达）；
  * - selfId 传入时禁选自身及其全部后代（组织父级防环）；
@@ -35,8 +36,9 @@ function buildOptions(
       const isSelf = node.id === selfId;
       const disabled = node.status !== "enabled" || underSelf || isSelf;
       const prefix = "　".repeat(level) + (level > 0 ? "└ " : "");
+      const label = node.code ? `${node.name}(${node.code})` : node.name;
 
-      options.push({ id: node.id, label: prefix + node.name, disabled });
+      options.push({ id: node.id, label: prefix + label, disabled });
       walk(node.children, level + 1, underSelf || isSelf);
     }
   };

@@ -91,7 +91,7 @@ interface ParentOption {
   disabled: boolean;
 }
 
-/** 树 → 平铺下拉选项（「└ 」前缀表达层级；编辑时自身与后代禁选，停用组织禁选；不选 = 顶级） */
+/** 树 → 平铺下拉选项（「└ 」前缀表达层级，有编码以「名称(编码)」展示；编辑时自身与后代禁选，停用组织禁选；不选 = 顶级） */
 function buildParentOptions(
   tree: DeptTreeNode[],
   selfId: string | null,
@@ -103,8 +103,9 @@ function buildParentOptions(
       const isSelf = node.id === selfId;
       const disabled = node.status !== "enabled" || underSelf || isSelf;
       const prefix = "　".repeat(level) + (level > 0 ? "└ " : "");
+      const label = node.code ? `${node.name}(${node.code})` : node.name;
 
-      options.push({ id: node.id, label: prefix + node.name, disabled });
+      options.push({ id: node.id, label: prefix + label, disabled });
       walk(node.children, level + 1, underSelf || isSelf);
     }
   };
