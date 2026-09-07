@@ -1,8 +1,18 @@
 <script setup lang="ts">
 import type { MenuNode, PermissionItem } from "@/lib/api-types";
 import type { AppColumnDef } from "@/components/data-table/table-types";
+import type { FormSubmitEvent } from "@nuxt/ui";
 
-import { computed, h, reactive, ref, resolveComponent, watch } from "vue";
+import * as z from "zod";
+import {
+  computed,
+  h,
+  reactive,
+  ref,
+  resolveComponent,
+  useTemplateRef,
+  watch,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
 import { useVueTable } from "@tanstack/vue-table";
@@ -40,6 +50,7 @@ import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.v
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
 import { type AppTable } from "@/components/data-table/table-types";
 import LoadingContent from "@/components/ui/loading-content/index.vue";
+import Spinner from "@/components/ui/spinner/index.vue";
 import { MENUS_QUERY_KEY } from "@/composables/use-menus";
 import {
   useMenuPermissions,
@@ -369,7 +380,42 @@ const FORM_ID = "menu-form";
 const EMPTY_ICON = "circle";
 const I18N_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/;
 
-const form = reactive({
+// 校验消息用函数延迟求值：语言切换后错误文案跟随当前 locale
+const schema = z.object({
+  parentId: z.string(),
+  label: z
+    .string()
+    .trim()
+    .min(1, { error: () => t("features.menus.form.labelInvalid") })
+    .max(50, { error: () => t("features.menus.form.labelInvalid") }),
+  i18nKey: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || I18N_KEY_PATTERN.test(value), {
+      error: () => t("features.menus.form.i18nKeyFormat"),
+    }),
+  icon: z
+    .string()
+    .trim()
+    .min(1, { error: () => t("features.menus.form.iconRequired") }),
+  to: z
+    .string()
+    .trim()
+    .refine(
+      (value) =>
+        value === "" || value.startsWith("/") || value.startsWith("https://"),
+      { error: () => t("features.menus.form.routeFormat") },
+    ),
+  sort: z.number(),
+  keepAlive: z.boolean(),
+  hideInMenu: z.boolean(),
+  enabled: z.boolean(),
+  defaultOpen: z.boolean(),
+});
+
+type Schema = z.output<typeof schema>;
+
+const state = reactive<Schema>({
   parentId: "",
   label: "",
   i18nKey: "",
@@ -382,12 +428,7 @@ const form = reactive({
   defaultOpen: false,
 });
 const permBits = ref(0n);
-const formErrors = reactive({
-  label: "",
-  i18nKey: "",
-  icon: "",
-  to: "",
-});
+const formRef = useTemplateRef("formRef");
 const submitting = ref(false);
 
 watch(formOpen, (open) => {
@@ -397,16 +438,16 @@ watch(formOpen, (open) => {
   const node = formNode.value;
   const addChild = mode === "addChild";
 
-  form.parentId = addChild ? (node?.id ?? "") : (node?.parentId ?? "");
-  form.label = addChild ? "" : (node?.label ?? "");
-  form.i18nKey = addChild ? "" : (node?.i18nKey ?? "");
-  form.icon = addChild ? "" : (node?.icon ?? "");
-  form.to = addChild ? "" : (node?.to ?? "");
-  form.sort = addChild ? 0 : (node?.sort ?? 0);
-  form.keepAlive = addChild ? false : (node?.keepAlive ?? false);
-  form.hideInMenu = addChild ? false : (node?.hideInMenu ?? false);
-  form.enabled = addChild ? true : (node?.enabled ?? true);
-  form.defaultOpen = addChild ? false : (node?.defaultOpen ?? false);
+  state.parentId = addChild ? (node?.id ?? "") : (node?.parentId ?? "");
+  state.label = addChild ? "" : (node?.label ?? "");
+  state.i18nKey = addChild ? "" : (node?.i18nKey ?? "");
+  state.icon = addChild ? "" : (node?.icon ?? "");
+  state.to = addChild ? "" : (node?.to ?? "");
+  state.sort = addChild ? 0 : (node?.sort ?? 0);
+  state.keepAlive = addChild ? false : (node?.keepAlive ?? false);
+  state.hideInMenu = addChild ? false : (node?.hideInMenu ?? false);
+  state.enabled = addChild ? true : (node?.enabled ?? true);
+  state.defaultOpen = addChild ? false : (node?.defaultOpen ?? false);
 
   try {
     permBits.value = BigInt(node?.permissions ?? "0");
@@ -414,10 +455,7 @@ watch(formOpen, (open) => {
     permBits.value = 0n;
   }
 
-  formErrors.label = "";
-  formErrors.i18nKey = "";
-  formErrors.icon = "";
-  formErrors.to = "";
+  formRef.value?.clear();
 });
 
 const isFormEdit = computed(() => formMode.value === "edit");
@@ -467,48 +505,35 @@ function onPermissionsChange(values: unknown) {
   permBits.value = next;
 }
 
-function validateForm(): boolean {
-  formErrors.label =
-    form.label.trim().length >= 1 && form.label.trim().length <= 50
-      ? ""
-      : t("features.menus.form.labelInvalid");
-  formErrors.i18nKey =
-    form.i18nKey.trim() === "" || I18N_KEY_PATTERN.test(form.i18nKey.trim())
-      ? ""
-      : t("features.menus.form.i18nKeyFormat");
-  formErrors.icon = form.icon.trim()
-    ? ""
-    : t("features.menus.form.iconRequired");
-  formErrors.to =
-    form.to.trim() === "" ||
-    form.to.trim().startsWith("/") ||
-    form.to.trim().startsWith("https://")
-      ? ""
-      : t("features.menus.form.routeFormat");
-
-  return !Object.values(formErrors).some(Boolean);
-}
-
 function closeForm() {
   formOpen.value = false;
 }
 
-async function submitForm() {
-  if (!validateForm()) return;
-
+async function submitForm(event: FormSubmitEvent<Schema>) {
   submitting.value = true;
 
+  // toast.promise 形态（对齐 React 端）：保存全程 loading toast，
+  // 完成后原位替换为成功/失败；duration 0 保证请求返回前不消失
+  //（update 会重置计时回落全局时长）；icon 用 Spinner 组件（toast
+  // 内容支持 VNode），自带旋转动画
+  const savingToast = toast.add({
+    title: t("features.menus.form.saving"),
+    icon: h(Spinner, { size: "sm", class: "mt-0.5" }),
+    color: "info",
+    duration: 0,
+  });
+
   const payload: MenuSaveInput = {
-    label: form.label.trim(),
-    i18nKey: form.i18nKey.trim() || null,
-    icon: form.icon.trim() || EMPTY_ICON,
-    to: form.to.trim() || null,
-    parentId: form.parentId || null,
-    sort: form.sort,
-    keepAlive: form.keepAlive,
-    hideInMenu: form.hideInMenu,
-    enabled: form.enabled,
-    defaultOpen: form.defaultOpen,
+    label: event.data.label,
+    i18nKey: event.data.i18nKey || null,
+    icon: event.data.icon || EMPTY_ICON,
+    to: event.data.to || null,
+    parentId: event.data.parentId || null,
+    sort: event.data.sort,
+    keepAlive: event.data.keepAlive,
+    hideInMenu: event.data.hideInMenu,
+    enabled: event.data.enabled,
+    defaultOpen: event.data.defaultOpen,
     permissions: permBits.value.toString(),
   };
 
@@ -521,20 +546,22 @@ async function submitForm() {
       await createMenu(payload);
     }
 
-    toast.add({
-      color: "success",
+    toast.update(savingToast.id, {
       title: t(
         isFormEdit.value
           ? "features.menus.message.updateSuccess"
           : "features.menus.message.createSuccess",
       ),
+      icon: "i-lucide-check",
+      color: "success",
     });
     handleSaved();
     closeForm();
   } catch (error) {
-    toast.add({
-      color: "error",
+    toast.update(savingToast.id, {
       title: getMenuErrorMessage(error),
+      icon: "i-lucide-x",
+      color: "error",
     });
   } finally {
     submitting.value = false;
@@ -600,8 +627,11 @@ async function submitForm() {
       <template #body>
         <UForm
           :id="FORM_ID"
+          ref="formRef"
+          :schema="schema"
+          :state="state"
           class="flex flex-col gap-4"
-          @submit.prevent="submitForm"
+          @submit="submitForm"
         >
           <UFormField
             :label="t('features.menus.form.parent')"
@@ -609,7 +639,7 @@ async function submitForm() {
           >
             <div class="flex items-center gap-2">
               <USelect
-                v-model="form.parentId"
+                v-model="state.parentId"
                 :aria-label="t('features.menus.form.parent')"
                 :disabled="formMode === 'addChild'"
                 :items="parentItems"
@@ -618,13 +648,13 @@ async function submitForm() {
                 value-key="value"
               />
               <UButton
-                v-if="form.parentId && formMode !== 'addChild'"
+                v-if="state.parentId && formMode !== 'addChild'"
                 :aria-label="t('features.menus.form.parentClear')"
                 color="neutral"
                 icon="i-lucide-x"
                 size="sm"
                 variant="ghost"
-                @click="form.parentId = ''"
+                @click="state.parentId = ''"
               />
             </div>
           </UFormField>
@@ -632,11 +662,11 @@ async function submitForm() {
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <UFormField
               :label="t('features.menus.form.label')"
-              :error="formErrors.label || undefined"
+              name="label"
               required
             >
               <UInput
-                v-model="form.label"
+                v-model="state.label"
                 :maxlength="50"
                 :placeholder="t('features.menus.form.labelPlaceholder')"
                 class="w-full"
@@ -646,11 +676,11 @@ async function submitForm() {
 
             <UFormField
               :label="t('features.menus.form.i18nKey')"
-              :error="formErrors.i18nKey || undefined"
+              name="i18nKey"
               required
             >
               <UInput
-                v-model="form.i18nKey"
+                v-model="state.i18nKey"
                 class="w-full"
                 placeholder="menu.xxx.yyy"
                 variant="soft"
@@ -661,34 +691,32 @@ async function submitForm() {
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <UFormField
               :label="t('features.menus.form.icon')"
-              :error="formErrors.icon || undefined"
+              name="icon"
               required
             >
               <div class="flex items-center gap-2">
                 <UInput
-                  v-model="form.icon"
+                  v-model="state.icon"
                   aria-label="Icon"
                   class="flex-1"
                   placeholder="house"
                   variant="soft"
                 />
                 <UIcon
-                  v-if="form.icon"
-                  :name="`i-lucide-${form.icon}`"
+                  v-if="state.icon"
+                  :name="`i-lucide-${state.icon}`"
                   class="text-muted size-4"
                 />
               </div>
             </UFormField>
 
             <UFormField
+              :help="t('features.menus.form.routeHint')"
               :label="t('features.menus.form.route')"
-              :error="formErrors.to || undefined"
-              :description="
-                formErrors.to ? undefined : t('features.menus.form.routeHint')
-              "
+              name="to"
             >
               <UInput
-                v-model="form.to"
+                v-model="state.to"
                 :placeholder="t('features.menus.form.routePlaceholder')"
                 class="w-full"
                 variant="soft"
@@ -710,7 +738,7 @@ async function submitForm() {
 
           <UFormField :label="t('common.column.sort')">
             <UInput
-              v-model.number="form.sort"
+              v-model.number="state.sort"
               class="w-full"
               type="number"
               variant="soft"
@@ -735,7 +763,7 @@ async function submitForm() {
               class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
             >
               <span class="text-sm font-medium">{{ switchRow.label }}</span>
-              <USwitch v-model="form[switchRow.key as 'keepAlive']" />
+              <USwitch v-model="state[switchRow.key as 'keepAlive']" />
             </div>
           </div>
         </UForm>
@@ -769,6 +797,7 @@ async function submitForm() {
         })
       "
       :keyword-label="t('features.menus.message.deleteKeyword')"
+      :loading="deleting"
       :title="t('features.menus.message.deleteTitle')"
       destructive
       @confirm="confirmDelete"
