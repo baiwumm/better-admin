@@ -315,7 +315,7 @@ export function DirectoryPage({
 
   return (
     <div className="flex w-full flex-col pb-8">
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
         {/* 左栏：组织树面板（与组织管理共用 DeptTreePanel；树点击即筛选组织及下级） */}
         <DeptTreePanel
           emptyTitle={t("features.depts.tree.empty")}

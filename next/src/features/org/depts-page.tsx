@@ -341,7 +341,7 @@ export function DeptsPage() {
         />
 
         {/* 右栏：选中组织详情 + 子组织列表 */}
-        <div className="flex min-w-0 flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-4">
           <Surface className="flex flex-col gap-3 rounded-3xl p-4">
             {selectedNode ? (
               <>
