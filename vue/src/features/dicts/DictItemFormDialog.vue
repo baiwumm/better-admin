@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import type { DictItem } from "@/lib/api-types";
+import type { FormSubmitEvent } from "@nuxt/ui";
 
-import { computed, reactive, ref, watch } from "vue";
+import * as z from "zod";
+import { computed, h, reactive, ref, useTemplateRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast } from "@nuxt/ui/composables";
+
+import Spinner from "@/components/ui/spinner/index.vue";
 
 import {
   createDictItem,
@@ -12,7 +16,8 @@ import {
 } from "./dict-api";
 
 /**
- * 字典项新增/编辑弹窗（校验规则与 React 端 zod schema 对应）：
+ * 字典项新增/编辑弹窗：UForm + zod schema 校验（官方范式，@submit 仅在
+ * 校验通过后触发，event.data 为校验转换后的值）。
  * - value/label 必填（同类型下 value/label 唯一由后端 409 拦截）；
  * - i18nKey 可选：点分格式（menu.xxx.yyy），传 "" 表示清空；
  * - sort 0-999 整数；enabled 开关。
@@ -37,14 +42,38 @@ const I18N_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/;
 const { t } = useI18n();
 const toast = useToast();
 
-const form = reactive({
+// 校验消息用函数延迟求值：语言切换后错误文案跟随当前 locale
+const schema = z.object({
+  value: z
+    .string()
+    .trim()
+    .min(1, { error: () => t("features.dicts.item.form.valueInvalid") })
+    .max(50, { error: () => t("features.dicts.item.form.valueInvalid") }),
+  label: z
+    .string()
+    .trim()
+    .min(1, { error: () => t("features.dicts.item.form.labelInvalid") })
+    .max(50, { error: () => t("features.dicts.item.form.labelInvalid") }),
+  i18nKey: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || I18N_KEY_PATTERN.test(value), {
+      error: () => t("features.dicts.item.form.i18nKeyFormat"),
+    }),
+  sort: z.number(),
+  enabled: z.boolean(),
+});
+
+type Schema = z.output<typeof schema>;
+
+const state = reactive<Schema>({
   value: "",
   label: "",
   i18nKey: "",
   sort: 0,
   enabled: true,
 });
-const errors = reactive({ value: "", label: "", i18nKey: "" });
+const formRef = useTemplateRef("formRef");
 const submitting = ref(false);
 
 watch(
@@ -54,15 +83,12 @@ watch(
 
     const item = props.mode === "edit" ? props.item : null;
 
-    form.value = item?.value ?? "";
-    form.label = item?.label ?? "";
-    form.i18nKey = item?.i18nKey ?? "";
-    form.sort = item?.sort ?? 0;
-    form.enabled = item?.enabled ?? true;
-
-    errors.value = "";
-    errors.label = "";
-    errors.i18nKey = "";
+    state.value = item?.value ?? "";
+    state.label = item?.label ?? "";
+    state.i18nKey = item?.i18nKey ?? "";
+    state.sort = item?.sort ?? 0;
+    state.enabled = item?.enabled ?? true;
+    formRef.value?.clear();
   },
   { immediate: true },
 );
@@ -73,34 +99,26 @@ function close() {
   emit("update:open", false);
 }
 
-function validate(): boolean {
-  errors.value =
-    form.value.trim().length >= 1 && form.value.trim().length <= 50
-      ? ""
-      : t("features.dicts.item.form.valueInvalid");
-  errors.label =
-    form.label.trim().length >= 1 && form.label.trim().length <= 50
-      ? ""
-      : t("features.dicts.item.form.labelInvalid");
-  errors.i18nKey =
-    form.i18nKey.trim() === "" || I18N_KEY_PATTERN.test(form.i18nKey.trim())
-      ? ""
-      : t("features.dicts.item.form.i18nKeyFormat");
-
-  return !Object.values(errors).some(Boolean);
-}
-
-async function onSubmit() {
-  if (!validate()) return;
-
+async function onSubmit(event: FormSubmitEvent<Schema>) {
   submitting.value = true;
 
+  // toast.promise 形态（对齐 React 端）：保存全程 loading toast，
+  // 完成后原位替换为成功/失败；duration 0 保证请求返回前不消失
+  //（update 会重置计时回落全局时长）；icon 用 Spinner 组件（toast
+  // 内容支持 VNode），自带旋转动画
+  const savingToast = toast.add({
+    title: t("features.dicts.item.form.saving"),
+    icon: h(Spinner, { size: "sm", class: "mt-0.5" }),
+    color: "info",
+    duration: 0,
+  });
+
   const input = {
-    value: form.value.trim(),
-    label: form.label.trim(),
-    i18nKey: form.i18nKey.trim(),
-    sort: form.sort,
-    enabled: form.enabled,
+    value: event.data.value,
+    label: event.data.label,
+    i18nKey: event.data.i18nKey,
+    sort: event.data.sort,
+    enabled: event.data.enabled,
   };
 
   try {
@@ -110,20 +128,22 @@ async function onSubmit() {
       await createDictItem(props.typeCode, input);
     }
 
-    toast.add({
-      color: "success",
+    toast.update(savingToast.id, {
       title: t(
         isEdit.value
           ? "features.dicts.message.itemUpdated"
           : "features.dicts.message.itemCreated",
       ),
+      icon: "i-lucide-check",
+      color: "success",
     });
     emit("saved");
     close();
   } catch (error) {
-    toast.add({
-      color: "error",
+    toast.update(savingToast.id, {
       title: getDictErrorMessage(error),
+      icon: "i-lucide-x",
+      color: "error",
     });
   } finally {
     submitting.value = false;
@@ -148,17 +168,20 @@ async function onSubmit() {
     <template #body>
       <UForm
         :id="FORM_ID"
+        ref="formRef"
+        :schema="schema"
+        :state="state"
         class="flex flex-col gap-4"
-        @submit.prevent="onSubmit"
+        @submit="onSubmit"
       >
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <UFormField
             :label="t('features.dicts.item.form.value')"
-            :error="errors.value || undefined"
+            name="value"
             required
           >
             <UInput
-              v-model="form.value"
+              v-model="state.value"
               :maxlength="50"
               :placeholder="t('features.dicts.item.form.valuePlaceholder')"
               class="w-full font-mono"
@@ -168,11 +191,11 @@ async function onSubmit() {
 
           <UFormField
             :label="t('features.dicts.item.form.label')"
-            :error="errors.label || undefined"
+            name="label"
             required
           >
             <UInput
-              v-model="form.label"
+              v-model="state.label"
               :maxlength="50"
               :placeholder="t('features.dicts.item.form.labelPlaceholder')"
               class="w-full"
@@ -183,11 +206,11 @@ async function onSubmit() {
 
         <UFormField
           :label="t('features.dicts.item.form.i18nKey')"
-          :error="errors.i18nKey || undefined"
-          :description="t('features.dicts.item.form.i18nKeyHint')"
+          :help="t('features.dicts.item.form.i18nKeyHint')"
+          name="i18nKey"
         >
           <UInput
-            v-model="form.i18nKey"
+            v-model="state.i18nKey"
             class="w-full"
             placeholder="dict.xxx.yyy"
             variant="soft"
@@ -197,7 +220,7 @@ async function onSubmit() {
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <UFormField :label="t('common.column.sort')">
             <UInput
-              v-model.number="form.sort"
+              v-model.number="state.sort"
               class="w-full"
               max="999"
               min="0"
@@ -212,7 +235,7 @@ async function onSubmit() {
             <span class="text-sm font-medium">
               {{ t("features.dicts.item.form.enabled") }}
             </span>
-            <USwitch v-model="form.enabled" />
+            <USwitch v-model="state.enabled" />
           </div>
         </div>
       </UForm>

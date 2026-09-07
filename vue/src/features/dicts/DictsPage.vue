@@ -163,9 +163,11 @@ const itemFormItem = ref<DictItem | null>(null);
 
 const typeDeleteOpen = ref(false);
 const deleteTypeTarget = ref<DictType | null>(null);
+const typeDeleteSubmitting = ref(false);
 
 const itemDeleteOpen = ref(false);
 const deleteItemTarget = ref<DictItem | null>(null);
+const itemDeleteSubmitting = ref(false);
 
 function openTypeForm(mode: "create" | "edit", type: DictType | null) {
   typeFormMode.value = mode;
@@ -187,6 +189,8 @@ function openItemForm(mode: "create" | "edit", item: DictItem | null) {
 async function confirmDeleteType() {
   if (!deleteTypeTarget.value) return;
 
+  typeDeleteSubmitting.value = true;
+
   try {
     await deleteDictType(deleteTypeTarget.value.code);
   } catch (error) {
@@ -196,6 +200,8 @@ async function confirmDeleteType() {
     });
 
     return;
+  } finally {
+    typeDeleteSubmitting.value = false;
   }
 
   dictStore.clearDict(deleteTypeTarget.value.code);
@@ -210,6 +216,8 @@ async function confirmDeleteType() {
 async function confirmDeleteItem() {
   if (!deleteItemTarget.value) return;
 
+  itemDeleteSubmitting.value = true;
+
   try {
     await deleteDictItem(deleteItemTarget.value.id);
   } catch (error) {
@@ -219,6 +227,8 @@ async function confirmDeleteItem() {
     });
 
     return;
+  } finally {
+    itemDeleteSubmitting.value = false;
   }
 
   if (activeType.value) await refreshItemsAndSync(activeType.value.code);
@@ -529,6 +539,7 @@ const table: AppTable<DictItem> = useVueTable({
         })
       "
       :keyword-label="t('features.dicts.message.deleteTypeKeyword')"
+      :loading="typeDeleteSubmitting"
       :title="t('features.dicts.message.deleteTypeTitle')"
       destructive
       @confirm="confirmDeleteType"
@@ -542,6 +553,7 @@ const table: AppTable<DictItem> = useVueTable({
           label: deleteItemTarget?.label ?? '',
         })
       "
+      :loading="itemDeleteSubmitting"
       :title="t('features.dicts.message.deleteItemTitle')"
       destructive
       @confirm="confirmDeleteItem"

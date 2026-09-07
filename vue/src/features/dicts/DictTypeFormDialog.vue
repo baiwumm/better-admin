@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import type { DictType } from "@/lib/api-types";
+import type { FormSubmitEvent } from "@nuxt/ui";
 
-import { computed, reactive, ref, watch } from "vue";
+import * as z from "zod";
+import { computed, h, reactive, ref, useTemplateRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast } from "@nuxt/ui/composables";
+
+import Spinner from "@/components/ui/spinner/index.vue";
 
 import {
   createDictType,
@@ -12,7 +16,8 @@ import {
 } from "./dict-api";
 
 /**
- * 字典类型新增/编辑弹窗（校验规则与 React 端 zod schema 对应）：
+ * 字典类型新增/编辑弹窗：UForm + zod schema 校验（官方范式，@submit 仅在
+ * 校验通过后触发，event.data 为校验转换后的值）。
  * - code 仅创建时可填且创建后不可变更（程序标识，风格同角色 code）；
  * - code/name 唯一性由后端 409 拦截（DICT_TYPE_CODE_EXISTS）；
  * - description 清空传 ""（后端部分更新 + ?? 兜底语义，null 被拒绝）。
@@ -35,8 +40,34 @@ const CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const { t } = useI18n();
 const toast = useToast();
 
-const form = reactive({ code: "", name: "", description: "" });
-const errors = reactive({ code: "", name: "" });
+const isEdit = computed(() => props.mode === "edit");
+
+// 校验消息用函数延迟求值：语言切换后错误文案跟随当前 locale
+const schema = z
+  .object({
+    code: z.string().trim(),
+    name: z
+      .string()
+      .trim()
+      .min(1, { error: () => t("features.dicts.type.form.nameInvalid") })
+      .max(50, { error: () => t("features.dicts.type.form.nameInvalid") }),
+    description: z.string().trim(),
+  })
+  // code 仅创建时校验（编辑态锁定不可改，superRefine 运行时读取 isEdit）
+  .superRefine((data, ctx) => {
+    if (!isEdit.value && !CODE_PATTERN.test(data.code)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["code"],
+        message: t("features.dicts.type.form.codeInvalid"),
+      });
+    }
+  });
+
+type Schema = z.output<typeof schema>;
+
+const state = reactive<Schema>({ code: "", name: "", description: "" });
+const formRef = useTemplateRef("formRef");
 const submitting = ref(false);
 
 watch(
@@ -44,68 +75,60 @@ watch(
   (open) => {
     if (!open) return;
 
-    form.code = props.type?.code ?? "";
-    form.name = props.type?.name ?? "";
-    form.description = props.type?.description ?? "";
-    errors.code = "";
-    errors.name = "";
+    state.code = props.type?.code ?? "";
+    state.name = props.type?.name ?? "";
+    state.description = props.type?.description ?? "";
+    formRef.value?.clear();
   },
   { immediate: true },
 );
-
-const isEdit = computed(() => props.mode === "edit");
 
 function close() {
   emit("update:open", false);
 }
 
-function validate(): boolean {
-  errors.code =
-    !isEdit.value &&
-    form.code.trim().length >= 1 &&
-    form.code.trim().length <= 50 &&
-    CODE_PATTERN.test(form.code.trim())
-      ? ""
-      : t("features.dicts.type.form.codeInvalid");
-  errors.name =
-    form.name.trim().length >= 1 && form.name.trim().length <= 50
-      ? ""
-      : t("features.dicts.type.form.nameInvalid");
-
-  return !Object.values(errors).some(Boolean);
-}
-
-async function onSubmit() {
-  if (!validate()) return;
-
+async function onSubmit(event: FormSubmitEvent<Schema>) {
   submitting.value = true;
+
+  // toast.promise 形态（对齐 React 端）：保存全程 loading toast，
+  // 完成后原位替换为成功/失败；duration 0 保证请求返回前不消失
+  //（update 会重置计时回落全局时长）；icon 用 Spinner 组件（toast
+  // 内容支持 VNode），自带旋转动画
+  const savingToast = toast.add({
+    title: t("features.dicts.type.form.saving"),
+    icon: h(Spinner, { size: "sm", class: "mt-0.5" }),
+    color: "info",
+    duration: 0,
+  });
 
   try {
     const saved = isEdit.value
       ? await updateDictType(props.type!.code, {
-          name: form.name,
-          description: form.description,
+          name: event.data.name,
+          description: event.data.description,
         })
       : await createDictType({
-          code: form.code,
-          name: form.name,
-          description: form.description,
+          code: event.data.code,
+          name: event.data.name,
+          description: event.data.description,
         });
 
-    toast.add({
-      color: "success",
+    toast.update(savingToast.id, {
       title: t(
         isEdit.value
           ? "features.dicts.message.typeUpdated"
           : "features.dicts.message.typeCreated",
       ),
+      icon: "i-lucide-check",
+      color: "success",
     });
     emit("saved", saved, props.mode);
     close();
   } catch (error) {
-    toast.add({
-      color: "error",
+    toast.update(savingToast.id, {
       title: getDictErrorMessage(error),
+      icon: "i-lucide-x",
+      color: "error",
     });
   } finally {
     submitting.value = false;
@@ -130,17 +153,20 @@ async function onSubmit() {
     <template #body>
       <UForm
         :id="FORM_ID"
+        ref="formRef"
+        :schema="schema"
+        :state="state"
         class="flex flex-col gap-4"
-        @submit.prevent="onSubmit"
+        @submit="onSubmit"
       >
         <UFormField
           :label="t('features.dicts.type.form.code')"
-          :error="errors.code || undefined"
           :disabled="isEdit"
+          name="code"
           required
         >
           <UInput
-            v-model="form.code"
+            v-model="state.code"
             :maxlength="50"
             :placeholder="t('features.dicts.type.form.codePlaceholder')"
             class="w-full font-mono"
@@ -150,11 +176,11 @@ async function onSubmit() {
 
         <UFormField
           :label="t('features.dicts.type.form.name')"
-          :error="errors.name || undefined"
+          name="name"
           required
         >
           <UInput
-            v-model="form.name"
+            v-model="state.name"
             :maxlength="50"
             :placeholder="t('features.dicts.type.form.namePlaceholder')"
             class="w-full"
@@ -164,7 +190,7 @@ async function onSubmit() {
 
         <UFormField :label="t('features.dicts.type.form.description')">
           <UTextarea
-            v-model="form.description"
+            v-model="state.description"
             :rows="3"
             class="w-full"
             variant="soft"
