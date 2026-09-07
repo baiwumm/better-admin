@@ -2,16 +2,22 @@
 import type { MenuNode, PermissionItem } from "@/lib/api-types";
 import type { AppColumnDef } from "@/components/data-table/table-types";
 
-import { computed, h, reactive, ref, watch } from "vue";
+import { computed, h, reactive, ref, resolveComponent, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
-import { useTable } from "@tanstack/vue-table";
+import { useVueTable } from "@tanstack/vue-table";
+import {
+  getCoreRowModel,
+  getExpandedRowModel,
+  getSortedRowModel,
+} from "@tanstack/vue-table";
 import { useToast } from "@nuxt/ui/composables";
-import UBadge from "@nuxt/ui/runtime/components/Badge.vue";
-import UIcon from "@nuxt/ui/runtime/components/Icon.vue";
-import UButton from "@nuxt/ui/runtime/components/Button.vue";
-import UDropdownMenu from "@nuxt/ui/runtime/components/DropdownMenu.vue";
-import UCheckbox from "@nuxt/ui/runtime/components/Checkbox.vue";
+
+const UBadge = resolveComponent("UBadge");
+const UButton = resolveComponent("UButton");
+const UCheckbox = resolveComponent("UCheckbox");
+const UDropdownMenu = resolveComponent("UDropdownMenu");
+const UIcon = resolveComponent("UIcon");
 
 import {
   addChildMenu,
@@ -32,10 +38,7 @@ import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import DataTable from "@/components/data-table/DataTable.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
-import {
-  appTableFeatures,
-  type AppTable,
-} from "@/components/data-table/table-types";
+import { type AppTable } from "@/components/data-table/table-types";
 import { MENUS_QUERY_KEY } from "@/composables/use-menus";
 import {
   useMenuPermissions,
@@ -345,14 +348,16 @@ const columns = computed<AppColumnDef<MenuNode>[]>(() => [
   },
 ]);
 
-const table: AppTable<MenuNode> = useTable({
+const table: AppTable<MenuNode> = useVueTable({
   get data() {
     return data.value ?? [];
   },
   get columns() {
     return columns.value;
   },
-  features: appTableFeatures,
+  getCoreRowModel: getCoreRowModel(),
+  getExpandedRowModel: getExpandedRowModel(),
+  getSortedRowModel: getSortedRowModel(),
   // 树形：subRows = children，初始全部展开
   getSubRows: (row: MenuNode) => row.children,
   initialState: { expanded: true },
@@ -591,27 +596,24 @@ async function submitForm() {
     <UModal
       :open="formOpen"
       :dismissible="false"
-      :ui="{ content: 'sm:max-w-xl' }"
+      :title="
+        t(
+          formMode === 'edit'
+            ? 'features.menus.form.title.edit'
+            : formMode === 'addChild'
+              ? 'features.menus.form.title.addChild'
+              : 'features.menus.form.title.create',
+        )
+      "
+      :ui="{ content: 'sm:max-w-xl', footer: 'justify-end' }"
       @update:open="(value: boolean) => !value && closeForm()"
     >
-      <template #content>
-        <form
+      <template #body>
+        <UForm
           :id="FORM_ID"
-          class="flex flex-col gap-4 p-6"
+          class="flex flex-col gap-4"
           @submit.prevent="submitForm"
         >
-          <h2 class="text-lg font-semibold">
-            {{
-              t(
-                formMode === "edit"
-                  ? "features.menus.form.title.edit"
-                  : formMode === "addChild"
-                    ? "features.menus.form.title.addChild"
-                    : "features.menus.form.title.create",
-              )
-            }}
-          </h2>
-
           <UFormField
             :label="t('features.menus.form.parent')"
             :description="t('features.menus.form.parentHint')"
@@ -747,27 +749,24 @@ async function submitForm() {
               <USwitch v-model="form[switchRow.key as 'keepAlive']" />
             </div>
           </div>
+        </UForm>
+      </template>
 
-          <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <UButton
-              :label="t('common.cancel')"
-              color="neutral"
-              variant="outline"
-              type="button"
-              @click="closeForm"
-            />
-            <UButton
-              :form="FORM_ID"
-              :label="
-                submitting
-                  ? t('features.menus.form.saving')
-                  : t('common.confirm')
-              "
-              :loading="submitting"
-              type="submit"
-            />
-          </div>
-        </form>
+      <template #footer="{ close: onClose }">
+        <UButton
+          :label="t('common.cancel')"
+          color="neutral"
+          variant="outline"
+          @click="onClose"
+        />
+        <UButton
+          :form="FORM_ID"
+          :label="
+            submitting ? t('features.menus.form.saving') : t('common.confirm')
+          "
+          :loading="submitting"
+          type="submit"
+        />
       </template>
     </UModal>
 

@@ -137,25 +137,22 @@ async function onSubmit() {
   <UModal
     :open="open"
     :dismissible="false"
-    :ui="{ content: 'sm:max-w-md' }"
+    :title="
+      t(
+        isEdit
+          ? 'features.dicts.item.form.title.edit'
+          : 'features.dicts.item.form.title.create',
+      )
+    "
+    :ui="{ content: 'sm:max-w-md', footer: 'justify-end' }"
     @update:open="(value: boolean) => !value && close()"
   >
-    <template #content>
-      <form
+    <template #body>
+      <UForm
         :id="FORM_ID"
-        class="flex flex-col gap-4 p-6"
+        class="flex flex-col gap-4"
         @submit.prevent="onSubmit"
       >
-        <h2 class="text-lg font-semibold">
-          {{
-            t(
-              isEdit
-                ? "features.dicts.item.form.title.edit"
-                : "features.dicts.item.form.title.create",
-            )
-          }}
-        </h2>
-
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <UFormField
             :label="t('features.dicts.item.form.value')"
@@ -220,27 +217,26 @@ async function onSubmit() {
             <USwitch v-model="form.enabled" />
           </div>
         </div>
+      </UForm>
+    </template>
 
-        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <UButton
-            :label="t('common.cancel')"
-            color="neutral"
-            variant="outline"
-            type="button"
-            @click="close"
-          />
-          <UButton
-            :form="FORM_ID"
-            :label="
-              submitting
-                ? t('features.dicts.item.form.saving')
-                : t('common.confirm')
-            "
-            :loading="submitting"
-            type="submit"
-          />
-        </div>
-      </form>
+    <template #footer="{ close: onClose }">
+      <UButton
+        :label="t('common.cancel')"
+        color="neutral"
+        variant="outline"
+        @click="onClose"
+      />
+      <UButton
+        :form="FORM_ID"
+        :label="
+          submitting
+            ? t('features.dicts.item.form.saving')
+            : t('common.confirm')
+        "
+        :loading="submitting"
+        type="submit"
+      />
     </template>
   </UModal>
 </template>

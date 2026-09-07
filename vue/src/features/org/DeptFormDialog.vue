@@ -143,50 +143,36 @@ export default { name: "DeptFormDialog" };
   <UModal
     :open="open"
     :dismissible="false"
-    :ui="{ content: 'sm:max-w-md' }"
+    :title="
+      t(
+        isEdit
+          ? 'features.depts.form.title.edit'
+          : 'features.depts.form.title.create',
+      )
+    "
+    :ui="{ content: 'sm:max-w-md', footer: 'justify-end' }"
     @update:open="(value: boolean) => !value && close()"
   >
-    <template #content>
-      <form
+    <template #body>
+      <UForm
         :id="FORM_ID"
-        class="flex flex-col gap-4 p-6"
+        class="flex flex-col gap-4"
         @submit.prevent="onSubmit"
       >
-        <h2 class="text-lg font-semibold">
-          {{
-            t(
-              isEdit
-                ? "features.depts.form.title.edit"
-                : "features.depts.form.title.create",
-            )
-          }}
-        </h2>
-
         <UFormField
           :label="t('features.depts.form.parent')"
           :help="t('features.depts.form.parentHint')"
+          :ui="{ help: 'text-dimmed text-xs' }"
           :disabled="isCreateChild"
         >
-          <div class="flex items-center gap-2">
-            <DeptTreeSelect
-              v-model="form.parentId"
-              :is-disabled="isCreateChild"
-              :self-id="isEdit ? (dept?.id ?? null) : null"
-              :placeholder="t('features.depts.form.parentPlaceholder')"
-              :tree="tree"
-              class="flex-1"
-            />
-            <UButton
-              v-if="form.parentId && !isCreateChild"
-              :aria-label="t('features.depts.form.parentClear')"
-              class="shrink-0"
-              color="neutral"
-              icon="i-lucide-x"
-              size="sm"
-              variant="ghost"
-              @click="form.parentId = ''"
-            />
-          </div>
+          <DeptTreeSelect
+            v-model="form.parentId"
+            :is-disabled="isCreateChild"
+            :self-id="isEdit ? (dept?.id ?? null) : null"
+            :placeholder="t('features.depts.form.parentPlaceholder')"
+            :tree="tree"
+            class="w-full"
+          />
         </UFormField>
 
         <UFormField
@@ -206,6 +192,7 @@ export default { name: "DeptFormDialog" };
           :error="errors.code || undefined"
           :help="errors.code ? undefined : t('features.depts.form.codeHint')"
           :label="t('features.depts.form.code')"
+          :ui="{ help: 'text-dimmed text-xs' }"
         >
           <UInput
             v-model="form.code"
@@ -228,12 +215,7 @@ export default { name: "DeptFormDialog" };
         />
 
         <UFormField :label="t('common.column.sort')">
-          <UInput
-            v-model.number="form.sort"
-            class="w-full"
-            type="number"
-            variant="soft"
-          />
+          <UInputNumber v-model="form.sort" :min="0" class="w-full" />
         </UFormField>
 
         <div
@@ -250,25 +232,24 @@ export default { name: "DeptFormDialog" };
             "
           />
         </div>
+      </UForm>
+    </template>
 
-        <div class="flex items-center justify-end gap-2 pt-2">
-          <UButton
-            color="neutral"
-            :label="t('common.cancel')"
-            type="button"
-            variant="subtle"
-            @click="close"
-          />
-          <UButton
-            :form="FORM_ID"
-            :label="
-              submitting ? t('features.depts.form.saving') : t('common.confirm')
-            "
-            :loading="submitting"
-            type="submit"
-          />
-        </div>
-      </form>
+    <template #footer="{ close: onClose }">
+      <UButton
+        color="neutral"
+        :label="t('common.cancel')"
+        variant="outline"
+        @click="onClose"
+      />
+      <UButton
+        :form="FORM_ID"
+        :label="
+          submitting ? t('features.depts.form.saving') : t('common.confirm')
+        "
+        :loading="submitting"
+        type="submit"
+      />
     </template>
   </UModal>
 </template>

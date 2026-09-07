@@ -293,236 +293,226 @@ async function onSubmit() {
   <UModal
     :open="open"
     :dismissible="false"
-    :ui="{ content: 'sm:max-w-lg' }"
+    :title="
+      t(
+        isEdit
+          ? 'features.users.form.title.edit'
+          : 'features.users.form.title.create',
+      )
+    "
+    :ui="{ content: 'sm:max-w-lg', footer: 'justify-end' }"
     @update:open="(value: boolean) => !value && close()"
   >
-    <template #content>
-      <div class="flex max-h-[90vh] flex-col">
-        <div class="border-b px-6 py-4">
-          <h2 class="text-lg font-semibold">
-            {{
-              t(
-                isEdit
-                  ? "features.users.form.title.edit"
-                  : "features.users.form.title.create",
-              )
-            }}
-          </h2>
-        </div>
-
-        <form
-          :id="FORM_ID"
-          class="flex flex-1 flex-col gap-4 overflow-y-auto p-6"
-          @submit.prevent="onSubmit"
+    <template #body>
+      <UForm
+        :id="FORM_ID"
+        class="flex flex-col gap-4"
+        @submit.prevent="onSubmit"
+      >
+        <UFormField
+          :label="t('features.users.form.username')"
+          :error="errors.username || undefined"
+          :description="
+            isEdit ? t('features.users.form.usernameHint') : undefined
+          "
+          required
         >
-          <UFormField
-            :label="t('features.users.form.username')"
-            :error="errors.username || undefined"
-            :description="
-              isEdit ? t('features.users.form.usernameHint') : undefined
-            "
-            required
-          >
-            <UInput
-              v-model="form.username"
-              :disabled="isEdit"
-              :maxlength="50"
-              :placeholder="t('features.users.form.usernamePlaceholder')"
-              class="w-full"
-              variant="soft"
-            />
-          </UFormField>
+          <UInput
+            v-model="form.username"
+            :disabled="isEdit"
+            :maxlength="50"
+            :placeholder="t('features.users.form.usernamePlaceholder')"
+            class="w-full"
+            variant="soft"
+          />
+        </UFormField>
 
-          <UFormField
-            :label="t('features.users.form.displayName')"
-            :error="errors.displayName || undefined"
-            required
-          >
-            <UInput
-              v-model="form.displayName"
-              :maxlength="50"
-              :placeholder="t('features.users.form.displayNamePlaceholder')"
-              class="w-full"
-              variant="soft"
-            />
-          </UFormField>
+        <UFormField
+          :label="t('features.users.form.displayName')"
+          :error="errors.displayName || undefined"
+          required
+        >
+          <UInput
+            v-model="form.displayName"
+            :maxlength="50"
+            :placeholder="t('features.users.form.displayNamePlaceholder')"
+            class="w-full"
+            variant="soft"
+          />
+        </UFormField>
 
-          <UFormField
-            :label="t('features.users.form.email')"
-            :error="errors.email || undefined"
-            required
-          >
-            <UInput
-              v-model="form.email"
-              :maxlength="100"
-              :placeholder="t('features.users.form.emailPlaceholder')"
-              class="w-full"
-              variant="soft"
-            />
-          </UFormField>
+        <UFormField
+          :label="t('features.users.form.email')"
+          :error="errors.email || undefined"
+          required
+        >
+          <UInput
+            v-model="form.email"
+            :maxlength="100"
+            :placeholder="t('features.users.form.emailPlaceholder')"
+            class="w-full"
+            variant="soft"
+          />
+        </UFormField>
 
-          <template v-if="!isEdit">
-            <PasswordField
-              v-model="form.password"
-              :error="errors.password || undefined"
-              :label="t('features.users.form.password')"
-              :placeholder="t('features.users.form.passwordPlaceholder')"
-              :description="t('features.users.form.passwordHint')"
-            />
+        <template v-if="!isEdit">
+          <PasswordField
+            v-model="form.password"
+            :error="errors.password || undefined"
+            :label="t('features.users.form.password')"
+            :placeholder="t('features.users.form.passwordPlaceholder')"
+            :description="t('features.users.form.passwordHint')"
+          />
 
-            <PasswordField
-              v-model="form.confirmPassword"
-              :error="errors.confirmPassword || undefined"
-              :label="t('features.users.form.confirmPassword')"
-              :placeholder="t('features.users.form.confirmPassword')"
-            />
-          </template>
-
-          <div
-            class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-          >
-            <span class="text-sm font-medium">
-              {{ t("features.users.form.status") }}
-            </span>
-            <USwitch
-              :disabled="isStatusLocked"
-              :model-value="form.status === 'active'"
-              @update:model-value="
-                (value: boolean) =>
-                  (form.status = value ? 'active' : 'disabled')
-              "
-            />
-          </div>
-
-          <UFormField
-            :label="t('features.users.form.roles')"
-            :error="errors.roleIds || undefined"
-          >
-            <USelectMenu
-              v-model="form.roleIds"
-              :items="roleItems"
-              :placeholder="
-                roleItems.length === 0
-                  ? t('features.users.form.rolesEmpty')
-                  : t('features.users.form.rolesPlaceholder')
-              "
-              class="w-full"
-              multiple
-              value-key="value"
-            />
-          </UFormField>
-
-          <UFormField
-            :label="t('features.users.form.dept')"
-            :description="t('features.users.form.deptHint')"
-          >
-            <DeptTreeSelect v-model="form.deptId" :tree="deptTree ?? []" />
-          </UFormField>
-
-          <UFormField
-            :label="t('features.users.form.posts')"
-            :error="errors.postIds || undefined"
-            :description="t('features.users.form.postsHint')"
-          >
-            <USelectMenu
-              v-model="form.postIds"
-              :items="postItems"
-              :placeholder="
-                postItems.length === 0
-                  ? t('features.users.form.postsEmpty')
-                  : t('features.users.form.postsPlaceholder')
-              "
-              class="w-full"
-              multiple
-              value-key="value"
-            />
-          </UFormField>
-
-          <UFormField
-            :label="t('features.users.form.mainPost')"
-            :description="t('features.users.form.mainPostHint')"
-          >
-            <USelect
-              v-model="form.mainPostId"
-              :disabled="mainPostItems.length <= 1"
-              :items="mainPostItems"
-              class="w-full"
-              value-key="value"
-            />
-          </UFormField>
-
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <UFormField :label="t('features.users.form.employeeNo')">
-              <UInput
-                v-model="form.employeeNo"
-                :maxlength="50"
-                :placeholder="t('features.users.form.employeeNoPlaceholder')"
-                class="w-full"
-                variant="soft"
-              />
-            </UFormField>
-
-            <UFormField
-              :label="t('features.users.form.entryDate')"
-              :error="errors.entryDate || undefined"
-            >
-              <UInput v-model="form.entryDate" class="w-full" type="date" />
-            </UFormField>
-          </div>
-
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <UFormField :label="t('features.users.form.employmentStatus')">
-              <USelect
-                v-model="form.employmentStatus"
-                :items="[
-                  {
-                    label: t('features.users.employment.employed'),
-                    value: 'employed',
-                  },
-                  {
-                    label: t('features.users.employment.resigned'),
-                    value: 'resigned',
-                  },
-                ]"
-                class="w-full"
-                value-key="value"
-              />
-            </UFormField>
-
-            <UFormField :label="t('features.users.form.gender')">
-              <USelect
-                v-model="form.gender"
-                :items="[
-                  { label: t('features.users.gender.unset'), value: '' },
-                  { label: t('features.users.gender.male'), value: 'male' },
-                  { label: t('features.users.gender.female'), value: 'female' },
-                ]"
-                class="w-full"
-                value-key="value"
-              />
-            </UFormField>
-          </div>
-        </form>
+          <PasswordField
+            v-model="form.confirmPassword"
+            :error="errors.confirmPassword || undefined"
+            :label="t('features.users.form.confirmPassword')"
+            :placeholder="t('features.users.form.confirmPassword')"
+          />
+        </template>
 
         <div
-          class="flex flex-col-reverse gap-2 border-t px-6 py-4 sm:flex-row sm:justify-end"
+          class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
         >
-          <UButton
-            :label="t('common.cancel')"
-            color="neutral"
-            variant="outline"
-            @click="close"
-          />
-          <UButton
-            :form="FORM_ID"
-            :label="
-              submitting ? t('features.users.form.saving') : t('common.confirm')
+          <span class="text-sm font-medium">
+            {{ t("features.users.form.status") }}
+          </span>
+          <USwitch
+            :disabled="isStatusLocked"
+            :model-value="form.status === 'active'"
+            @update:model-value="
+              (value: boolean) => (form.status = value ? 'active' : 'disabled')
             "
-            :loading="submitting"
-            type="submit"
           />
         </div>
-      </div>
+
+        <UFormField
+          :label="t('features.users.form.roles')"
+          :error="errors.roleIds || undefined"
+        >
+          <USelectMenu
+            v-model="form.roleIds"
+            :items="roleItems"
+            :placeholder="
+              roleItems.length === 0
+                ? t('features.users.form.rolesEmpty')
+                : t('features.users.form.rolesPlaceholder')
+            "
+            class="w-full"
+            multiple
+            value-key="value"
+          />
+        </UFormField>
+
+        <UFormField
+          :label="t('features.users.form.dept')"
+          :description="t('features.users.form.deptHint')"
+        >
+          <DeptTreeSelect v-model="form.deptId" :tree="deptTree ?? []" />
+        </UFormField>
+
+        <UFormField
+          :label="t('features.users.form.posts')"
+          :error="errors.postIds || undefined"
+          :description="t('features.users.form.postsHint')"
+        >
+          <USelectMenu
+            v-model="form.postIds"
+            :items="postItems"
+            :placeholder="
+              postItems.length === 0
+                ? t('features.users.form.postsEmpty')
+                : t('features.users.form.postsPlaceholder')
+            "
+            class="w-full"
+            multiple
+            value-key="value"
+          />
+        </UFormField>
+
+        <UFormField
+          :label="t('features.users.form.mainPost')"
+          :description="t('features.users.form.mainPostHint')"
+        >
+          <USelect
+            v-model="form.mainPostId"
+            :disabled="mainPostItems.length <= 1"
+            :items="mainPostItems"
+            class="w-full"
+            value-key="value"
+          />
+        </UFormField>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <UFormField :label="t('features.users.form.employeeNo')">
+            <UInput
+              v-model="form.employeeNo"
+              :maxlength="50"
+              :placeholder="t('features.users.form.employeeNoPlaceholder')"
+              class="w-full"
+              variant="soft"
+            />
+          </UFormField>
+
+          <UFormField
+            :label="t('features.users.form.entryDate')"
+            :error="errors.entryDate || undefined"
+          >
+            <UInput v-model="form.entryDate" class="w-full" type="date" />
+          </UFormField>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <UFormField :label="t('features.users.form.employmentStatus')">
+            <USelect
+              v-model="form.employmentStatus"
+              :items="[
+                {
+                  label: t('features.users.employment.employed'),
+                  value: 'employed',
+                },
+                {
+                  label: t('features.users.employment.resigned'),
+                  value: 'resigned',
+                },
+              ]"
+              class="w-full"
+              value-key="value"
+            />
+          </UFormField>
+
+          <UFormField :label="t('features.users.form.gender')">
+            <USelect
+              v-model="form.gender"
+              :items="[
+                { label: t('features.users.gender.unset'), value: '' },
+                { label: t('features.users.gender.male'), value: 'male' },
+                { label: t('features.users.gender.female'), value: 'female' },
+              ]"
+              class="w-full"
+              value-key="value"
+            />
+          </UFormField>
+        </div>
+      </UForm>
+    </template>
+
+    <template #footer="{ close: onClose }">
+      <UButton
+        :label="t('common.cancel')"
+        color="neutral"
+        variant="outline"
+        @click="onClose"
+      />
+      <UButton
+        :form="FORM_ID"
+        :label="
+          submitting ? t('features.users.form.saving') : t('common.confirm')
+        "
+        :loading="submitting"
+        type="submit"
+      />
     </template>
   </UModal>
 </template>

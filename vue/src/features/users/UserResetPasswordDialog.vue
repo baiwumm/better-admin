@@ -92,23 +92,19 @@ async function onSubmit() {
   <UModal
     :open="open"
     :dismissible="false"
-    :ui="{ content: 'sm:max-w-md' }"
+    :title="t('features.users.resetPassword.title')"
+    :ui="{ content: 'sm:max-w-md', footer: 'justify-end' }"
     @update:open="(value: boolean) => !value && close()"
   >
-    <template #content>
-      <form class="flex flex-col gap-4 p-6" @submit.prevent="onSubmit">
-        <div class="flex flex-col gap-1">
-          <h2 class="text-lg font-semibold">
-            {{ t("features.users.resetPassword.title") }}
-          </h2>
-          <p class="text-muted text-sm">
-            {{
-              t("features.users.resetPassword.desc", {
-                name: displayName ?? "",
-              })
-            }}
-          </p>
-        </div>
+    <template #body>
+      <UForm class="flex flex-col gap-4" @submit.prevent="onSubmit">
+        <p class="text-muted text-sm">
+          {{
+            t("features.users.resetPassword.desc", {
+              name: displayName ?? "",
+            })
+          }}
+        </p>
 
         <PasswordField
           v-model="form.newPassword"
@@ -123,25 +119,25 @@ async function onSubmit() {
           :label="t('features.users.resetPassword.confirmPassword')"
           :placeholder="t('features.users.resetPassword.confirmPassword')"
         />
+      </UForm>
+    </template>
 
-        <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <UButton
-            :label="t('common.cancel')"
-            color="neutral"
-            variant="outline"
-            @click="close"
-          />
-          <UButton
-            :label="
-              submitting
-                ? t('features.users.resetPassword.saving')
-                : t('features.users.resetPassword.submit')
-            "
-            :loading="submitting"
-            type="submit"
-          />
-        </div>
-      </form>
+    <template #footer="{ close: onClose }">
+      <UButton
+        :label="t('common.cancel')"
+        color="neutral"
+        variant="outline"
+        @click="onClose"
+      />
+      <UButton
+        :label="
+          submitting
+            ? t('features.users.resetPassword.saving')
+            : t('features.users.resetPassword.submit')
+        "
+        :loading="submitting"
+        type="submit"
+      />
     </template>
   </UModal>
 </template>
