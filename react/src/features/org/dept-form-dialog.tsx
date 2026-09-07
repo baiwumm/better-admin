@@ -18,7 +18,7 @@ import {
   Description,
   FieldError,
   Form,
-  Input,
+  InputGroup,
   Label,
   ListBox,
   Modal,
@@ -56,6 +56,9 @@ import { useTranslation } from "@/i18n";
  */
 
 export type DeptFormMode = "create" | "edit";
+
+const NAME_MAX_LENGTH = 100;
+const CODE_MAX_LENGTH = 50;
 
 export interface DeptFormDialogProps {
   isOpen: boolean;
@@ -361,11 +364,16 @@ function DeptFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.depts.form.name")}</Label>
-                    <Input
-                      maxLength={100}
-                      placeholder={t("features.depts.form.namePlaceholder")}
-                      variant="secondary"
-                    />
+                    {/* Suffix 实时字数（上限与后端 @Length(1,100) 对齐） */}
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={NAME_MAX_LENGTH}
+                        placeholder={t("features.depts.form.namePlaceholder")}
+                      />
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{NAME_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     {fieldState.error && (
                       <FieldError>
                         {t("features.depts.form.nameInvalid")}
@@ -387,11 +395,16 @@ function DeptFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.depts.form.code")}</Label>
-                    <Input
-                      maxLength={50}
-                      placeholder="DEPT-001"
-                      variant="secondary"
-                    />
+                    {/* Suffix 实时字数（上限与后端 @Length(1,50) 对齐） */}
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={CODE_MAX_LENGTH}
+                        placeholder="DEPT-001"
+                      />
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{CODE_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     {fieldState.error ? (
                       <FieldError>
                         {t("features.depts.form.codeInvalid")}

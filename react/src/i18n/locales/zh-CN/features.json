@@ -101,7 +101,7 @@
   "features.depts.detail.childCount": "{{count}} 个直接下级组织",
   "features.depts.detail.unselected": "在左侧选择组织查看详情",
   "features.depts.form.code": "组织编码",
-  "features.depts.form.codeHint": "可空；未删除的组织间唯一，如 DEPT-001",
+  "features.depts.form.codeHint": "选填；不可与其他组织的编码重复，如 DEPT-001",
   "features.depts.form.codeInvalid": "组织编码最长 50 个字符",
   "features.depts.form.leader": "负责人",
   "features.depts.form.leaderEmpty": "暂无可选人员",

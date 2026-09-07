@@ -101,7 +101,7 @@
   "features.depts.detail.childCount": "{{count}} direct sub-departments",
   "features.depts.detail.unselected": "Select a department on the left to view details",
   "features.depts.form.code": "Code",
-  "features.depts.form.codeHint": "Optional; unique among active departments, e.g. DEPT-001",
+  "features.depts.form.codeHint": "Optional; must not duplicate another department's code, e.g. DEPT-001",
   "features.depts.form.codeInvalid": "Code must be at most 50 characters",
   "features.depts.form.leader": "Leader",
   "features.depts.form.leaderEmpty": "No users available",
