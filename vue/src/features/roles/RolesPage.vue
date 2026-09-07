@@ -26,6 +26,7 @@ import DataTablePagination from "@/components/data-table/DataTablePagination.vue
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
 import { type AppTable } from "@/components/data-table/table-types";
+import Spinner from "@/components/ui/spinner/index.vue";
 import { MENUS_QUERY_KEY } from "@/composables/use-menus";
 import { useMenuPermissions } from "@/composables/use-permissions";
 import { useListQuery } from "@/composables/use-list-query";
@@ -94,6 +95,7 @@ const grantRole = ref<Role | null>(null);
 
 const deleteOpen = ref(false);
 const deleteTarget = ref<Role | null>(null);
+const deleteSubmitting = ref(false);
 
 function openForm(mode: "create" | "edit", role: Role | null) {
   formMode.value = mode;
@@ -110,27 +112,42 @@ function handleGrantSaved() {
   void queryClient.invalidateQueries({ queryKey: MENUS_QUERY_KEY });
 }
 
-/** 状态切换（PUT enabled 字段） */
+/** 状态切换（PUT enabled 字段；toast.promise 三段反馈：启用中/停用中 → 成功/失败） */
 async function toggleStatus(role: Role) {
   const enabling = !role.enabled;
+
+  const loadingToast = toast.add({
+    title: t(
+      enabling
+        ? "features.roles.message.enabling"
+        : "features.roles.message.disabling",
+    ),
+    icon: h(Spinner, { size: "sm", class: "mt-0.5" }),
+    color: "info",
+    duration: 0,
+  });
 
   try {
     await updateRole(role.id, { name: role.name, enabled: enabling });
     invalidateList();
-    toast.add({
-      color: "success",
+    toast.update(loadingToast.id, {
       title: t("features.roles.message.statusSuccess"),
+      icon: "i-lucide-check",
+      color: "success",
     });
   } catch (error) {
-    toast.add({
-      color: "error",
+    toast.update(loadingToast.id, {
       title: getRoleErrorMessage(error),
+      icon: "i-lucide-x",
+      color: "error",
     });
   }
 }
 
 async function confirmDelete() {
   if (!deleteTarget.value) return;
+
+  deleteSubmitting.value = true;
 
   try {
     await deleteRole(deleteTarget.value.id);
@@ -141,6 +158,8 @@ async function confirmDelete() {
     });
 
     return; // 失败保持弹窗打开
+  } finally {
+    deleteSubmitting.value = false;
   }
 
   invalidateList();
@@ -395,6 +414,7 @@ const UBadge = resolveComponent("UBadge");
         })
       "
       :keyword-label="t('features.roles.message.deleteKeyword')"
+      :loading="deleteSubmitting"
       :title="t('features.roles.message.deleteTitle')"
       destructive
       @confirm="confirmDelete"

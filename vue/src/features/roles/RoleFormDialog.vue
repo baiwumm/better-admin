@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import type { Role } from "@/lib/api-types";
+import type { FormSubmitEvent } from "@nuxt/ui";
 
-import { computed, reactive, ref, watch } from "vue";
+import * as z from "zod";
+import { computed, h, reactive, ref, useTemplateRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useToast } from "@nuxt/ui/composables";
 
 import { createRole, getRoleErrorMessage, updateRole } from "./role-api";
 
+import Spinner from "@/components/ui/spinner/index.vue";
 import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
 
 /**
- * 角色新增/编辑弹窗（对齐 React 端 role-form-dialog，校验规则与 zod schema
- * 一一对应；Vue 端用手动校验）。
+ * 角色新增/编辑弹窗（对齐 React 端 role-form-dialog）：
+ * UForm + zod schema 校验（官方范式，@submit 仅在校验通过后触发，
+ * event.data 为校验转换后的值）。
  *
  * - code 仅创建时可填且创建后不可变更（角色 code 为程序标识，后端锁定）；
  * - name/code 唯一性由后端 409（ROLE_NAME_EXISTS / ROLE_CODE_EXISTS）拦截；
@@ -38,14 +42,50 @@ const CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const { t } = useI18n();
 const toast = useToast();
 
-const form = reactive({
+const isEdit = computed(() => props.mode === "edit");
+const isSuperAdmin = computed(
+  () => isEdit.value && props.role?.code === SUPER_ADMIN_ROLE_CODE,
+);
+
+// 校验消息用函数延迟求值：语言切换后错误文案跟随当前 locale
+const schema = z
+  .object({
+    code: z.string().trim(),
+    name: z
+      .string()
+      .trim()
+      .min(1, { error: () => t("features.roles.form.nameInvalid") })
+      .max(50, { error: () => t("features.roles.form.nameInvalid") }),
+    description: z
+      .string()
+      .trim()
+      .max(200, {
+        error: () => t("features.roles.form.descriptionInvalid"),
+      }),
+    sort: z.number(),
+    enabled: z.boolean(),
+  })
+  // code 仅创建时校验（编辑态锁定不可改，superRefine 运行时读取 isEdit）
+  .superRefine((data, ctx) => {
+    if (!isEdit.value && !CODE_PATTERN.test(data.code)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["code"],
+        message: t("features.roles.form.codeInvalid"),
+      });
+    }
+  });
+
+type Schema = z.output<typeof schema>;
+
+const state = reactive<Schema>({
   code: "",
   name: "",
   description: "",
   sort: 0,
   enabled: true,
 });
-const errors = reactive({ code: "", name: "", description: "" });
+const formRef = useTemplateRef("formRef");
 const submitting = ref(false);
 
 watch(
@@ -55,81 +95,64 @@ watch(
 
     const role = props.role;
 
-    form.code = role?.code ?? "";
-    form.name = role?.name ?? "";
-    form.description = role?.description ?? "";
-    form.sort = role?.sort ?? 0;
-    form.enabled = role?.enabled ?? true;
-
-    errors.code = "";
-    errors.name = "";
-    errors.description = "";
+    state.code = role?.code ?? "";
+    state.name = role?.name ?? "";
+    state.description = role?.description ?? "";
+    state.sort = role?.sort ?? 0;
+    state.enabled = role?.enabled ?? true;
+    formRef.value?.clear();
   },
   { immediate: true },
-);
-
-const isEdit = computed(() => props.mode === "edit");
-const isSuperAdmin = computed(
-  () => isEdit.value && props.role?.code === SUPER_ADMIN_ROLE_CODE,
 );
 
 function close() {
   emit("update:open", false);
 }
 
-function validate(): boolean {
-  errors.code =
-    !isEdit.value &&
-    form.code.trim().length >= 1 &&
-    form.code.trim().length <= 50 &&
-    CODE_PATTERN.test(form.code.trim())
-      ? ""
-      : t("features.roles.form.codeInvalid");
-  errors.name =
-    form.name.trim().length >= 1 && form.name.trim().length <= 50
-      ? ""
-      : t("features.roles.form.nameInvalid");
-  errors.description =
-    form.description.trim().length <= 200
-      ? ""
-      : t("features.roles.form.descriptionInvalid");
-
-  return !Object.values(errors).some(Boolean);
-}
-
-async function onSubmit() {
-  if (!validate()) return;
-
+async function onSubmit(event: FormSubmitEvent<Schema>) {
   submitting.value = true;
+
+  // toast.promise 形态（对齐 React 端）：保存全程 loading toast，
+  // 完成后原位替换为成功/失败；duration 0 保证请求返回前不消失
+  //（update 会重置计时回落全局时长）；icon 用 Spinner 组件（toast
+  // 内容支持 VNode），自带旋转动画
+  const savingToast = toast.add({
+    title: t("features.roles.form.saving"),
+    icon: h(Spinner, { size: "sm", class: "mt-0.5" }),
+    color: "info",
+    duration: 0,
+  });
 
   try {
     const input = {
-      name: form.name,
-      description: form.description || undefined,
-      sort: form.sort,
-      enabled: form.enabled,
+      name: event.data.name,
+      description: event.data.description || undefined,
+      sort: event.data.sort,
+      enabled: event.data.enabled,
     };
 
     if (isEdit.value && props.role) {
       await updateRole(props.role.id, input);
     } else {
-      await createRole({ code: form.code, ...input });
+      await createRole({ code: event.data.code, ...input });
     }
 
-    toast.add({
-      color: "success",
+    toast.update(savingToast.id, {
       title: t(
         isEdit.value
           ? "features.roles.message.updateSuccess"
           : "features.roles.message.createSuccess",
       ),
+      icon: "i-lucide-check",
+      color: "success",
     });
     emit("saved");
     close();
   } catch (error) {
-    toast.add({
-      color: "error",
+    toast.update(savingToast.id, {
       title: getRoleErrorMessage(error),
+      icon: "i-lucide-x",
+      color: "error",
     });
   } finally {
     submitting.value = false;
@@ -154,18 +177,21 @@ async function onSubmit() {
     <template #body>
       <UForm
         :id="FORM_ID"
+        ref="formRef"
+        :schema="schema"
+        :state="state"
         class="flex flex-col gap-4"
-        @submit.prevent="onSubmit"
+        @submit="onSubmit"
       >
         <UFormField
           :label="t('features.roles.form.code')"
-          :error="errors.code || undefined"
           :description="isEdit ? t('features.roles.form.codeHint') : undefined"
           :disabled="isEdit"
+          name="code"
           required
         >
           <UInput
-            v-model="form.code"
+            v-model="state.code"
             :maxlength="50"
             :placeholder="t('features.roles.form.codePlaceholder')"
             class="w-full font-mono"
@@ -175,12 +201,12 @@ async function onSubmit() {
 
         <UFormField
           :label="t('features.roles.form.name')"
-          :error="errors.name || undefined"
           :disabled="isSuperAdmin"
+          name="name"
           required
         >
           <UInput
-            v-model="form.name"
+            v-model="state.name"
             :maxlength="50"
             :placeholder="t('features.roles.form.namePlaceholder')"
             class="w-full"
@@ -190,10 +216,10 @@ async function onSubmit() {
 
         <UFormField
           :label="t('features.roles.form.description')"
-          :error="errors.description || undefined"
+          name="description"
         >
           <UTextarea
-            v-model="form.description"
+            v-model="state.description"
             :maxlength="200"
             :placeholder="t('features.roles.form.descriptionPlaceholder')"
             :rows="3"
@@ -205,7 +231,7 @@ async function onSubmit() {
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <UFormField :label="t('common.column.sort')">
             <UInput
-              v-model.number="form.sort"
+              v-model.number="state.sort"
               :disabled="isSuperAdmin"
               class="w-full"
               type="number"
@@ -219,7 +245,7 @@ async function onSubmit() {
             <span class="text-sm font-medium">
               {{ t("features.roles.form.enabled") }}
             </span>
-            <USwitch v-model="form.enabled" :disabled="isSuperAdmin" />
+            <USwitch v-model="state.enabled" :disabled="isSuperAdmin" />
           </div>
         </div>
       </UForm>
