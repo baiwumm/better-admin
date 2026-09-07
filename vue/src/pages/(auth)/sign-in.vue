@@ -74,7 +74,6 @@ const fields = computed<AuthFormField[]>(() => [
 function oauthPlaceholder(key: "github" | "google") {
   toast.add({
     color: "info",
-    duration: 3000,
     title: t(`auth.signIn.${key}Developing`),
   });
 }
@@ -118,6 +117,14 @@ async function onSubmit(
       event.data.remember ?? false,
     );
 
+    // 登录成功 Toast（对齐 React：勾选记住我 → remembered，否则 welcomeBack）
+    toast.add({
+      color: "success",
+      title: event.data.remember
+        ? t("auth.signIn.remembered")
+        : t("auth.signIn.welcomeBack"),
+    });
+
     if (redirectTarget.value && isSafeRedirect(redirectTarget.value)) {
       await router.replace(redirectTarget.value);
     } else {
@@ -136,7 +143,7 @@ async function onSubmit(
             ? error.message
             : fallback;
 
-    toast.add({ color: "error", duration: 5000, title: message });
+    toast.add({ color: "error", title: message });
   }
 }
 </script>
