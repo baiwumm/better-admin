@@ -55,23 +55,12 @@ function toNavLeaf(node: MenuNode): NavLeaf {
 /**
  * 菜单树 → 侧边栏 items：
  * - 仅做 hideInMenu 过滤（权限过滤由后端 GET /menus 完成，见 menu-fetch.ts）
- * - 顶层叶子（控制台）合并为一组；每个顶层分组独立一组（collapsible 子菜单）
+ * - 保持一维数组结构，利用 children 属性嵌套，与 React 端 MenuNode[] 结构一致。
+ * - UNavigationMenu 会自动处理 children 渲染和路由高亮。
  */
-const sidebarItems = computed<NavLeaf[][]>(() => {
+const sidebarItems = computed<NavLeaf[]>(() => {
   const visible = filterHiddenMenus(menus.value ?? []);
-  const leaves = visible
-    .filter((node) => !node.children?.length)
-    .map(toNavLeaf);
-  const groups = visible
-    .filter((node) => node.children?.length)
-    .map((node) => [toNavLeaf(node)]);
-  const items: NavLeaf[][] = [];
-
-  if (leaves.length) items.push(leaves);
-
-  items.push(...groups);
-
-  return items;
+  return visible.map(toNavLeaf);
 });
 
 /** 菜单区底部快捷链接（对齐 React 端 SIDEBAR_LINKS，新窗口跳转）。 */
