@@ -379,7 +379,6 @@ const UBadge = resolveComponent("UBadge");
     <DataTable
       v-else
       :loading="isLoading"
-      :min-width="'760px'"
       :refreshing="isFetching && !isLoading"
       :table="table"
     />

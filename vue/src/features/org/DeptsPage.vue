@@ -441,11 +441,7 @@ const deleteDescription = computed(() =>
 
       <!-- 子组织列表（与详情卡留出呼吸间距，页面底部有 pb-8） -->
       <div class="flex min-w-0 flex-col">
-        <DataTable
-          :loading="treeQuery.isLoading.value"
-          :min-width="'640px'"
-          :table="table"
-        />
+        <DataTable :loading="treeQuery.isLoading.value" :table="table" />
       </div>
     </div>
   </div>

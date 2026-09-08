@@ -517,7 +517,6 @@ const selectedUsers = computed(() =>
     <DataTable
       v-else
       :loading="isLoading"
-      :min-width="'860px'"
       :refreshing="isFetching && !isLoading"
       :table="table"
     />

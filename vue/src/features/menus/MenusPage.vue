@@ -602,11 +602,7 @@ async function submitForm(event: FormSubmitEvent<Schema>) {
 
     <div class="relative">
       <LoadingContent v-if="isLoading" />
-      <DataTable
-        :loading="isFetching && !isLoading"
-        :min-width="'860px'"
-        :table="table"
-      />
+      <DataTable :loading="isFetching && !isLoading" :table="table" />
     </div>
 
     <UModal
