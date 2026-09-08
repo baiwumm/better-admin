@@ -130,11 +130,41 @@
 - 竞态：由 React Query per-key 隔离保证——条件连续变更时，慢响应只写入自己 key 的
   缓存条目，不影响当前视图；`use-list-query.test.ts` 有显式用例覆盖。
 - 边界定义：搜索 / 筛选 / 重置＝**条件重构**（强制新请求）；翻页 / 排序 / pageSize /
-  页面返回＝**数据导航**（允许缓存加速）。重复搜索同一词永远重新请求，属预期行为；
+  页面返回＝**数据导航**（允许缓存加速）。重复搜索同一词永远重新请求（经 §4.4
+  搜索按钮的 refetch 分支实现），属预期行为；
   未来若要「重复搜索秒出」，可叠加工具栏 hover 时 `queryClient.ensureQueryData` 预热
   （独立增量，未实现）。
 - 收益范围：所有使用 `useListQuery` 的列表（当前 users / roles，后续模块迁移即得）；
   dicts / menus 为各自独立查询（tree/detail 场景），不在该链路上。
+
+### 4.4 搜索按钮的「提交 / 刷新」双语义（react / next / vue 三端一致）
+
+**结论：搜索按钮不因「条件未变化」禁用——点它要么提交新条件、要么刷新当前列表，
+永远不会无反应。**
+
+- **背景**：搜索按钮原先在 `searchDirty`（输入与已生效条件不一致）为 false 时禁用，
+  但「提交新条件」与「刷新列表」是两个语义，禁用会杀死后者——用户想刷新列表时
+  无入口可点。而直接放开禁用也不行：`setSearch` 同值幂等（§4.2），同值点击是
+  no-op，按钮「点了没反应」比禁用更差。
+- **实现**（`useListQuery.submitSearch(input)`，核心为独立导出的纯函数
+  `submitListSearch`，react / next / vue 三端逐字同构）：
+  - 输入与已生效条件**不同** → `setSearch`：正常提交（epoch +1、回第 1 页）；
+  - **相同** → `setSearch` 同值幂等不会发包（§4.2），改走 `refetch()` 强制绕过
+    缓存重新请求：当前页码 / 筛选 / 排序全保留，`keepPreviousData` 保住旧数据
+    不闪空（对应 §4.3 表格「手动刷新」行）。
+- **组件层**：`DataTableSearchReset` 搜索按钮仅在 `isFetching` 时禁用 + pending
+  （防重复点击）；`searchDirty` prop 已删除（`searchDirty` 变量仍可参与页面
+  `canReset` 计算）。纯本地过滤页（menus / permissions / dicts 类型树）无请求
+  语义，搜索恒可点、同值应用为 no-op，无刷新诉求。
+- **覆盖页面**：服务端分页页（users / roles / org posts / logs / notices /
+  org directory / dicts 字典项）全部接入 `submitSearch`；对应提交回调从
+  `setSearch(...)` 换为 `submitSearch(...)`。
+- **与 §4.2 的关系**：store 层同值幂等保持不变（URL 同步 effect 等隐式调用仍依赖
+  它防重复请求）；「同值也发请求」只发生在**用户显式点搜索**这一路径上，
+  §4.3 边界定义中「重复搜索同一词永远重新请求」自此经 refetch 分支真正成立。
+- **单测**：`react/src/hooks/__tests__/use-list-query.test.ts` 与
+  `vue/src/composables/__tests__/use-list-query.test.ts` 的 `submitListSearch`
+  两分支用例（异值 → epoch+1 回第 1 页；同值 → refetch 且不 bump epoch）。
 
 ## 5. 用户写操作保护：本人 / admin / super_admin 三层规则（NestJS 端，契约 v1.4.6）
 

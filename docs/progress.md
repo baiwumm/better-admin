@@ -5,6 +5,13 @@
 
 ---
 
+### 搜索按钮「提交 / 刷新」双语义三端统一：条件未变不再禁用（2026-09-08）
+
+- **需求**：列表页搜索按钮原在条件未变化（`searchDirty=false`）时禁用，但用户可能只想刷新列表——禁用杀死了刷新语义。放开禁用后同值点击是 no-op（`setSearch` 同值幂等，见 mechanisms §4.2），按钮「点了没反应」更差，故配套引入刷新分支。
+- **方案**（业内传统后台模式，经用户确认）：搜索按钮仅请求中禁用 + pending；`useListQuery.submitSearch`——输入与已生效条件不同 → `setSearch` 正常提交（epoch+1、回第 1 页）；相同 → `refetch()` 强制绕过缓存重新请求（页码/筛选/排序全保留，`keepPreviousData` 不闪空）。核心逻辑为三端逐字同构的纯函数 `submitListSearch`。
+- **落地**：react / next / vue 三端组件（`DataTableSearchReset` 删 `searchDirty` prop）+ 装配层 + 页面全量接入——服务端分页页（users / roles / org posts / logs / notices / org directory / dicts 字典项）提交回调换 `submitSearch`；本地过滤页（menus / permissions / dicts 类型树）仅删 prop。vue 端同时新增 `composables/__tests__/use-list-query.test.ts`（与 react 端两分支用例语义对齐）。
+- **验证**：三端 tsc / eslint / prettier 全绿；react + vue vitest 全过（22 + 22 用例）。机制沉淀见 mechanisms.md §4.4。已知取舍：store 层同值幂等保持不变（URL 同步等隐式调用防重复请求仍依赖它），「同值发请求」仅发生在用户显式点搜索的路径。vue 端 dicts 字典项搜索沿用 `itemsQuery`（独立 useQuery），未走 useListQuery 装配，其「同值刷新」由本地过滤语义天然覆盖。
+
 ### Vue 端 M1 冒烟验收通过：修复启动整页刷新死循环 + 字典左栏骨架卡死（2026-09-06）
 
 - **结论**：M1 六模块（users / roles / permissions / menus / dicts / logs）GUI 冒烟验收**通过**——登录认证链路（登录 → 预取菜单 → 守卫 → 布局 → F5 会话恢复）、侧边栏导航、六页列表/表格/筛选/分页均正常；build（vite + vue-tsc）/ eslint / vitest（20 用例）四绿。feature-matrix Vue 列七项 🔧/❌ → ✅（角色管理行此前漏更，一并修正）。
