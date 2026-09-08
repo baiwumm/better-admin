@@ -8,7 +8,7 @@ import {
   Description,
   FieldError,
   Form,
-  Input,
+  InputGroup,
   Label,
   Modal,
   Spinner,
@@ -50,13 +50,17 @@ export interface DictTypeFormDialogProps {
 
 const FORM_ID = "dict-type-form";
 
-/** code：字母开头，允许数字/中划线/下划线（与后端约定俗成，无硬校验） */
+/** code：字母开头，允许数字/中划线/下划线（与后端 @Matches 对齐） */
 const CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
 
+const CODE_MAX_LENGTH = 50;
+const NAME_MAX_LENGTH = 20;
+const DESCRIPTION_MAX_LENGTH = 200;
+
 const typeFormSchema = z.object({
-  code: z.string().trim().min(1).max(50).regex(CODE_PATTERN),
-  name: z.string().trim().min(1).max(50),
-  description: z.string().trim().max(200),
+  code: z.string().trim().min(1).max(CODE_MAX_LENGTH).regex(CODE_PATTERN),
+  name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
+  description: z.string().trim().max(DESCRIPTION_MAX_LENGTH),
 });
 
 type TypeFormValues = z.infer<typeof typeFormSchema>;
@@ -189,11 +193,16 @@ function TypeFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.dicts.form.code")}</Label>
-                    <Input
-                      maxLength={50}
-                      placeholder="user_status"
-                      variant="secondary"
-                    />
+                    {/* Suffix 实时字数（上限与后端 @Length(1,50) 对齐） */}
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={CODE_MAX_LENGTH}
+                        placeholder="user_status"
+                      />
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{CODE_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     {fieldState.error ? (
                       <FieldError>
                         {!field.value?.trim()
@@ -222,11 +231,15 @@ function TypeFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.dicts.form.name")}</Label>
-                    <Input
-                      maxLength={50}
-                      placeholder={t("features.dicts.form.namePlaceholder")}
-                      variant="secondary"
-                    />
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={NAME_MAX_LENGTH}
+                        placeholder={t("features.dicts.form.namePlaceholder")}
+                      />
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{NAME_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     {fieldState.error && (
                       <FieldError>
                         {t("features.dicts.form.nameInvalid")}
@@ -248,14 +261,19 @@ function TypeFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.dicts.form.description")}</Label>
-                    <TextArea
-                      maxLength={200}
-                      placeholder={t(
-                        "features.dicts.form.descriptionPlaceholder",
-                      )}
-                      rows={3}
-                      variant="secondary"
-                    />
+                    <div className="flex flex-col gap-1">
+                      <TextArea
+                        maxLength={DESCRIPTION_MAX_LENGTH}
+                        placeholder={t(
+                          "features.dicts.form.descriptionPlaceholder",
+                        )}
+                        rows={3}
+                        variant="secondary"
+                      />
+                      <span className="self-end text-xs text-muted">
+                        {field.value?.length ?? 0}/{DESCRIPTION_MAX_LENGTH}
+                      </span>
+                    </div>
                     {fieldState.error && (
                       <FieldError>
                         {t("features.dicts.form.descriptionInvalid")}

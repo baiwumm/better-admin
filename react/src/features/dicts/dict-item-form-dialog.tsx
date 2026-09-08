@@ -8,7 +8,7 @@ import {
   Description,
   FieldError,
   Form,
-  Input,
+  InputGroup,
   Label,
   Modal,
   Spinner,
@@ -59,13 +59,17 @@ const FORM_ID = "dict-item-form";
 /** i18n 键：点分格式（如 dict.user_status.enabled），与菜单 i18nKey 同构 */
 const I18N_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/;
 
+const VALUE_MAX_LENGTH = 50;
+const LABEL_MAX_LENGTH = 20;
+const I18N_KEY_MAX_LENGTH = 100;
+
 const itemFormSchema = z.object({
-  value: z.string().trim().min(1).max(100),
-  label: z.string().trim().min(1).max(100),
+  value: z.string().trim().min(1).max(VALUE_MAX_LENGTH),
+  label: z.string().trim().min(1).max(LABEL_MAX_LENGTH),
   i18nKey: z
     .string()
     .trim()
-    .max(100)
+    .max(I18N_KEY_MAX_LENGTH)
     .refine((value) => value === "" || I18N_KEY_PATTERN.test(value)),
   sort: sortFieldSchema,
   enabled: z.boolean(),
@@ -200,11 +204,16 @@ function ItemFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.dicts.form.value")}</Label>
-                    <Input
-                      maxLength={100}
-                      placeholder="1"
-                      variant="secondary"
-                    />
+                    {/* Suffix 实时字数（上限与后端 @Length(1,100) 对齐） */}
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={VALUE_MAX_LENGTH}
+                        placeholder="1"
+                      />
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{VALUE_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     {fieldState.error && (
                       <FieldError>
                         {t("features.dicts.form.valueInvalid")}
@@ -227,11 +236,15 @@ function ItemFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.dicts.form.label")}</Label>
-                    <Input
-                      maxLength={100}
-                      placeholder={t("features.dicts.form.labelPlaceholder")}
-                      variant="secondary"
-                    />
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={LABEL_MAX_LENGTH}
+                        placeholder={t("features.dicts.form.labelPlaceholder")}
+                      />
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{LABEL_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     {fieldState.error && (
                       <FieldError>
                         {t("features.dicts.form.labelInvalid")}
@@ -253,11 +266,15 @@ function ItemFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.dicts.form.i18nKey")}</Label>
-                    <Input
-                      maxLength={100}
-                      placeholder={`dict.${typeCode}.xxx`}
-                      variant="secondary"
-                    />
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={I18N_KEY_MAX_LENGTH}
+                        placeholder={`dict.${typeCode}.xxx`}
+                      />
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{I18N_KEY_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     {fieldState.error ? (
                       <FieldError>
                         {t("features.dicts.form.i18nKeyFormat")}

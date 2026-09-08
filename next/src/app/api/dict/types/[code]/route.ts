@@ -43,15 +43,28 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "请求体不是合法 JSON");
     }
 
-    const type = await updateDictType(
-      code,
-      {
-        name: typeof body.name === "string" ? body.name : undefined,
-        description:
-          typeof body.description === "string" ? body.description : undefined,
-      },
-      operator.id,
-    );
+    const name = typeof body.name === "string" ? body.name.trim() : undefined;
+    const description =
+      typeof body.description === "string"
+        ? body.description.trim()
+        : undefined;
+
+    if (name !== undefined && (name.length < 1 || name.length > 20)) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "name 长度须为 1-20 个字符",
+      );
+    }
+    if (description !== undefined && description.length > 200) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "description 不能超过 200 个字符",
+      );
+    }
+
+    const type = await updateDictType(code, { name, description }, operator.id);
 
     return jsonOk(type);
   } catch (error) {

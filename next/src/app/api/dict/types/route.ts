@@ -42,15 +42,43 @@ export async function POST(request: NextRequest) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "code 与 name 为必填");
     }
 
-    const type = await createDictType(
-      {
-        code: body.code.trim(),
-        name: body.name.trim(),
-        description:
-          typeof body.description === "string" ? body.description : undefined,
-      },
-      operator.id,
-    );
+    const code = body.code.trim();
+    const name = body.name.trim();
+    const description =
+      typeof body.description === "string"
+        ? body.description.trim()
+        : undefined;
+
+    if (code.length > 50) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "code 不能超过 50 个字符",
+      );
+    }
+    if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(code)) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "code 必须以字母开头，仅含字母、数字、下划线、中划线",
+      );
+    }
+    if (name.length < 1 || name.length > 20) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "name 长度须为 1-20 个字符",
+      );
+    }
+    if (description !== undefined && description.length > 200) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "description 不能超过 200 个字符",
+      );
+    }
+
+    const type = await createDictType({ code, name, description }, operator.id);
 
     return jsonOk(type);
   } catch (error) {

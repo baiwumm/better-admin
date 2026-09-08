@@ -23,12 +23,50 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "请求体不是合法 JSON");
     }
 
+    const value =
+      typeof body.value === "string" ? body.value.trim() : undefined;
+    const label =
+      typeof body.label === "string" ? body.label.trim() : undefined;
+    const i18nKey =
+      typeof body.i18nKey === "string" ? body.i18nKey.trim() : undefined;
+
+    if (value !== undefined && value.length > 50) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "value 不能超过 50 个字符",
+      );
+    }
+    if (label !== undefined && (label.length < 1 || label.length > 20)) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "label 长度须为 1-20 个字符",
+      );
+    }
+    if (i18nKey !== undefined && i18nKey.length > 0) {
+      if (i18nKey.length > 100) {
+        throw new ServerApiError(
+          400,
+          "VALIDATION_ERROR",
+          "i18nKey 不能超过 100 个字符",
+        );
+      }
+      if (!/^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/.test(i18nKey)) {
+        throw new ServerApiError(
+          400,
+          "VALIDATION_ERROR",
+          "i18nKey 须为点分格式，如 dict.user_status.enabled",
+        );
+      }
+    }
+
     const item = await updateDictItem(
       id,
       {
-        value: typeof body.value === "string" ? body.value : undefined,
-        label: typeof body.label === "string" ? body.label : undefined,
-        i18nKey: typeof body.i18nKey === "string" ? body.i18nKey : undefined,
+        value,
+        label,
+        i18nKey: i18nKey || undefined,
         sort: typeof body.sort === "number" ? body.sort : undefined,
         enabled: body.enabled === undefined ? undefined : Boolean(body.enabled),
       },
