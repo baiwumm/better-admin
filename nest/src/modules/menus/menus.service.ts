@@ -379,9 +379,10 @@ export class MenusService {
       .insert(menus)
       .values({
         label: dto.label,
-        i18nKey: dto.i18nKey ?? null,
+        // 空串归一为 null（与 update 路径 || null 口径一致）：i18nKey 空 = 未设置，to 空 = 目录分组
+        i18nKey: dto.i18nKey || null,
         icon: dto.icon,
-        to: dto.to ?? null,
+        to: dto.to || null,
         parentId: dto.parentId ?? null,
         sort: dto.sort ?? 0,
         keepAlive: dto.keepAlive ?? false,

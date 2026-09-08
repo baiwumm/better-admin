@@ -5,6 +5,17 @@
 
 ---
 
+### 菜单表单字段校验补齐：契约 + Nest DTO + React 表单对齐（2026-09-08）
+
+- **背景**：菜单 label / i18nKey / icon / to 四字段此前仅前端 zod 有长度与格式限制，Nest DTO 只有 `@IsString`，DB 为无上限 `text`，OpenAPI 契约也无声明——绕过前端可直接写入超长 label、空 icon、非法格式 i18nKey（服务端无任何字数防线）。
+- **方案上限**（用户给定，经评估采纳）：label 1-20 字、i18nKey ≤100 字 + 点分格式、icon 1-30 字、to ≤200 字 + `/` 或 `https://` 开头。label 20 与角色 name 上限一致，其余上限对实际数据（seed 菜单 `menu.system`、lucide 图标名、路由路径）均充裕。
+- **契约先行**：openapi.yaml 的 `MenuCreateRequest` / `MenuUpdateRequest` / `AddChildRequest` 补 `minLength` / `maxLength` / `pattern`；to 的格式校验保留在 service `assertValidTo`（保留 `MENU_TO_INVALID` 业务错误码路径，未下沉 DTO）。
+- **Nest**：三个菜单 DTO 按字典模块先例加 `@Length` + `@Matches(I18N_KEY_PATTERN)`（复用 `@/lib/constants` 既有常量）；create 路径 i18nKey / to 空串归一 `|| null`（与 update 路径口径统一，修复空串可绕过 `menus_to_unique` 部分唯一索引落库的隐患）。
+- **React**：表单 zod 上限对齐（label 50→20，i18nKey / icon / to 补 max）；四个输入框换 `InputGroup` + Suffix 实时字数（照搬角色表单模式，`maxLength` 硬限制 + `n/上限` 显示）；`labelInvalid` 文案同步 20 字。
+- **Next（同日跟进）**：UI 与 react 同构（常量 + zod 上限 + InputGroup 实时字数；next 端表单 i18nKey 既有语义为必填 `min(1)`，与 react 端可空不同，保持不变仅加上限）；server 侧 `menus-service` 新增 `assertFieldLengths`（四字段长度 + i18nKey 点分格式），`createMenuRow` / `updateMenu` 入口统一调用——三条写路径（POST/PUT/add-child）全部收敛于这两个入口，一处校验即全覆盖，故未照搬 roles 先例的 route+service 双层重复；create/update 的 i18nKey / to 空串归一 `|| null`（route 解析层已归一，此为 service 直调场景的防御）。
+- **验证**：nest / react / next `tsc` 0 error；react eslint、vitest（i18n 3 用例）全过；契约 diff 人工核对。
+- **待同步**：vue 端表单尚未跟上本规格，后续安排。
+
 ### 搜索按钮「提交 / 刷新」双语义三端统一：条件未变不再禁用（2026-09-08）
 
 - **需求**：列表页搜索按钮原在条件未变化（`searchDirty=false`）时禁用，但用户可能只想刷新列表——禁用杀死了刷新语义。放开禁用后同值点击是 no-op（`setSearch` 同值幂等，见 mechanisms §4.2），按钮「点了没反应」更差，故配套引入刷新分支。

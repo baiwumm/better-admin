@@ -7,6 +7,7 @@ import { count } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { logs, menus, roleMenus, userRoles, roles } from "@/db/schema";
+import { I18N_KEY_PATTERN } from "@/lib/constants";
 import {
   ALL_PERMISSION_BITS,
   normalizePermissionBits,
@@ -271,6 +272,50 @@ export interface MenuSaveInput {
   permissions?: string;
 }
 
+/**
+ * 字段长度与 i18nKey 格式校验：与前端 zod、openapi 契约（MenuCreateRequest，
+ * v1.7.0）及 NestJS DTO（@Length/@Matches）对齐；createRow/update 入口统一调用。
+ */
+function assertFieldLengths(input: MenuSaveInput): void {
+  if (input.label !== undefined && input.label.length > 20) {
+    throw new ServerApiError(
+      400,
+      "VALIDATION_ERROR",
+      "菜单名称不能超过 20 个字符",
+    );
+  }
+  if (input.i18nKey) {
+    if (input.i18nKey.length > 100) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "国际化键不能超过 100 个字符",
+      );
+    }
+    if (!I18N_KEY_PATTERN.test(input.i18nKey)) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "国际化键须为点分格式，如 menu.system",
+      );
+    }
+  }
+  if (input.icon !== undefined && input.icon.length > 30) {
+    throw new ServerApiError(
+      400,
+      "VALIDATION_ERROR",
+      "图标名称不能超过 30 个字符",
+    );
+  }
+  if (input.to && input.to.length > 200) {
+    throw new ServerApiError(
+      400,
+      "VALIDATION_ERROR",
+      "路由路径不能超过 200 个字符",
+    );
+  }
+}
+
 /** to 非空时校验格式：必须以 / 或 https:// 开头（契约 v1.3） */
 function assertValidTo(to: string | null | undefined): void {
   if (!to) return;
@@ -404,6 +449,7 @@ async function createMenuRow(
   operatorId: string | null,
   parentId?: string,
 ): Promise<MenuNode> {
+  assertFieldLengths(dto);
   assertValidPermissions(dto.permissions);
   assertValidTo(dto.to);
   await assertToUnique(dto.to ?? null);
@@ -415,9 +461,10 @@ async function createMenuRow(
       id: generateRecordId(),
       // label/icon 创建场景由路由层校验必填（类型上兼容部分更新语义）
       label: dto.label ?? "",
-      i18nKey: dto.i18nKey ?? null,
+      // 空串归一为 null：i18nKey 空 = 未设置，to 空 = 目录分组
+      i18nKey: dto.i18nKey || null,
       icon: dto.icon ?? "circle",
-      to: dto.to ?? null,
+      to: dto.to || null,
       parentId: parentId ?? dto.parentId ?? null,
       sort: dto.sort ?? 0,
       keepAlive: dto.keepAlive ?? false,
@@ -494,11 +541,12 @@ export async function updateMenu(
   const effectiveTo =
     (dto as { to?: string | null }).to === undefined
       ? existing.to
-      : (dto.to ?? null);
+      : dto.to || null;
   // 未传 = 保持不变；传 null / 空串 = 清空父级（契约字段 nullable）
   const effectiveParentId =
     dto.parentId === undefined ? existing.parentId : dto.parentId || null;
 
+  assertFieldLengths(dto);
   assertValidPermissions(dto.permissions);
   assertValidTo(effectiveTo);
   await assertToUnique(effectiveTo, id);
@@ -513,7 +561,7 @@ export async function updateMenu(
     .set({
       label: dto.label ?? existing.label,
       i18nKey:
-        dto.i18nKey === undefined ? existing.i18nKey : (dto.i18nKey ?? null),
+        dto.i18nKey === undefined ? existing.i18nKey : dto.i18nKey || null,
       icon: dto.icon ?? existing.icon,
       to: effectiveTo,
       parentId: effectiveParentId,

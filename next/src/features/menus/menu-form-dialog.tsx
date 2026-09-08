@@ -11,7 +11,7 @@ import {
   Description,
   FieldError,
   Form,
-  Input,
+  InputGroup,
   Label,
   ListBox,
   Modal,
@@ -49,8 +49,7 @@ import { I18N_KEY_PATTERN } from "@/lib/constants";
  * - 父级候选排除自身及后代（防成环），编辑态允许变更父级，不选默认顶级；
  * - 按钮权限位：下拉多选（图标 + 中文名，复用权限页 i18n 映射），存 OR 位掩码；
  * - 外链打开方式不落库：to 以 https:// 开头时由导航层新窗口打开（契约 v1.4 已移除 target）；
- * - 父级下拉以全角空格缩进 + 「└ 」符号表达树形层级（flattenParentOptions）；
- * - 图标输入末尾实时预览（裸 lucide 名，为空不渲染预览）。
+ * - 父级下拉以全角空格缩进 + 「└ 」符号表达树形层级（flattenParentOptions）。
  */
 
 export type MenuFormMode = "create" | "addChild" | "edit";
@@ -70,14 +69,26 @@ export interface MenuFormDialogProps {
 const EMPTY_ICON = "circle";
 const FORM_ID = "menu-form";
 
+// 与后端契约/server 校验对齐（openapi.yaml MenuCreateRequest，contract v1.7.0）
+const LABEL_MAX_LENGTH = 20;
+const I18N_KEY_MAX_LENGTH = 100;
+const ICON_MAX_LENGTH = 30;
+const TO_MAX_LENGTH = 200;
+
 const menuFormSchema = z.object({
   parentId: z.string(),
-  label: z.string().trim().min(1).max(50),
-  i18nKey: z.string().trim().min(1).regex(I18N_KEY_PATTERN),
-  icon: z.string().trim().min(1),
+  label: z.string().trim().min(1).max(LABEL_MAX_LENGTH),
+  i18nKey: z
+    .string()
+    .trim()
+    .min(1)
+    .max(I18N_KEY_MAX_LENGTH)
+    .regex(I18N_KEY_PATTERN),
+  icon: z.string().trim().min(1).max(ICON_MAX_LENGTH),
   to: z
     .string()
     .trim()
+    .max(TO_MAX_LENGTH)
     .refine(
       (value) =>
         value === "" || value.startsWith("/") || value.startsWith("https://"),
@@ -378,11 +389,18 @@ function MenuFormModal({
                       onChange={field.onChange}
                     >
                       <Label>{t("features.menus.form.label")}</Label>
-                      <Input
-                        maxLength={50}
-                        placeholder={t("features.menus.form.labelPlaceholder")}
-                        variant="secondary"
-                      />
+                      {/* Suffix 实时字数（上限与 server assertFieldLengths 对齐） */}
+                      <InputGroup variant="secondary">
+                        <InputGroup.Input
+                          maxLength={LABEL_MAX_LENGTH}
+                          placeholder={t(
+                            "features.menus.form.labelPlaceholder",
+                          )}
+                        />
+                        <InputGroup.Suffix className="text-xs text-muted">
+                          {field.value?.length ?? 0}/{LABEL_MAX_LENGTH}
+                        </InputGroup.Suffix>
+                      </InputGroup>
                       {fieldState.error && (
                         <FieldError>
                           {t("features.menus.form.labelInvalid")}
@@ -405,12 +423,18 @@ function MenuFormModal({
                       onChange={field.onChange}
                     >
                       <Label>{t("features.menus.form.i18nKey")}</Label>
-                      <Input
-                        placeholder={t(
-                          "features.menus.form.i18nKeyPlaceholder",
-                        )}
-                        variant="secondary"
-                      />
+                      {/* Suffix 实时字数（上限与 server assertFieldLengths 对齐） */}
+                      <InputGroup variant="secondary">
+                        <InputGroup.Input
+                          maxLength={I18N_KEY_MAX_LENGTH}
+                          placeholder={t(
+                            "features.menus.form.i18nKeyPlaceholder",
+                          )}
+                        />
+                        <InputGroup.Suffix className="text-xs text-muted">
+                          {field.value?.length ?? 0}/{I18N_KEY_MAX_LENGTH}
+                        </InputGroup.Suffix>
+                      </InputGroup>
                       {fieldState.error && (
                         <FieldError>
                           {!field.value?.trim()
@@ -437,11 +461,17 @@ function MenuFormModal({
                       onChange={field.onChange}
                     >
                       <Label>{t("features.menus.form.icon")}</Label>
-                      <Input
-                        aria-label={t("features.menus.form.icon")}
-                        placeholder={t("features.menus.form.iconPlaceholder")}
-                        variant="secondary"
-                      />
+                      {/* Suffix 实时字数（上限与 server assertFieldLengths 对齐） */}
+                      <InputGroup variant="secondary">
+                        <InputGroup.Input
+                          aria-label={t("features.menus.form.icon")}
+                          maxLength={ICON_MAX_LENGTH}
+                          placeholder={t("features.menus.form.iconPlaceholder")}
+                        />
+                        <InputGroup.Suffix className="text-xs text-muted">
+                          {field.value?.length ?? 0}/{ICON_MAX_LENGTH}
+                        </InputGroup.Suffix>
+                      </InputGroup>
                       {fieldState.error && (
                         <FieldError>
                           {t("features.menus.form.iconRequired")}
@@ -463,10 +493,18 @@ function MenuFormModal({
                       onChange={field.onChange}
                     >
                       <Label>{t("features.menus.form.route")}</Label>
-                      <Input
-                        placeholder={t("features.menus.form.routePlaceholder")}
-                        variant="secondary"
-                      />
+                      {/* Suffix 实时字数（上限与 server assertFieldLengths 对齐） */}
+                      <InputGroup variant="secondary">
+                        <InputGroup.Input
+                          maxLength={TO_MAX_LENGTH}
+                          placeholder={t(
+                            "features.menus.form.routePlaceholder",
+                          )}
+                        />
+                        <InputGroup.Suffix className="text-xs text-muted">
+                          {field.value?.length ?? 0}/{TO_MAX_LENGTH}
+                        </InputGroup.Suffix>
+                      </InputGroup>
                       {fieldState.error ? (
                         <FieldError>
                           {t("features.menus.form.routeFormat")}

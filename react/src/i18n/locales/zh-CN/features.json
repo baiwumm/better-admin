@@ -237,7 +237,7 @@
   "features.menus.form.iconRequired": "请输入图标名称（lucide）",
   "features.menus.form.keepAlive": "路由保活",
   "features.menus.form.label": "菜单名称",
-  "features.menus.form.labelInvalid": "请输入 1-50 字的菜单名称",
+  "features.menus.form.labelInvalid": "请输入 1-20 字的菜单名称",
   "features.menus.form.labelPlaceholder": "请输入菜单名称",
   "features.menus.form.labelRequired": "请输入菜单名称",
   "features.menus.form.parent": "父级菜单",

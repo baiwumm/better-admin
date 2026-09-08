@@ -3,27 +3,36 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  Length,
   Matches,
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { I18N_KEY_PATTERN } from '@/lib/constants';
 
 /** PUT /api/menus/:id 请求体 */
 export class UpdateMenuDto {
   @IsOptional()
   @IsString()
+  @Length(1, 20)
   label?: string;
 
   @IsOptional()
   @IsString()
+  @Length(0, 100)
+  @Matches(I18N_KEY_PATTERN, {
+    message: 'i18nKey 须为点分格式，如 menu.system',
+  })
   i18nKey?: string;
 
   @IsOptional()
   @IsString()
+  @Length(1, 30)
   icon?: string;
 
   @IsOptional()
   @IsString()
+  @Length(0, 200)
   to?: string;
 
   @IsOptional()

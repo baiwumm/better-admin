@@ -237,7 +237,7 @@
   "features.menus.form.iconRequired": "Icon name (lucide) is required",
   "features.menus.form.keepAlive": "Keep-alive",
   "features.menus.form.label": "Label",
-  "features.menus.form.labelInvalid": "Label must be 1-50 characters",
+  "features.menus.form.labelInvalid": "Label must be 1-20 characters",
   "features.menus.form.labelPlaceholder": "Enter menu label",
   "features.menus.form.labelRequired": "Label is required",
   "features.menus.form.parent": "Parent",

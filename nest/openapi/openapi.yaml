@@ -771,14 +771,23 @@ components:
       properties:
         label:
           type: string
+          minLength: 1
+          maxLength: 20
         i18nKey:
           type: string
           nullable: true
+          maxLength: 100
+          pattern: '^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$'
+          description: 点分国际化键（如 menu.system）
         icon:
           type: string
+          minLength: 1
+          maxLength: 30
         to:
           type: string
           nullable: true
+          maxLength: 200
+          description: 路由路径，以 / 或 https:// 开头，全局唯一；空为目录分组
         parentId:
           type: string
           nullable: true
@@ -807,14 +816,23 @@ components:
       properties:
         label:
           type: string
+          minLength: 1
+          maxLength: 20
         i18nKey:
           type: string
           nullable: true
+          maxLength: 100
+          pattern: '^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$'
+          description: 点分国际化键（如 menu.system）
         icon:
           type: string
+          minLength: 1
+          maxLength: 30
         to:
           type: string
           nullable: true
+          maxLength: 200
+          description: 路由路径，以 / 或 https:// 开头，全局唯一；空为目录分组
         parentId:
           type: string
           nullable: true
@@ -838,14 +856,23 @@ components:
       properties:
         label:
           type: string
+          minLength: 1
+          maxLength: 20
         i18nKey:
           type: string
           nullable: true
+          maxLength: 100
+          pattern: '^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$'
+          description: 点分国际化键（如 menu.system）
         icon:
           type: string
+          minLength: 1
+          maxLength: 30
         to:
           type: string
           nullable: true
+          maxLength: 200
+          description: 路由路径，以 / 或 https:// 开头，全局唯一；空为目录分组
         sort:
           type: integer
           default: 0
