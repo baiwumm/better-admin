@@ -122,7 +122,7 @@ const UIcon = resolveComponent("UIcon");
 </script>
 
 <template>
-  <div class="flex w-full flex-col">
+  <div class="flex w-full flex-col gap-4">
     <DataTableToolbar>
       <UInput
         v-model="searchInput"
@@ -130,7 +130,6 @@ const UIcon = resolveComponent("UIcon");
         :placeholder="t('features.permissions.searchPlaceholder')"
         class="w-64"
         icon="i-lucide-search"
-        size="sm"
         @keyup.enter="applySearch"
       />
       <!-- 纯本地过滤：无请求态，搜索/重置恒可点 -->
