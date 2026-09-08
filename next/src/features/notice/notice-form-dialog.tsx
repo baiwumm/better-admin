@@ -19,7 +19,7 @@ import {
   Description,
   FieldError,
   Form,
-  Input,
+  InputGroup,
   Label,
   Modal,
   Skeleton,
@@ -46,7 +46,7 @@ import { useTranslation } from "@/i18n";
  *
  * - 内容为 Tiptap 富文本（RichTextEditor，提交 HTML）；
  * - 发布范围三粒度并集（NoticeScopeSelector，三类目标分别受控，
- *   「至少一项」校验失败经 onInvalid toast 明确反馈）；
+ *   「至少一项」校验失败经字段下方 FieldError 反馈）；
  * - 发布时间 DatePicker：缺省 = 立即发布；未来时间 = 定时草稿（访问时惰性发布）；
  * - 编辑态由内部按 noticeId 拉取详情（含 scopes），列表行仅传 id——
  *   列表 Notice 不含 scopes，外层强转会丢范围数据；
@@ -69,6 +69,9 @@ export interface NoticeFormDialogProps {
 }
 
 const FORM_ID = "notice-form";
+
+/** 标题长度上限（与后端 NoticeCreateDto @MaxLength(50) 对齐） */
+const TITLE_MAX_LENGTH = 50;
 
 /** ISO 时间戳 → 本地 "YYYY-MM-DDTHH:mm"（DatePicker minute 粒度的受控值） */
 function toLocalMinuteInput(iso: string | null | undefined): string {
@@ -263,24 +266,20 @@ function NoticeFormModal({
     },
   });
 
-  const onValid = handleSubmit(
-    (values) => {
-      toast.promise(mutation.mutateAsync(values), {
-        loading: t("features.notices.form.saving"),
-        success: t(
-          isEdit
-            ? "features.notices.message.updated"
-            : "features.notices.message.created",
-        ),
-        error: (error) =>
-          error instanceof Error ? error.message : String(error),
-      });
-    },
-    // 校验失败（如范围未选）：toast 明确反馈，不让「点确认没反应」
-    () => {
-      toast.danger(t("features.notices.form.invalidScope"));
-    },
-  );
+  // 校验失败由各字段下方 FieldError 呈现（react-hook-form errors → isInvalid），
+  // 不再叠加 toast，避免同一错误双重反馈
+  const onValid = handleSubmit((values) => {
+    toast.promise(mutation.mutateAsync(values), {
+      loading: t("features.notices.form.saving"),
+      success: t(
+        isEdit
+          ? "features.notices.message.updated"
+          : "features.notices.message.created",
+      ),
+      error: (error) =>
+        error instanceof Error ? error.message : String(error),
+    });
+  });
 
   const onSubmit = (event: React.FormEvent) => void onValid(event);
 
@@ -339,13 +338,18 @@ function NoticeFormModal({
                       onChange={field.onChange}
                     >
                       <Label>{t("features.notices.form.title")}</Label>
-                      <Input
-                        maxLength={50}
-                        placeholder={t(
-                          "features.notices.form.titlePlaceholder",
-                        )}
-                        variant="secondary"
-                      />
+                      {/* Suffix 实时字数（上限与后端 @MaxLength(50) 对齐） */}
+                      <InputGroup variant="secondary">
+                        <InputGroup.Input
+                          maxLength={TITLE_MAX_LENGTH}
+                          placeholder={t(
+                            "features.notices.form.titlePlaceholder",
+                          )}
+                        />
+                        <InputGroup.Suffix className="text-xs text-muted">
+                          {field.value?.length ?? 0}/{TITLE_MAX_LENGTH}
+                        </InputGroup.Suffix>
+                      </InputGroup>
                       {fieldState.error && (
                         <FieldError>
                           {t("features.notices.form.titleInvalid")}
@@ -359,7 +363,13 @@ function NoticeFormModal({
                   control={control}
                   name="content"
                   render={({ field, fieldState }) => (
-                    <div className="flex flex-col gap-1">
+                    // FieldError 依赖父字段注入的 FieldErrorContext（isInvalid）才渲染，
+                    // 必须放在字段组件内而非普通 div（编辑器语义由 ariaLabel 提供）
+                    <TextField
+                      isRequired
+                      className="flex flex-col gap-1"
+                      isInvalid={Boolean(fieldState.error)}
+                    >
                       <Label>{t("features.notices.form.content")}</Label>
                       <RichTextEditor
                         ariaLabel={t("features.notices.form.content")}
@@ -371,7 +381,7 @@ function NoticeFormModal({
                           {t("features.notices.form.contentRequired")}
                         </FieldError>
                       )}
-                    </div>
+                    </TextField>
                   )}
                 />
 
@@ -379,7 +389,13 @@ function NoticeFormModal({
                   control={control}
                   name="scopeDeptIds"
                   render={({ fieldState }) => (
-                    <div className="flex flex-col gap-1">
+                    // 同 content：借 TextField 提供字段上下文让 FieldError 生效；
+                    // RAC 无通用 Field 原语，范围选择器为自定义复合控件，属既定例外
+                    <TextField
+                      isRequired
+                      className="flex flex-col gap-1"
+                      isInvalid={Boolean(fieldState.error)}
+                    >
                       <NoticeScopeSelector
                         deptIds={watch("scopeDeptIds") ?? []}
                         postIds={watch("scopePostIds") ?? []}
@@ -397,7 +413,7 @@ function NoticeFormModal({
                           {t("features.notices.form.scopeRequired")}
                         </FieldError>
                       )}
-                    </div>
+                    </TextField>
                   )}
                 />
 

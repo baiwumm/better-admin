@@ -332,7 +332,6 @@
   "features.notices.filter.status": "按状态筛选",
   "features.notices.form.content": "公告内容",
   "features.notices.form.contentRequired": "请输入公告内容",
-  "features.notices.form.invalidScope": "请至少选择一个发布范围目标（组织 / 岗位 / 人员）",
   "features.notices.form.isTop": "置顶",
   "features.notices.form.publishTime": "发布时间",
   "features.notices.form.publishTimeHint": "不选则立即发布；选择未来时间将定时自动发布",

@@ -332,7 +332,6 @@
   "features.notices.filter.status": "Filter by status",
   "features.notices.form.content": "Content",
   "features.notices.form.contentRequired": "Please enter the notice content",
-  "features.notices.form.invalidScope": "Select at least one scope target (department / post / member)",
   "features.notices.form.isTop": "Pin to top",
   "features.notices.form.publishTime": "Publish time",
   "features.notices.form.publishTimeHint": "Leave empty to publish now; a future time schedules it",
