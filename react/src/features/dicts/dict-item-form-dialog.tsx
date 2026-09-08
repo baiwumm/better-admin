@@ -31,6 +31,7 @@ import {
   sortFieldSchema,
 } from "@/components/common/sort-field/sort-field";
 import { useTranslation } from "@/i18n";
+import { I18N_KEY_PATTERN } from "@/lib/constants";
 
 /**
  * 字典项新增/编辑弹窗（react-hook-form + zod + HeroUI Form）。
@@ -55,9 +56,6 @@ export interface DictItemFormDialogProps {
 }
 
 const FORM_ID = "dict-item-form";
-
-/** i18n 键：点分格式（如 dict.user_status.enabled），与菜单 i18nKey 同构 */
-const I18N_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/;
 
 const VALUE_MAX_LENGTH = 50;
 const LABEL_MAX_LENGTH = 20;

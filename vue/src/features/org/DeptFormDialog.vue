@@ -267,6 +267,8 @@ export default { name: "DeptFormDialog" };
           <USwitch
             :aria-label="t('features.depts.form.status')"
             :model-value="state.status === 'enabled'"
+            unchecked-icon="i-lucide-x"
+            checked-icon="i-lucide-check"
             @update:model-value="
               (value: boolean) =>
                 (state.status = value ? 'enabled' : 'disabled')

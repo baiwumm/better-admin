@@ -5,6 +5,7 @@ import { requireAuthUser } from "@/lib/server/route-auth";
 import { createDictType, listDictTypes } from "@/lib/server/dict-service";
 import { ServerApiError } from "@/lib/server/http";
 import { jsonOk, handleRouteError } from "@/lib/server/route-helpers";
+import { DICT_TYPE_CODE_PATTERN } from "@/lib/constants";
 
 /**
  * /api/dict/types（契约）：
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
         "code 不能超过 50 个字符",
       );
     }
-    if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(code)) {
+    if (!DICT_TYPE_CODE_PATTERN.test(code)) {
       throw new ServerApiError(
         400,
         "VALIDATION_ERROR",

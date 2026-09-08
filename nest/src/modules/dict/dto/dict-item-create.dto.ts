@@ -8,6 +8,7 @@ import {
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { I18N_KEY_PATTERN } from '@/lib/constants';
 
 /** POST /api/dict/types/:code/items 请求体 */
 export class DictItemCreateDto {
@@ -22,7 +23,7 @@ export class DictItemCreateDto {
   @IsOptional()
   @IsString()
   @Length(0, 100)
-  @Matches(/^$|^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/, {
+  @Matches(I18N_KEY_PATTERN, {
     message: 'i18nKey 须为点分格式，如 dict.user_status.enabled',
   })
   i18nKey?: string;

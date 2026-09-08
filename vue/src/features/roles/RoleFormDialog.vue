@@ -10,7 +10,7 @@ import { useToast } from "@nuxt/ui/composables";
 import { createRole, getRoleErrorMessage, updateRole } from "./role-api";
 
 import Spinner from "@/components/ui/spinner/index.vue";
-import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
+import { SUPER_ADMIN_ROLE_CODE, DICT_TYPE_CODE_PATTERN } from "@/lib/constants";
 
 /**
  * 角色新增/编辑弹窗（对齐 React 端 role-form-dialog）：
@@ -35,9 +35,6 @@ const emit = defineEmits<{
 }>();
 
 const FORM_ID = "role-form";
-
-/** 角色标识：字母开头，允许数字/中划线/下划线（与菜单/字典 code 风格一致） */
-const CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
 
 const { t } = useI18n();
 const toast = useToast();
@@ -67,7 +64,7 @@ const schema = z
   })
   // code 仅创建时校验（编辑态锁定不可改，superRefine 运行时读取 isEdit）
   .superRefine((data, ctx) => {
-    if (!isEdit.value && !CODE_PATTERN.test(data.code)) {
+    if (!isEdit.value && !DICT_TYPE_CODE_PATTERN.test(data.code)) {
       ctx.addIssue({
         code: "custom",
         path: ["code"],
@@ -245,7 +242,12 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             <span class="text-sm font-medium">
               {{ t("features.roles.form.enabled") }}
             </span>
-            <USwitch v-model="state.enabled" :disabled="isSuperAdmin" />
+            <USwitch
+              v-model="state.enabled"
+              :disabled="isSuperAdmin"
+              unchecked-icon="i-lucide-x"
+              checked-icon="i-lucide-check"
+            />
           </div>
         </div>
       </UForm>

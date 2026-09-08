@@ -5,6 +5,7 @@ import { requireAuthUser } from "@/lib/server/route-auth";
 import { removeDictItem, updateDictItem } from "@/lib/server/dict-service";
 import { ServerApiError } from "@/lib/server/http";
 import { jsonOk, handleRouteError } from "@/lib/server/route-helpers";
+import { I18N_KEY_PATTERN } from "@/lib/constants";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -52,7 +53,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           "i18nKey 不能超过 100 个字符",
         );
       }
-      if (!/^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/.test(i18nKey)) {
+      if (!I18N_KEY_PATTERN.test(i18nKey)) {
         throw new ServerApiError(
           400,
           "VALIDATION_ERROR",

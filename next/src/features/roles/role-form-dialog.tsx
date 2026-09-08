@@ -28,7 +28,7 @@ import {
   SortField,
   sortFieldSchema,
 } from "@/components/common/sort-field/sort-field";
-import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
+import { SUPER_ADMIN_ROLE_CODE, DICT_TYPE_CODE_PATTERN } from "@/lib/constants";
 import { useTranslation } from "@/i18n";
 
 /**
@@ -54,11 +54,8 @@ export interface RoleFormDialogProps {
 
 const FORM_ID = "role-form";
 
-/** 角色标识：字母开头，允许数字/中划线/下划线（与菜单/字典 code 风格一致） */
-const CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
-
 const roleFormSchema = z.object({
-  code: z.string().trim().min(1).max(50).regex(CODE_PATTERN),
+  code: z.string().trim().min(1).max(50).regex(DICT_TYPE_CODE_PATTERN),
   name: z.string().trim().min(1).max(50),
   description: z.string().trim().max(200),
   sort: sortFieldSchema,

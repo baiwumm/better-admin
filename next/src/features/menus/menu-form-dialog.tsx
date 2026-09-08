@@ -39,6 +39,7 @@ import {
 } from "@/components/common/sort-field/sort-field";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useTranslation } from "@/i18n";
+import { I18N_KEY_PATTERN } from "@/lib/constants";
 
 /**
  * 菜单新增/编辑弹窗（react-hook-form + zod + HeroUI Form）。
@@ -68,9 +69,6 @@ export interface MenuFormDialogProps {
 
 const EMPTY_ICON = "circle";
 const FORM_ID = "menu-form";
-
-/** i18n 键：点分格式（如 menu.pageTitle.menus） */
-const I18N_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/;
 
 const menuFormSchema = z.object({
   parentId: z.string(),

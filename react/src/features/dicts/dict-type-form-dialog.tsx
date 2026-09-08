@@ -26,6 +26,7 @@ import {
 } from "./dict-api";
 
 import { useTranslation } from "@/i18n";
+import { DICT_TYPE_CODE_PATTERN } from "@/lib/constants";
 
 /**
  * 字典类型新增/编辑弹窗（react-hook-form + zod + HeroUI Form）。
@@ -50,15 +51,12 @@ export interface DictTypeFormDialogProps {
 
 const FORM_ID = "dict-type-form";
 
-/** code：字母开头，允许数字/中划线/下划线（与后端 @Matches 对齐） */
-const CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
-
 const CODE_MAX_LENGTH = 50;
 const NAME_MAX_LENGTH = 20;
 const DESCRIPTION_MAX_LENGTH = 200;
 
 const typeFormSchema = z.object({
-  code: z.string().trim().min(1).max(CODE_MAX_LENGTH).regex(CODE_PATTERN),
+  code: z.string().trim().min(1).max(CODE_MAX_LENGTH).regex(DICT_TYPE_CODE_PATTERN),
   name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
   description: z.string().trim().max(DESCRIPTION_MAX_LENGTH),
 });

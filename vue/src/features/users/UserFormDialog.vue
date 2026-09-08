@@ -418,6 +418,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <USwitch
             :disabled="isStatusLocked"
             :model-value="state.status === 'active'"
+            unchecked-icon="i-lucide-x"
+            checked-icon="i-lucide-check"
             @update:model-value="
               (value: boolean) => (state.status = value ? 'active' : 'disabled')
             "

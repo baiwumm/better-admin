@@ -56,6 +56,7 @@ import {
   useMenuPermissions,
   usePermissions,
 } from "@/composables/use-permissions";
+import { I18N_KEY_PATTERN } from "@/lib/constants";
 
 /**
  * 菜单管理页（对齐 React 端 menus-page）：管理用全量菜单树的树形表格 + CRUD。
@@ -378,7 +379,6 @@ const table: AppTable<MenuNode> = useVueTable({
 // ---------------- 表单弹窗（内联于本页； addChild 锁父级 / edit 防环） ----------------
 const FORM_ID = "menu-form";
 const EMPTY_ICON = "circle";
-const I18N_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/;
 
 // 校验消息用函数延迟求值：语言切换后错误文案跟随当前 locale
 const schema = z.object({
@@ -763,7 +763,11 @@ async function submitForm(event: FormSubmitEvent<Schema>) {
               class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
             >
               <span class="text-sm font-medium">{{ switchRow.label }}</span>
-              <USwitch v-model="state[switchRow.key as 'keepAlive']" />
+              <USwitch
+                v-model="state[switchRow.key as 'keepAlive']"
+                unchecked-icon="i-lucide-x"
+                checked-icon="i-lucide-check"
+              />
             </div>
           </div>
         </UForm>
