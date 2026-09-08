@@ -23,6 +23,19 @@ export function flattenLeafMenus(nodes: MenuNode[]): MenuNode[] {
   return leaves;
 }
 
+/** 收集菜单树全部可达路径（公告详情页判断「返回列表」入口可达性用）。 */
+export function collectMenuPaths(
+  nodes: MenuNode[],
+  acc: Set<string> = new Set(),
+): Set<string> {
+  for (const node of nodes) {
+    if (node.to) acc.add(node.to);
+    if (node.children?.length) collectMenuPaths(node.children, acc);
+  }
+
+  return acc;
+}
+
 /**
  * 递归查找当前路径对应的叶子节点及祖先链（侧边栏高亮展开用；
  * Nuxt UI UNavigationMenu 按 to 自动 active，此函数供需要显式路径链的场景）。

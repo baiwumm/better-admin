@@ -14,6 +14,7 @@ import { ROUTE_TITLE_KEYS } from "@/lib/route-access";
 import ConfigDrawer from "@/components/layout/ConfigDrawer.vue";
 import FullscreenButton from "@/components/layout/FullscreenButton.vue";
 import LanguageSwitch from "@/components/layout/LanguageSwitch.vue";
+import NoticeBell from "@/components/layout/NoticeBell.vue";
 import SidebarBrand from "@/components/layout/SidebarBrand.vue";
 import UserMenu from "@/components/layout/UserMenu.vue";
 
@@ -64,6 +65,7 @@ function toNavLeaf(node: MenuNode): NavLeaf {
  */
 const sidebarItems = computed<NavLeaf[]>(() => {
   const visible = filterHiddenMenus(menus.value ?? []);
+
   return visible.map(toNavLeaf);
 });
 
@@ -225,14 +227,7 @@ function retryMenus() {
           <template #right>
             <div class="flex items-center gap-2">
               <UDashboardSearchButton />
-              <!-- 通知铃铛占位（站内信模块随 M2+ 接入） -->
-              <UButton
-                :aria-label="t('layout.header.notifications')"
-                color="neutral"
-                icon="i-lucide-bell"
-                variant="ghost"
-                size="sm"
-              />
+              <NoticeBell />
               <FullscreenButton />
               <LanguageSwitch />
               <ConfigDrawer />
