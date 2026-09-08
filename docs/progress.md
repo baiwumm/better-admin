@@ -4,6 +4,28 @@
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
 
+### Vue 端表单禁用失效修复：UFormField 无 disabled prop，锁定字段全部可编辑（2026-09-09）
+
+- **现象**（用户报告）：角色编辑时 code 可修改但保存后不变——这是**设计内行为**（Nest `UpdateRoleDto` 白名单仅 name/description/enabled/sort，注释明确「code 创建后锁定」；React 基准同语义），真正的 bug 是**编辑态锁定从未生效**。
+- **根因**：`UFormField` **没有 `disabled` prop**（@nuxt/ui 4.11 FormField.vue 源码零匹配），传入值作为无效 attrs 落到根 div，对内部输入控件毫无作用——与 React（HeroUI）「FormField 传导 isDisabled」的心智模型不同。disabled 必须直接挂在 UInput/USelect/USelectMenu 等控件上。
+- **影响面**（全仓 grep 排查，功能性问题 3 处）：① 角色 code（编辑态可改但不提交 → 静默丢弃，即用户报告的问题）；② **super_admin 编辑态 name（可改且载荷会提交 name → 超管改名保护缺口，比报告问题更严重）**；③ 字典类型 code（同角色，静默丢弃）。另有 2 处无效冗余（DeptFormDialog parent / DeptLeaderSelect，内部控件本就有 disabled，仅删 FormField 上的无效 attr）；UserFormDialog 主岗位等其余匹配均为控件自身 disabled，无问题。
+- **修复**：四处文件将 disabled 移到实际控件上（对齐 React `isDisabled` 挂输入控件的写法）：RoleFormDialog code `:disabled="isEdit"` + name `:disabled="isSuperAdmin"`、DictTypeFormDialog code `:disabled="isEdit"`；USwitch 的 enabled 锁定原本就正确（disabled 直接绑组件）。约定沉淀：**Vue/Nuxt 端 UFormField 不传导 disabled**，锁定一律挂控件。
+- **验证**：vue-tsc / eslint 全绿；浏览器实测——管理员编辑 code 禁用、super_admin 编辑 code+name 双禁用（sort 可改对齐 React「仅 description…等可改」口径）、字典类型编辑 code 禁用。测试备注：UModal/USlideover 关闭后 teleport DOM 残留会污染 `querySelectorAll("[role=dialog]")` 类查询（视觉已卸载），自动化判定需以截图或 display 过滤为准。
+
+---
+
+### Vue 端角色授权抽屉重构：手写勾选模型 → Nuxt UI UTree 集合模型（2026-09-08）
+
+- **背景**：角色管理菜单授权的父子级联错乱。根因在 `GrantTreeNode.vue`（已删除）的位复选框本地残留层 `bitChecked`——只在手动切位时写入、永不失效，父级勾选/取消整树（`setSubtreeChecked` 直写 `overrides.bits`）后 UI 与真实授权位脱节，且残留跨抽屉开关存活；另有目录 `checkState` 渲染期递归整树的 O(n²) 未同步 React 端 `checkStateMap` 优化。
+- **方案**（评估先行、用户确认后实施）：改用 Nuxt UI `UTree`（@nuxt/ui 4.11 内置，reka-ui TreeRoot 封装）——权限位作为叶子菜单的**虚拟子节点**（key = `${menuId}:${item.value}`，携带 bits）参与级联，勾选状态收敛为**单一选中集合**（`v-model`，TreeItem 对象数组），`bitChecked` 类双源残留从结构上消失。评估阶段核对了官方文档 + 两个包的源码（propagate/bubble/isIndeterminate 的确切语义），非凭记忆。
+- **关键决策——级联手写而非组件内建**：所有 `@select` 事件统一 `preventDefault`，勾选/取消走自实现 `toggleItem`（未全选 → 子树加入集合并向上冒泡；已全选 → 子树移出并父链失效），精确对齐 React `toggleMaster`；`bubble-select` 仅保留其 `isIndeterminate` 推导用于半选显示。原因：reka 的 `propagate/bubble` 无法表达「载荷只含显式勾选传播的节点」口径，且半选回显目录需「在集合 ⇔ 全选态」不变式才能保证 toggle 语义正确。
+- **载荷/统计口径对齐 React**：`explicitVisibility` / `touchedBits` 对应 React `visibleOverrides` / `bitsOverrides`——冒泡推导入集合的父级仅影响显示、不入载荷（不给无记录目录凭空补授权）；叶子有位 → 选中位 OR 聚合（半选叶子也保存），目录/无位叶子 → 显式设置 ?? 服务端记录；统计半选计入（6/13 口径）。`resetSelection` 数据可用（含缓存）立即回显，避免 staleTime=0 refetch 期间空树闪烁（React 直接消费缓存渲染的同语义）。
+- **UTree 适配要点**：`:as="{ link: 'div' }"`（checkbox 是 button 禁止嵌套）；`#item-leading` 放 UCheckbox（`indeterminate ? 'indeterminate' : selected`）+ 菜单/位图标，`#item-label` 渲染停用标签；`:ui.link: 'before:bg-transparent'` 覆盖选中行高亮（授权树无导航选中语义）；节点类型独立定义（不 extends 带 index-signature 的 `TreeItem`，位节点显式 `children?: undefined`，规避联合拓宽与 TS2589）；`v-model:expanded` 受控 + `get-key` 稳定 id。
+- **验证**：vue-tsc / eslint 全绿；GUI 端到端（本地 Nest + 浏览器实测）——回显（半选目录 `[checked=mixed]`、统计 6/13 含半选）、勾选目录整树级联（6→12）、取消单位向上半选（父级与根目录同时 `[checked=mixed]`）、半选点击变全选、取消目录整树清空（12→6）、保存载荷服务端落库正确（12 条 ↔ 6 条）、保存后重开回显一致。**已知说明**：USlideover 关闭后 teleport DOM 残留（a11y snapshot 可见、视觉已卸载）与关闭后空 roleId 的后台查询报错均为重构前既有行为，未扩大范围处理。
+- **范围**：仅 vue 端三文件（`use-grant-tree.ts` 重写 / `RoleGrantDrawer.vue` 模板换 UTree / `GrantTreeNode.vue` 删除）；React 端不动，功能矩阵无状态变化。
+
+---
+
 ### Vue 端 M2 组织中心剩余 7 模块全量落地（2026-09-08）
 
 - **范围**：vue-plan M2 后七项——岗位管理 / 人员通讯录 / 公告管理 / 我的公告 / 站内信 / 架构图谱 / 通讯录 Excel 导出，全部对齐 React 端功能语义；七个独立提交（0f060c2 → 514f194），每模块一项。验证：vue-tsc / eslint / vitest（22 用例）/ vite build 四绿。**已知限制：本轮仅代码落地 + 构建验证，GUI 冒烟验收待做**（需本地 Nest 服务；feature-matrix 中 7 项均标注「待 GUI 冒烟验收」）。
