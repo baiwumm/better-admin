@@ -82,25 +82,32 @@ export function RolesPage() {
   const search = useRolesListStore((s) => s.search);
   const filters = useRolesListStore((s) => s.filters);
   // actions 为稳定引用（zustand 模式），经 selector 取出不触发多余重渲染
-  const setSearch = useRolesListStore((s) => s.setSearch);
   const setPage = useRolesListStore((s) => s.setPage);
   const setPageSize = useRolesListStore((s) => s.setPageSize);
   const setFilters = useRolesListStore((s) => s.setFilters);
   const resetStore = useRolesListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching, isError, refetch } =
-    useListQuery<Role, { enabled: string | null }>({
-      store: useRolesListStore,
-      queryKeyPrefix: ROLES_QUERY_KEY,
-      path: "/roles",
-      buildFilters: (f) => (f.enabled ? { enabled: f.enabled } : {}),
-    });
+  const {
+    data,
+    pagination,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+    submitSearch,
+  } = useListQuery<Role, { enabled: string | null }>({
+    store: useRolesListStore,
+    queryKeyPrefix: ROLES_QUERY_KEY,
+    path: "/roles",
+    buildFilters: (f) => (f.enabled ? { enabled: f.enabled } : {}),
+  });
 
-  // 搜索（提交式后端过滤）：本地输入 → 应用到 store
+  // 搜索（提交式后端过滤）：本地输入 → 应用到 store；
+  // 条件未变化时 submitSearch 走 refetch，搜索按钮即「刷新列表」入口
   const [searchInput, setSearchInput] = useState(search);
   const applySearch = useCallback(
-    () => setSearch(searchInput.trim()),
-    [setSearch, searchInput],
+    () => submitSearch(searchInput.trim()),
+    [submitSearch, searchInput],
   );
   const searchDirty = searchInput.trim() !== search;
 
@@ -445,7 +452,6 @@ export function RolesPage() {
         <DataTableSearchReset
           canReset={searchDirty || search !== "" || filters.enabled !== null}
           isFetching={isFetching}
-          searchDirty={searchDirty}
           onReset={resetFilters}
           onSearch={applySearch}
         />

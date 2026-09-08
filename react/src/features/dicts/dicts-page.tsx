@@ -545,7 +545,6 @@ export function DictsPage() {
             <DataTableSearchReset
               canReset={canResetItems}
               isFetching={itemsQuery.isFetching}
-              searchDirty={itemSearchDirty}
               onReset={resetItemSearch}
               onSearch={applyItemSearch}
             />

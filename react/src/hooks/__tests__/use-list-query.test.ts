@@ -1,7 +1,8 @@
 import { QueryClient } from "@tanstack/react-query";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { buildListQueryKey } from "@/hooks/use-list-query";
+import { createListStore } from "@/hooks/create-list-store";
+import { buildListQueryKey, submitListSearch } from "@/hooks/use-list-query";
 
 /**
  * 列表 queryKey 契约与缓存隔离测试。
@@ -110,5 +111,36 @@ describe("列表缓存策略（React Query 集成）", () => {
 
     expect(queryClient.getQueryData(keyB)).toBe("B-data");
     expect(queryClient.getQueryData(keyC)).toBe("C-data");
+  });
+});
+
+describe("submitListSearch（搜索按钮「提交 / 刷新」分支）", () => {
+  it("异值走 setSearch 正常提交：epoch+1、回第 1 页、不 refetch", () => {
+    const store = createListStore<{ status: string | null }>({ status: null });
+
+    store.getState().setPage(4);
+    const refetch = vi.fn();
+
+    submitListSearch(store, refetch, "abc");
+
+    expect(refetch).not.toHaveBeenCalled();
+    expect(store.getState().search).toBe("abc");
+    expect(store.getState().epoch).toBe(1);
+    expect(store.getState().page).toBe(1);
+  });
+
+  it("同值走 refetch 刷新：不 bump epoch、保持页码与筛选", () => {
+    const store = createListStore<{ status: string | null }>({ status: null });
+
+    store.getState().setSearch("abc");
+    store.getState().setPage(3);
+    const epochBefore = store.getState().epoch;
+    const refetch = vi.fn();
+
+    submitListSearch(store, refetch, "abc");
+
+    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(store.getState().epoch).toBe(epochBefore);
+    expect(store.getState().page).toBe(3);
   });
 });

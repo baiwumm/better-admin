@@ -77,35 +77,42 @@ export function DirectoryPage() {
   const search = useDirectoryListStore((s) => s.search);
   const sorting = useDirectoryListStore((s) => s.sorting);
   const filters = useDirectoryListStore((s) => s.filters);
-  const setSearch = useDirectoryListStore((s) => s.setSearch);
   const setPage = useDirectoryListStore((s) => s.setPage);
   const setPageSize = useDirectoryListStore((s) => s.setPageSize);
   const setSorting = useDirectoryListStore((s) => s.setSorting);
   const setFilters = useDirectoryListStore((s) => s.setFilters);
   const resetStore = useDirectoryListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching, isError, refetch } =
-    useListQuery<
-      DirectoryEntry,
-      { deptId: string | null; employmentStatus: string | null }
-    >({
-      store: useDirectoryListStore,
-      queryKeyPrefix: ["org", "directory", "list"],
-      path: "/org/directory",
-      // 后端搜索参数名为 keyword（/org/* 统一命名）
-      searchParam: "keyword",
-      buildFilters: (f) => ({
-        ...(f.deptId ? { deptId: f.deptId } : {}),
-        // FilterSelect 首项「全部」(null) 映射后端 all；store 默认 employed
-        employmentStatus: f.employmentStatus ?? "all",
-      }),
-    });
+  const {
+    data,
+    pagination,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+    submitSearch,
+  } = useListQuery<
+    DirectoryEntry,
+    { deptId: string | null; employmentStatus: string | null }
+  >({
+    store: useDirectoryListStore,
+    queryKeyPrefix: ["org", "directory", "list"],
+    path: "/org/directory",
+    // 后端搜索参数名为 keyword（/org/* 统一命名）
+    searchParam: "keyword",
+    buildFilters: (f) => ({
+      ...(f.deptId ? { deptId: f.deptId } : {}),
+      // FilterSelect 首项「全部」(null) 映射后端 all；store 默认 employed
+      employmentStatus: f.employmentStatus ?? "all",
+    }),
+  });
 
-  // 搜索（提交式后端过滤：姓名 / 工号 / 登录名）
+  // 搜索（提交式后端过滤：姓名 / 工号 / 登录名）；
+  // 条件未变化时 submitSearch 走 refetch，搜索按钮即「刷新列表」入口
   const [searchInput, setSearchInput] = useState(search);
   const applySearch = useCallback(
-    () => setSearch(searchInput.trim()),
-    [setSearch, searchInput],
+    () => submitSearch(searchInput.trim()),
+    [submitSearch, searchInput],
   );
   const searchDirty = searchInput.trim() !== search;
 
@@ -381,7 +388,6 @@ export function DirectoryPage() {
                 filters.employmentStatus !== "employed"
               }
               isFetching={isFetching}
-              searchDirty={searchDirty}
               onReset={resetFilters}
               onSearch={applySearch}
             />

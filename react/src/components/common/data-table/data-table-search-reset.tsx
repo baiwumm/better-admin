@@ -10,15 +10,15 @@ import { useTranslation } from "@/i18n";
  * - 位掩码门控内置：搜索按钮消费 SEARCH 位、重置按钮消费 RESET 位，
  *   两个位都缺失时整体不渲染（显隐策略与操作按钮一致）；
  *   「重置」是纯前端清筛选动作，RESET 位按 v1.3 约定仅控制显隐，不挂后端守卫；
- * - searchDirty / canReset / isFetching 由页面按各自列表语义传入
- *   （服务端分页页传请求态，纯本地过滤页可省略 isFetching）。
+ * - canReset / isFetching 由页面按各自列表语义传入
+ *   （服务端分页页传请求态，纯本地过滤页可省略 isFetching）；
+ *   搜索按钮不因「条件未变化」禁用——提交/刷新语义由页面 onSearch 决定，
+ *   服务端分页页经 useListQuery 的 submitSearch 实现（同值 → refetch 刷新列表）。
  * - 自动读取当前菜单的 userPermissions 进行精确权限判断，
  *   避免使用用户全局权限（可能包含其他菜单的权限位）。
  */
 
 interface DataTableSearchResetProps {
-  /** 存在未提交的搜索条件（false 时搜索按钮禁用；纯本地过滤页恒传 true） */
-  searchDirty: boolean;
   /** 存在可清除的已生效条件（false 时重置按钮禁用） */
   canReset: boolean;
   /** 列表请求进行中：搜索按钮转 pending，两按钮均禁用 */
@@ -28,7 +28,6 @@ interface DataTableSearchResetProps {
 }
 
 export function DataTableSearchReset({
-  searchDirty,
   canReset,
   isFetching = false,
   onSearch,
@@ -43,7 +42,7 @@ export function DataTableSearchReset({
     <>
       {canSearch && (
         <Button
-          isDisabled={!searchDirty || isFetching}
+          isDisabled={isFetching}
           isPending={isFetching}
           size="sm"
           onPress={onSearch}

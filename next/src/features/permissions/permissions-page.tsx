@@ -162,7 +162,6 @@ export function PermissionsPage() {
         {/* 纯本地过滤：无请求态，搜索/重置恒可点 */}
         <DataTableSearchReset
           canReset
-          searchDirty
           onReset={resetSearch}
           onSearch={applySearch}
         />

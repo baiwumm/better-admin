@@ -82,25 +82,32 @@ export function LogsPage() {
   const pageSize = useLogsListStore((s) => s.pageSize);
   const search = useLogsListStore((s) => s.search);
   const filters = useLogsListStore((s) => s.filters);
-  const setSearch = useLogsListStore((s) => s.setSearch);
   const setPage = useLogsListStore((s) => s.setPage);
   const setPageSize = useLogsListStore((s) => s.setPageSize);
   const setFilters = useLogsListStore((s) => s.setFilters);
   const resetStore = useLogsListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching, isError, refetch } =
-    useListQuery<Log, { type: string | null }>({
-      store: useLogsListStore,
-      queryKeyPrefix: LOGS_QUERY_KEY,
-      path: "/logs",
-      buildFilters: (f) => (f.type ? { type: f.type } : {}),
-    });
+  const {
+    data,
+    pagination,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+    submitSearch,
+  } = useListQuery<Log, { type: string | null }>({
+    store: useLogsListStore,
+    queryKeyPrefix: LOGS_QUERY_KEY,
+    path: "/logs",
+    buildFilters: (f) => (f.type ? { type: f.type } : {}),
+  });
 
-  // 搜索（提交式后端过滤，后端匹配 action 字段）
+  // 搜索（提交式后端过滤，后端匹配 action 字段）；
+  // 条件未变化时 submitSearch 走 refetch，搜索按钮即「刷新列表」入口
   const [searchInput, setSearchInput] = useState(search);
   const applySearch = useCallback(
-    () => setSearch(searchInput.trim()),
-    [setSearch, searchInput],
+    () => submitSearch(searchInput.trim()),
+    [submitSearch, searchInput],
   );
   const searchDirty = searchInput.trim() !== search;
 
@@ -377,7 +384,6 @@ export function LogsPage() {
         <DataTableSearchReset
           canReset={searchDirty || search !== "" || filters.type !== null}
           isFetching={isFetching}
-          searchDirty={searchDirty}
           onReset={resetFilters}
           onSearch={applySearch}
         />

@@ -113,26 +113,33 @@ export function UsersPage() {
   const search = useUsersListStore((s) => s.search);
   const sorting = useUsersListStore((s) => s.sorting);
   const filters = useUsersListStore((s) => s.filters);
-  const setSearch = useUsersListStore((s) => s.setSearch);
   const setPage = useUsersListStore((s) => s.setPage);
   const setPageSize = useUsersListStore((s) => s.setPageSize);
   const setSorting = useUsersListStore((s) => s.setSorting);
   const setFilters = useUsersListStore((s) => s.setFilters);
   const resetStore = useUsersListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching, isError, refetch } =
-    useListQuery<User, { status: string | null }>({
-      store: useUsersListStore,
-      queryKeyPrefix: USERS_QUERY_KEY,
-      path: "/users",
-      buildFilters: (f) => (f.status ? { status: f.status } : {}),
-    });
+  const {
+    data,
+    pagination,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+    submitSearch,
+  } = useListQuery<User, { status: string | null }>({
+    store: useUsersListStore,
+    queryKeyPrefix: USERS_QUERY_KEY,
+    path: "/users",
+    buildFilters: (f) => (f.status ? { status: f.status } : {}),
+  });
 
-  // 搜索（提交式后端过滤，后端匹配 username/email/displayName 三字段）
+  // 搜索（提交式后端过滤，后端匹配 username/email/displayName 三字段）；
+  // 条件未变化时 submitSearch 走 refetch，搜索按钮即「刷新列表」入口
   const [searchInput, setSearchInput] = useState(search);
   const applySearch = useCallback(
-    () => setSearch(searchInput.trim()),
-    [setSearch, searchInput],
+    () => submitSearch(searchInput.trim()),
+    [submitSearch, searchInput],
   );
   const searchDirty = searchInput.trim() !== search;
 
@@ -635,7 +642,6 @@ export function UsersPage() {
         <DataTableSearchReset
           canReset={searchDirty || search !== "" || filters.status !== null}
           isFetching={isFetching}
-          searchDirty={searchDirty}
           onReset={resetFilters}
           onSearch={applySearch}
         />

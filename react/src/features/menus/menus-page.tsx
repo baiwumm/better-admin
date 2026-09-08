@@ -95,7 +95,8 @@ export function MenusPage() {
     setAppliedSearch("");
   }, []);
 
-  // 无新增搜索内容（输入与已应用条件一致）时，搜索/重置均无动作意义
+  // 无新增搜索内容（输入与已应用条件一致）时，重置无动作意义；
+  // 搜索按钮恒可点（本地同值应用为 no-op，无副作用）
   const searchDirty = searchInput.trim() !== appliedSearch;
   const canReset = searchDirty || appliedSearch !== "";
 
@@ -177,7 +178,6 @@ export function MenusPage() {
         <DataTableSearchReset
           canReset={canReset}
           isFetching={isFetching}
-          searchDirty={searchDirty}
           onReset={resetSearch}
           onSearch={applySearch}
         />

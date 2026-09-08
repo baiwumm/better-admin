@@ -4,6 +4,7 @@ import type { ListQueryParams } from "@/lib/api-types";
 import type { ListStore } from "@/hooks/create-list-store";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
 
 import { fetchApiList } from "@/lib/api-client";
 
@@ -56,6 +57,24 @@ export function buildListQueryKey<
     options.filters,
     options.extraParams ?? null,
   ];
+}
+
+/**
+ * 搜索提交分支（供 useListQuery 的 submitSearch 包装，独立导出便于测试）：
+ * 输入与已生效条件相同 → refetch 刷新当前列表（setSearch 同值幂等不会发包，
+ * 见 create-list-store）；不同 → setSearch 正常提交（epoch+1、回第 1 页）。
+ */
+export function submitListSearch<Filters extends Record<string, unknown>>(
+  store: ListStore<Filters>,
+  refetch: () => void,
+  input: string,
+): void {
+  if (store.getState().search === input) {
+    refetch();
+
+    return;
+  }
+  store.getState().setSearch(input);
 }
 
 export function useListQuery<
@@ -127,6 +146,15 @@ export function useListQuery<
     placeholderData: keepPreviousData,
   });
 
+  // 搜索提交统一入口：与已生效条件不同 → setSearch（epoch+1、回第 1 页，正常提交）；
+  // 相同 → setSearch 同值幂等不会发包（create-list-store 的防重复请求机制），
+  // 此时 refetch 强制绕过缓存重新请求，承担「条件未变、单纯想刷新列表」的语义
+  // （当前页码 / 筛选 / 排序全保留；请求期间 keepPreviousData 保住旧数据不闪空）。
+  const submitSearch = useCallback(
+    (input: string) => submitListSearch(store, query.refetch, input),
+    [store, query.refetch],
+  );
+
   return {
     /** 当前页数据 */
     data: query.data?.data ?? [],
@@ -138,5 +166,7 @@ export function useListQuery<
     error: query.error,
     /** 手动重取（列表页错误态的重试按钮） */
     refetch: query.refetch,
+    /** 搜索提交（同值 → refetch 刷新列表；异值 → setSearch 正常提交） */
+    submitSearch,
   };
 }

@@ -83,35 +83,42 @@ export function PostsPage() {
   const search = usePostsListStore((s) => s.search);
   const sorting = usePostsListStore((s) => s.sorting);
   const filters = usePostsListStore((s) => s.filters);
-  const setSearch = usePostsListStore((s) => s.setSearch);
   const setPage = usePostsListStore((s) => s.setPage);
   const setPageSize = usePostsListStore((s) => s.setPageSize);
   const setSorting = usePostsListStore((s) => s.setSorting);
   const setFilters = usePostsListStore((s) => s.setFilters);
   const resetStore = usePostsListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching, isError, refetch } =
-    useListQuery<
-      Post,
-      { deptId: string | null; category: string | null; status: string | null }
-    >({
-      store: usePostsListStore,
-      queryKeyPrefix: ["org", "posts", "list"],
-      path: "/org/posts",
-      // 后端搜索参数名为 keyword（/org/* 统一命名）
-      searchParam: "keyword",
-      buildFilters: (f) => ({
-        ...(f.deptId ? { deptId: f.deptId } : {}),
-        ...(f.category ? { category: f.category } : {}),
-        ...(f.status ? { status: f.status } : {}),
-      }),
-    });
+  const {
+    data,
+    pagination,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+    submitSearch,
+  } = useListQuery<
+    Post,
+    { deptId: string | null; category: string | null; status: string | null }
+  >({
+    store: usePostsListStore,
+    queryKeyPrefix: ["org", "posts", "list"],
+    path: "/org/posts",
+    // 后端搜索参数名为 keyword（/org/* 统一命名）
+    searchParam: "keyword",
+    buildFilters: (f) => ({
+      ...(f.deptId ? { deptId: f.deptId } : {}),
+      ...(f.category ? { category: f.category } : {}),
+      ...(f.status ? { status: f.status } : {}),
+    }),
+  });
 
-  // 搜索（提交式后端过滤：岗位名称）
+  // 搜索（提交式后端过滤：岗位名称）；
+  // 条件未变化时 submitSearch 走 refetch，搜索按钮即「刷新列表」入口
   const [searchInput, setSearchInput] = useState(search);
   const applySearch = useCallback(
-    () => setSearch(searchInput.trim()),
-    [setSearch, searchInput],
+    () => submitSearch(searchInput.trim()),
+    [submitSearch, searchInput],
   );
   const searchDirty = searchInput.trim() !== search;
 
@@ -417,7 +424,6 @@ export function PostsPage() {
             Boolean(filters.status)
           }
           isFetching={isFetching}
-          searchDirty={searchDirty}
           onReset={resetFilters}
           onSearch={applySearch}
         />

@@ -121,28 +121,35 @@ export function NoticesPage() {
   const search = useNoticesListStore((s) => s.search);
   const sorting = useNoticesListStore((s) => s.sorting);
   const filters = useNoticesListStore((s) => s.filters);
-  const setSearch = useNoticesListStore((s) => s.setSearch);
   const setPage = useNoticesListStore((s) => s.setPage);
   const setPageSize = useNoticesListStore((s) => s.setPageSize);
   const setSorting = useNoticesListStore((s) => s.setSorting);
   const setFilters = useNoticesListStore((s) => s.setFilters);
   const resetStore = useNoticesListStore((s) => s.reset);
 
-  const { data, pagination, isLoading, isFetching, isError, refetch } =
-    useListQuery<Notice, { status: string | null }>({
-      store: useNoticesListStore,
-      queryKeyPrefix: ["notices", "list"],
-      path: "/notices",
-      // 后端标题搜索参数名为 keyword（与 /org/* 系列统一命名）
-      searchParam: "keyword",
-      buildFilters: (f) => (f.status ? { status: f.status } : {}),
-    });
+  const {
+    data,
+    pagination,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+    submitSearch,
+  } = useListQuery<Notice, { status: string | null }>({
+    store: useNoticesListStore,
+    queryKeyPrefix: ["notices", "list"],
+    path: "/notices",
+    // 后端标题搜索参数名为 keyword（与 /org/* 系列统一命名）
+    searchParam: "keyword",
+    buildFilters: (f) => (f.status ? { status: f.status } : {}),
+  });
 
-  // 搜索（提交式后端过滤：标题）
+  // 搜索（提交式后端过滤：标题）；
+  // 条件未变化时 submitSearch 走 refetch，搜索按钮即「刷新列表」入口
   const [searchInput, setSearchInput] = useState(search);
   const applySearch = useCallback(
-    () => setSearch(searchInput.trim()),
-    [setSearch, searchInput],
+    () => submitSearch(searchInput.trim()),
+    [submitSearch, searchInput],
   );
   const searchDirty = searchInput.trim() !== search;
 
@@ -593,7 +600,6 @@ export function NoticesPage() {
         <DataTableSearchReset
           canReset={searchDirty || search !== "" || Boolean(filters.status)}
           isFetching={isFetching}
-          searchDirty={searchDirty}
           onReset={resetFilters}
           onSearch={applySearch}
         />
