@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import PlaceholderPage from "@/components/PlaceholderPage.vue";
+import DirectoryPage from "@/features/org/DirectoryPage.vue";
 </script>
 
 <template>
-  <PlaceholderPage
-    icon="i-lucide-contact"
-    title-key="menu.pageTitle.directory"
-  />
+  <DirectoryPage />
 </template>

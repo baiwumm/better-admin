@@ -50,6 +50,7 @@
     "vue-draggable-plus": "^0.6.1",
     "vue-i18n": "^11.4.10",
     "vue-router": "^5.3.1",
+    "write-excel-file": "4.1.1",
     "zod": "^4.5.4"
   },
   "devDependencies": {

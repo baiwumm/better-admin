@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import type { User } from "@/lib/api-types";
-
-/** 用户信息合并展示（头像 + 显示名 + 用户名/邮箱），列表与选择器共用。 */
+/**
+ * 用户信息合并展示（头像 + 显示名 + 用户名/邮箱），列表与选择器共用。
+ * 入参用结构化最小接口而非 Pick<User>：通讯录 DirectoryEntry 等条目的
+ * email/avatar 可空，同样满足展示需求。
+ */
 const props = withDefaults(
   defineProps<{
-    user: Pick<User, "avatar" | "displayName" | "username" | "email">;
+    user: {
+      avatar: string | null;
+      displayName: string;
+      username: string;
+      email: string | null;
+    };
     /** 副行内容：username（默认）或 email */
     sub?: "username" | "email";
   }>(),
