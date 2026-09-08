@@ -58,11 +58,7 @@ function handleKeydown(e: KeyboardEvent) {
 
 <template>
   <div
-    :class="
-      isActive
-        ? 'bg-elevated/60'
-        : 'hover:bg-elevated/30'
-    "
+    :class="isActive ? 'bg-elevated/60' : 'hover:bg-elevated/30'"
     class="group flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors"
     role="button"
     tabindex="0"
