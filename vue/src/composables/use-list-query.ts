@@ -44,6 +44,24 @@ export function buildListQueryKey<
   ];
 }
 
+/**
+ * 搜索提交分支（供 useListQuery 的 submitSearch 包装，独立导出便于测试）：
+ * 输入与已生效条件相同 → refetch 刷新当前列表（setSearch 同值幂等不会发包，
+ * 见 list-store）；不同 → setSearch 正常提交（epoch+1、回第 1 页）。
+ */
+export function submitListSearch<Filters extends Record<string, unknown>>(
+  store: ListStore<Filters>,
+  refetch: () => void,
+  input: string,
+): void {
+  if (store.search === input) {
+    refetch();
+
+    return;
+  }
+  store.setSearch(input);
+}
+
 export function useListQuery<
   TData,
   Filters extends Record<string, unknown>,
@@ -119,6 +137,13 @@ export function useListQuery<
     placeholderData: keepPreviousData,
   });
 
+  // 搜索提交统一入口：与已生效条件不同 → setSearch（epoch+1、回第 1 页，正常提交）；
+  // 相同 → setSearch 同值幂等不会发包（list-store 的防重复请求机制），
+  // 此时 refetch 强制绕过缓存重新请求，承担「条件未变、单纯想刷新列表」的语义
+  // （当前页码 / 筛选 / 排序全保留；请求期间 keepPreviousData 保住旧数据不闪空）。
+  const submitSearch = (input: string) =>
+    submitListSearch(store, () => query.refetch(), input);
+
   return {
     /** 当前页数据 */
     data: computed(() => query.data.value?.data ?? []),
@@ -139,6 +164,8 @@ export function useListQuery<
     error: computed(() => query.error.value),
     /** 手动重试（错误态 ErrorContent 的重试按钮） */
     refetch: () => query.refetch(),
+    /** 搜索提交（同值 → refetch 刷新列表；异值 → setSearch 正常提交） */
+    submitSearch,
   };
 }
 

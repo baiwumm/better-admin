@@ -86,19 +86,27 @@ const { canAdd, canEdit, canDelete, canBatchDelete, canResetPassword } =
 // ---------------- 列表（服务端分页 + 筛选 + 排序） ----------------
 const store = usersListStore;
 
-const { data, pagination, isLoading, isFetching, isError, refetch } =
-  useListQuery<User, { status: string | null }>({
-    store,
-    queryKeyPrefix: USERS_QUERY_KEY,
-    path: "/users",
-    buildFilters: (f) => (f.status ? { status: f.status } : {}),
-  });
+const {
+  data,
+  pagination,
+  isLoading,
+  isFetching,
+  isError,
+  refetch,
+  submitSearch,
+} = useListQuery<User, { status: string | null }>({
+  store,
+  queryKeyPrefix: USERS_QUERY_KEY,
+  path: "/users",
+  buildFilters: (f) => (f.status ? { status: f.status } : {}),
+});
 
-// 搜索（提交式后端过滤，后端匹配 username/email/displayName 三字段）
+// 搜索（提交式后端过滤，后端匹配 username/email/displayName 三字段）；
+// 条件未变化时 submitSearch 走 refetch，搜索按钮即「刷新列表」入口
 const searchInput = ref(store.search);
 
 function applySearch() {
-  store.setSearch(searchInput.value.trim());
+  submitSearch(searchInput.value.trim());
 }
 
 const searchDirty = computed(() => searchInput.value.trim() !== store.search);
@@ -492,7 +500,6 @@ const selectedUsers = computed(() =>
           searchDirty || store.search !== '' || store.filters.status !== null
         "
         :fetching="isFetching"
-        :search-dirty="searchDirty"
         @reset="resetFilters"
         @search="applySearch"
       />

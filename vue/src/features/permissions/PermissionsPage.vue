@@ -135,7 +135,6 @@ const UIcon = resolveComponent("UIcon");
       <!-- 纯本地过滤：无请求态，搜索/重置恒可点 -->
       <DataTableSearchReset
         :can-reset="true"
-        :search-dirty="true"
         @reset="resetSearch"
         @search="applySearch"
       />

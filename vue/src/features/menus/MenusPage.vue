@@ -364,7 +364,6 @@ function menuSubRows(row: MenuNode): MenuNode[] | undefined {
       <DataTableSearchReset
         :can-reset="canReset"
         :fetching="isFetching"
-        :search-dirty="searchDirty"
         @reset="resetSearch"
         @search="applySearch"
       />

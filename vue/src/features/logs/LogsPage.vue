@@ -68,19 +68,27 @@ const store = logsListStore;
 
 const { canDelete, canBatchDelete } = useMenuPermissions();
 
-const { data, pagination, isLoading, isFetching, isError, refetch } =
-  useListQuery<Log, { type: string | null }>({
-    store,
-    queryKeyPrefix: LOGS_QUERY_KEY,
-    path: "/logs",
-    buildFilters: (f) => (f.type ? { type: f.type } : {}),
-  });
+const {
+  data,
+  pagination,
+  isLoading,
+  isFetching,
+  isError,
+  refetch,
+  submitSearch,
+} = useListQuery<Log, { type: string | null }>({
+  store,
+  queryKeyPrefix: LOGS_QUERY_KEY,
+  path: "/logs",
+  buildFilters: (f) => (f.type ? { type: f.type } : {}),
+});
 
-// 搜索（提交式后端过滤，后端匹配 action 字段）
+// 搜索（提交式后端过滤，后端匹配 action 字段）；
+// 条件未变化时 submitSearch 走 refetch，搜索按钮即「刷新列表」入口
 const searchInput = ref(store.search);
 
 function applySearch() {
-  store.setSearch(searchInput.value.trim());
+  submitSearch(searchInput.value.trim());
 }
 
 const searchDirty = computed(() => searchInput.value.trim() !== store.search);
@@ -397,7 +405,6 @@ async function confirmBatchDelete() {
           searchDirty || store.search !== '' || store.filters.type !== null
         "
         :fetching="isFetching"
-        :search-dirty="searchDirty"
         @reset="resetFilters"
         @search="applySearch"
       />

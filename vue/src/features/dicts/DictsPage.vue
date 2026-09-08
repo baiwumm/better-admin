@@ -447,7 +447,6 @@ const table: AppTable<DictItem> = useVueTable({
             <DataTableSearchReset
               :can-reset="canResetItems"
               :fetching="itemsQuery.isFetching.value"
-              :search-dirty="itemSearchDirty"
               @reset="resetItemSearch"
               @search="applyItemSearch"
             />

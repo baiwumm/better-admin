@@ -58,19 +58,27 @@ const store = rolesListStore;
 
 const { canAdd, canEdit, canDelete, canGrant } = useMenuPermissions();
 
-const { data, pagination, isLoading, isFetching, isError, refetch } =
-  useListQuery<Role, { enabled: string | null }>({
-    store,
-    queryKeyPrefix: ROLES_QUERY_KEY,
-    path: "/roles",
-    buildFilters: (f) => (f.enabled ? { enabled: f.enabled } : {}),
-  });
+const {
+  data,
+  pagination,
+  isLoading,
+  isFetching,
+  isError,
+  refetch,
+  submitSearch,
+} = useListQuery<Role, { enabled: string | null }>({
+  store,
+  queryKeyPrefix: ROLES_QUERY_KEY,
+  path: "/roles",
+  buildFilters: (f) => (f.enabled ? { enabled: f.enabled } : {}),
+});
 
-// 搜索（提交式后端过滤）
+// 搜索（提交式后端过滤）；
+// 条件未变化时 submitSearch 走 refetch，搜索按钮即「刷新列表」入口
 const searchInput = ref(store.search);
 
 function applySearch() {
-  store.setSearch(searchInput.value.trim());
+  submitSearch(searchInput.value.trim());
 }
 
 const searchDirty = computed(() => searchInput.value.trim() !== store.search);
@@ -354,7 +362,6 @@ const UBadge = resolveComponent("UBadge");
           searchDirty || store.search !== '' || store.filters.enabled !== null
         "
         :fetching="isFetching"
-        :search-dirty="searchDirty"
         @reset="resetFilters"
         @search="applySearch"
       />
