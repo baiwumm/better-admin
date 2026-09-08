@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { computed, provide, ref, watch } from "vue";
+import type { TreeItemSelectEvent } from "reka-ui";
+
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQueryClient } from "@tanstack/vue-query";
 import { useToast } from "@nuxt/ui/composables";
 
-import GrantTreeNode from "./GrantTreeNode.vue";
 import { getRoleErrorMessage, updateRoleMenus } from "./role-api";
-import { useGrantTree } from "./use-grant-tree";
+import { useGrantTree, type GrantTreeItem } from "./use-grant-tree";
 
 import ErrorContent from "@/components/common/ErrorContent.vue";
-import type { MenuNode } from "@/lib/api-types";
 
 /**
- * 角色授权抽屉（勾选模型与级联语义见 use-grant-tree.ts；树渲染在
- * GrantTreeNode 递归组件）。保存 = PUT 全量替换 role_menus（载荷只含
- * 选中节点及其位）；保存后页面统一失效导航菜单缓存（侧边栏立即生效）。
+ * 角色授权抽屉（UTree 渲染，勾选模型与级联语义见 use-grant-tree.ts）。
+ * 权限位是叶子菜单的虚拟子节点，父子级联由 useGrantTree 的集合模型精确
+ * 对齐 React 基准（toggleMaster 语义）；保存 = PUT 全量替换 role_menus
+ * （载荷只含选中节点及其位）；保存后页面统一失效导航菜单缓存。
  */
 const props = defineProps<{
   open: boolean;
@@ -40,13 +41,11 @@ const grantTree = useGrantTree(
   () => props.role?.code ?? "",
 );
 
-provide("grantTree", grantTree);
-
-// 打开时重置本地覆盖层与展开状态
+// 打开时重置本地覆盖层、选中集合与展开状态（数据就绪后回显）
 watch(
   () => props.open,
   (open) => {
-    if (open) grantTree.resetOverrides();
+    if (open) grantTree.resetSelection();
   },
 );
 
@@ -56,30 +55,30 @@ function close() {
   emit("update:open", false);
 }
 
+/**
+ * 统一拦截组件默认 toggle：行点击仅展开/折叠（勾选只在 checkbox 上）；
+ * 键盘 Enter/Space 等价勾选。两者都走 toggleItem（toggleMaster 级联语义，
+ * 与 React 端一致），不走 reka 内建 propagate/bubble。
+ */
+function onTreeSelect(
+  event: TreeItemSelectEvent<GrantTreeItem>,
+  item: GrantTreeItem,
+) {
+  event.preventDefault();
+  grantTree.toggleItem(item);
+}
+
+function getItemKey(item: GrantTreeItem) {
+  return item.key;
+}
+
 async function onSave() {
   if (!props.role) return;
 
   saving.value = true;
 
   try {
-    // 选中节点全量收集（含半选：部分位勾选的叶子也是「可见」记录）
-    const menus: Array<{ menuId: string; permissions: string }> = [];
-
-    const walk = (nodes: MenuNode[]) => {
-      for (const node of nodes) {
-        if (grantTree.isNodeSelected(node)) {
-          menus.push({
-            menuId: node.id,
-            permissions: grantTree.getBits(node.id),
-          });
-        }
-        walk(node.children ?? []);
-      }
-    };
-
-    walk(grantTree.menuTree.value);
-
-    await updateRoleMenus(props.role.id, menus);
+    await updateRoleMenus(props.role.id, grantTree.buildMenusPayload());
 
     // 授权已变：失效角色授权缓存 + 导航菜单缓存（当前用户自己的角色立即生效）
     void queryClient.invalidateQueries({
@@ -160,20 +159,61 @@ async function onSave() {
         />
 
         <p
-          v-else-if="grantTree.menuTree.value.length === 0"
+          v-else-if="grantTree.treeItems.value.length === 0"
           class="text-muted py-8 text-center text-sm"
         >
           {{ t("features.roles.grant.noMenus") }}
         </p>
 
-        <div v-else class="flex flex-col">
-          <GrantTreeNode
-            v-for="node in grantTree.menuTree.value"
-            :key="node.id"
-            :depth="0"
-            :node="node"
-          />
-        </div>
+        <!--
+          bubble-select 仅为 isIndeterminate（半选显示）推导；选中集合完全
+          受控，级联走 toggleItem。link 用 div 渲染（checkbox 是 button，
+          禁止嵌套）；授权树无「导航选中」语义，覆盖选中行背景高亮。
+        -->
+        <UTree
+          v-else
+          v-model="grantTree.selectedItems.value"
+          v-model:expanded="grantTree.expandedKeys.value"
+          :as="{ link: 'div' }"
+          :get-key="getItemKey"
+          :items="grantTree.treeItems.value"
+          :ui="{ link: 'before:bg-transparent' }"
+          bubble-select
+          multiple
+          @select="onTreeSelect"
+        >
+          <template #item-leading="{ item, selected, indeterminate }">
+            <UCheckbox
+              :aria-label="
+                item.kind === 'menu'
+                  ? t('features.roles.grant.visibleOf', { name: item.label })
+                  : item.label
+              "
+              :model-value="indeterminate ? 'indeterminate' : selected"
+              tabindex="-1"
+              @change="() => grantTree.toggleItem(item)"
+              @click.stop
+            />
+            <UIcon
+              v-if="item.icon"
+              class="text-muted size-4 shrink-0"
+              :name="item.icon"
+            />
+          </template>
+
+          <template #item-label="{ item }">
+            <template v-if="item.kind === 'menu'">
+              <span class="text-sm font-medium">{{ item.label }}</span>
+              <span
+                v-if="!item.node.enabled"
+                class="text-muted shrink-0 text-xs"
+              >
+                ({{ t("features.roles.grant.disabledTag") }})
+              </span>
+            </template>
+            <span v-else class="text-muted text-xs">{{ item.label }}</span>
+          </template>
+        </UTree>
       </div>
     </template>
 
@@ -182,7 +222,7 @@ async function onSave() {
         <div class="flex items-center gap-2">
           <UButton
             :disabled="
-              grantTree.loading.value || grantTree.menuTree.value.length === 0
+              grantTree.loading.value || grantTree.treeItems.value.length === 0
             "
             :label="t('features.roles.grant.collapseAll')"
             color="neutral"
@@ -192,7 +232,7 @@ async function onSave() {
           />
           <UButton
             :disabled="
-              grantTree.loading.value || grantTree.menuTree.value.length === 0
+              grantTree.loading.value || grantTree.treeItems.value.length === 0
             "
             :label="t('features.roles.grant.expandAll')"
             color="neutral"
