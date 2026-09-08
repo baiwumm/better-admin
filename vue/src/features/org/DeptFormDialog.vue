@@ -45,6 +45,10 @@ const toast = useToast();
 
 const FORM_ID = "dept-form";
 
+/** 字数统计上限（与后端 @Length 校验及 React 端对齐：名称 100 / 编码 50） */
+const NAME_MAX_LENGTH = 100;
+const CODE_MAX_LENGTH = 50;
+
 // 校验消息用函数延迟求值：语言切换后错误文案跟随当前 locale
 const schema = z.object({
   name: z
@@ -202,10 +206,18 @@ export default { name: "DeptFormDialog" };
         <UFormField :label="t('features.depts.form.name')" name="name" required>
           <UInput
             v-model="state.name"
-            :maxlength="100"
+            :maxlength="NAME_MAX_LENGTH"
             :placeholder="t('features.depts.form.namePlaceholder')"
             class="w-full"
-          />
+            :ui="{ base: 'pe-16' }"
+          >
+            <!-- trailing 实时字数（对齐 React 端 InputGroup.Suffix） -->
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.name.length }}/{{ NAME_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
         </UFormField>
 
         <UFormField
@@ -216,10 +228,18 @@ export default { name: "DeptFormDialog" };
         >
           <UInput
             v-model="state.code"
-            :maxlength="50"
+            :maxlength="CODE_MAX_LENGTH"
             placeholder="DEPT-001"
             class="w-full"
-          />
+            :ui="{ base: 'pe-13' }"
+          >
+            <!-- trailing 实时字数（对齐 React 端 InputGroup.Suffix） -->
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.code.length }}/{{ CODE_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
         </UFormField>
 
         <DeptLeaderSelect
