@@ -38,6 +38,8 @@ interface NavLeaf {
   label: string;
   icon?: string;
   to?: string;
+  /** 精确匹配路由（叶子节点默认 true，避免 / 匹配所有路径） */
+  exact?: boolean;
   defaultOpen?: boolean;
   children?: NavLeaf[];
 }
@@ -47,6 +49,8 @@ function toNavLeaf(node: MenuNode): NavLeaf {
     label: node.i18nKey ? t(node.i18nKey) : node.label,
     icon: node.icon ? `i-lucide-${node.icon}` : undefined,
     to: node.to ?? undefined,
+    // 叶子节点（具体页面）使用精确匹配，避免 / 前缀匹配所有路由
+    exact: !node.children?.length,
     defaultOpen: node.defaultOpen,
     children: node.children?.map(toNavLeaf),
   };
