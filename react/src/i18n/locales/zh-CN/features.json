@@ -441,6 +441,7 @@
   "features.roles.form.code": "角色标识（code）",
   "features.roles.form.codeFormat": "字母开头，仅允许字母、数字、中划线、下划线",
   "features.roles.form.codeHint": "创建后不可修改",
+  "features.roles.form.codePlaceholder": "如：editor",
   "features.roles.form.codeRequired": "请输入角色标识",
   "features.roles.form.description": "描述",
   "features.roles.form.descriptionInvalid": "描述不能超过 200 字",

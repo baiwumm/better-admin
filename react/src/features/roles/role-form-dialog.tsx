@@ -202,7 +202,7 @@ function RoleFormModal({
                     <InputGroup variant="secondary">
                       <InputGroup.Input
                         maxLength={CODE_MAX_LENGTH}
-                        placeholder="editor"
+                        placeholder={t("features.roles.form.codePlaceholder")}
                       />
                       <InputGroup.Suffix className="text-xs text-muted">
                         {field.value?.length ?? 0}/{CODE_MAX_LENGTH}

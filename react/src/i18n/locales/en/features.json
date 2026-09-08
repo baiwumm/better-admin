@@ -441,6 +441,7 @@
   "features.roles.form.code": "Code",
   "features.roles.form.codeFormat": "Must start with a letter; only letters, digits, hyphen and underscore",
   "features.roles.form.codeHint": "Cannot be changed after creation",
+  "features.roles.form.codePlaceholder": "e.g. editor",
   "features.roles.form.codeRequired": "Please enter the code",
   "features.roles.form.description": "Description",
   "features.roles.form.descriptionInvalid": "Description must be at most 200 characters",
