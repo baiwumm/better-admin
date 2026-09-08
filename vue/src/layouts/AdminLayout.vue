@@ -85,7 +85,7 @@ const quickLinks = computed<NavigationMenuItem[][]>(() => [
     },
     {
       label: t("layout.sidebar.blog"),
-      icon: "i-lucide-globe",
+      icon: "i-lucide-house",
       to: "https://www.baiwumm.com",
       target: "_blank",
     },

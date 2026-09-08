@@ -13,10 +13,10 @@ const { t } = useI18n();
 const links = computed(() => buildProfileLinks(props.user));
 
 function iconFor(key: string) {
-  if (key === "website") return "i-lucide-globe";
-  if (key === "github") return "i-simple-icons-github";
+  if (key === "website") return "i-lucide-house";
+  if (key === "github") return "i-logos-github-icon";
 
-  return "i-simple-icons-x";
+  return "i-logos-x";
 }
 
 function linkTitle(key: string, url: string, name: string) {
