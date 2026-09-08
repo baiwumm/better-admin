@@ -101,9 +101,8 @@ export default { name: "AuthLayout" };
             <UBadge
               v-for="labelKey in BRAND_CHIPS"
               :key="labelKey"
-              class="border-muted/60 bg-elevated/60 backdrop-blur"
               color="neutral"
-              variant="outline"
+              variant="soft"
               size="sm"
             >
               {{ t(labelKey) }}

@@ -195,15 +195,11 @@ const columns = computed<AppColumnDef<Log>[]>(() => [
     enableSorting: false,
     header: () => t("features.logs.column.type"),
     cell: ({ row }) =>
-      h(
-        "span",
-        { class: "flex justify-center" },
-        h(UBadge, {
-          color: logTypeColor(row.original.type),
-          label: getTypeLabel(row.original.type),
-          variant: "soft",
-        }),
-      ),
+      h(UBadge, {
+        color: logTypeColor(row.original.type),
+        label: getTypeLabel(row.original.type),
+        variant: "soft",
+      }),
   },
   {
     accessorKey: "action",

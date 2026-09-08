@@ -214,34 +214,26 @@ const columns = computed<AppColumnDef<Role>[]>(() => [
     enableSorting: false,
     header: () => t("common.column.sort"),
     cell: ({ row }) =>
-      h(
-        "span",
-        { class: "flex justify-center" },
-        h(UBadge, {
-          color: "neutral",
-          label: String(row.original.sort),
-          variant: "soft",
-        }),
-      ),
+      h(UBadge, {
+        color: "neutral",
+        label: String(row.original.sort),
+        variant: "soft",
+      }),
   },
   {
     id: "enabled",
     enableSorting: false,
     header: () => t("features.roles.column.enabled"),
     cell: ({ row }) =>
-      h(
-        "span",
-        { class: "flex justify-center" },
-        h(UBadge, {
-          color: row.original.enabled ? "success" : "error",
-          label: t(
-            row.original.enabled
-              ? "features.roles.filter.enabled"
-              : "features.roles.filter.disabled",
-          ),
-          variant: "soft",
-        }),
-      ),
+      h(UBadge, {
+        color: row.original.enabled ? "success" : "error",
+        label: t(
+          row.original.enabled
+            ? "features.roles.filter.enabled"
+            : "features.roles.filter.disabled",
+        ),
+        variant: "soft",
+      }),
   },
   {
     id: "createdAt",

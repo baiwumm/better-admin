@@ -266,34 +266,26 @@ const columns = computed<AppColumnDef<DictItem>[]>(() => [
     enableSorting: false,
     header: () => t("common.column.sort"),
     cell: ({ row }) =>
-      h(
-        "span",
-        {},
-        h(UBadge, {
-          color: "neutral",
-          label: String(row.original.sort),
-          variant: "subtle",
-        }),
-      ),
+      h(UBadge, {
+        color: "neutral",
+        label: String(row.original.sort),
+        variant: "soft",
+      }),
   },
   {
     id: "enabled",
     enableSorting: false,
     header: () => t("features.dicts.column.enabled"),
     cell: ({ row }) =>
-      h(
-        "span",
-        {},
-        h(UBadge, {
-          color: row.original.enabled ? "success" : "error",
-          label: t(
-            row.original.enabled
-              ? "features.dicts.enabled.yes"
-              : "features.dicts.enabled.no",
-          ),
-          variant: "soft",
-        }),
-      ),
+      h(UBadge, {
+        color: row.original.enabled ? "success" : "error",
+        label: t(
+          row.original.enabled
+            ? "features.dicts.enabled.yes"
+            : "features.dicts.enabled.no",
+        ),
+        variant: "soft",
+      }),
   },
   {
     id: "actions",

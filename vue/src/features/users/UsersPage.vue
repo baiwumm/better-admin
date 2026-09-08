@@ -189,19 +189,15 @@ const columns = computed<AppColumnDef<User>[]>(() => [
     enableSorting: true,
     header: () => t("features.users.column.status"),
     cell: ({ row }) =>
-      h(
-        "span",
-        { class: "flex justify-center" },
-        h(UBadge, {
-          color: row.original.status === "active" ? "success" : "error",
-          label: t(
-            row.original.status === "active"
-              ? "features.users.filter.active"
-              : "features.users.filter.disabled",
-          ),
-          variant: "soft",
-        }),
-      ),
+      h(UBadge, {
+        color: row.original.status === "active" ? "success" : "error",
+        label: t(
+          row.original.status === "active"
+            ? "features.users.filter.active"
+            : "features.users.filter.disabled",
+        ),
+        variant: "soft",
+      }),
   },
   {
     id: "gender",

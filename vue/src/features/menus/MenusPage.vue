@@ -272,15 +272,11 @@ const columns = computed<AppColumnDef<MenuNode>[]>(() => [
     enableSorting: false,
     header: () => t("common.column.sort"),
     cell: ({ row }) =>
-      h(
-        "span",
-        { class: "flex justify-center" },
-        h(UBadge, {
-          color: "neutral",
-          label: String(row.original.sort),
-          variant: "soft",
-        }),
-      ),
+      h(UBadge, {
+        color: "neutral",
+        label: String(row.original.sort),
+        variant: "soft",
+      }),
   },
   {
     id: "actions",
