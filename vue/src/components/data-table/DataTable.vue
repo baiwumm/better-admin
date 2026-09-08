@@ -22,7 +22,7 @@ import { useI18n } from "vue-i18n";
 
 const props = defineProps<{
   table: AppTableLike<TData>;
-  /** 首载（当前 key 无数据）→ UTable 内置 loading 动画 */
+  /** 首载（当前 key 无数据）→ 骨架行 + 遮罩 */
   loading?: boolean;
   /** 后台刷新（搜索 / 翻页 / 筛选变更等 refetch）→ 当前数据 + 遮罩 */
   refreshing?: boolean;
@@ -69,6 +69,6 @@ const rowSelection = computed<RowSelectionState>({
     </UTable>
 
     <!-- 后台刷新遮罩（对齐 React 端：旧数据保留 + 半透明模糊 + 居中 Spinner） -->
-    <LoadingContent v-if="refreshing" />
+    <LoadingContent v-if="refreshing || loading" />
   </div>
 </template>
