@@ -112,6 +112,24 @@ function handleExpandedUpdate(keys: string[]) {
   expandedIds.value = new Set(keys);
 }
 
+// 受控选中：reka 对 modelValue 同样应用 get-key，须传 items 中的 item 对象
+// （经 :get-key 映射为组织 id 与点击选中对齐）；找不到时传 null = 无选中
+const selectedItem = computed<DeptTreeOption | null>(() => {
+  const find = (list: DeptTreeOption[]): DeptTreeOption | null => {
+    for (const option of list) {
+      if (option.dept.id === props.selectedId) return option;
+
+      const found = find(option.children ?? []);
+
+      if (found) return found;
+    }
+
+    return null;
+  };
+
+  return find(items.value);
+});
+
 // ---- 拖拽（官方参考示例的 flatten + moveItem） ----
 
 function flatten(
@@ -178,11 +196,14 @@ export default { name: "DeptTree" };
 </script>
 
 <template>
-  <!-- UTree 原生模式：不覆盖 slot，reka 内部管理选中/展开/箭头交互 -->
+  <!-- UTree 原生模式：选中受控（model-value = selectedId，get-key 映射为组织 id），
+       保证刷新 / URL 恢复（通讯录 ?deptId=）时高亮与数据筛选一致，不依赖 reka 点击内部态 -->
   <UTree
     ref="tree"
     :items="items"
     :expanded="expandedList"
+    :get-key="(item: DeptTreeOption) => item.dept.id"
+    :model-value="selectedItem ?? undefined"
     :nested="false"
     :unmount-on-hide="false"
     :ui="{ linkLeadingIcon: 'hidden' }"
