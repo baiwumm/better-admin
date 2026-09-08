@@ -20,7 +20,7 @@ import {
 import {
   BellRing,
   ChevronsUpDown,
-  Globe,
+  House,
   IdCard,
   Link2,
   LogOut,
@@ -188,7 +188,7 @@ export function SidebarUser({ collapsed, user }: SidebarUserProps) {
                         textValue={t(link.labelKey)}
                       >
                         {link.key === "website" ? (
-                          <Globe className="size-4 shrink-0 text-muted" />
+                          <House className="size-4 shrink-0 text-muted" />
                         ) : link.key === "github" ? (
                           <GithubIcon className="size-4 shrink-0 text-muted" />
                         ) : (

@@ -13,7 +13,7 @@ import {
   Separator,
   Typography,
 } from "@heroui/react";
-import { ArrowUpRight, ChevronsUpDown, Globe } from "lucide-react";
+import { ArrowUpRight, ChevronsUpDown, House } from "lucide-react";
 
 import { CollapsedMenu } from "./collapsed-menu";
 import { SidebarMenu } from "./sidebar-menu";
@@ -93,7 +93,7 @@ function SidebarLinkIcon({ kind }: { kind: "github" | "blog" }) {
     return <GithubIcon className="size-4 shrink-0" />;
   }
 
-  return <Globe className="size-4 shrink-0" />;
+  return <House className="size-4 shrink-0" />;
 }
 
 /**

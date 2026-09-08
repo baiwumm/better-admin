@@ -17,7 +17,7 @@ import {
   useOverlayState,
 } from "@heroui/react";
 import {
-  Globe,
+  House,
   KeyRound,
   MoreHorizontal,
   Pencil,
@@ -335,7 +335,7 @@ export function UsersPage() {
                     >
                       {link.key === "website" ? (
                         // 主页用 lucide 通用图标；GitHub / X 为品牌图形走 Simple Icons
-                        <Globe className="size-4" />
+                        <House className="size-4" />
                       ) : link.key === "github" ? (
                         <GithubIcon className="size-4" />
                       ) : (
