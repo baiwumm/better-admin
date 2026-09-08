@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import PlaceholderPage from "@/components/PlaceholderPage.vue";
+import OrgChartPage from "@/features/org/OrgChartPage.vue";
 </script>
 
 <template>
-  <PlaceholderPage icon="i-lucide-git-fork" title-key="menu.pageTitle.chart" />
+  <OrgChartPage />
 </template>
