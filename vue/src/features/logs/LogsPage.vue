@@ -148,12 +148,21 @@ const columns = computed<AppColumnDef<Log>[]>(() => [
     id: "select",
     enableSorting: false,
     enableHiding: false,
-    header: ({ table: headerTable }) =>
-      h(UCheckbox, {
-        modelValue: headerTable.getIsAllPageRowsSelected(),
+    // 对齐 React 端 DataTableSelectAll：部分勾选呈半选态（点击半选 = 全选）；
+    // 服务端分页下数据即当前页，getIsAllRowsSelected 等价页级全选
+    header: ({ table: headerTable }) => {
+      const allSelected = headerTable.getIsAllRowsSelected();
+      const someSelected = headerTable.getIsSomeRowsSelected();
+
+      return h(UCheckbox, {
+        "aria-label": t("common.datatable.selectAll"),
+        modelValue: allSelected ? true : someSelected ? "indeterminate" : false,
         "onUpdate:modelValue": (value: unknown) =>
-          headerTable.toggleAllPageRowsSelected(Boolean(value)),
-      }),
+          headerTable.toggleAllRowsSelected(
+            value === "indeterminate" ? true : Boolean(value),
+          ),
+      });
+    },
     cell: ({ row }) =>
       h(UCheckbox, {
         modelValue: row.getIsSelected(),
@@ -278,7 +287,12 @@ const table: AppTable<Log> = useVueTable({
   // 服务端分页：分页状态由列表 store 驱动（受控）；列表固定倒序，无排序交互
   manualPagination: true,
   manualSorting: true,
-  pageCount: Math.max(1, Math.ceil(pagination.value.total / store.pageSize)),
+  // pageCount 必须用 getter 实时求值：setup 时请求未返回 total=0，若写死为
+  // 字面量 1，setPageIndex 会被 clamp 永远翻不了页（React 端每次渲染重建
+  // options 无此问题）
+  get pageCount() {
+    return Math.max(1, Math.ceil(pagination.value.total / store.pageSize));
+  },
   state: {
     get pagination() {
       return { pageIndex: store.page - 1, pageSize: store.pageSize };
@@ -348,23 +362,22 @@ async function confirmBatchDelete() {
   invalidateList();
   table.resetRowSelection();
   batchDeleteOpen.value = false;
+  // 对齐 React 端：批量删除成功与单条共用 deleteSuccess 文案（无独立 key）
   toast.add({
     color: "success",
-    title: t("features.logs.message.batchDeleteSuccess"),
+    title: t("features.logs.message.deleteSuccess"),
   });
 }
 </script>
 
 <template>
-  <div class="flex w-full flex-col pb-8">
+  <div class="flex w-full flex-col gap-4">
     <DataTableToolbar>
       <UInput
         v-model="searchInput"
         :aria-label="t('features.logs.searchPlaceholder')"
         :placeholder="t('features.logs.searchPlaceholder')"
-        class="w-64"
         icon="i-lucide-search"
-        size="sm"
         @keyup.enter="applySearch"
       />
       <USelect
@@ -372,9 +385,8 @@ async function confirmBatchDelete() {
         :items="typeOptions"
         :model-value="store.filters.type ?? undefined"
         :placeholder="t('features.logs.filter.all')"
-        class="w-36"
-        size="sm"
         value-key="value"
+        class="w-50"
         @update:model-value="
           (value: unknown) =>
             store.setFilters({ type: value as LogType | string })
@@ -400,7 +412,6 @@ async function confirmBatchDelete() {
     <DataTable
       v-else
       :loading="isLoading"
-      :min-width="'820px'"
       :refreshing="isFetching && !isLoading"
       :table="table"
     />

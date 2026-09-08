@@ -70,25 +70,31 @@ export function useListQuery<
     extraParams,
   } = options;
 
-  // 后端排序为 sort + order 两参数（单列排序语义）
-  const sortField = store.sorting[0]?.id ?? "";
-  const sortOrder = store.sorting[0]
-    ? store.sorting[0].desc
-      ? "desc"
-      : "asc"
-    : "";
+  // 请求参数必须在 queryFn 执行时实时读取 store：组件 setup 只跑一次，
+  // 若在 setup 构建快照，翻页 / 搜索 / 筛选变更后仍会用初始参数发请求
+  // （queryKey 变化触发 refetch，但参数 stale，等于每次都取第一页旧条件）。
+  // React 端每次渲染重建 params 由最新闭包兜底；Vue 端以函数调用等价实现。
+  const buildParams = (): ListQueryParams => {
+    // 后端排序为 sort + order 两参数（单列排序语义）
+    const sortField = store.sorting[0]?.id ?? "";
+    const sortOrder = store.sorting[0]
+      ? store.sorting[0].desc
+        ? "desc"
+        : "asc"
+      : "";
 
-  const filterParams: ListQueryParams = buildFilters
-    ? buildFilters(store.filters)
-    : {};
+    const filterParams: ListQueryParams = buildFilters
+      ? buildFilters(store.filters)
+      : {};
 
-  const params: ListQueryParams = {
-    page: store.page,
-    pageSize: store.pageSize,
-    ...(store.search ? { [searchParam]: store.search } : {}),
-    ...(sortField ? { sort: sortField, order: sortOrder } : {}),
-    ...filterParams,
-    ...extraParams,
+    return {
+      page: store.page,
+      pageSize: store.pageSize,
+      ...(store.search ? { [searchParam]: store.search } : {}),
+      ...(sortField ? { sort: sortField, order: sortOrder } : {}),
+      ...filterParams,
+      ...extraParams,
+    };
   };
 
   const query = useQuery({
@@ -99,13 +105,17 @@ export function useListQuery<
         page: store.page,
         pageSize: store.pageSize,
         search: store.search,
-        sortField,
-        sortOrder,
+        sortField: store.sorting[0]?.id ?? "",
+        sortOrder: store.sorting[0]
+          ? store.sorting[0].desc
+            ? "desc"
+            : "asc"
+          : "",
         filters: store.filters,
         extraParams: extraParams ?? null,
       }),
     ),
-    queryFn: () => fetchApiList<TData>(path, params),
+    queryFn: () => fetchApiList<TData>(path, buildParams()),
     placeholderData: keepPreviousData,
   });
 

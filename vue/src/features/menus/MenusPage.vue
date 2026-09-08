@@ -570,7 +570,7 @@ async function submitForm(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <div class="flex w-full flex-col pb-8">
+  <div class="flex w-full flex-col">
     <DataTableToolbar>
       <UInput
         v-model="searchInput"

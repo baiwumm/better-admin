@@ -6,8 +6,10 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
 /**
- * 分页条（服务端分页受控）：pageSize 下拉（10/20/30/40/50，切页大小回第 1 页
- * 由列表 store 负责）+ 范围统计 + 页码（Nuxt UI UPagination，首末页自适应）。
+ * 分页条（服务端分页受控，三列布局对齐 React 端 data-table-pagination）：
+ * 左侧范围统计 + 中间页码（Nuxt UI UPagination，首末页自适应）+ 右侧 pageSize
+ * 下拉（10/20/30/40/50，切页大小回第 1 页由列表 store 负责）。
+ * 注意：UPagination 的总条数属性是 total（无 itemCount，勿用 HeroUI 命名）。
  */
 const props = defineProps<{
   table: AppTable<TData>;
@@ -23,10 +25,13 @@ const { t } = useI18n();
 const pageSize = computed(() => props.pageSize);
 const pageIndex = computed(() => props.pageIndex);
 
-const pageSizeOptions = [10, 20, 30, 40, 50].map((count) => ({
-  label: t("common.datatable.pageSizeItem", { count }),
-  value: count,
-}));
+// computed 包裹保证 i18n 切换语言时下拉文案实时更新（t 依赖 locale 响应式）
+const pageSizeOptions = computed(() =>
+  [10, 20, 30, 40, 50].map((count) => ({
+    label: t("common.datatable.pageSizeItem", { count }),
+    value: count,
+  })),
+);
 
 const total = computed(() => props.total);
 
@@ -51,32 +56,34 @@ function onPageSizeChange(value: number) {
 </script>
 
 <template>
-  <div class="flex flex-col-reverse items-center gap-2 py-2 sm:flex-row">
-    <div class="text-muted flex-1 text-sm">
+  <div
+    class="mt-3 grid grid-cols-1 items-center gap-3 px-1 sm:grid-cols-[1fr_auto_1fr]"
+  >
+    <div class="text-muted flex items-center text-xs">
       {{ rangeText }}
     </div>
-    <div class="flex items-center gap-4">
-      <div class="flex items-center gap-2">
-        <span class="text-muted text-sm">{{
-          t("common.datatable.pageSizeLabel")
-        }}</span>
-        <USelect
-          :model-value="pageSize"
-          :items="pageSizeOptions"
-          aria-label="pageSize"
-          class="w-32"
-          size="sm"
-          value-key="value"
-          @update:model-value="onPageSizeChange"
-        />
-      </div>
+    <div class="flex items-center justify-start sm:justify-center">
       <UPagination
         :page="pageIndex + 1"
-        :item-count="total"
+        :total="total"
         :items-per-page="pageSize"
         :sibling-count="1"
         size="sm"
         @update:page="onPageChange"
+      />
+    </div>
+    <div class="flex items-center justify-start gap-2 sm:justify-end">
+      <span class="text-muted text-xs">{{
+        t("common.datatable.pageSizeLabel")
+      }}</span>
+      <USelect
+        :model-value="pageSize"
+        :items="pageSizeOptions"
+        aria-label="pageSize"
+        class="w-32"
+        size="sm"
+        value-key="value"
+        @update:model-value="onPageSizeChange"
       />
     </div>
   </div>

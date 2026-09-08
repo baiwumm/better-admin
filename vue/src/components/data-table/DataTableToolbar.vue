@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div class="flex flex-col gap-2 py-4 sm:flex-row sm:items-center">
+  <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
     <div class="flex flex-1 flex-wrap items-center gap-2">
       <slot />
     </div>

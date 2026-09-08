@@ -295,7 +295,11 @@ const table: AppTable<Role> = useVueTable({
   getRowId: (row: Role) => row.id,
   // 服务端分页：分页状态由列表 store 驱动（受控），仅取数
   manualPagination: true,
-  pageCount: Math.max(1, Math.ceil(pagination.value.total / store.pageSize)),
+  // pageCount 必须用 getter 实时求值：setup 时 total 为 0 会写死为 1，
+  // setPageIndex 被 clamp 导致永远翻不了页（对齐 React 每次渲染重建 options）
+  get pageCount() {
+    return Math.max(1, Math.ceil(pagination.value.total / store.pageSize));
+  },
   state: {
     get pagination() {
       return { pageIndex: store.page - 1, pageSize: store.pageSize };
@@ -322,7 +326,7 @@ const UBadge = resolveComponent("UBadge");
 </script>
 
 <template>
-  <div class="flex w-full flex-col pb-8">
+  <div class="flex w-full flex-col">
     <DataTableToolbar>
       <UInput
         v-model="searchInput"
