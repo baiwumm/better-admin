@@ -183,15 +183,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         class="flex flex-col gap-4"
         @submit="onSubmit"
       >
+        <!-- disabled 必须挂在 UInput 上：UFormField 无 disabled prop（不传导输入控件） -->
         <UFormField
           :label="t('features.roles.form.code')"
-          :description="isEdit ? t('features.roles.form.codeHint') : undefined"
-          :disabled="isEdit"
+          :help="t('features.roles.form.codeHint')"
+          :ui="{ help: 'text-dimmed text-xs' }"
           name="code"
           required
         >
           <UInput
             v-model="state.code"
+            :disabled="isEdit"
             :maxlength="CODE_MAX_LENGTH"
             :placeholder="t('features.roles.form.codePlaceholder')"
             class="w-full"
@@ -205,14 +207,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           </UInput>
         </UFormField>
 
-        <UFormField
-          :label="t('features.roles.form.name')"
-          :disabled="isSuperAdmin"
-          name="name"
-          required
-        >
+        <UFormField :label="t('features.roles.form.name')" name="name" required>
           <UInput
             v-model="state.name"
+            :disabled="isSuperAdmin"
             :maxlength="NAME_MAX_LENGTH"
             :placeholder="t('features.roles.form.namePlaceholder')"
             class="w-full"

@@ -130,7 +130,7 @@ export default { name: "DeptLeaderSelect" };
 </script>
 
 <template>
-  <UFormField :label="t('features.depts.form.leader')" :disabled="failed">
+  <UFormField :label="t('features.depts.form.leader')">
     <USelectMenu
       ref="leaderMenu"
       :avatar="selectedOption?.avatar"

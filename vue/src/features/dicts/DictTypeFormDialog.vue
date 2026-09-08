@@ -164,9 +164,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         class="flex flex-col gap-4"
         @submit="onSubmit"
       >
+        <!-- disabled 必须挂在 UInput 上：UFormField 无 disabled prop（不传导输入控件） -->
         <UFormField
           :label="t('features.dicts.form.code')"
-          :disabled="isEdit"
           name="code"
           required
           :help="t('features.dicts.form.codeHint')"
@@ -174,6 +174,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         >
           <UInput
             v-model="state.code"
+            :disabled="isEdit"
             :maxlength="CODE_MAX_LENGTH"
             placeholder="user_status"
             :ui="{ base: 'pe-13' }"

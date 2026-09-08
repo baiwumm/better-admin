@@ -191,7 +191,6 @@ export default { name: "DeptFormDialog" };
           :label="t('features.depts.form.parent')"
           :help="t('features.depts.form.parentHint')"
           :ui="{ help: 'text-dimmed text-xs' }"
-          :disabled="isCreateChild"
         >
           <DeptTreeSelect
             v-model="state.parentId"
