@@ -413,7 +413,12 @@ function MenuFormModal({
                       onChange={field.onChange}
                     >
                       <Label>{t("features.menus.form.i18nKey")}</Label>
-                      <Input placeholder="menu.xxx.yyy" variant="secondary" />
+                      <Input
+                        placeholder={t(
+                          "features.menus.form.i18nKeyPlaceholder",
+                        )}
+                        variant="secondary"
+                      />
                       {fieldState.error && (
                         <FieldError>
                           {!field.value?.trim()
@@ -441,8 +446,8 @@ function MenuFormModal({
                     >
                       <Label>{t("features.menus.form.icon")}</Label>
                       <Input
-                        aria-label="Icon"
-                        placeholder="house"
+                        aria-label={t("features.menus.form.icon")}
+                        placeholder={t("features.menus.form.iconPlaceholder")}
                         variant="secondary"
                       />
                       {/* 输入末尾实时预览：裸 lucide 名有效时渲染图标，为空不渲染 */}
