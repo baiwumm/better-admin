@@ -143,6 +143,7 @@
   "features.dicts.form.code": "Code",
   "features.dicts.form.codeFormat": "Must start with a letter; only letters, digits, hyphen and underscore",
   "features.dicts.form.codeHint": "Cannot be changed after creation",
+  "features.dicts.form.codePlaceholder": "user_status",
   "features.dicts.form.codeRequired": "Please enter the code",
   "features.dicts.form.description": "Description",
   "features.dicts.form.descriptionInvalid": "Description must be at most 200 characters",

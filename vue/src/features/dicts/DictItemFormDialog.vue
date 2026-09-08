@@ -14,6 +14,7 @@ import {
   getDictErrorMessage,
   updateDictItem,
 } from "./dict-api";
+import { I18N_KEY_PATTERN } from "@/lib/constants";
 
 /**
  * 字典项新增/编辑弹窗：UForm + zod schema 校验（官方范式，@submit 仅在
@@ -37,7 +38,9 @@ const emit = defineEmits<{
 }>();
 
 const FORM_ID = "dict-item-form";
-const I18N_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z0-9]+)+$/;
+const VALUE_MAX_LENGTH = 50;
+const LABEL_MAX_LENGTH = 20;
+const I18N_KEY_MAX_LENGTH = 100;
 
 const { t } = useI18n();
 const toast = useToast();
@@ -47,18 +50,23 @@ const schema = z.object({
   value: z
     .string()
     .trim()
-    .min(1, { error: () => t("features.dicts.item.form.valueInvalid") })
-    .max(50, { error: () => t("features.dicts.item.form.valueInvalid") }),
+    .min(1, { error: () => t("features.dicts.form.valueInvalid") })
+    .max(VALUE_MAX_LENGTH, {
+      error: () => t("features.dicts.form.valueInvalid"),
+    }),
   label: z
     .string()
     .trim()
-    .min(1, { error: () => t("features.dicts.item.form.labelInvalid") })
-    .max(50, { error: () => t("features.dicts.item.form.labelInvalid") }),
+    .min(1, { error: () => t("features.dicts.form.labelInvalid") })
+    .max(LABEL_MAX_LENGTH, {
+      error: () => t("features.dicts.form.labelInvalid"),
+    }),
   i18nKey: z
     .string()
     .trim()
+    .max(I18N_KEY_MAX_LENGTH)
     .refine((value) => value === "" || I18N_KEY_PATTERN.test(value), {
-      error: () => t("features.dicts.item.form.i18nKeyFormat"),
+      error: () => t("features.dicts.form.i18nKeyFormat"),
     }),
   sort: z.number(),
   enabled: z.boolean(),
@@ -107,7 +115,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   //（update 会重置计时回落全局时长）；icon 用 Spinner 组件（toast
   // 内容支持 VNode），自带旋转动画
   const savingToast = toast.add({
-    title: t("features.dicts.item.form.saving"),
+    title: t("features.dicts.form.saving"),
     icon: h(Spinner, { size: "sm", class: "mt-0.5" }),
     color: "info",
     duration: 0,
@@ -158,8 +166,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     :title="
       t(
         isEdit
-          ? 'features.dicts.item.form.title.edit'
-          : 'features.dicts.item.form.title.create',
+          ? 'features.dicts.form.title.editItem'
+          : 'features.dicts.form.title.createItem',
       )
     "
     :ui="{ content: 'sm:max-w-md', footer: 'justify-end' }"
@@ -174,69 +182,82 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         class="flex flex-col gap-4"
         @submit="onSubmit"
       >
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <UFormField
-            :label="t('features.dicts.item.form.value')"
-            name="value"
-            required
+        <UFormField
+          :label="t('features.dicts.form.value')"
+          name="value"
+          required
+        >
+          <UInput
+            v-model="state.value"
+            :maxlength="VALUE_MAX_LENGTH"
+            placeholder="1"
+            :ui="{ base: 'pe-13' }"
+            class="w-full"
           >
-            <UInput
-              v-model="state.value"
-              :maxlength="50"
-              :placeholder="t('features.dicts.item.form.valuePlaceholder')"
-              class="w-full font-mono"
-              variant="soft"
-            />
-          </UFormField>
-
-          <UFormField
-            :label="t('features.dicts.item.form.label')"
-            name="label"
-            required
-          >
-            <UInput
-              v-model="state.label"
-              :maxlength="50"
-              :placeholder="t('features.dicts.item.form.labelPlaceholder')"
-              class="w-full"
-              variant="soft"
-            />
-          </UFormField>
-        </div>
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.value.length }}/{{ VALUE_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
+        </UFormField>
 
         <UFormField
-          :label="t('features.dicts.item.form.i18nKey')"
-          :help="t('features.dicts.item.form.i18nKeyHint')"
+          :label="t('features.dicts.form.label')"
+          name="label"
+          required
+        >
+          <UInput
+            v-model="state.label"
+            :maxlength="LABEL_MAX_LENGTH"
+            :placeholder="t('features.dicts.form.labelPlaceholder')"
+            :ui="{ base: 'pe-13' }"
+            class="w-full"
+          >
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.label.length }}/{{ LABEL_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
+        </UFormField>
+
+        <UFormField
+          :label="t('features.dicts.form.i18nKey')"
           name="i18nKey"
+          :help="t('features.dicts.form.i18nKeyHint')"
+          :ui="{ help: 'text-dimmed text-xs' }"
         >
           <UInput
             v-model="state.i18nKey"
             class="w-full"
-            placeholder="dict.xxx.yyy"
-            variant="soft"
-          />
+            :maxlength="I18N_KEY_MAX_LENGTH"
+            :placeholder="`dict.${typeCode}.xxx`"
+            :ui="{ base: 'pe-16' }"
+          >
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.i18nKey.length }}/{{ I18N_KEY_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
         </UFormField>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <UFormField :label="t('common.column.sort')">
-            <UInput
-              v-model.number="state.sort"
-              class="w-full"
-              max="999"
-              min="0"
-              type="number"
-              variant="soft"
-            />
-          </UFormField>
+        <UFormField :label="t('common.column.sort')">
+          <UInputNumber v-model="state.sort" :min="0" class="w-full" />
+        </UFormField>
 
-          <div
-            class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-          >
-            <span class="text-sm font-medium">
-              {{ t("features.dicts.item.form.enabled") }}
-            </span>
-            <USwitch v-model="state.enabled" />
-          </div>
+        <div
+          class="border-default flex items-center justify-between gap-3 rounded-xl border px-3 py-2"
+        >
+          <span class="text-sm">
+            {{ t("features.dicts.form.enabled") }}
+          </span>
+          <USwitch
+            v-model="state.enabled"
+            unchecked-icon="i-lucide-x"
+            checked-icon="i-lucide-check"
+          />
         </div>
       </UForm>
     </template>
@@ -251,9 +272,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       <UButton
         :form="FORM_ID"
         :label="
-          submitting
-            ? t('features.dicts.item.form.saving')
-            : t('common.confirm')
+          submitting ? t('features.dicts.form.saving') : t('common.confirm')
         "
         :loading="submitting"
         type="submit"

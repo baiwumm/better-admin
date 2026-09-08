@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DictItem, DictType } from "@/lib/api-types";
 import type { AppColumnDef } from "@/components/data-table/table-types";
-
+import LoadingContent from "@/components/ui/loading-content/index.vue";
 import { computed, h, ref, resolveComponent } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -28,6 +28,7 @@ import {
 } from "./dict-api";
 import DictItemFormDialog from "./DictItemFormDialog.vue";
 import DictTypeFormDialog from "./DictTypeFormDialog.vue";
+import DictTypeItem from "./DictTypeItem.vue";
 
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import DataTable from "@/components/data-table/DataTable.vue";
@@ -267,7 +268,7 @@ const columns = computed<AppColumnDef<DictItem>[]>(() => [
     cell: ({ row }) =>
       h(
         "span",
-        { class: "flex justify-center" },
+        {},
         h(UBadge, {
           color: "neutral",
           label: String(row.original.sort),
@@ -282,7 +283,7 @@ const columns = computed<AppColumnDef<DictItem>[]>(() => [
     cell: ({ row }) =>
       h(
         "span",
-        { class: "flex justify-center" },
+        {},
         h(UBadge, {
           color: row.original.enabled ? "success" : "error",
           label: t(
@@ -367,7 +368,7 @@ const table: AppTable<DictItem> = useVueTable({
       class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[280px_minmax(0,1fr)]"
     >
       <!-- 左栏：字典类型 -->
-      <div class="rounded-xl border p-4">
+      <UCard>
         <div class="mb-3 flex items-center justify-between gap-2">
           <span class="text-sm font-medium">
             {{ t("features.dicts.type.title") }}
@@ -382,14 +383,12 @@ const table: AppTable<DictItem> = useVueTable({
             @click="openTypeForm('create', null)"
           />
         </div>
-
         <UInput
           v-model="typeSearchInput"
           :aria-label="t('features.dicts.type.searchPlaceholder')"
           :placeholder="t('features.dicts.type.searchPlaceholder')"
           class="mb-3 w-full"
           icon="i-lucide-search"
-          size="sm"
           @keyup.enter="applyTypeSearch"
         />
 
@@ -414,100 +413,57 @@ const table: AppTable<DictItem> = useVueTable({
           }}
         </p>
 
-        <div v-else class="flex flex-col gap-1">
-          <div
+        <div v-else class="relative flex flex-col gap-1">
+          <DictTypeItem
             v-for="type in filteredTypes"
             :key="type.code"
-            :class="
-              type.code === activeType?.code
-                ? 'bg-elevated/60'
-                : 'hover:bg-elevated/30'
+            :can-delete="canDelete"
+            :can-edit="canEdit"
+            :is-active="type.code === activeType?.code"
+            :type="type"
+            @delete="
+              deleteTypeTarget = type;
+              typeDeleteOpen = true;
             "
-            class="group flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors"
-            role="button"
-            tabindex="0"
-            @click="selectedCode = type.code"
-            @keydown.enter.prevent="selectedCode = type.code"
-            @keydown.space.prevent="selectedCode = type.code"
-          >
-            <div class="min-w-0 flex-1">
-              <div class="truncate text-sm font-medium">{{ type.name }}</div>
-              <div class="text-muted truncate text-xs">{{ type.code }}</div>
-            </div>
-            <div
-              class="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
-            >
-              <UButton
-                v-if="canEdit"
-                :aria-label="t('common.edit')"
-                color="neutral"
-                icon="i-lucide-pencil"
-                size="xs"
-                variant="ghost"
-                @click.stop="openTypeForm('edit', type)"
-              />
-              <UButton
-                v-if="canDelete"
-                :aria-label="t('common.delete')"
-                color="error"
-                icon="i-lucide-trash-2"
-                size="xs"
-                variant="ghost"
-                @click.stop="
-                  deleteTypeTarget = type;
-                  typeDeleteOpen = true;
-                "
-              />
-            </div>
-          </div>
+            @edit="openTypeForm('edit', type)"
+            @select="selectedCode = type.code"
+          />
+          <LoadingContent v-if="typesQuery.isFetching.value" />
         </div>
-      </div>
+      </UCard>
 
       <!-- 右栏：选中类型的字典项 -->
-      <div class="flex min-w-0 flex-col">
-        <DataTableToolbar>
-          <UInput
-            v-model="itemSearchInput"
-            :aria-label="t('features.dicts.item.searchPlaceholder')"
-            :placeholder="t('features.dicts.item.searchPlaceholder')"
-            class="w-64"
-            icon="i-lucide-search"
-            size="sm"
-            @keyup.enter="applyItemSearch"
-          />
-          <DataTableSearchReset
-            :can-reset="canResetItems"
-            :fetching="itemsQuery.isFetching.value"
-            :search-dirty="itemSearchDirty"
-            @reset="resetItemSearch"
-            @search="applyItemSearch"
-          />
-          <template #actions>
+      <div class="flex min-w-0 flex-col gap-4">
+        <UCard>
+          <DataTableToolbar>
+            <UInput
+              v-model="itemSearchInput"
+              :aria-label="t('features.dicts.item.searchPlaceholder')"
+              :placeholder="t('features.dicts.item.searchPlaceholder')"
+              class="w-64"
+              icon="i-lucide-search"
+              @keyup.enter="applyItemSearch"
+            />
+            <DataTableSearchReset
+              :can-reset="canResetItems"
+              :fetching="itemsQuery.isFetching.value"
+              :search-dirty="itemSearchDirty"
+              @reset="resetItemSearch"
+              @search="applyItemSearch"
+            />
             <UButton
               v-if="canAdd"
               :disabled="!activeType"
               :label="t('features.dicts.item.add')"
               icon="i-lucide-plus"
-              size="sm"
               variant="outline"
               @click="openItemForm('create', null)"
             />
-          </template>
-        </DataTableToolbar>
+          </DataTableToolbar>
+        </UCard>
 
-        <div
-          v-if="!activeType"
-          class="text-muted flex flex-col items-center justify-center gap-2 rounded-md border py-20"
-        >
-          <UIcon class="size-10" name="i-lucide-inbox" />
-          <span class="text-sm">
-            {{ t("features.dicts.item.noSelection") }}
-          </span>
-        </div>
         <DataTable
-          v-else
           :loading="itemsQuery.isLoading.value || itemsQuery.isFetching.value"
-          :min-width="'640px'"
           :table="table"
         />
       </div>

@@ -143,6 +143,7 @@
   "features.dicts.form.code": "类型编码（code）",
   "features.dicts.form.codeFormat": "字母开头，仅允许字母、数字、中划线、下划线",
   "features.dicts.form.codeHint": "创建后不可修改",
+  "features.dicts.form.codePlaceholder": "user_status",
   "features.dicts.form.codeRequired": "请输入类型编码",
   "features.dicts.form.description": "描述",
   "features.dicts.form.descriptionInvalid": "描述不能超过 200 字",

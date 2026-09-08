@@ -14,6 +14,7 @@ import {
   getDictErrorMessage,
   updateDictType,
 } from "./dict-api";
+import { DICT_TYPE_CODE_PATTERN } from "@/lib/constants";
 
 /**
  * 字典类型新增/编辑弹窗：UForm + zod schema 校验（官方范式，@submit 仅在
@@ -35,7 +36,9 @@ const emit = defineEmits<{
 }>();
 
 const FORM_ID = "dict-type-form";
-const CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
+const CODE_MAX_LENGTH = 50;
+const NAME_MAX_LENGTH = 20;
+const DESCRIPTION_MAX_LENGTH = 200;
 
 const { t } = useI18n();
 const toast = useToast();
@@ -49,17 +52,19 @@ const schema = z
     name: z
       .string()
       .trim()
-      .min(1, { error: () => t("features.dicts.type.form.nameInvalid") })
-      .max(50, { error: () => t("features.dicts.type.form.nameInvalid") }),
-    description: z.string().trim(),
+      .min(1, { error: () => t("features.dicts.form.nameInvalid") })
+      .max(NAME_MAX_LENGTH, {
+        error: () => t("features.dicts.form.nameInvalid"),
+      }),
+    description: z.string().trim().max(DESCRIPTION_MAX_LENGTH),
   })
   // code 仅创建时校验（编辑态锁定不可改，superRefine 运行时读取 isEdit）
   .superRefine((data, ctx) => {
-    if (!isEdit.value && !CODE_PATTERN.test(data.code)) {
+    if (!isEdit.value && !DICT_TYPE_CODE_PATTERN.test(data.code)) {
       ctx.addIssue({
         code: "custom",
         path: ["code"],
-        message: t("features.dicts.type.form.codeInvalid"),
+        message: t("features.dicts.form.codeFormat"),
       });
     }
   });
@@ -95,7 +100,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   //（update 会重置计时回落全局时长）；icon 用 Spinner 组件（toast
   // 内容支持 VNode），自带旋转动画
   const savingToast = toast.add({
-    title: t("features.dicts.type.form.saving"),
+    title: t("features.dicts.form.saving"),
     icon: h(Spinner, { size: "sm", class: "mt-0.5" }),
     color: "info",
     duration: 0,
@@ -143,8 +148,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     :title="
       t(
         isEdit
-          ? 'features.dicts.type.form.title.edit'
-          : 'features.dicts.type.form.title.create',
+          ? 'features.dicts.form.title.editType'
+          : 'features.dicts.form.title.createType',
       )
     "
     :ui="{ content: 'sm:max-w-md', footer: 'justify-end' }"
@@ -160,41 +165,57 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         @submit="onSubmit"
       >
         <UFormField
-          :label="t('features.dicts.type.form.code')"
+          :label="t('features.dicts.form.code')"
           :disabled="isEdit"
           name="code"
           required
+          :help="t('features.dicts.form.codeHint')"
+          :ui="{ help: 'text-xs' }"
         >
           <UInput
             v-model="state.code"
-            :maxlength="50"
-            :placeholder="t('features.dicts.type.form.codePlaceholder')"
-            class="w-full font-mono"
-            variant="soft"
-          />
+            :maxlength="CODE_MAX_LENGTH"
+            placeholder="user_status"
+            :ui="{ base: 'pe-13' }"
+            class="w-full"
+          >
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.code.length }}/{{ CODE_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
         </UFormField>
 
-        <UFormField
-          :label="t('features.dicts.type.form.name')"
-          name="name"
-          required
-        >
+        <UFormField :label="t('features.dicts.form.name')" name="name" required>
           <UInput
             v-model="state.name"
-            :maxlength="50"
-            :placeholder="t('features.dicts.type.form.namePlaceholder')"
+            :maxlength="NAME_MAX_LENGTH"
+            :placeholder="t('features.dicts.form.namePlaceholder')"
+            :ui="{ base: 'pe-13' }"
             class="w-full"
-            variant="soft"
-          />
+          >
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.name.length }}/{{ NAME_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
         </UFormField>
 
-        <UFormField :label="t('features.dicts.type.form.description')">
-          <UTextarea
-            v-model="state.description"
-            :rows="3"
-            class="w-full"
-            variant="soft"
-          />
+        <UFormField :label="t('features.dicts.form.description')">
+          <div class="flex flex-col gap-1">
+            <UTextarea
+              v-model="state.description"
+              :maxlength="DESCRIPTION_MAX_LENGTH"
+              :placeholder="t('features.dicts.form.descriptionPlaceholder')"
+              :rows="4"
+              class="w-full"
+            />
+            <span class="self-end text-xs text-muted">
+              {{ state.description.length }}/{{ DESCRIPTION_MAX_LENGTH }}
+            </span>
+          </div>
         </UFormField>
       </UForm>
     </template>
@@ -209,9 +230,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       <UButton
         :form="FORM_ID"
         :label="
-          submitting
-            ? t('features.dicts.type.form.saving')
-            : t('common.confirm')
+          submitting ? t('features.dicts.form.saving') : t('common.confirm')
         "
         :loading="submitting"
         type="submit"
