@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import PlaceholderPage from "@/components/PlaceholderPage.vue";
+import NoticesPage from "@/features/notice/NoticesPage.vue";
 </script>
 
 <template>
-  <PlaceholderPage
-    icon="i-lucide-megaphone"
-    title-key="menu.pageTitle.notices"
-  />
+  <NoticesPage />
 </template>
