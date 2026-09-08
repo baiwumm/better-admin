@@ -1,26 +1,10 @@
 <script setup lang="ts">
 import type { MenuNode, PermissionItem } from "@/lib/api-types";
 import type { AppColumnDef } from "@/components/data-table/table-types";
-import type { FormSubmitEvent } from "@nuxt/ui";
 
-import * as z from "zod";
-import {
-  computed,
-  h,
-  reactive,
-  ref,
-  resolveComponent,
-  useTemplateRef,
-  watch,
-} from "vue";
+import { computed, h, ref, resolveComponent } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
-import { useVueTable } from "@tanstack/vue-table";
-import {
-  getCoreRowModel,
-  getExpandedRowModel,
-  getSortedRowModel,
-} from "@tanstack/vue-table";
 import { useToast } from "@nuxt/ui/composables";
 
 const UBadge = resolveComponent("UBadge");
@@ -30,39 +14,29 @@ const UDropdownMenu = resolveComponent("UDropdownMenu");
 const UIcon = resolveComponent("UIcon");
 
 import {
-  addChildMenu,
-  createMenu,
   deleteMenu,
   fetchManageMenuTree,
   getMenuErrorMessage,
   MENUS_TREE_QUERY_KEY,
-  updateMenu,
-  type MenuSaveInput,
 } from "./menu-api";
-import {
-  collectSelfAndDescendantIds,
-  flattenParentOptions,
-} from "@/lib/menu-tree-utils";
 
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
-import DataTable from "@/components/data-table/DataTable.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
-import { type AppTable } from "@/components/data-table/table-types";
 import LoadingContent from "@/components/ui/loading-content/index.vue";
-import Spinner from "@/components/ui/spinner/index.vue";
 import { MENUS_QUERY_KEY } from "@/composables/use-menus";
 import {
   useMenuPermissions,
   usePermissions,
 } from "@/composables/use-permissions";
-import { I18N_KEY_PATTERN } from "@/lib/constants";
+import MenuFormModal from "./MenuFormModal.vue";
 
 /**
  * 菜单管理页（对齐 React 端 menus-page）：管理用全量菜单树的树形表格 + CRUD。
  *
  * - 搜索为后端模糊过滤（label / i18n_key / to，提交式），结果保留祖先链；
  * - 树形展开：TanStack expanded 模型（getSubRows + expandedRowModel，初始全展开）；
+ * - 直接使用 UTable 渲染树形表格（不共用 DataTable，避免破坏其他页面）；
  * - 增删改后失效导航树与管理树两份缓存（导航树必须 exact——["menus"] 是
  *   管理树 key 的前缀，非 exact 会把刚失效在途的管理树取消重发）；
  * - 删除有子菜单的节点由后端 409（MENU_HAS_CHILDREN）拦截。
@@ -304,7 +278,7 @@ const columns = computed<AppColumnDef<MenuNode>[]>(() => [
         h(UBadge, {
           color: "neutral",
           label: String(row.original.sort),
-          variant: "subtle",
+          variant: "soft",
         }),
       ),
   },
@@ -331,7 +305,7 @@ const columns = computed<AppColumnDef<MenuNode>[]>(() => [
           onSelect: () => openForm("edit", node),
         });
       }
-      if (canAddChild) {
+      if (canAddChild.value) {
         items.push({
           key: "addChild",
           label: t("features.menus.action.addChild"),
@@ -354,223 +328,30 @@ const columns = computed<AppColumnDef<MenuNode>[]>(() => [
 
       if (items.length === 0) return null;
 
-      return h(UDropdownMenu, { items: [items], content: { align: "center" } });
+      return h(
+        UDropdownMenu,
+        { items: [items], content: { align: "center" } },
+        () =>
+          h(UButton, {
+            "aria-label": t("common.actions"),
+            color: "neutral",
+            icon: "i-lucide-ellipsis",
+            size: "sm",
+            variant: "ghost",
+          }),
+      );
     },
   },
 ]);
 
-const table: AppTable<MenuNode> = useVueTable({
-  get data() {
-    return data.value ?? [];
-  },
-  get columns() {
-    return columns.value;
-  },
-  getCoreRowModel: getCoreRowModel(),
-  getExpandedRowModel: getExpandedRowModel(),
-  getSortedRowModel: getSortedRowModel(),
-  // 树形：subRows = children，初始全部展开
-  getSubRows: (row: MenuNode) => row.children,
-  initialState: { expanded: true },
-  manualPagination: true,
-  manualSorting: true,
-});
-
-// ---------------- 表单弹窗（内联于本页； addChild 锁父级 / edit 防环） ----------------
-const FORM_ID = "menu-form";
-const EMPTY_ICON = "circle";
-
-// 校验消息用函数延迟求值：语言切换后错误文案跟随当前 locale
-const schema = z.object({
-  parentId: z.string(),
-  label: z
-    .string()
-    .trim()
-    .min(1, { error: () => t("features.menus.form.labelInvalid") })
-    .max(50, { error: () => t("features.menus.form.labelInvalid") }),
-  i18nKey: z
-    .string()
-    .trim()
-    .refine((value) => value === "" || I18N_KEY_PATTERN.test(value), {
-      error: () => t("features.menus.form.i18nKeyFormat"),
-    }),
-  icon: z
-    .string()
-    .trim()
-    .min(1, { error: () => t("features.menus.form.iconRequired") }),
-  to: z
-    .string()
-    .trim()
-    .refine(
-      (value) =>
-        value === "" || value.startsWith("/") || value.startsWith("https://"),
-      { error: () => t("features.menus.form.routeFormat") },
-    ),
-  sort: z.number(),
-  keepAlive: z.boolean(),
-  hideInMenu: z.boolean(),
-  enabled: z.boolean(),
-  defaultOpen: z.boolean(),
-});
-
-type Schema = z.output<typeof schema>;
-
-const state = reactive<Schema>({
-  parentId: "",
-  label: "",
-  i18nKey: "",
-  icon: "",
-  to: "",
-  sort: 0,
-  keepAlive: false,
-  hideInMenu: false,
-  enabled: true,
-  defaultOpen: false,
-});
-const permBits = ref(0n);
-const formRef = useTemplateRef("formRef");
-const submitting = ref(false);
-
-watch(formOpen, (open) => {
-  if (!open) return;
-
-  const mode = formMode.value;
-  const node = formNode.value;
-  const addChild = mode === "addChild";
-
-  state.parentId = addChild ? (node?.id ?? "") : (node?.parentId ?? "");
-  state.label = addChild ? "" : (node?.label ?? "");
-  state.i18nKey = addChild ? "" : (node?.i18nKey ?? "");
-  state.icon = addChild ? "" : (node?.icon ?? "");
-  state.to = addChild ? "" : (node?.to ?? "");
-  state.sort = addChild ? 0 : (node?.sort ?? 0);
-  state.keepAlive = addChild ? false : (node?.keepAlive ?? false);
-  state.hideInMenu = addChild ? false : (node?.hideInMenu ?? false);
-  state.enabled = addChild ? true : (node?.enabled ?? true);
-  state.defaultOpen = addChild ? false : (node?.defaultOpen ?? false);
-
-  try {
-    permBits.value = BigInt(node?.permissions ?? "0");
-  } catch {
-    permBits.value = 0n;
-  }
-
-  formRef.value?.clear();
-});
-
-const isFormEdit = computed(() => formMode.value === "edit");
-
-// 编辑态的父级候选：排除自身及后代（防成环）； addChild 锁定不可改
-const parentItems = computed(() => {
-  const excluded =
-    isFormEdit.value && formNode.value
-      ? collectSelfAndDescendantIds(formNode.value)
-      : new Set<string>();
-
-  return flattenParentOptions(data.value ?? [])
-    .filter((option) => !excluded.has(option.id))
-    .map((option) => ({
-      label: `${"\u00A0".repeat(option.depth * 4)}${option.label}`,
-      value: option.id,
-    }));
-});
-
-// 权限位多选：由 permBits 推导选中项
-const permissionSelectItems = computed(() =>
-  (permissionItems.value ?? []).map((item) => ({
-    label: t(`features.permissions.items.${item.value}`),
-    value: item.value,
-  })),
-);
-
-const selectedPermissionValues = computed(() =>
-  (permissionItems.value ?? [])
-    .filter((item) => {
-      const bits = BigInt(item.bits);
-
-      return bits !== 0n && (permBits.value & bits) === bits;
-    })
-    .map((item) => item.value),
-);
-
-function onPermissionsChange(values: unknown) {
-  const selected = new Set(
-    (Array.isArray(values) ? values : [values]).map(String),
-  );
-  let next = 0n;
-
-  for (const item of permissionItems.value ?? []) {
-    if (selected.has(item.value)) next |= BigInt(item.bits);
-  }
-  permBits.value = next;
-}
-
-function closeForm() {
-  formOpen.value = false;
-}
-
-async function submitForm(event: FormSubmitEvent<Schema>) {
-  submitting.value = true;
-
-  // toast.promise 形态（对齐 React 端）：保存全程 loading toast，
-  // 完成后原位替换为成功/失败；duration 0 保证请求返回前不消失
-  //（update 会重置计时回落全局时长）；icon 用 Spinner 组件（toast
-  // 内容支持 VNode），自带旋转动画
-  const savingToast = toast.add({
-    title: t("features.menus.form.saving"),
-    icon: h(Spinner, { size: "sm", class: "mt-0.5" }),
-    color: "info",
-    duration: 0,
-  });
-
-  const payload: MenuSaveInput = {
-    label: event.data.label,
-    i18nKey: event.data.i18nKey || null,
-    icon: event.data.icon || EMPTY_ICON,
-    to: event.data.to || null,
-    parentId: event.data.parentId || null,
-    sort: event.data.sort,
-    keepAlive: event.data.keepAlive,
-    hideInMenu: event.data.hideInMenu,
-    enabled: event.data.enabled,
-    defaultOpen: event.data.defaultOpen,
-    permissions: permBits.value.toString(),
-  };
-
-  try {
-    if (isFormEdit.value && formNode.value) {
-      await updateMenu(formNode.value.id, payload);
-    } else if (formMode.value === "addChild" && formNode.value) {
-      await addChildMenu(formNode.value.id, payload);
-    } else {
-      await createMenu(payload);
-    }
-
-    toast.update(savingToast.id, {
-      title: t(
-        isFormEdit.value
-          ? "features.menus.message.updateSuccess"
-          : "features.menus.message.createSuccess",
-      ),
-      icon: "i-lucide-check",
-      color: "success",
-    });
-    handleSaved();
-    closeForm();
-  } catch (error) {
-    toast.update(savingToast.id, {
-      title: getMenuErrorMessage(error),
-      icon: "i-lucide-x",
-      color: "error",
-    });
-  } finally {
-    submitting.value = false;
-  }
+/** 树形子行提取函数（透传给 UTable） */
+function menuSubRows(row: MenuNode): MenuNode[] | undefined {
+  return row.children;
 }
 </script>
 
 <template>
-  <div class="flex w-full flex-col">
+  <div class="flex w-full flex-col gap-4">
     <DataTableToolbar>
       <UInput
         v-model="searchInput"
@@ -578,7 +359,6 @@ async function submitForm(event: FormSubmitEvent<Schema>) {
         :placeholder="t('features.menus.searchPlaceholder')"
         class="w-64"
         icon="i-lucide-search"
-        size="sm"
         @keyup.enter="applySearch"
       />
       <DataTableSearchReset
@@ -588,204 +368,50 @@ async function submitForm(event: FormSubmitEvent<Schema>) {
         @reset="resetSearch"
         @search="applySearch"
       />
-      <template #actions>
-        <UButton
-          v-if="canAdd"
-          :label="t('features.menus.action.add')"
-          icon="i-lucide-plus"
-          size="sm"
-          variant="outline"
-          @click="openForm('create', null)"
-        />
-      </template>
+      <UButton
+        v-if="canAdd"
+        :label="t('features.menus.action.add')"
+        icon="i-lucide-plus"
+        variant="outline"
+        @click="openForm('create', null)"
+      />
     </DataTableToolbar>
 
     <div class="relative">
-      <LoadingContent v-if="isLoading" />
-      <DataTable :loading="isFetching && !isLoading" :table="table" />
+      <LoadingContent v-if="isFetching || isLoading" />
+      <UTable
+        sticky
+        :loading="isFetching || isLoading"
+        :data="data ?? []"
+        :columns="columns"
+        :get-sub-rows="menuSubRows"
+        :get-row-id="(row) => row.id"
+        :ui="{
+          thead: '[&>tr]:bg-elevated/50 [&>tr]:after:content-none',
+          tr: 'group',
+          td: 'group-has-[td:not(:empty)]:border-b border-default text-start',
+        }"
+      >
+        <template #empty>
+          <div class="flex items-center justify-center w-full">
+            <UEmpty
+              icon="i-lucide-inbox"
+              :title="t('common.datatable.empty')"
+              class="ring-0"
+            />
+          </div>
+        </template>
+      </UTable>
     </div>
 
-    <UModal
-      :open="formOpen"
-      :dismissible="false"
-      :title="
-        t(
-          formMode === 'edit'
-            ? 'features.menus.form.title.edit'
-            : formMode === 'addChild'
-              ? 'features.menus.form.title.addChild'
-              : 'features.menus.form.title.create',
-        )
-      "
-      :ui="{ content: 'sm:max-w-xl', footer: 'justify-end' }"
-      @update:open="(value: boolean) => !value && closeForm()"
-    >
-      <template #body>
-        <UForm
-          :id="FORM_ID"
-          ref="formRef"
-          :schema="schema"
-          :state="state"
-          class="flex flex-col gap-4"
-          @submit="submitForm"
-        >
-          <UFormField
-            :label="t('features.menus.form.parent')"
-            :description="t('features.menus.form.parentHint')"
-          >
-            <div class="flex items-center gap-2">
-              <USelect
-                v-model="state.parentId"
-                :aria-label="t('features.menus.form.parent')"
-                :disabled="formMode === 'addChild'"
-                :items="parentItems"
-                :placeholder="t('features.menus.form.parentPlaceholder')"
-                class="flex-1"
-                value-key="value"
-              />
-              <UButton
-                v-if="state.parentId && formMode !== 'addChild'"
-                :aria-label="t('features.menus.form.parentClear')"
-                color="neutral"
-                icon="i-lucide-x"
-                size="sm"
-                variant="ghost"
-                @click="state.parentId = ''"
-              />
-            </div>
-          </UFormField>
-
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <UFormField
-              :label="t('features.menus.form.label')"
-              name="label"
-              required
-            >
-              <UInput
-                v-model="state.label"
-                :maxlength="50"
-                :placeholder="t('features.menus.form.labelPlaceholder')"
-                class="w-full"
-                variant="soft"
-              />
-            </UFormField>
-
-            <UFormField
-              :label="t('features.menus.form.i18nKey')"
-              name="i18nKey"
-              required
-            >
-              <UInput
-                v-model="state.i18nKey"
-                class="w-full"
-                placeholder="menu.xxx.yyy"
-                variant="soft"
-              />
-            </UFormField>
-          </div>
-
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <UFormField
-              :label="t('features.menus.form.icon')"
-              name="icon"
-              required
-            >
-              <div class="flex items-center gap-2">
-                <UInput
-                  v-model="state.icon"
-                  aria-label="Icon"
-                  class="flex-1"
-                  placeholder="house"
-                  variant="soft"
-                />
-                <UIcon
-                  v-if="state.icon"
-                  :name="`i-lucide-${state.icon}`"
-                  class="text-muted size-4"
-                />
-              </div>
-            </UFormField>
-
-            <UFormField
-              :help="t('features.menus.form.routeHint')"
-              :label="t('features.menus.form.route')"
-              name="to"
-            >
-              <UInput
-                v-model="state.to"
-                :placeholder="t('features.menus.form.routePlaceholder')"
-                class="w-full"
-                variant="soft"
-              />
-            </UFormField>
-          </div>
-
-          <UFormField :label="t('features.menus.form.permissions')">
-            <USelectMenu
-              :items="permissionSelectItems"
-              :model-value="selectedPermissionValues"
-              :placeholder="t('features.menus.form.permissionsPlaceholder')"
-              class="w-full"
-              multiple
-              value-key="value"
-              @update:model-value="onPermissionsChange"
-            />
-          </UFormField>
-
-          <UFormField :label="t('common.column.sort')">
-            <UInput
-              v-model.number="state.sort"
-              class="w-full"
-              type="number"
-              variant="soft"
-            />
-          </UFormField>
-
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div
-              v-for="switchRow in [
-                { key: 'keepAlive', label: t('features.menus.form.keepAlive') },
-                {
-                  key: 'hideInMenu',
-                  label: t('features.menus.form.hideInMenu'),
-                },
-                { key: 'enabled', label: t('features.menus.form.enabled') },
-                {
-                  key: 'defaultOpen',
-                  label: t('features.menus.form.defaultOpen'),
-                },
-              ]"
-              :key="switchRow.key"
-              class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-            >
-              <span class="text-sm font-medium">{{ switchRow.label }}</span>
-              <USwitch
-                v-model="state[switchRow.key as 'keepAlive']"
-                unchecked-icon="i-lucide-x"
-                checked-icon="i-lucide-check"
-              />
-            </div>
-          </div>
-        </UForm>
-      </template>
-
-      <template #footer="{ close: onClose }">
-        <UButton
-          :label="t('common.cancel')"
-          color="neutral"
-          variant="outline"
-          @click="onClose"
-        />
-        <UButton
-          :form="FORM_ID"
-          :label="
-            submitting ? t('features.menus.form.saving') : t('common.confirm')
-          "
-          :loading="submitting"
-          type="submit"
-        />
-      </template>
-    </UModal>
+    <MenuFormModal
+      v-model:open="formOpen"
+      :mode="formMode"
+      :node="formNode"
+      :permission-items="permissionItems ?? []"
+      :tree="data ?? []"
+      @saved="handleSaved"
+    />
 
     <ConfirmDialog
       v-model:open="deleteOpen"
@@ -804,3 +430,14 @@ async function submitForm(event: FormSubmitEvent<Schema>) {
     />
   </div>
 </template>
+
+<style scoped>
+/*
+ * 树形表格：子行通过 getSubRows + expanded 自动展开为独立行，
+ * UTable 仍会为每个展开的父行渲染一个空的 expanded <tr>（单个 td[colspan]），
+ * 通过 CSS 隐藏该空行（仅影响本页，不破坏其他使用 DataTable 的页面）。
+ */
+:deep(table tbody tr:has(> td[colspan]:only-child)) {
+  display: none;
+}
+</style>

@@ -382,6 +382,7 @@
   "features.permissions.items.BATCH_DELETE": "Batch Delete",
   "features.permissions.items.DELETE": "Delete",
   "features.permissions.items.EDIT": "Edit",
+  "features.permissions.items.EXPORT": "Export",
   "features.permissions.items.GRANT": "Menu Grants",
   "features.permissions.items.RESET": "Reset",
   "features.permissions.items.RESET_PASSWORD": "Reset Password",
