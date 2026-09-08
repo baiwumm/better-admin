@@ -3,6 +3,23 @@
 > 本文件记录各阶段 / 模块的完成情况、关键决策与已知限制，**只做记录，不写规则**；硬性规则见 [`AGENTS.md`](../AGENTS.md)，机制结论沉淀见 [`mechanisms.md`](mechanisms.md)。
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+
+### Vue 端 M2 组织中心剩余 7 模块全量落地（2026-09-08）
+
+- **范围**：vue-plan M2 后七项——岗位管理 / 人员通讯录 / 公告管理 / 我的公告 / 站内信 / 架构图谱 / 通讯录 Excel 导出，全部对齐 React 端功能语义；七个独立提交（0f060c2 → 514f194），每模块一项。验证：vue-tsc / eslint / vitest（22 用例）/ vite build 四绿。**已知限制：本轮仅代码落地 + 构建验证，GUI 冒烟验收待做**（需本地 Nest 服务；feature-matrix 中 7 项均标注「待 GUI 冒烟验收」）。
+- **基建复用**：列表页全部走 M1 既有范式（createListStore + useListQuery epoch 策略 + DataTable 组合件 + toast.promise 三段式 + ConfirmDialog 关键词确认）；组织树筛选复用 DEPTS_TREE_QUERY_KEY 共享缓存与 DeptTreePanel。
+- **关键决策 / Nuxt UI 能力适配**（与 React 端交互的实现偏差，功能语义等价）：
+  - 公告发布范围选择器：岗位/人员候选由 React 端 useInfiniteQuery 滚动加载改为 **USelectMenu 本地多选 + 弹窗打开时串行拉全量**（staleTime 60s；演示规模 1-3 页），「全量可选」语义不变；
+  - 公告定时发布：HeroUI DatePicker（分钟粒度）改用**原生 datetime-local 输入**，toISOWithOffset 本地时区偏移转换逐字平移（契约 RFC3339 语义不变）；
+  - 岗位表单 UForm+zod、公告表单 UForm+zod（superRefine 延迟求值文案跟随 locale）；
+  - 架构图谱：@vue-flow/core 1.48（Background/Controls 已拆分为 @vue-flow/background、@vue-flow/controls 子包，需单独装 + 各自 CSS）；暗色适配给画布容器挂 .dark 类（useColorMode resolved 值驱动）；手写树布局 org-chart-layout.ts 零改动平移（mechanisms §7.2 适用）；
+  - Excel 导出：write-excel-file 4.1.1 原库复用（同 React 版本），getSheetData + columns 样式管线逐字平移；
+  - 站内信铃铛：UChip 红点角标 + 60s refetchInterval 轮询；抽屉固定「未读/全部」UTabs 筛选器（无 Panel，对齐 React 端语义）；公告详情消费路由 /org/notices/:noticeId 登录可达。
+- **我的公告 URL 驱动选中**：?noticeId= ↔ 选中公告双向同步，KeepAlive 转场守卫口径为 route.path !== '/my-notices' 时忽略 URL 回写（对应 React 端 pathname 守卫）；首读生效后失效 my-notices + notifications 双缓存（未读点/红点即时消隐）。
+- **顺带修正**：UserInfo 入参由 Pick<User> 放宽为结构化最小接口（DirectoryEntry 的 email/avatar 可空）；menu-utils 补 collectMenuPaths（详情页「返回列表」降级判断）；AdminLayout 铃铛占位换正。
+- **文档滞后修正**：feature-matrix 基础设施 6 项（i18n/主题/命令面板/错误页/路由守卫）M0 验收后遗留的 🔧 转正 ✅；统计口径修正为 23 项（组织中心实为 8 行，原口径 22 项少计 1 行），React/Next 同步重算为 96%。
+- **环境注意**：本轮工作期间仓库存在另一批并行未提交改动（角色授权树重构 GrantTreeNode 删除 + menus DTO/表单三端修改），vue type-check 全量跑会命中该批进行中代码的报错，与本轮产出无关；本条目各提交均精确限定文件范围未夹带。
+
 ---
 
 ### 菜单表单字段校验补齐：契约 + Nest DTO + React 表单对齐（2026-09-08）
