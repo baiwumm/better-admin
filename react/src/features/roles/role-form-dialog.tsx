@@ -7,7 +7,7 @@ import {
   Description,
   FieldError,
   Form,
-  Input,
+  InputGroup,
   Label,
   Modal,
   Spinner,
@@ -52,10 +52,19 @@ export interface RoleFormDialogProps {
 
 const FORM_ID = "role-form";
 
+const CODE_MAX_LENGTH = 50;
+const NAME_MAX_LENGTH = 20;
+const DESC_MAX_LENGTH = 200;
+
 const roleFormSchema = z.object({
-  code: z.string().trim().min(1).max(50).regex(DICT_TYPE_CODE_PATTERN),
-  name: z.string().trim().min(1).max(50),
-  description: z.string().trim().max(200),
+  code: z
+    .string()
+    .trim()
+    .min(1)
+    .max(CODE_MAX_LENGTH)
+    .regex(DICT_TYPE_CODE_PATTERN),
+  name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
+  description: z.string().trim().max(DESC_MAX_LENGTH),
   sort: sortFieldSchema,
   enabled: z.boolean(),
 });
@@ -189,11 +198,16 @@ function RoleFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.roles.form.code")}</Label>
-                    <Input
-                      maxLength={50}
-                      placeholder="editor"
-                      variant="secondary"
-                    />
+                    {/* Suffix 实时字数（上限与后端 @MaxLength(50) 对齐） */}
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={CODE_MAX_LENGTH}
+                        placeholder="editor"
+                      />
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{CODE_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     {fieldState.error ? (
                       <FieldError>
                         {!field.value?.trim()
@@ -223,11 +237,16 @@ function RoleFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.roles.form.name")}</Label>
-                    <Input
-                      maxLength={50}
-                      placeholder={t("features.roles.form.namePlaceholder")}
-                      variant="secondary"
-                    />
+                    {/* Suffix 实时字数（上限与后端 @MaxLength(20) 对齐） */}
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={NAME_MAX_LENGTH}
+                        placeholder={t("features.roles.form.namePlaceholder")}
+                      />
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{NAME_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     {fieldState.error && (
                       <FieldError>
                         {t("features.roles.form.nameInvalid")}
@@ -250,13 +269,17 @@ function RoleFormModal({
                   >
                     <Label>{t("features.roles.form.description")}</Label>
                     <TextArea
-                      maxLength={200}
+                      maxLength={DESC_MAX_LENGTH}
                       placeholder={t(
                         "features.roles.form.descriptionPlaceholder",
                       )}
                       rows={3}
                       variant="secondary"
                     />
+                    {/* 实时字数（上限与后端 @MaxLength(200) 对齐） */}
+                    <span className="self-end text-xs text-muted">
+                      {field.value?.length ?? 0}/{DESC_MAX_LENGTH}
+                    </span>
                     {fieldState.error && (
                       <FieldError>
                         {t("features.roles.form.descriptionInvalid")}

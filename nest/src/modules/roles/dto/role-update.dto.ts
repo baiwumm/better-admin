@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
@@ -8,10 +8,12 @@ import { Type } from 'class-transformer';
 export class UpdateRoleDto {
   @IsOptional()
   @IsString()
+  @MaxLength(20)
   name?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   description?: string;
 
   @IsOptional()

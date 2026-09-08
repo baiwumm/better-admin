@@ -36,6 +36,22 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "请求体不是合法 JSON");
     }
 
+    // 字段长度校验（与前端 zod + NestJS DTO @MaxLength 对齐）
+    if (typeof body.name === "string" && body.name.length > 20) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "角色名称不能超过 20 个字符",
+      );
+    }
+    if (typeof body.description === "string" && body.description.length > 200) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "角色描述不能超过 200 个字符",
+      );
+    }
+
     const role = await updateRole(
       id,
       {

@@ -196,11 +196,30 @@ export interface CreateRoleInput {
   sort?: number;
 }
 
+/** 长度校验：与前端 zod + 后端 class-validator @MaxLength 对齐 */
+function assertFieldLengths(input: {
+  name?: string;
+  code?: string;
+  description?: string;
+}): void {
+  if (input.name !== undefined && input.name.length > 20) {
+    throw new ServerApiError(400, "VALIDATION_ERROR", "角色名称不能超过 20 个字符");
+  }
+  if (input.code !== undefined && input.code.length > 50) {
+    throw new ServerApiError(400, "VALIDATION_ERROR", "角色标识不能超过 50 个字符");
+  }
+  if (input.description !== undefined && input.description.length > 200) {
+    throw new ServerApiError(400, "VALIDATION_ERROR", "角色描述不能超过 200 个字符");
+  }
+}
+
 /** POST /roles — 创建（code 全局唯一，创建后不可改）。 */
 export async function createRole(
   dto: CreateRoleInput,
   operatorId: string | null,
 ): Promise<RoleView> {
+  assertFieldLengths(dto);
+
   let row: typeof roles.$inferSelect;
 
   try {
@@ -239,6 +258,8 @@ export async function updateRole(
   dto: UpdateRoleInput,
   operatorId: string | null,
 ): Promise<RoleView> {
+  assertFieldLengths(dto);
+
   const existing = await db.query.roles.findFirst({ where: eq(roles.id, id) });
 
   if (!existing) {

@@ -51,6 +51,29 @@ export async function POST(request: NextRequest) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "name 与 code 为必填");
     }
 
+    // 字段长度校验（与前端 zod + NestJS DTO @MaxLength 对齐）
+    if (body.name.trim().length > 20) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "角色名称不能超过 20 个字符",
+      );
+    }
+    if (body.code.trim().length > 50) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "角色标识不能超过 50 个字符",
+      );
+    }
+    if (typeof body.description === "string" && body.description.length > 200) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "角色描述不能超过 200 个字符",
+      );
+    }
+
     const role = await createRole(
       {
         name: body.name.trim(),
