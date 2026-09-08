@@ -28,8 +28,10 @@ const props = withDefaults(
     /** 禁选自身及后代（组织表单编辑防环场景）；缺省不禁 */
     selfId?: string | null;
     isDisabled?: boolean;
+    /** 占位文案（筛选器场景传「全部」语义）；缺省为选择组织 */
+    placeholder?: string;
   }>(),
-  { selfId: null, isDisabled: false },
+  { selfId: null, isDisabled: false, placeholder: undefined },
 );
 
 const { t } = useI18n();
@@ -103,7 +105,7 @@ function onSelect(key: unknown) {
     :avatar="selectedOption?.avatar"
     :clear="!isDisabled"
     :disabled="isDisabled"
-    :placeholder="t('features.org.deptTreeSelect.placeholder')"
+    :placeholder="placeholder ?? t('features.org.deptTreeSelect.placeholder')"
     class="w-full"
     value-key="value"
     @update:model-value="onSelect"

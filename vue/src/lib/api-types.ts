@@ -253,6 +253,43 @@ export interface Post {
   updatedAt: string;
 }
 
+/** 创建岗位请求体（契约 v1.6.0 阶段 2） */
+export interface PostCreateInput {
+  name: string;
+  deptId: string;
+  category: PostCategory;
+  rank?: string;
+  status?: DeptStatus;
+}
+
+/** 更新岗位请求体（字段缺省表示不修改） */
+export interface PostUpdateInput {
+  name?: string;
+  deptId?: string;
+  category?: PostCategory;
+  rank?: string;
+  status?: DeptStatus;
+}
+
+/** 人员通讯录条目（/org/directory 与 /org/posts/:id/members 共用；契约 v1.6.0） */
+export interface DirectoryEntry {
+  id: string;
+  username: string;
+  displayName: string;
+  avatar: string | null;
+  employeeNo: string | null;
+  deptId: string | null;
+  /** 所属组织完整路径，如「集团/技术部/前端组」 */
+  deptPath: string | null;
+  mainPostId: string | null;
+  mainPostName: string | null;
+  phone: string | null;
+  email: string | null;
+  /** 入职日期（YYYY-MM-DD，可空） */
+  entryDate: string | null;
+  employmentStatus: EmploymentStatus;
+}
+
 /** 创建用户请求体 */
 export interface CreateUserInput {
   username: string;
