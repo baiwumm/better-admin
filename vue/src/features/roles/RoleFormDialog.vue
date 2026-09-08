@@ -35,6 +35,9 @@ const emit = defineEmits<{
 }>();
 
 const FORM_ID = "role-form";
+const CODE_MAX_LENGTH = 50;
+const NAME_MAX_LENGTH = 20;
+const DESCRIPTION_MAX_LENGTH = 200;
 
 const { t } = useI18n();
 const toast = useToast();
@@ -189,11 +192,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         >
           <UInput
             v-model="state.code"
-            :maxlength="50"
+            :maxlength="CODE_MAX_LENGTH"
             :placeholder="t('features.roles.form.codePlaceholder')"
-            class="w-full font-mono"
-            variant="soft"
-          />
+            class="w-full"
+            :ui="{ base: 'pe-13' }"
+          >
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.code.length }}/{{ CODE_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
         </UFormField>
 
         <UFormField
@@ -204,51 +213,53 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         >
           <UInput
             v-model="state.name"
-            :maxlength="50"
+            :maxlength="NAME_MAX_LENGTH"
             :placeholder="t('features.roles.form.namePlaceholder')"
             class="w-full"
-            variant="soft"
-          />
+            :ui="{ base: 'pe-13' }"
+          >
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.name.length }}/{{ NAME_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
         </UFormField>
 
         <UFormField
           :label="t('features.roles.form.description')"
           name="description"
         >
-          <UTextarea
-            v-model="state.description"
-            :maxlength="200"
-            :placeholder="t('features.roles.form.descriptionPlaceholder')"
-            :rows="3"
-            class="w-full"
-            variant="soft"
-          />
+          <div class="flex flex-col gap-1">
+            <UTextarea
+              v-model="state.description"
+              :maxlength="DESCRIPTION_MAX_LENGTH"
+              :placeholder="t('features.roles.form.descriptionPlaceholder')"
+              :rows="4"
+              class="w-full"
+            />
+            <span class="self-end text-xs text-muted">
+              {{ state.description.length }}/{{ DESCRIPTION_MAX_LENGTH }}
+            </span>
+          </div>
         </UFormField>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <UFormField :label="t('common.column.sort')">
-            <UInput
-              v-model.number="state.sort"
-              :disabled="isSuperAdmin"
-              class="w-full"
-              type="number"
-              variant="soft"
-            />
-          </UFormField>
+        <UFormField :label="t('common.column.sort')">
+          <UInputNumber v-model="state.sort" :min="0" class="w-full" />
+        </UFormField>
 
-          <div
-            class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-          >
-            <span class="text-sm font-medium">
-              {{ t("features.roles.form.enabled") }}
-            </span>
-            <USwitch
-              v-model="state.enabled"
-              :disabled="isSuperAdmin"
-              unchecked-icon="i-lucide-x"
-              checked-icon="i-lucide-check"
-            />
-          </div>
+        <div
+          class="border-default flex items-center justify-between gap-3 rounded-xl border px-3 py-2"
+        >
+          <span class="text-sm font-medium">
+            {{ t("features.roles.form.enabled") }}
+          </span>
+          <USwitch
+            v-model="state.enabled"
+            :disabled="isSuperAdmin"
+            unchecked-icon="i-lucide-x"
+            checked-icon="i-lucide-check"
+          />
         </div>
       </UForm>
     </template>

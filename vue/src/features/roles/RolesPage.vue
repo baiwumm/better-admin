@@ -326,7 +326,7 @@ const UBadge = resolveComponent("UBadge");
 </script>
 
 <template>
-  <div class="flex w-full flex-col">
+  <div class="flex w-full flex-col gap-4">
     <DataTableToolbar>
       <UInput
         v-model="searchInput"
@@ -334,7 +334,6 @@ const UBadge = resolveComponent("UBadge");
         :placeholder="t('features.roles.searchPlaceholder')"
         class="w-64"
         icon="i-lucide-search"
-        size="sm"
         @keyup.enter="applySearch"
       />
       <USelect
@@ -343,7 +342,6 @@ const UBadge = resolveComponent("UBadge");
         :model-value="store.filters.enabled ?? undefined"
         :placeholder="t('features.roles.filter.all')"
         class="w-36"
-        size="sm"
         value-key="value"
         @update:model-value="
           (value: unknown) => store.setFilters({ enabled: value as string })
@@ -357,16 +355,13 @@ const UBadge = resolveComponent("UBadge");
         @reset="resetFilters"
         @search="applySearch"
       />
-      <template #actions>
-        <UButton
-          v-if="canAdd"
-          :label="t('features.roles.action.add')"
-          icon="i-lucide-plus"
-          size="sm"
-          variant="outline"
-          @click="openForm('create', null)"
-        />
-      </template>
+      <UButton
+        v-if="canAdd"
+        :label="t('features.roles.action.add')"
+        icon="i-lucide-plus"
+        variant="outline"
+        @click="openForm('create', null)"
+      />
     </DataTableToolbar>
 
     <ErrorContent
