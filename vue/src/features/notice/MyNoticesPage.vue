@@ -281,10 +281,10 @@ export default { name: "MyNoticesPage" };
           </UInput>
         </div>
 
-        <div
+        <UProgress
           v-if="isFetching && !isLoading"
-          class="bg-primary absolute inset-x-0 bottom-0 h-px animate-pulse"
-          :aria-label="t('common.loading')"
+          size="2xs"
+          class="absolute inset-x-0 bottom-0"
         />
       </div>
 
