@@ -34,3 +34,10 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
 }
+
+/**
+ * /500 跳转中转（routes/__root.tsx ServerErrorRedirect）携带的 history state：
+ * HistoryState 为空接口（@tanstack/history 非直接依赖，无法模块扩充），
+ * 写入端断言、读取端收窄为该类型——from 为出错页 URL，供错误页「重试」回原 URL。
+ */
+export type ErrorRedirectState = { from?: string };

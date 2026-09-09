@@ -9,12 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as R500RouteImport } from './routes/500'
+import { Route as R404RouteImport } from './routes/404'
+import { Route as R403RouteImport } from './routes/403'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as authRouteRouteImport } from './routes/(auth)/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedMyNoticesRouteImport } from './routes/_authenticated/my-notices'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
-import { Route as AuthenticatedSplatRouteImport } from './routes/_authenticated/$'
 import { Route as authSignInRouteImport } from './routes/(auth)/sign-in'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings/users'
@@ -30,6 +32,21 @@ import { Route as AuthenticatedOrgDeptsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedOrgChartRouteImport } from './routes/_authenticated/org/chart'
 import { Route as AuthenticatedOrgNoticesNoticeIdRouteImport } from './routes/_authenticated/org/notices_.$noticeId'
 
+const R500Route = R500RouteImport.update({
+  id: '/500',
+  path: '/500',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const R404Route = R404RouteImport.update({
+  id: '/404',
+  path: '/404',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const R403Route = R403RouteImport.update({
+  id: '/403',
+  path: '/403',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -51,11 +68,6 @@ const AuthenticatedMyNoticesRoute = AuthenticatedMyNoticesRouteImport.update({
 const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
   id: '/account',
   path: '/account',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedSplatRoute = AuthenticatedSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const authSignInRoute = authSignInRouteImport.update({
@@ -140,8 +152,10 @@ const AuthenticatedOrgNoticesNoticeIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/403': typeof R403Route
+  '/404': typeof R404Route
+  '/500': typeof R500Route
   '/sign-in': typeof authSignInRoute
-  '/$': typeof AuthenticatedSplatRoute
   '/account': typeof AuthenticatedAccountRoute
   '/my-notices': typeof AuthenticatedMyNoticesRoute
   '/org/chart': typeof AuthenticatedOrgChartRoute
@@ -159,8 +173,10 @@ export interface FileRoutesByFullPath {
   '/org/notices/$noticeId': typeof AuthenticatedOrgNoticesNoticeIdRoute
 }
 export interface FileRoutesByTo {
+  '/403': typeof R403Route
+  '/404': typeof R404Route
+  '/500': typeof R500Route
   '/sign-in': typeof authSignInRoute
-  '/$': typeof AuthenticatedSplatRoute
   '/account': typeof AuthenticatedAccountRoute
   '/my-notices': typeof AuthenticatedMyNoticesRoute
   '/': typeof AuthenticatedIndexRoute
@@ -182,8 +198,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(auth)': typeof authRouteRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/403': typeof R403Route
+  '/404': typeof R404Route
+  '/500': typeof R500Route
   '/(auth)/sign-in': typeof authSignInRoute
-  '/_authenticated/$': typeof AuthenticatedSplatRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/my-notices': typeof AuthenticatedMyNoticesRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -205,8 +223,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/403'
+    | '/404'
+    | '/500'
     | '/sign-in'
-    | '/$'
     | '/account'
     | '/my-notices'
     | '/org/chart'
@@ -224,8 +244,10 @@ export interface FileRouteTypes {
     | '/org/notices/$noticeId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/403'
+    | '/404'
+    | '/500'
     | '/sign-in'
-    | '/$'
     | '/account'
     | '/my-notices'
     | '/'
@@ -246,8 +268,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/(auth)'
     | '/_authenticated'
+    | '/403'
+    | '/404'
+    | '/500'
     | '/(auth)/sign-in'
-    | '/_authenticated/$'
     | '/_authenticated/account'
     | '/_authenticated/my-notices'
     | '/_authenticated/'
@@ -269,10 +293,34 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   authRouteRoute: typeof authRouteRouteWithChildren
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  R403Route: typeof R403Route
+  R404Route: typeof R404Route
+  R500Route: typeof R500Route
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/500': {
+      id: '/500'
+      path: '/500'
+      fullPath: '/500'
+      preLoaderRoute: typeof R500RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/404': {
+      id: '/404'
+      path: '/404'
+      fullPath: '/404'
+      preLoaderRoute: typeof R404RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/403': {
+      id: '/403'
+      path: '/403'
+      fullPath: '/403'
+      preLoaderRoute: typeof R403RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -306,13 +354,6 @@ declare module '@tanstack/react-router' {
       path: '/account'
       fullPath: '/account'
       preLoaderRoute: typeof AuthenticatedAccountRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/$': {
-      id: '/_authenticated/$'
-      path: '/$'
-      fullPath: '/$'
-      preLoaderRoute: typeof AuthenticatedSplatRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/(auth)/sign-in': {
@@ -429,7 +470,6 @@ const authRouteRouteWithChildren = authRouteRoute._addFileChildren(
 )
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedSplatRoute: typeof AuthenticatedSplatRoute
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedMyNoticesRoute: typeof AuthenticatedMyNoticesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -449,7 +489,6 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedSplatRoute: AuthenticatedSplatRoute,
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedMyNoticesRoute: AuthenticatedMyNoticesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
@@ -474,6 +513,9 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   authRouteRoute: authRouteRouteWithChildren,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  R403Route: R403Route,
+  R404Route: R404Route,
+  R500Route: R500Route,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

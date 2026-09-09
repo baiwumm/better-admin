@@ -4,7 +4,7 @@ import { ErrorPageShell } from "./error-page-shell";
 
 import { useTranslation } from "@/i18n";
 
-/** 404 页面不存在：Admin 布局内由主体区 overlay 直显，布局外作根路由 notFoundComponent。 */
+/** 404 页面不存在（全屏），用作根路由 notFoundComponent 与 /404 路由。 */
 export function NotFoundErrorPage() {
   const { t } = useTranslation();
 

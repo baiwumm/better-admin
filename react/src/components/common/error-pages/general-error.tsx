@@ -1,25 +1,22 @@
 import { Button } from "@heroui/react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { TriangleAlert } from "lucide-react";
 
 import { ErrorPageShell } from "./error-page-shell";
 
 import { useTranslation } from "@/i18n";
-
-type GeneralErrorPageProps = {
-  /** 自定义重试回调；缺省时整页刷新（根路由布局外兜底场景）。 */
-  onRetry?: () => void;
-};
+import { type ErrorRedirectState } from "@/router";
 
 /**
- * 通用错误兜底。两处使用：
- * - Admin 布局内：KeepAliveOutlet 的面板级错误边界传入 onRetry
- *   （重置边界并重挂载面板实例），仅当前面板显示、其余标签不受影响；
- * - 布局外兜底（根路由 errorComponent）：无 onRetry，整页刷新。
- * 与 403/404 的默认双按钮区分。
+ * 通用错误兜底（全屏），用作 /500 路由页组件。
+ * 页面渲染期间抛出未捕获错误时，根路由 errorComponent 携带出错 URL
+ * （router state.from）跳转至本页展示，避免白屏。
+ * 「重试」语义：携带 from 时回原 URL 重新渲染（错误边界随卸载重置）；
+ * 直接访问 /500（无 from）时整页刷新兜底。与 403/404 的默认双按钮区分。
  */
-export function GeneralErrorPage({ onRetry }: GeneralErrorPageProps) {
+export function GeneralErrorPage() {
   const { t } = useTranslation();
+  const router = useRouter();
 
   return (
     <ErrorPageShell
@@ -29,8 +26,12 @@ export function GeneralErrorPage({ onRetry }: GeneralErrorPageProps) {
             className="btn-shine"
             variant="primary"
             onPress={() => {
-              if (onRetry) {
-                onRetry();
+              const from = (
+                router.state.location.state as ErrorRedirectState | undefined
+              )?.from;
+
+              if (from) {
+                void router.navigate({ href: from });
               } else {
                 window.location.reload();
               }
