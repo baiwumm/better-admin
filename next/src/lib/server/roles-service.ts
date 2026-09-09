@@ -203,13 +203,25 @@ function assertFieldLengths(input: {
   description?: string | null;
 }): void {
   if (input.name !== undefined && input.name.length > 20) {
-    throw new ServerApiError(400, "VALIDATION_ERROR", "角色名称不能超过 20 个字符");
+    throw new ServerApiError(
+      400,
+      "VALIDATION_ERROR",
+      "角色名称不能超过 20 个字符",
+    );
   }
   if (input.code !== undefined && input.code.length > 50) {
-    throw new ServerApiError(400, "VALIDATION_ERROR", "角色标识不能超过 50 个字符");
+    throw new ServerApiError(
+      400,
+      "VALIDATION_ERROR",
+      "角色标识不能超过 50 个字符",
+    );
   }
   if (typeof input.description === "string" && input.description.length > 200) {
-    throw new ServerApiError(400, "VALIDATION_ERROR", "角色描述不能超过 200 个字符");
+    throw new ServerApiError(
+      400,
+      "VALIDATION_ERROR",
+      "角色描述不能超过 200 个字符",
+    );
   }
 }
 

@@ -58,7 +58,12 @@ const NAME_MAX_LENGTH = 20;
 const DESCRIPTION_MAX_LENGTH = 200;
 
 const typeFormSchema = z.object({
-  code: z.string().trim().min(1).max(CODE_MAX_LENGTH).regex(DICT_TYPE_CODE_PATTERN),
+  code: z
+    .string()
+    .trim()
+    .min(1)
+    .max(CODE_MAX_LENGTH)
+    .regex(DICT_TYPE_CODE_PATTERN),
   name: z.string().trim().min(1).max(NAME_MAX_LENGTH),
   description: z.string().trim().max(DESCRIPTION_MAX_LENGTH),
 });
