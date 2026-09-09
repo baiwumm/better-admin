@@ -52,6 +52,12 @@ const toast = useToast();
 const FORM_ID = "menu-form";
 const EMPTY_ICON = "circle";
 
+// 字符限制常量（与后端契约对齐）
+const LABEL_MAX_LENGTH = 20;
+const I18N_KEY_MAX_LENGTH = 100;
+const ICON_MAX_LENGTH = 30;
+const TO_MAX_LENGTH = 200;
+
 // 校验消息用函数延迟求值：语言切换后错误文案跟随当前 locale
 const schema = z.object({
   parentId: z.string(),
@@ -59,21 +65,25 @@ const schema = z.object({
     .string()
     .trim()
     .min(1, { error: () => t("features.menus.form.labelInvalid") })
-    .max(50, { error: () => t("features.menus.form.labelInvalid") }),
+    .max(LABEL_MAX_LENGTH, {
+      error: () => t("features.menus.form.labelInvalid"),
+    }),
   i18nKey: z
     .string()
     .trim()
-    .min(1, { error: () => t("features.menus.form.i18nKeyRequired") })
-    .refine((value) => I18N_KEY_PATTERN.test(value), {
+    .max(I18N_KEY_MAX_LENGTH)
+    .refine((value) => value === "" || I18N_KEY_PATTERN.test(value), {
       error: () => t("features.menus.form.i18nKeyFormat"),
     }),
   icon: z
     .string()
     .trim()
-    .min(1, { error: () => t("features.menus.form.iconRequired") }),
+    .min(1, { error: () => t("features.menus.form.iconRequired") })
+    .max(ICON_MAX_LENGTH),
   to: z
     .string()
     .trim()
+    .max(TO_MAX_LENGTH)
     .refine(
       (value) =>
         value === "" || value.startsWith("/") || value.startsWith("https://"),
@@ -254,7 +264,8 @@ async function submitForm(event: FormSubmitEvent<Schema>) {
       >
         <UFormField
           :label="t('features.menus.form.parent')"
-          :description="t('features.menus.form.parentHint')"
+          :help="t('features.menus.form.parentHint')"
+          :ui="{ help: 'text-dimmed text-xs' }"
         >
           <MenuTreeSelect
             v-model="state.parentId"
@@ -272,10 +283,17 @@ async function submitForm(event: FormSubmitEvent<Schema>) {
           >
             <UInput
               v-model="state.label"
-              :maxlength="50"
+              :maxlength="LABEL_MAX_LENGTH"
               :placeholder="t('features.menus.form.labelPlaceholder')"
+              :ui="{ base: 'pe-13' }"
               class="w-full"
-            />
+            >
+              <template #trailing>
+                <span class="text-dimmed text-xs tabular-nums">
+                  {{ state.label.length }}/{{ LABEL_MAX_LENGTH }}
+                </span>
+              </template>
+            </UInput>
           </UFormField>
 
           <UFormField
@@ -285,9 +303,17 @@ async function submitForm(event: FormSubmitEvent<Schema>) {
           >
             <UInput
               v-model="state.i18nKey"
+              :maxlength="I18N_KEY_MAX_LENGTH"
               class="w-full"
-              placeholder="menu.xxx.yyy"
-            />
+              :placeholder="t('features.menus.form.i18nKeyPlaceholder')"
+              :ui="{ base: 'pe-16' }"
+            >
+              <template #trailing>
+                <span class="text-dimmed text-xs tabular-nums">
+                  {{ state.i18nKey.length }}/{{ I18N_KEY_MAX_LENGTH }}
+                </span>
+              </template>
+            </UInput>
           </UFormField>
         </div>
 
@@ -299,10 +325,18 @@ async function submitForm(event: FormSubmitEvent<Schema>) {
           >
             <UInput
               v-model="state.icon"
+              :maxlength="ICON_MAX_LENGTH"
               aria-label="Icon"
               class="w-full"
-              placeholder="house"
-            />
+              :placeholder="t('features.menus.form.iconPlaceholder')"
+              :ui="{ base: 'pe-13' }"
+            >
+              <template #trailing>
+                <span class="text-dimmed text-xs tabular-nums">
+                  {{ state.icon.length }}/{{ ICON_MAX_LENGTH }}
+                </span>
+              </template>
+            </UInput>
           </UFormField>
 
           <UFormField
@@ -313,9 +347,17 @@ async function submitForm(event: FormSubmitEvent<Schema>) {
           >
             <UInput
               v-model="state.to"
+              :maxlength="TO_MAX_LENGTH"
               :placeholder="t('features.menus.form.routePlaceholder')"
               class="w-full"
-            />
+              :ui="{ base: 'pe-16' }"
+            >
+              <template #trailing>
+                <span class="text-dimmed text-xs tabular-nums">
+                  {{ state.to.length }}/{{ TO_MAX_LENGTH }}
+                </span>
+              </template>
+            </UInput>
           </UFormField>
         </div>
 
