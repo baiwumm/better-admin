@@ -415,35 +415,30 @@ export default { name: "NoticeFormDialog" };
           />
         </UFormField>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <UFormField
-            :help="t('features.notices.form.publishTimeHint')"
-            :label="t('features.notices.form.publishTime')"
-            name="publishDate"
-          >
-            <UInput
-              v-model="state.publishDate"
-              type="datetime-local"
-              class="w-full"
-            />
-          </UFormField>
+        <UFormField
+          :help="t('features.notices.form.publishTimeHint')"
+          :label="t('features.notices.form.publishTime')"
+          name="publishDate"
+        >
+          <UInput
+            v-model="state.publishDate"
+            type="datetime-local"
+            class="w-full"
+          />
+        </UFormField>
 
-          <div
-            class="border-default flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
-          >
-            <span class="text-sm">
-              {{ t("features.notices.form.isTop") }}
-            </span>
-            <USwitch
-              :aria-label="t('features.notices.form.isTop')"
-              :model-value="state.isTop"
-              unchecked-icon="i-lucide-x"
-              checked-icon="i-lucide-check"
-              @update:model-value="
-                (value: boolean) => (state.isTop = Boolean(value))
-              "
-            />
-          </div>
+        <div
+          class="border-default flex items-center justify-between gap-3 rounded-xl border px-3 py-2"
+        >
+          <span class="text-sm">
+            {{ t("features.notices.form.isTop") }}
+          </span>
+          <USwitch
+            v-model="state.isTop"
+            :aria-label="t('features.notices.form.isTop')"
+            unchecked-icon="i-lucide-x"
+            checked-icon="i-lucide-check"
+          />
         </div>
       </UForm>
     </template>

@@ -555,7 +555,7 @@ export default { name: "NoticesPage" };
 </script>
 
 <template>
-  <div class="flex w-full flex-col">
+  <div class="flex w-full flex-col gap-4">
     <DataTableToolbar>
       <USelect
         :aria-label="t('features.notices.filter.status')"
@@ -563,7 +563,6 @@ export default { name: "NoticesPage" };
         :model-value="store.filters.status ?? undefined"
         :placeholder="t('common.datatable.filterAll')"
         class="w-36"
-        size="sm"
         value-key="value"
         @update:model-value="
           (value: unknown) =>
@@ -576,7 +575,6 @@ export default { name: "NoticesPage" };
         :placeholder="t('features.notices.search.placeholder')"
         class="w-56"
         icon="i-lucide-search"
-        size="sm"
         @keyup.enter="applySearch"
       />
       <DataTableSearchReset
@@ -587,16 +585,13 @@ export default { name: "NoticesPage" };
         @reset="resetFilters"
         @search="applySearch"
       />
-      <template #actions>
-        <UButton
-          v-if="canAdd"
-          :label="t('features.notices.action.add')"
-          icon="i-lucide-plus"
-          size="sm"
-          variant="outline"
-          @click="openCreate"
-        />
-      </template>
+      <UButton
+        v-if="canAdd"
+        :label="t('features.notices.action.add')"
+        icon="i-lucide-plus"
+        variant="outline"
+        @click="openCreate"
+      />
     </DataTableToolbar>
 
     <ErrorContent

@@ -257,6 +257,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             :disabled="isSuperAdmin"
             unchecked-icon="i-lucide-x"
             checked-icon="i-lucide-check"
+            :aria-label="t('features.roles.form.enabled')"
           />
         </div>
       </UForm>

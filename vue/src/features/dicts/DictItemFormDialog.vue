@@ -255,6 +255,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           </span>
           <USwitch
             v-model="state.enabled"
+            :aria-label="t('features.dicts.form.enabled')"
             unchecked-icon="i-lucide-x"
             checked-icon="i-lucide-check"
           />
