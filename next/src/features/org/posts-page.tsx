@@ -390,12 +390,14 @@ export function PostsPage() {
         <DataTableFilterSelect
           aria-label={t("features.posts.filter.category")}
           options={categoryOptions}
+          placeholder={t("features.posts.column.category")}
           value={filters.category}
           onChange={(value) => setFilters({ category: value ?? null })}
         />
         <DataTableFilterSelect
           aria-label={t("features.posts.filter.status")}
           options={statusOptions}
+          placeholder={t("features.posts.column.status")}
           value={filters.status}
           onChange={(value) => setFilters({ status: value ?? null })}
         />

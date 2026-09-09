@@ -446,7 +446,7 @@ export function RolesPage() {
         <DataTableFilterSelect
           aria-label={t("features.roles.column.enabled")}
           options={filterOptions}
-          placeholder={t("features.roles.filter.all")}
+          placeholder={t("features.roles.column.enabled")}
           value={filters.enabled}
           onChange={(value) => setFilters({ enabled: value })}
         />

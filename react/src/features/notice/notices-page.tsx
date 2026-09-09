@@ -578,6 +578,7 @@ export function NoticesPage() {
         <DataTableFilterSelect
           aria-label={t("features.notices.filter.status")}
           options={statusOptions}
+          placeholder={t("features.notices.column.status")}
           value={filters.status}
           onChange={(value) => setFilters({ status: value ?? null })}
         />

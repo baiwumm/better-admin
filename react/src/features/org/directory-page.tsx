@@ -380,6 +380,7 @@ export function DirectoryPage({
             <DataTableFilterSelect
               aria-label={t("features.directory.filter.employment")}
               options={employmentOptions}
+              placeholder={t("features.directory.column.status")}
               value={filters.employmentStatus}
               onChange={(value) =>
                 setFilters({ employmentStatus: value ?? null })

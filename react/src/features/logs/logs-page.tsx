@@ -377,7 +377,7 @@ export function LogsPage() {
         <DataTableFilterSelect
           aria-label={t("features.logs.column.type")}
           options={typeOptions}
-          placeholder={t("features.logs.filter.all")}
+          placeholder={t("features.logs.column.type")}
           value={filters.type}
           onChange={(value) => setFilters({ type: value })}
         />

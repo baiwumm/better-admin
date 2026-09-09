@@ -639,7 +639,7 @@ export function UsersPage() {
         <DataTableFilterSelect
           aria-label={t("features.users.column.status")}
           options={filterOptions}
-          placeholder={t("features.users.filter.all")}
+          placeholder={t("features.users.column.status")}
           value={filters.status}
           onChange={(value) => setFilters({ status: value })}
         />
