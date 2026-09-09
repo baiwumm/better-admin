@@ -18,10 +18,8 @@ import {
 import { DeptTreePanel } from "./dept-tree-panel";
 
 import { DataTable } from "@/components/common/data-table";
-import { ErrorContent } from "@/components/common/error-content/error-content";
 import {
   DataTableFilterSelect,
-  DataTablePagination,
   DataTableSearchReset,
   DataTableToolbar,
   buildColumnSettingKey,
@@ -410,29 +408,16 @@ export function DirectoryPage({
             )}
           </DataTableToolbar>
 
-          {isError ? (
-            <ErrorContent
-              action={
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onPress={() => void refetch()}
-                >
-                  {t("common.retry")}
-                </Button>
-              }
-              title={t("common.loadError")}
-            />
-          ) : (
-            <DataTable
-              aria-label={t("menu.pageTitle.directory")}
-              className="w-full"
-              contentClassName="min-w-[900px]"
-              isLoading={isLoading || isFetching}
-              table={table}
-            />
-          )}
-          <DataTablePagination table={table} total={total} />
+          <DataTable
+            aria-label={t("menu.pageTitle.directory")}
+            className="w-full"
+            contentClassName="min-w-[900px]"
+            isError={isError}
+            isLoading={isLoading || isFetching}
+            table={table}
+            total={total}
+            onRetry={() => void refetch()}
+          />
         </div>
       </div>
     </div>

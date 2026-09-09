@@ -26,11 +26,9 @@ import { DeptTreeSelect } from "./dept-tree-select";
 import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "./dept-api";
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog";
-import { ErrorContent } from "@/components/common/error-content/error-content";
 import { DataTable } from "@/components/common/data-table";
 import {
   DataTableFilterSelect,
-  DataTablePagination,
   DataTableSearchReset,
   DataTableToolbar,
   buildColumnSettingKey,
@@ -437,29 +435,16 @@ export function PostsPage() {
         )}
       </DataTableToolbar>
 
-      {isError ? (
-        <ErrorContent
-          action={
-            <Button
-              size="sm"
-              variant="secondary"
-              onPress={() => void refetch()}
-            >
-              {t("common.retry")}
-            </Button>
-          }
-          title={t("common.loadError")}
-        />
-      ) : (
-        <DataTable
-          aria-label={t("menu.pageTitle.posts")}
-          className="w-full"
-          contentClassName="min-w-[860px]"
-          isLoading={isLoading || isFetching}
-          table={table}
-        />
-      )}
-      <DataTablePagination table={table} total={total} />
+      <DataTable
+        aria-label={t("menu.pageTitle.posts")}
+        className="w-full"
+        contentClassName="min-w-[860px]"
+        isError={isError}
+        isLoading={isLoading || isFetching}
+        table={table}
+        total={total}
+        onRetry={() => void refetch()}
+      />
 
       <PostFormDialog
         isOpen={formDialog.isOpen}

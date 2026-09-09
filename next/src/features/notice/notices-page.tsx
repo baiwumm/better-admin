@@ -38,11 +38,9 @@ const NoticeFormDialog = lazy(() =>
 );
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog";
-import { ErrorContent } from "@/components/common/error-content/error-content";
 import { DataTable } from "@/components/common/data-table";
 import {
   DataTableFilterSelect,
-  DataTablePagination,
   DataTableSearchReset,
   DataTableToolbar,
   buildColumnSettingKey,
@@ -613,29 +611,16 @@ export function NoticesPage() {
         )}
       </DataTableToolbar>
 
-      {isError ? (
-        <ErrorContent
-          action={
-            <Button
-              size="sm"
-              variant="secondary"
-              onPress={() => void refetch()}
-            >
-              {t("common.retry")}
-            </Button>
-          }
-          title={t("common.loadError")}
-        />
-      ) : (
-        <DataTable
-          aria-label={t("menu.pageTitle.notices")}
-          className="w-full"
-          contentClassName="min-w-[860px]"
-          isLoading={isLoading || isFetching}
-          table={table}
-        />
-      )}
-      <DataTablePagination table={table} total={total} />
+      <DataTable
+        aria-label={t("menu.pageTitle.notices")}
+        className="w-full"
+        contentClassName="min-w-[860px]"
+        isError={isError}
+        isLoading={isLoading || isFetching}
+        table={table}
+        total={total}
+        onRetry={() => void refetch()}
+      />
 
       <Suspense fallback={null}>
         <NoticeFormDialog

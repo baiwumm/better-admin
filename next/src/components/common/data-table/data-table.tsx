@@ -6,10 +6,14 @@ import type { ReactNode } from "react";
 import type { SortingState } from "@tanstack/react-table";
 import type { AppTable } from "./table-types";
 
-import { Skeleton, Spinner, Table, cn } from "@heroui/react";
+import { Button, Skeleton, Spinner, Table, cn } from "@heroui/react";
 import { flexRender } from "@tanstack/react-table";
 
+import { DataTablePagination } from "./data-table-pagination";
+
 import { EmptyContent } from "@/components/common/empty-content/empty-content";
+import { ErrorContent } from "@/components/common/error-content/error-content";
+import { useTranslation } from "@/i18n";
 
 /** 首屏加载骨架行数（ui-spec §14.2：表头 + 若干骨架行） */
 const SKELETON_ROWS = 6;
@@ -23,7 +27,10 @@ const SKELETON_ROWS = 6;
  * - 行选择：不启用 HeroUI 原生 selectionMode（避免行点击被 react-aria
  *   选中行为占用）；feature 在列定义中使用 DataTableSelectAll /
  *   DataTableSelectRow 受控 Checkbox 桥接 TanStack rowSelection。
- * - 服务端分页：feature 配置 `manualPagination: true` + `pageCount`。
+ * - 服务端分页：feature 配置 `manualPagination: true` + `pageCount`；
+ *   传入 `total` 时在 Table.Footer 内渲染分页条，页面无需自行拼装。
+ * - 错误态：`isError` 时强制清空行并渲染错误占位（重试走 `onRetry`），
+ *   此时隐藏分页 Footer（旧 total 已不可信）。
  */
 
 /** TanStack SortingState → React Aria SortDescriptor */
@@ -53,6 +60,12 @@ export interface DataTableProps<TData extends RowData> {
   table: AppTable<TData>;
   /** 加载中（含 refetch）展示遮罩 */
   isLoading?: boolean;
+  /** 服务端分页总数；传入时在 Table.Footer 渲染分页条 */
+  total?: number;
+  /** 数据加载失败：强制清空行并渲染错误占位 */
+  isError?: boolean;
+  /** 错误占位的重试回调（传入才显示重试按钮） */
+  onRetry?: () => void;
   /** 空数据占位（默认统一文案） */
   emptyState?: ReactNode;
   /** 无障碍标签（透传 Table.Content；react-aria 对 Table 强制要求） */
@@ -65,16 +78,20 @@ export interface DataTableProps<TData extends RowData> {
 export function DataTable<TData extends RowData>({
   table,
   isLoading = false,
+  total,
+  isError = false,
+  onRetry,
   emptyState,
   "aria-label": ariaLabel,
   className,
   contentClassName,
 }: DataTableProps<TData>) {
+  const { t } = useTranslation();
   const sorting = table.state.sorting;
   const rows = table.getRowModel().rows;
   const columnCount = table.getVisibleLeafColumns().length;
   // 首屏加载（当前无任何数据）渲染骨架行；有数据时的 refetch 仍用遮罩保留旧数据
-  const showSkeleton = isLoading && rows.length === 0;
+  const showSkeleton = isLoading && rows.length === 0 && !isError;
 
   return (
     <div className={cn("relative", className)}>
@@ -136,49 +153,74 @@ export function DataTable<TData extends RowData>({
                   </Table.Column>
                 ))}
             </Table.Header>
-            <Table.Body renderEmptyState={() => emptyState ?? <EmptyContent />}>
-              {showSkeleton
-                ? Array.from({ length: SKELETON_ROWS }, (_, rowIndex) => (
-                    <Table.Row
-                      key={`skeleton-${rowIndex}`}
-                      id={`skeleton-${rowIndex}`}
-                    >
-                      {Array.from({ length: columnCount }, (_, colIndex) => (
-                        <Table.Cell key={colIndex}>
-                          <Skeleton
-                            className="h-4 rounded-3xl"
-                            style={{ width: colIndex === 0 ? "55%" : "78%" }}
-                          />
-                        </Table.Cell>
-                      ))}
-                    </Table.Row>
-                  ))
-                : table.getRowModel().rows.map((row) => (
-                    <Table.Row key={row.id} id={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <Table.Cell key={cell.id}>
-                          {cell.column.columnDef.meta?.align === "center" ? (
-                            <div className="flex w-full justify-center">
-                              {flexRender(
+            <Table.Body
+              renderEmptyState={() =>
+                isError ? (
+                  <ErrorContent
+                    action={
+                      onRetry ? (
+                        <Button size="sm" onPress={onRetry}>
+                          {t("common.retry")}
+                        </Button>
+                      ) : undefined
+                    }
+                    title={t("common.loadError")}
+                  />
+                ) : (
+                  (emptyState ?? <EmptyContent />)
+                )
+              }
+            >
+              {/* 错误态强制清空行（refetch 失败时 TanStack 仍持有旧数据），
+                  以触发 renderEmptyState 展示错误占位 */}
+              {isError
+                ? []
+                : showSkeleton
+                  ? Array.from({ length: SKELETON_ROWS }, (_, rowIndex) => (
+                      <Table.Row
+                        key={`skeleton-${rowIndex}`}
+                        id={`skeleton-${rowIndex}`}
+                      >
+                        {Array.from({ length: columnCount }, (_, colIndex) => (
+                          <Table.Cell key={colIndex}>
+                            <Skeleton
+                              className="h-4 rounded-3xl"
+                              style={{ width: colIndex === 0 ? "55%" : "78%" }}
+                            />
+                          </Table.Cell>
+                        ))}
+                      </Table.Row>
+                    ))
+                  : rows.map((row) => (
+                      <Table.Row key={row.id} id={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <Table.Cell key={cell.id}>
+                            {cell.column.columnDef.meta?.align === "center" ? (
+                              <div className="flex w-full justify-center">
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext(),
+                                )}
+                              </div>
+                            ) : (
+                              flexRender(
                                 cell.column.columnDef.cell,
                                 cell.getContext(),
-                              )}
-                            </div>
-                          ) : (
-                            flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext(),
-                            )
-                          )}
-                        </Table.Cell>
-                      ))}
-                    </Table.Row>
-                  ))}
+                              )
+                            )}
+                          </Table.Cell>
+                        ))}
+                      </Table.Row>
+                    ))}
             </Table.Body>
           </Table.Content>
         </Table.ScrollContainer>
+        {total !== undefined && !isError && (
+          <Table.Footer>
+            <DataTablePagination table={table} total={total} />
+          </Table.Footer>
+        )}
       </Table>
-      {/* 有数据时的 refetch 用 Spinner 遮罩保留旧数据（首屏走骨架行，与 React 端一致） */}
       {isLoading && !showSkeleton && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-default/20 backdrop-blur-[1px]">
           <Spinner size="md" />

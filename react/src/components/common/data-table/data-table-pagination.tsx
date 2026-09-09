@@ -1,7 +1,7 @@
 import type { RowData } from "@tanstack/react-table";
 import type { AppTable } from "./table-types";
 
-import { ListBox, Pagination, Select } from "@heroui/react";
+import { ListBox, Pagination, Select, cn } from "@heroui/react";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { useTranslation } from "@/i18n";
@@ -63,10 +63,10 @@ export function DataTablePagination<TData extends RowData>({
 
   return (
     <div
-      className={
-        className ??
-        "mt-3 grid grid-cols-1 items-center gap-3 px-1 sm:grid-cols-[1fr_auto_1fr]"
-      }
+      className={cn(
+        "w-full grid grid-cols-1 items-center gap-3 sm:grid-cols-[1fr_auto_1fr]",
+        className,
+      )}
     >
       <div className="flex items-center">
         <Pagination size="sm">
@@ -142,7 +142,6 @@ export function DataTablePagination<TData extends RowData>({
           aria-label={t("common.datatable.pageSizeLabel")}
           className="min-w-30"
           value={String(pageSize)}
-          variant="secondary"
           onChange={(value) => {
             if (value === null) return;
             table.setPageSize(Number(value));

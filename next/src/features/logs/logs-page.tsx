@@ -37,7 +37,6 @@ import { DataTable } from "@/components/common/data-table";
 import {
   DataTableBulkActions,
   DataTableFilterSelect,
-  DataTablePagination,
   DataTableSearchReset,
   DataTableSelectAll,
   DataTableSelectRow,
@@ -45,7 +44,6 @@ import {
   buildColumnSettingKey,
 } from "@/components/common/data-table";
 import { ConfirmDialog } from "@/components/common/confirm-dialog/confirm-dialog";
-import { ErrorContent } from "@/components/common/error-content/error-content";
 import { appTableFeatures } from "@/components/common/data-table/table-types";
 import { UserInfo } from "@/components/common/user-info/user-info";
 import { dictItemsQueryKey, fetchDictItems } from "@/features/dicts/dict-api";
@@ -390,30 +388,16 @@ export function LogsPage() {
         />
       </DataTableToolbar>
 
-      {isError ? (
-        <ErrorContent
-          action={
-            <Button
-              size="sm"
-              variant="secondary"
-              onPress={() => void refetch()}
-            >
-              {t("common.retry")}
-            </Button>
-          }
-          title={t("common.loadError")}
-        />
-      ) : (
-        <DataTable
-          aria-label={t("menu.pageTitle.logs")}
-          className="w-full"
-          contentClassName="min-w-[820px]"
-          isLoading={isLoading || isFetching}
-          table={table}
-        />
-      )}
-
-      <DataTablePagination table={table} total={total} />
+      <DataTable
+        aria-label={t("menu.pageTitle.logs")}
+        className="w-full"
+        contentClassName="min-w-[820px]"
+        isError={isError}
+        isLoading={isLoading || isFetching}
+        table={table}
+        total={total}
+        onRetry={() => void refetch()}
+      />
 
       <DataTableBulkActions table={table}>
         {canBatchDelete && (
