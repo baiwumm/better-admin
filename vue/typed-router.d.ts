@@ -52,6 +52,27 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/(authenticated)/exception/403': RouteRecordInfo<
+      '/(authenticated)/exception/403',
+      '/exception/403',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/(authenticated)/exception/404': RouteRecordInfo<
+      '/(authenticated)/exception/404',
+      '/exception/404',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/(authenticated)/exception/500': RouteRecordInfo<
+      '/(authenticated)/exception/500',
+      '/exception/500',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/(authenticated)/my-notices': RouteRecordInfo<
       '/(authenticated)/my-notices',
       '/my-notices',
@@ -210,6 +231,30 @@ declare module 'vue-router/auto-routes' {
     'src/pages/(authenticated)/account.vue': {
       routes:
         | '/(authenticated)/account'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/(authenticated)/exception/403.vue': {
+      routes:
+        | '/(authenticated)/exception/403'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/(authenticated)/exception/404.vue': {
+      routes:
+        | '/(authenticated)/exception/404'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/(authenticated)/exception/500.vue': {
+      routes:
+        | '/(authenticated)/exception/500'
       views:
         | never
       pathParamNames:

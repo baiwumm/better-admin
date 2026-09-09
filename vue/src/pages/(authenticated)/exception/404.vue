@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import NotFoundErrorPage from "@/components/common/error-pages/NotFoundErrorPage.vue";
 
-// 404 页面不存在：全屏（不进认证布局，见 AppShell 布局分支）
+// 404 异常页演示（菜单页，主体区 embedded 形态，区别于错误跳转的全屏 /404）
 </script>
 
 <template>
-  <NotFoundErrorPage />
+  <NotFoundErrorPage variant="embedded" />
 </template>

@@ -41,7 +41,7 @@ export const MENU_REQUIRED_PATHS = [
   "/settings/logs",
 ] as const;
 
-/** 路径 → 文档标题 i18n 键（menu.pageTitle.*）。 */
+/** 路径 → 文档标题 i18n 键（menu.pageTitle.* / exception 页用 menu.exception.*）。 */
 export const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/": "menu.pageTitle.console",
   "/sign-in": "auth.signIn.title",
@@ -52,6 +52,9 @@ export const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/org/directory": "menu.pageTitle.directory",
   "/org/notices": "menu.pageTitle.notices",
   "/org/chart": "menu.pageTitle.chart",
+  "/exception/403": "menu.exception.403",
+  "/exception/404": "menu.exception.404",
+  "/exception/500": "menu.exception.500",
   "/settings": "menu.pageTitle.settings",
   "/settings/users": "menu.pageTitle.users",
   "/settings/roles": "menu.pageTitle.roles",

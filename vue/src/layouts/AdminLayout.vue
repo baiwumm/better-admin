@@ -133,7 +133,13 @@ const searchGroups = computed(() => [
 ]);
 
 /** 全宽页面白名单（主体区无内边距，对齐 React 端 FULL_WIDTH_ROUTES）。 */
-const FULL_WIDTH_ROUTES = ["/org/chart", "/my-notices"];
+const FULL_WIDTH_ROUTES = [
+  "/org/chart",
+  "/my-notices",
+  "/exception/403",
+  "/exception/404",
+  "/exception/500",
+];
 const isFullWidthPage = computed(() => FULL_WIDTH_ROUTES.includes(route.path));
 
 /** 菜单加载失败重试。 */

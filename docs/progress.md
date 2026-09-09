@@ -2,6 +2,35 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 契约 v1.7.3 同步 Next.js 端：server 校验 + web 表单（2026-09-09）
+
+- **server 端（路由层校验为主，与既有分层一致）**：`POST /api/users` 补 username/displayName ≤50、email ≤100、password ≤72（required 块已有 trim）；`PUT /api/users/:id` 补 displayName trim 后 1-50（路由 trim 后传 service，对齐 nest `@Transform` 行为）、email ≤100；`users-service.resetUserPassword` 长度兜底改「6-72 位」；`PUT /api/account/password` 路由校验补 `> 72`，错误信息同步（next 端 bcryptjs 与原生 bcrypt 同为 72 字节静默截断口径）。
+- **web 端**：`user-form-dialog` / `user-reset-password-dialog` / `account password-form-card` 三文件与 React 端逐行一致（仅多 `"use client"` 头），直接整文件同步——含 password zod max(72)、username/姓名/邮箱/工号 `InputGroup.Suffix` 实时字数、用户表单 Modal 宽度 `sm:max-w-lg → sm:max-w-xl`（用户在 React 端手工调宽，随同步带入）；i18n 中英各 5 处密码文案改「6-72 位」。
+- **验证**：`check-locales`（与 React 端 14 个语言包完全一致）/ `eslint`（0 error）/ `next build` 全绿。
+- **遗留**：Vue 端后续实现时直接按契约 v1.7.3 落地表单约束与字数统计（feature-matrix 已标注）。
+
+---
+
+### Vue 错误页对齐 React Result 风格 + 架构图谱初始居中修复（2026-09-09）
+
+- **架构图谱初始贴顶修复**（`vue/src/features/org/OrgChart.vue`）：vue-flow 的 `fitViewOnInit` 是 Boolean prop（无 options prop，原 `:fit-view-init="{...}"` 传对象仅当 truthy、以默认选项执行），且内置时机在首批节点测量后即触发（bounds 不完整），实测画布整体偏右上、虚拟根节点被截断。改为移除 `fit-view-init`，监听 `@nodes-initialized`（全部节点完成测量，等价 React Flow `fitViewOnInit` 时机）后以 `fitView({ maxZoom: 1, padding: 0.15 })` 居中一次（模块内 `didInitialFit` 标志保证只执行一次，展开/收起后不自动缩放，对齐 React 端交互边界）。
+- **错误页同步 React Result 风格**：原 Vue 端 `ErrorPageShell` 是「超大状态码数字 + 标题 + 描述」纯文本壳，与 React 端 `ResultPage`（ant-design Result 插画 + 标题 + 副标题 + 操作区）不一致。按 React 端结构新建 `vue/src/components/common/error-pages/`：`IllustrationForbidden/NotFound/ServerError.vue`（ant-design Result 插画 SVG 平移，根元素自动继承 class）、`ResultPage.vue`（字符串 `title/subTitle` props + `image/actions` 插槽 + `fullscreen/embedded` variant，样式 token 映射 bg-background→bg-default 等）、`ForbiddenErrorPage/NotFoundErrorPage/GeneralErrorPage.vue` 三个页面级组件（i18n 与默认按钮内聚；500 为「重试 + 返回首页」，重试语义对齐 React：history state 有 `from` 回原 URL、否则整页刷新）。删除 `ErrorPageShell.vue`，`(errors)/403|404|500` 与 `[...all]` 兜底页改为引用三个页面级组件。
+- **异常页菜单页补齐**（功能矩阵 Vue ❌→✅）：新建 `(authenticated)/exception/403|404|500.vue`（embedded 形态，登录即可、不参与菜单权限校验），`AdminLayout` 全宽白名单补三条 exception 路径，`ROUTE_TITLE_KEYS` 补 `menu.exception.*` 文档标题键（面包屑走菜单树链路天然支持）。
+- **验证**：`vue-tsc --noEmit`、`vitest`（22/22）通过；GUI 冒烟（1280×720 暗色）：/org/chart 初始水平垂直居中、根节点完整；/403、/404、/500 全屏页与 /exception/403|404|500 嵌入页（侧边栏 + 面包屑「异常页 → 40x」+ 全宽无内边距）渲染一致；未知路径 catch-all 全屏 404 正常。存量 `progress-bridge.vue` 的 `vue/valid-template-root` lint error 为 HEAD 既有问题，与本次无关未动。
+
+---
+
+### 用户/密码输入长度约束补齐：契约 v1.7.3，前后端兜底口径统一（2026-09-09）
+
+- **背景**：排查发现用户管理表单的限制倒挂——React 前端 zod 已有 username/displayName ≤50、email ≤100、password ≥6，但后端 DTO 仅 username/displayName `@IsString()` 裸放行、password 只 `@MinLength(6)` 无上限，直调 API 可灌超长数据；且 bcrypt 6.0.0 对超 72 字节输入静默截断（不报错，前 72 字节即可登录，机制见 `docs/mechanisms.md` §12）。
+- **契约先行（v1.7.3）**：`openapi.yaml` 的 UserCreateRequest 补 username 1-50（trim）、displayName 1-50（trim）、email ≤100、password ≤72；UserUpdateRequest 补 displayName/email 同规；ResetPasswordRequest / AccountPasswordUpdateRequest 的 newPassword 补 ≤72（72 为 bcrypt 输入上限，description 注明）；版本注记追加 v1.7.3 段落，`main.ts` Swagger setVersion 同步（发现其停在 1.7.1，顺手对齐）。
+- **NestJS**：`CreateUserDto` / `UpdateUserDto` 补 `@MinLength(1) @MaxLength(50)` + `@Transform` trim（username/displayName）、`@MaxLength(100)`（email）；`ResetPasswordDto` / `UpdateAccountPasswordDto` 补 `@MaxLength(72)`。`ValidationPipe transform: true` 已全局开启，trim 后的值参与校验。
+- **React**：新增表单 password superRefine 补 `>72` 校验、重置密码弹窗与 Account 改密卡 zod 补 `.max(72)`（常量 `PASSWORD_MAX_LENGTH` 导出复用）；username / displayName / email / employeeNo 四字段输入框换 `InputGroup` + `InputGroup.Suffix` 实时字数 `x/上限`（参考 `dict-type-form-dialog` 既有写法）；i18n 中英各 5 处密码文案改「6-72 位」。
+- **Next.js 未动（待同步）**：契约 v1.7.3 的输入长度约束需在 next 端 server API 校验与表单同步，留待下次 Next 阶段处理。
+- **验证**：nest `tsc` / `eslint`、react `tsc` / `vite build` / `eslint` 全绿。
+
+---
+
 ### 列表排序口径统一同步 Next.js 端（2026-09-09）
 
 - **四型口径全量对齐 nest 契约 v1.7.2**（`next/src/lib/server/` 11 个文件）：权重型（roles、depts 树/分页 sort 降序）、序号型（menus 树 / dict 项 sort 升序保持 + 次级翻 createdAt 降序）、流水型（logs / notifications / dictTypes / posts 成员列表 createdAt 降序）、内容型（notices 置顶优先 + 次级链）；全部分页列表补 `id DESC` 兜底；users / account 内嵌 roles 摘要与角色列表同口径（`sort DESC, name ASC`）；表头排序接口（users / posts / directory(在 posts-service) / depts / notices）次级兜底链固定、主列即 createdAt 时不重复拼接。
