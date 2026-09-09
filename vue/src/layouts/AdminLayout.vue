@@ -105,26 +105,32 @@ const crumbs = computed(() => {
   return titleKey ? [{ label: t(titleKey) }] : [];
 });
 
-/** 命令面板：菜单叶子 → 可跳转项（明暗切换命令组由 UDashboardSearch 内置）。 */
-const searchGroups = computed(() => {
-  const flatten = (nodes: MenuNode[]): MenuNode[] =>
-    nodes.flatMap((node) => [node, ...flatten(node.children ?? [])]);
-  const leaves = flatten(filterHiddenMenus(menus.value ?? [])).filter(
-    (node) => node.to,
-  );
-
-  return [
-    {
-      id: "menus",
-      label: t("layout.command.search"),
-      items: leaves.map((node) => ({
-        label: node.i18nKey ? t(node.i18nKey) : node.label,
-        icon: node.icon ? `i-lucide-${node.icon}` : undefined,
-        to: node.to ?? undefined,
-      })),
-    },
-  ];
-});
+/** 命令面板：菜单树保持层级结构 + 快捷链接组。 */
+const searchGroups = computed(() => [
+  {
+    id: "menus",
+    label: t("layout.command.search"),
+    items: sidebarItems.value,
+  },
+  {
+    id: "quickLinks",
+    label: t("layout.command.quickLinks"),
+    items: [
+      {
+        label: t("layout.sidebar.github"),
+        icon: "i-lucide-github",
+        to: "https://github.com/baiwumm/better-admin",
+        target: "_blank",
+      },
+      {
+        label: t("layout.sidebar.blog"),
+        icon: "i-lucide-house",
+        to: "https://www.baiwumm.com",
+        target: "_blank",
+      },
+    ],
+  },
+]);
 
 /** 全宽页面白名单（主体区无内边距，对齐 React 端 FULL_WIDTH_ROUTES）。 */
 const FULL_WIDTH_ROUTES = ["/org/chart", "/my-notices"];
@@ -151,7 +157,6 @@ function retryMenus() {
           :collapsed
           class="bg-transparent ring-default"
         />
-
         <!-- 菜单加载骨架屏（图标方块 + 两行文字占位） -->
         <div v-if="isLoading" class="flex flex-col gap-1">
           <div
