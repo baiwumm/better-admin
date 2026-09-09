@@ -1,14 +1,14 @@
 import { Button } from "@heroui/react";
 import { Link, useRouter } from "@tanstack/react-router";
-import { TriangleAlert } from "lucide-react";
 
-import { ErrorPageShell } from "./error-page-shell";
+import { IllustrationServerError } from "./illustration-server-error";
+import { ResultPage } from "./result-page";
 
 import { useTranslation } from "@/i18n";
 import { type ErrorRedirectState } from "@/router";
 
 /**
- * 通用错误兜底（全屏），用作 /500 路由页组件。
+ * 500 服务器错误页（/500 路由）。
  * 页面渲染期间抛出未捕获错误时，根路由 errorComponent 携带出错 URL
  * （router state.from）跳转至本页展示，避免白屏。
  * 「重试」语义：携带 from 时回原 URL 重新渲染（错误边界随卸载重置）；
@@ -19,11 +19,10 @@ export function GeneralErrorPage() {
   const router = useRouter();
 
   return (
-    <ErrorPageShell
-      actions={
+    <ResultPage
+      extra={
         <>
           <Button
-            className="btn-shine"
             variant="primary"
             onPress={() => {
               const from = (
@@ -40,17 +39,13 @@ export function GeneralErrorPage() {
             {t("common.retry")}
           </Button>
           <Link to="/">
-            <Button className="btn-shine" variant="outline">
-              {t("common.backHome")}
-            </Button>
+            <Button variant="outline">{t("common.backHome")}</Button>
           </Link>
         </>
       }
-      description={t("errors.serverError.description")}
-      icon={<TriangleAlert className="size-7" />}
-      status="500"
+      image={<IllustrationServerError />}
+      subTitle={t("errors.serverError.description")}
       title={t("errors.serverError.title")}
-      tone="warning"
     />
   );
 }

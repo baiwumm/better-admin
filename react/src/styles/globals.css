@@ -31,9 +31,6 @@
 /* Toast 进出场动画 */
 @import './toast.css';
 
-/* 错误页专属动效与质感 */
-@import './error-page.css';
-
 /* 面包屑超长标题单行截断 */
 @import './breadcrumbs.css';
 
