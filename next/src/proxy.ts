@@ -26,11 +26,12 @@ import { isLoginRequiredPath } from "@/lib/route-access";
  *    已登录访问 /sign-in → redirect /（等价 React 版 (auth) beforeLoad 反向守卫）。
  *
  * /api/* 不走本 proxy（Route Handler 自行双源鉴权，401 由客户端
- * api-client 的刷新去重流程处理）；403/404/500 与静态资源无需会话。
+ * api-client 的刷新去重流程处理）；静态资源无需会话。错误页与业务页
+ * 一致要求登录（未登录直接访问 → 跳登录并携带回跳地址）。
  */
 
-/** 登录页与错误页无需会话（等价 React 版 LOGIN_REQUIRED_PATHS + 错误页）。 */
-const PUBLIC_PATHS = new Set(["/sign-in", "/403", "/404", "/500"]);
+/** 仅登录页无需会话（错误页与业务页一律要求登录，未登录跳登录并携带回跳地址）。 */
+const PUBLIC_PATHS = new Set(["/sign-in"]);
 
 function buildSignInRedirect(request: NextRequest): NextResponse {
   const { pathname, search } = request.nextUrl;
@@ -194,7 +195,7 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  // 未登录：登录页与错误页放行；受保护页面跳登录（携带回跳地址）
+  // 未登录：仅登录页放行；其余页面（含错误页）跳登录（携带回跳地址）
   if (isPublicPath) {
     return NextResponse.next();
   }
@@ -205,7 +206,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   // Next 16 的 proxy 恒定运行于 Node.js runtime（官方约定，无需也不允许声明）
   matcher: [
-    // 排除 API（Route Handler 自行鉴权）、静态资源与错误页
-    "/((?!api|_next|favicon|logo|apple-touch|web-app-manifest|site\.webmanifest|fonts/|403|404|500).*)",
+    // 排除 API（Route Handler 自行鉴权）与静态资源
+    "/((?!api|_next|favicon|logo|apple-touch|web-app-manifest|site\.webmanifest|fonts/).*)",
   ],
 };
