@@ -10,7 +10,7 @@
 - **500**：`keep-alive-outlet.tsx` 新增面板级 `PaneErrorBoundary`（class 组件手写，不引依赖）——KeepAliveOutlet 旁路 TanStack Match 渲染，页面组件错误进不了路由器 errorComponent 边界、冒泡到根会导致整布局消失；面板级边界仅当前面板显示 500、其余保活面板不受影响，「重试」= 重置边界 + key 递增重挂载子树。`GeneralErrorPage` 增加可选 `onRetry` prop（缺省整页刷新，根路由兜底场景用）；根路由 `errorComponent` 恢复直挂。
 - **清理**：删除 `/403` `/404` `/500` 独立路由（重新生成 routeTree）；`router.ts` 删 `ErrorRedirectState`；`__root.tsx` 删 `NotFoundRedirect` / `ServerErrorRedirect` 两个中转。
 - **验证**：tsc、eslint、vitest（7 文件 76 用例）、vite build 全绿。
-- **待同步**：Next / Vue 端错误页仍为独立全屏页（Vue M0：全屏错误页 + catch-all 404），与 React 新行为分叉；后续各端跟进时按 React 新口径（主体区直显 + catch-all + 面板级 500）对齐，`docs/feature-matrix.md` 已备注。
+- **跨端评估（Next 端保持原样，用户确认）**：Next 端经评估不对齐本次改动，维持独立全屏页——机制差异有三：① 未匹配 URL 由 Next 路由层兜底到根 `app/not-found.tsx`（官方设计，不经过任何布局；布局内 404 需 catch-all page + 段级 not-found 组合，违背框架惯例）；② 403 门卫是 N2 有意的服务端架构（proxy.ts 统一执行 + N7 语义修正），改客户端直显会推翻；③ 段级 `error.tsx` 虽可低成本布局内直显，但为保持三态行为一致一并保留。Vue 端（M0 占位）后续实装时按 React 新口径评估。`docs/feature-matrix.md` 备注已更新。
 
 ---
 
