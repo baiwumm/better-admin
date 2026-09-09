@@ -137,8 +137,8 @@ export default { name: "NoticeBell" };
     <UChip
       :color="unreadCount > 0 ? 'error' : 'neutral'"
       :show="unreadCount > 0"
-      :label="unreadCount > 99 ? '99+' : String(unreadCount)"
-      size="sm"
+      :text="unreadCount > 99 ? '99+' : String(unreadCount)"
+      size="3xl"
     >
       <UButton
         :aria-label="bellAriaLabel"
