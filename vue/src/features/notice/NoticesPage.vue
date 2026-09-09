@@ -555,7 +555,7 @@ export default { name: "NoticesPage" };
 </script>
 
 <template>
-  <div class="flex w-full flex-col pb-8">
+  <div class="flex w-full flex-col">
     <DataTableToolbar>
       <USelect
         :aria-label="t('features.notices.filter.status')"

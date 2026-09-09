@@ -346,7 +346,7 @@ export default { name: "DirectoryPage" };
 </script>
 
 <template>
-  <div class="flex w-full flex-col pb-8">
+  <div class="flex w-full flex-col">
     <div
       class="grid grid-cols-1 items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]"
     >

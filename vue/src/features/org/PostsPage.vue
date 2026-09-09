@@ -364,7 +364,7 @@ export default { name: "PostsPage" };
 </script>
 
 <template>
-  <div class="flex w-full flex-col pb-8">
+  <div class="flex w-full flex-col gap-4">
     <DataTableToolbar>
       <div class="w-56">
         <DeptTreeSelect
@@ -384,7 +384,6 @@ export default { name: "PostsPage" };
         :model-value="store.filters.category ?? undefined"
         :placeholder="t('common.datatable.filterAll')"
         class="w-36"
-        size="sm"
         value-key="value"
         @update:model-value="
           (value: unknown) =>
@@ -397,7 +396,6 @@ export default { name: "PostsPage" };
         :model-value="store.filters.status ?? undefined"
         :placeholder="t('common.datatable.filterAll')"
         class="w-36"
-        size="sm"
         value-key="value"
         @update:model-value="
           (value: unknown) =>
@@ -410,7 +408,6 @@ export default { name: "PostsPage" };
         :placeholder="t('features.posts.search.placeholder')"
         class="w-56"
         icon="i-lucide-search"
-        size="sm"
         @keyup.enter="applySearch"
       />
       <DataTableSearchReset
@@ -419,16 +416,13 @@ export default { name: "PostsPage" };
         @reset="resetFilters"
         @search="applySearch"
       />
-      <template #actions>
-        <UButton
-          v-if="canAdd"
-          :label="t('features.posts.action.add')"
-          icon="i-lucide-plus"
-          size="sm"
-          variant="outline"
-          @click="openForm('create', null)"
-        />
-      </template>
+      <UButton
+        v-if="canAdd"
+        :label="t('features.posts.action.add')"
+        icon="i-lucide-plus"
+        variant="outline"
+        @click="openForm('create', null)"
+      />
     </DataTableToolbar>
 
     <ErrorContent
