@@ -52,7 +52,7 @@
 | 主题系统（明暗模式）        | ✅     | ✅       | ✅   | ❌    | Vue M0：Nuxt UI 默认 Design Tokens + @vueuse/core useColorMode；M1 冒烟验收通过 |
 | 多标签页              | ✅     | ✅       | ❌   | ❌    | Vue 端规划（M3）：原生 KeepAlive（include/max） |
 | 命令面板              | ✅     | ✅       | ✅   | ❌    | Vue M0：UDashboardSearch 接菜单导航（Cmd+K 内置） |
-| 错误页（403/404/500）  | ✅     | ✅       | ✅   | ❌    | Vue M0：全屏错误页 + catch-all 404      |
+| 错误页（403/404/500）  | ✅     | ✅       | ✅   | ❌    | React：布局内主体区直显（catch-all 404 + 面板级 500）；Next/Vue：独立全屏页，待按 React 口径对齐 |
 | 路由权限守卫            | ✅     | ✅       | ✅   | ❌    | React: KeepAlive / Next: proxy.ts / Vue M0: 全局 beforeEach 三层；M1 冒烟验收通过 |
 
 ## 已知架构差异（非功能缺失）

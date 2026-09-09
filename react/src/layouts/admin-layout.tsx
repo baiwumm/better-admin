@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router";
 import { Button, Spinner, Typography, cn } from "@heroui/react";
 
 import { AppHeader } from "./components/app-header";
@@ -10,16 +10,18 @@ import { AppSidebar } from "./components/app-sidebar";
 import { KeepAliveOutlet } from "./components/keep-alive-outlet";
 import { TagsBar } from "./components/tags-bar";
 
+import { ForbiddenErrorPage } from "@/components/common/error-pages/forbidden-error";
+import { NotFoundErrorPage } from "@/components/common/error-pages/not-found-error";
 import { ErrorContent } from "@/components/common/error-content/error-content";
 import { MENUS_QUERY_KEY, useMenus } from "@/hooks/use-menus";
 import { useAuthSync } from "@/hooks/use-auth-sync";
 import { useTranslation } from "@/i18n";
 import { type MenuNode } from "@/lib/api-types";
+import { findRouteLeafComponent } from "@/lib/route-component";
 import { isLoginRequiredPath } from "@/lib/route-access";
 import { collectMenuPaths } from "@/lib/menu-utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
-import { useTabsStore } from "@/stores/tabs-store";
 
 /** 全宽页面白名单（无 main 内边距）：这些页面需要占满主体区域 */
 const FULL_WIDTH_ROUTES = ["/org/chart", "/my-notices"];
@@ -74,16 +76,19 @@ const ErrorOverlay = memo(function ErrorOverlay() {
  * - 移动端（<md）：不显示侧边栏，点击顶栏按钮用 Drawer 弹出侧边栏
  *   （Drawer 与其触发按钮同在 AppHeader 内，满足 HeroUI Trigger anatomy）
  *
- * 菜单权限门卫（布局级，替代原路由跳转方案）：
+ * 菜单权限门卫（布局级，异常态统一主体区直显、URL 不变）：
  * - 未登录：beforeLoad 已拦截，此处双保险返回空。
  * - 白名单（/ 与 /account）：登录即可访问，直接渲染内容。
+ * - 路径无匹配路由（routeTree 解析不到叶子组件）：主体区直显 404，
+ *   优先于权限判定（路径不存在谈不上权限）；TagsBar 不登记此类标签。
  * - 菜单未就绪/加载中：主体区显示「正在校验权限…」覆盖层（侧边栏照常）。
  * - 菜单加载失败：主体区提示失败，不误跳 403。
- * - 菜单就绪 + 路径不在用户可见菜单树：跳转独立 /403 无权限页
- *   （设计决策 v2：错误页样式按独立全屏页设计，不再主体区直显；
- *   replace 跳转避免后退回到无权路径，误登记的标签页随跳转撤销）。
- * - 异常态（loading / 菜单校验失败）统一以 overlay 传入 KeepAliveOutlet：
- *   实例池保持挂载不销毁保活。
+ * - 菜单就绪 + 组件存在 + 路径不在用户可见菜单树：主体区直显 403
+ *   （URL 不变，侧边栏保留，可直接切换其它菜单离开）。
+ * - 页面组件渲染异常由 KeepAliveOutlet 的面板级错误边界接管（仅当前
+ *   面板显示 500，其余保活面板不受影响）。
+ * - 异常态（loading / 404 / 校验失败 / 403）统一以 overlay 传入
+ *   KeepAliveOutlet：实例池保持挂载不销毁保活，恢复后原页面状态无损。
  * - 菜单就绪 + 路径在菜单树：渲染内容。
  */
 export function AdminLayout() {
@@ -93,7 +98,6 @@ export function AdminLayout() {
   const showTabs = useDesignThemeStore((s) => s.showTabs);
   const { data: menuTree, isLoading, isError } = useMenus();
   const { pathname } = useLocation();
-  const navigate = useNavigate();
 
   // 当前用户快照同步：挂载时请求 /auth/me 覆盖登录时快照，
   // 使管理员修改角色授权后「刷新页面生效」（机制见 docs/mechanisms.md §6）。
@@ -127,37 +131,44 @@ export function AdminLayout() {
     return false;
   }, [pathname, allowedPaths]);
 
-  // 无权访问（菜单就绪后判定）：跳转独立 /403 页。
+  // 路由存在性：routeTree 解析不到叶子组件 → 404（与菜单 / 权限无关）。
+  // catch-all splat（/_authenticated/$）只负责兜住 URL 匹配使布局稳定，
+  // 自身不注册组件，因此不会污染该判定。
+  const routeExists = findRouteLeafComponent(pathname) !== undefined;
+
+  // 404：无匹配路由，主体区直显（URL 不变）。
+  const notFound = isAuthenticated && !routeExists;
+
+  // 无权访问（组件存在 + 菜单就绪后判定）：主体区直显 403。
   const forbidden =
     isAuthenticated &&
+    routeExists &&
     !isLoading &&
     !isError &&
     menuTree !== undefined &&
     !isWhitelisted &&
     !isAllowedByParentPath;
 
-  useEffect(() => {
-    if (!forbidden) return;
-    // TagsBar 的 openPath effect（子组件先于本 effect 执行）已把当前
-    // 无权路径登记为标签页，跳转 /403 前先撤销，避免残留僵尸标签。
-    useTabsStore.getState().closePath(pathname, pathname);
-    void navigate({ to: "/403", replace: true });
-  }, [forbidden, navigate, pathname]);
-
   // 未登录双保险（beforeLoad 已保证，正常不会到这）
   if (!isAuthenticated) return null;
 
-  // 主体区异常态覆盖层（loading / 校验失败）：
+  // 主体区异常态覆盖层（404 / loading / 校验失败 / 403）：
   // overlay 非空时 KeepAliveOutlet 实例池保持挂载（全部转 hidden 保活），
   // 异常内容渲染于其上——恢复后原页面状态无损，不再销毁保活。
   let overlay: ReactNode = null;
 
-  if (isLoading || (menuTree === undefined && !isError) || forbidden) {
-    // 菜单未就绪（首次请求中，且无旧数据）或正在跳转 /403 → loading
+  if (notFound) {
+    // 无匹配路由：404（优先于权限判定——路径不存在谈不上权限）
+    overlay = <NotFoundErrorPage />;
+  } else if (isLoading || (menuTree === undefined && !isError)) {
+    // 菜单未就绪（首次请求中，且无旧数据）→ loading
     overlay = <LoadingOverlay />;
   } else if (isError) {
     // 加载失败：提示失败，不误跳 403
     overlay = <ErrorOverlay />;
+  } else if (forbidden) {
+    // 无权限：403（URL 不变，侧边栏保留，可直接切换其它菜单离开）
+    overlay = <ForbiddenErrorPage />;
   }
 
   // 业务页：KeepAliveOutlet 统一承担路由呈现（实例池保活）、路由过渡

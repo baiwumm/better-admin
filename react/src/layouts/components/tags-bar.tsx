@@ -28,6 +28,7 @@ import { useTranslation } from "@/i18n";
 import { getMenuLabel } from "@/lib/menu-i18n";
 import { type MenuNode } from "@/lib/api-types";
 import { collectMenuPaths, flattenLeafMenus } from "@/lib/menu-utils";
+import { findRouteLeafComponent } from "@/lib/route-component";
 import {
   LOGIN_REQUIRED_PATHS,
   LOGIN_REQUIRED_PREFIXES,
@@ -141,7 +142,9 @@ export function TagsBar() {
   const pruneTabs = useTabsStore((s) => s.pruneTabs);
 
   // 路由变化 → 登记打开标签（去重追加；控制台恒在首位由 store 保证）。
+  // 无匹配路由的路径（404，AdminLayout 主体区直显）不登记，避免僵尸标签。
   useEffect(() => {
+    if (!findRouteLeafComponent(pathname)) return;
     openPath(pathname, pathname);
   }, [pathname, openPath]);
 

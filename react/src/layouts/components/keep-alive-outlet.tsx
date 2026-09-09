@@ -1,5 +1,7 @@
 import {
   Activity,
+  Component,
+  Fragment,
   Suspense,
   useEffect,
   useLayoutEffect,
@@ -14,6 +16,7 @@ import { useLocation } from "@tanstack/react-router";
 
 import { KEEPALIVE_COMPONENTS } from "./keepalive-registry";
 
+import { GeneralErrorPage } from "@/components/common/error-pages/general-error";
 import { useMenus } from "@/hooks/use-menus";
 import { type MenuNode } from "@/lib/api-types";
 import {
@@ -39,23 +42,67 @@ import { useTabsStore } from "@/stores/tabs-store";
  * 面板不做独立滚动容器（滚动统一由 AdminLayout 的 <main> 承担，
  * 页面位置不参与保活，切换后统一回顶部）。
  */
+/**
+ * 池面板级错误边界：页面组件渲染异常时仅在当前面板显示 500,
+ * 其余保活面板不受影响。
+ *
+ * 必须做在面板级:本组件旁路了 TanStack Router 的 Match 渲染,页面
+ * 组件不在路由器 errorComponent 边界内,渲染错误会一路冒泡到根路由
+ * (布局外全屏兜底,侧边栏/顶栏全部消失)。
+ *
+ * 「重试」语义:重置边界状态并递增 key 销毁重建子树(等效面板级刷新),
+ * 恢复成功后原面板继续保活;GeneralErrorPage 无 onRetry 时的整页刷新
+ * 仅作为根路由兜底场景使用。
+ */
+class PaneErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null; resetSeq: number }
+> {
+  state = { error: null, resetSeq: 0 };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error) {
+    // eslint-disable-next-line no-console -- 面板级渲染异常的诊断信息,仅输出控制台
+    console.error("[KeepAlivePane] 页面渲染异常:", error);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <GeneralErrorPage
+          onRetry={() => {
+            this.setState((s) => ({ error: null, resetSeq: s.resetSeq + 1 }));
+          }}
+        />
+      );
+    }
+
+    // key 随重试序号变化:重试 = 子树销毁重挂载,边界自身状态保留。
+    return <Fragment key={this.state.resetSeq}>{this.props.children}</Fragment>;
+  }
+}
+
 function KeepAlivePane({ path }: { path: string }) {
   // 组件来源两级：注册表（手动覆盖入口）→ routeTree 动态解析（全量兜底）。
   const PageComponent: ComponentType | undefined =
     KEEPALIVE_COMPONENTS[path] ?? findRouteLeafComponent(path);
 
   if (!PageComponent) {
-    // 未找到组件（理论上不会发生）：渲染空占位，不抛错。
+    // 未找到组件（理论上不会发生——404 已由 AdminLayout 的 notFound
+    // overlay 拦截）：渲染空占位，不抛错。
     return null;
   }
 
   return (
-    <>
+    <PaneErrorBoundary>
       {/* Suspense 兜底：将来引入 React.lazy 页面组件时自动可用 */}
       <Suspense fallback={null}>
         <PageComponent />
       </Suspense>
-    </>
+    </PaneErrorBoundary>
   );
 }
 
@@ -140,12 +187,15 @@ function startRouteVt(update: () => void) {
  * 统一由 AdminLayout 的 <main> 滚动（滚动条贴合主体区边缘）；页面位置
  * 不做保活——每次切换完成后显式回到顶部。
  *
- * == 异常态（loading / 菜单校验失败）==
+ * == 异常态（404 / loading / 校验失败 / 403）==
  * AdminLayout 以 overlay prop 传入异常内容：实例池保持挂载（全部转
  * hidden 保活状态），overlay 渲染于其上——异常恢复后原页面状态无损，
- * 不再像旧实现那样整树卸载销毁保活。
- * （无权访问 403 自 2026-08-30 起改为 replace 跳转独立 /403 页，
- * 不再走 overlay；跳转过渡帧以 loading 覆盖层兜底。）
+ * 不再像旧实现那样整树卸载销毁保活。404 / 403 均为主体区直显（URL
+ * 不变，侧边栏保留可直接切换菜单离开），不再跳转独立错误页。
+ *
+ * == 页面渲染异常（500）==
+ * 面板级 PaneErrorBoundary 接管（见其组件注释）：仅当前面板显示 500,
+ * 其余保活面板不受影响,「重试」重置边界并重挂载子树。
  *
  * 其它行为：
  * - 快速连续导航：新 VT 会 skip 未完成的旧 VT（ready 的 AbortError 已
