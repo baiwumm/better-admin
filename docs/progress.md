@@ -1,8 +1,17 @@
 # Better Admin 阶段性进度记录
 
-> 本文件记录各阶段 / 模块的完成情况、关键决策与已知限制，**只做记录，不写规则**；硬性规则见 [`AGENTS.md`](../AGENTS.md)，机制结论沉淀见 [`mechanisms.md`](mechanisms.md)。
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Nest 接口与 OpenAPI 契约全量对齐扫描 + 补录（契约 v1.7.1）（2026-09-09）
+
+- **背景**：用户发现 nest 接口近期改动可能未与契约对齐，要求全量扫描。方法：通读 openapi.yaml（44 路径）逐一对照 13 个 controller、31 个 DTO 与各 service 校验逻辑。**结论：路由/方法/权限位/@HttpCode/主要错误码/响应视图全部对齐**；差异集中在「最近表单校验三端对齐系列提交（角色/字典字段长度）只改了实现、契约未同步」与若干错误码声明缺漏。
+- **契约补录（以实现为准的文档追认，无破坏性行为变更）**：POST /roles、PUT /roles/{id} 补 409 ROLE_CODE_EXISTS / ROLE_NAME_EXISTS（唯一冲突实现已有）；PUT /roles/{id} 补 403 SUPER_ADMIN_ROLE_PROTECTED（停用 super_admin 保护，v1.4.3 漏录编辑口）；PUT /roles/{id}/menus 400 补 INVALID_OPERATION；POST /dict/types 补 409 DICT_TYPE_CODE_EXISTS；Role/DictType/DictItem 请求 schema 补长度与格式约束；AddChildRequest 补 keepAlive/hideInMenu/enabled/defaultOpen（AddChildDto 一直接受并落库）；DeptSortRequest.items 补 maxItems 200；UserCreateRequest.password 与 ResetPasswordRequest.newPassword 补 minLength 6；UserUpdateRequest.email 补 format: email；管理端 User 视图补录 lastLoginAt（toView 展开剩余列、一直返回）。
+- **契约自身修复**：AuthUser.tags 的 items 缩进错位（原误挂在 xUsername 属性下导致 tags 无 items）；DictItemCreateRequest 移除 body.typeCode（实现以路径参数 code 为准，该字段被全局 whitelist 剥离、从未读取）。
+- **实现侧同步收紧三处兜底校验（对齐契约既有声明）**：UpdateAccountProfileDto.website 补 @MaxLength(255)（此前只有格式正则，react 端前端本就限 255）；NoticeCreateDto/UpdateDto.content 补 @IsNotEmpty（契约「非空」语义落地，此前空串可建公告）；GET /notifications 查询参数 DTO 化（新建 NotificationQueryDto，page/pageSize 枚举/unreadOnly 与契约一致，此前手动解析无校验）。
+- **周边同步**：main.ts Swagger 展示版本 1.2.0 → 1.7.1（与契约 info.version 同步）；openapi-design.md §4 错误码清单补登 v1.4 后各模块全部错误码（DEPT_*/POST_*/NOTICE_*/MENU_*/AVATAR_* 等，清单此前停留在初版）+ 变更记录 v1.0。
+- **验证**：tsc 构建通过、eslint 无 error、PyYAML 解析通过（58 个 $ref 引用全部有效）。前端影响评估：三处收紧均为服务端兜底，react 端表单已有对应约束（website maxLength 255 等），正常流程不可触发。
+
+---
 
 ### Vue 端表单禁用失效修复：UFormField 无 disabled prop，锁定字段全部可编辑（2026-09-09）
 

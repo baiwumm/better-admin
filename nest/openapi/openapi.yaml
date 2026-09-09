@@ -89,7 +89,24 @@ info:
     公告编辑/删除/撤回/催办要求发布人本人或 super_admin（403 NOTICE_NOT_PUBLISHER）；
     撤回仅限已发布（409 NOTICE_NOT_PUBLISHED）。富文本内容为 Tiptap HTML，
     渲染端须消毒防 XSS。
-  version: 1.7.0
+    v1.7.1 契约对齐补录（以实现为准的文档追认，无破坏性行为变更）：
+    POST /roles 与 PUT /roles/{id} 补 409 ROLE_CODE_EXISTS / ROLE_NAME_EXISTS（唯一冲突实现已有、文档漏录）；
+    PUT /roles/{id} 补 403 SUPER_ADMIN_ROLE_PROTECTED（停用 super_admin 角色保护，实现已有）；
+    PUT /roles/{id}/menus 的 400 补 INVALID_OPERATION（部分 menuId 不存在 / permissions 非法位）；
+    POST /dict/types 补 409 DICT_TYPE_CODE_EXISTS（实现已有、文档漏录）；
+    RoleCreateRequest / RoleUpdateRequest 补 name ≤20 / code ≤50 / description ≤200；
+    DictTypeCreateRequest / DictTypeUpdateRequest 补 code 1-50 + 格式 pattern、name 1-20、description ≤200；
+    DictItemCreateRequest / DictItemUpdateRequest 补 value 1-50、label 1-20、i18nKey ≤100 + 点分 pattern，
+    并移除 body.typeCode（实际以路径参数 code 为准，该字段从未被读取）；
+    AddChildRequest 补 keepAlive / hideInMenu / enabled / defaultOpen（实现接受并落库）；
+    DeptSortRequest.items 补 maxItems 200；
+    UserCreateRequest.password 与 ResetPasswordRequest.newPassword 补 minLength 6（实现一直如此）；
+    UserUpdateRequest.email 补 format: email；管理端 User 视图补录 lastLoginAt 只读字段（toView 展开、一直返回）；
+    修复 AuthUser.tags 的 items 缩进错位（原误挂在 xUsername 属性下）。
+    实现侧同步收紧三处兜底校验：AccountProfileUpdateRequest.website 补 maxLength 255 服务端校验、
+    NoticeCreateRequest / NoticeUpdateRequest.content 补非空校验（契约「非空」语义落地为 minLength 1）、
+    GET /notifications 查询参数补 DTO 校验（page / pageSize 枚举与契约一致）。
+  version: 1.7.1
 
 servers:
   - url: https://nest.baiwumm.com/api
@@ -221,6 +238,8 @@ components:
         tags:
           type: array
           description: 个人标签（v1.5.0 新增，用户在「我的账户」自助维护，最多 10 个、每个 ≤20 字符）
+          items:
+            type: string
         website:
           type: string
           nullable: true
@@ -233,8 +252,6 @@ components:
           type: string
           nullable: true
           description: X（Twitter）用户名裸值（v1.5.3 新增只读；展示时前端拼 https://x.com/ 前缀）
-          items:
-            type: string
         roles:
           type: array
           items:
@@ -371,6 +388,11 @@ components:
         updatedAt:
           type: string
           format: date-time
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 最近一次登录成功时间（v1.7.1 补录只读字段，toView 一直返回；从未登录过为 null）
 
     UserCreateRequest:
       type: object
@@ -382,6 +404,8 @@ components:
           type: string
         password:
           type: string
+          minLength: 6
+          description: 初始密码（≥6 位，与 AccountPasswordUpdateRequest / ResetPasswordRequest 一致）
         displayName:
           type: string
         avatar:
@@ -437,6 +461,7 @@ components:
       properties:
         email:
           type: string
+          format: email
         displayName:
           type: string
         avatar:
@@ -492,6 +517,8 @@ components:
       properties:
         newPassword:
           type: string
+          minLength: 6
+          description: 新密码（≥6 位，与 AccountPasswordUpdateRequest 一致）
 
     StatusUpdateRequest:
       type: object
@@ -670,11 +697,16 @@ components:
       properties:
         name:
           type: string
+          maxLength: 20
+          description: 角色名称（未删除记录间唯一，冲突 409 ROLE_NAME_EXISTS）
         code:
           type: string
+          maxLength: 50
+          description: 角色 code（全局唯一，冲突 409 ROLE_CODE_EXISTS；创建后不可修改）
         description:
           type: string
           nullable: true
+          maxLength: 200
         enabled:
           type: boolean
           default: true
@@ -687,11 +719,15 @@ components:
       properties:
         name:
           type: string
+          maxLength: 20
+          description: 角色名称（未删除记录间唯一，冲突 409 ROLE_NAME_EXISTS）
         description:
           type: string
           nullable: true
+          maxLength: 200
         enabled:
           type: boolean
+          description: 停用（false）super_admin 角色返回 403 SUPER_ADMIN_ROLE_PROTECTED
         sort:
           type: integer
 
@@ -876,6 +912,18 @@ components:
         sort:
           type: integer
           default: 0
+        keepAlive:
+          type: boolean
+          default: false
+        hideInMenu:
+          type: boolean
+          default: false
+        enabled:
+          type: boolean
+          default: true
+        defaultOpen:
+          type: boolean
+          default: false
         permissions:
           type: string
           description: 菜单声明按钮位，十进制整数字符串
@@ -907,20 +955,30 @@ components:
       properties:
         code:
           type: string
+          minLength: 1
+          maxLength: 50
+          pattern: '^[A-Za-z][A-Za-z0-9_-]*$'
+          description: 字典类型编码（全局唯一，冲突 409 DICT_TYPE_CODE_EXISTS；须以字母开头，仅含字母、数字、下划线、中划线）
         name:
           type: string
+          minLength: 1
+          maxLength: 20
         description:
           type: string
           nullable: true
+          maxLength: 200
 
     DictTypeUpdateRequest:
       type: object
       properties:
         name:
           type: string
+          minLength: 1
+          maxLength: 20
         description:
           type: string
           nullable: true
+          maxLength: 200
 
     DictItem:
       type: object
@@ -943,34 +1001,53 @@ components:
 
     DictItemCreateRequest:
       type: object
-      required: [typeCode, value, label]
+      required: [value, label]
       properties:
-        typeCode:
-          type: string
         value:
           type: string
+          minLength: 1
+          maxLength: 50
+          description: 字典项值（同类型下唯一，冲突 409 DICT_ITEM_VALUE_EXISTS）
         label:
           type: string
+          minLength: 1
+          maxLength: 20
+          description: 字典项标签（同类型下唯一，冲突 409 DICT_ITEM_LABEL_EXISTS）
         i18nKey:
           type: string
           nullable: true
+          maxLength: 100
+          pattern: '^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$'
+          description: 点分国际化键（如 dict.user_status.enabled）
         sort:
           type: integer
           default: 0
         enabled:
           type: boolean
           default: true
+      description: >
+        字典项挂在路径参数 code 指定的字典类型下（POST /dict/types/{code}/items），
+        请求体不含 typeCode（v1.7.1 移除历史冗余字段，实现从未读取）。
 
     DictItemUpdateRequest:
       type: object
       properties:
         value:
           type: string
+          minLength: 1
+          maxLength: 50
+          description: 字典项值（同类型下唯一，冲突 409 DICT_ITEM_VALUE_EXISTS）
         label:
           type: string
+          minLength: 1
+          maxLength: 20
+          description: 字典项标签（同类型下唯一，冲突 409 DICT_ITEM_LABEL_EXISTS）
         i18nKey:
           type: string
           nullable: true
+          maxLength: 100
+          pattern: '^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$'
+          description: 点分国际化键（如 dict.user_status.enabled）
         sort:
           type: integer
         enabled:
@@ -1162,6 +1239,7 @@ components:
         items:
           type: array
           minItems: 1
+          maxItems: 200
           items:
             type: object
             required: [id]
@@ -1445,7 +1523,8 @@ components:
           maxLength: 50
         content:
           type: string
-          description: 富文本内容（Tiptap HTML，非空）
+          minLength: 1
+          description: 富文本内容（Tiptap HTML，非空；渲染端须消毒防 XSS）
         scopeTargets:
           type: array
           minItems: 1
@@ -1471,6 +1550,8 @@ components:
           maxLength: 50
         content:
           type: string
+          minLength: 1
+          description: 富文本内容（Tiptap HTML，有传时须非空）
         scopeTargets:
           type: array
           minItems: 1
@@ -2411,6 +2492,21 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '409':
+          description: 角色 code / 名称已存在（v1.7.1 补录，实现已有）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                codeExists:
+                  value:
+                    code: ROLE_CODE_EXISTS
+                    message: 角色 code 已存在
+                nameExists:
+                  value:
+                    code: ROLE_NAME_EXISTS
+                    message: 角色名称已存在
 
   /roles/{id}:
     parameters:
@@ -2462,8 +2558,32 @@ paths:
           $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: 停用系统内置角色（enabled=false 对 super_admin，v1.7.1 补录，实现已有）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: SUPER_ADMIN_ROLE_PROTECTED
+                message: 超级管理员为系统内置角色，不可停用
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: 角色 code / 名称已存在（v1.7.1 补录，实现已有）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                codeExists:
+                  value:
+                    code: ROLE_CODE_EXISTS
+                    message: 角色 code 已存在
+                nameExists:
+                  value:
+                    code: ROLE_NAME_EXISTS
+                    message: 角色名称已存在
     delete:
       tags: [Roles]
       summary: 删除角色
@@ -2550,7 +2670,22 @@ paths:
                   data:
                     $ref: '#/components/schemas/RoleMenusResponse'
         '400':
-          $ref: '#/components/responses/ValidationError'
+          description: >
+            参数校验失败（VALIDATION_ERROR）；部分 menuId 不存在或 permissions 非法位掩码
+            （INVALID_OPERATION，v1.7.1 补录）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                validationError:
+                  value:
+                    code: VALIDATION_ERROR
+                    message: 请求参数校验失败
+                invalidOperation:
+                  value:
+                    code: INVALID_OPERATION
+                    message: 部分 menuId 不存在
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -2875,6 +3010,15 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '409':
+          description: 字典类型 code 已存在（v1.7.1 补录，实现已有）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: DICT_TYPE_CODE_EXISTS
+                message: 字典类型 code 已存在
 
   /dict/types/{code}:
     parameters:

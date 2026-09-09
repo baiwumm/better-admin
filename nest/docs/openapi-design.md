@@ -193,6 +193,40 @@ RBAC 采用位掩码（见 database-design.md §1）。API Contract 层面约定
 | SELF_OPERATION_FORBIDDEN | 400 | 用户写操作保护（v1.4.6）：不能操作当前登录用户本人 |
 | ADMIN_USER_PROTECTED | 403 | 用户写操作保护（v1.4.6）：内置 admin 用户不可删除/停用/重置密码 |
 | SUPER_ADMIN_USER_PROTECTED | 403 | 用户写操作保护（v1.4.6）：super_admin 绑定用户不可删除/停用/重置密码（操作者同为超管豁免） |
+| SUPER_ADMIN_ROLE_BINDING_PROTECTED | 403 | super_admin 角色绑定保护（v1.4.6）：非超管操作者不可为用户绑定/移除 super_admin 角色 |
+| CURRENT_PASSWORD_INCORRECT | 400 | 我的账户（v1.5.0）：改邮箱 / 改密码时当前密码确认失败 |
+| AVATAR_FILE_INVALID | 400 | 头像上传（v1.5.0）：未提供文件或类型非法（仅 webp / png / jpeg） |
+| AVATAR_FILE_TOO_LARGE | 400 | 头像上传（v1.5.0）：文件超过 2MB |
+| AVATAR_UPLOAD_FAILED | 500 | 头像上传（v1.5.0）：Supabase Storage 写入失败 |
+| ROLE_IN_USE | 409 | 角色仍关联用户，无法删除 |
+| ROLE_CODE_EXISTS | 409 | 角色 code 已存在（v1.7.1 补录登记，实现已有） |
+| ROLE_NAME_EXISTS | 409 | 角色名称已存在（v1.7.1 补录登记，实现已有） |
+| SUPER_ADMIN_ROLE_PROTECTED | 403 | 系统内置角色保护（v1.4.3）：super_admin 授权不可修改 / 角色不可删除 / 不可停用 |
+| MENU_TO_INVALID | 400 | 菜单路由路径格式非法（须以 / 或 https:// 开头） |
+| MENU_TO_EXISTS | 409 | 菜单路由路径已存在（to 非空时全局唯一） |
+| MENU_PARENT_INVALID | 400 | 父菜单不合法（不存在 / 移动到自身或自身下级） |
+| MENU_HAS_CHILDREN | 409 | 存在子菜单，无法删除 |
+| DICT_ITEM_NOT_FOUND | 404 | 字典项不存在 |
+| DICT_TYPE_CODE_EXISTS | 409 | 字典类型 code 已存在（v1.7.1 补录登记，实现已有） |
+| DICT_TYPE_IN_USE | 409 | 字典类型仍被字典项引用，无法删除（v1.4.1 补录） |
+| DICT_ITEM_VALUE_EXISTS | 409 | 同字典类型下 value 已存在 |
+| DICT_ITEM_LABEL_EXISTS | 409 | 同字典类型下 label 已存在（v0.9 起 label 亦唯一） |
+| DEPT_NOT_FOUND | 404 | 组织不存在（v1.6.0） |
+| DEPT_PARENT_INVALID | 400 | 上级组织不合法（不存在 / 已停用 / 移动到自身或自身后代下，v1.6.0） |
+| DEPT_NAME_EXISTS | 409 | 组织名称已存在（未删除记录间唯一，v1.6.0） |
+| DEPT_CODE_EXISTS | 409 | 组织编码已存在（未删除记录间唯一，v1.6.0） |
+| DEPT_HAS_CHILDREN | 409 | 组织删除三级校验第 1 步：存在下级组织（v1.6.0） |
+| DEPT_HAS_POSTS | 409 | 组织删除三级校验第 2 步：存在岗位（v1.6.0） |
+| DEPT_HAS_ACTIVE_USERS | 409 | 组织删除三级校验第 3 步：存在在职人员（v1.6.0） |
+| POST_NOT_FOUND | 404 | 岗位不存在（v1.6.0） |
+| POST_NAME_EXISTS | 409 | 同一组织下岗位名称已存在（v1.6.0） |
+| POST_HAS_ACTIVE_USERS | 409 | 岗位下存在在职人员，无法删除（v1.6.0） |
+| NOTICE_NOT_FOUND | 404 | 公告不存在（v1.7.0） |
+| NOTICE_NOT_VISIBLE | 403 | 公告详情可见性校验失败：不在发布范围内且无管理权限（v1.7.0） |
+| NOTICE_NOT_PUBLISHER | 403 | 公告编辑 / 删除 / 撤回 / 催办要求发布人本人或 super_admin（v1.7.0） |
+| NOTICE_NOT_PUBLISHED | 409 | 已撤回公告不可编辑 / 非已发布状态不可撤回（v1.7.0） |
+| NOTICE_REMIND_TOO_FREQUENT | 409 | 催办 24 小时防频（v1.7.0） |
+| NOTICE_NO_UNREAD | 409 | 催办无未读人员（v1.7.0） |
 
 ---
 
@@ -332,3 +366,4 @@ paths:
 | 2026-08-30 | v0.7 | 契约 v1.4.6：用户写操作保护——`DELETE /users/{id}`、`DELETE /users`、`PUT /users/{id}/status`、`POST /users/{id}/reset-password` 新增 `SELF_OPERATION_FORBIDDEN`(400) / `ADMIN_USER_PROTECTED`(403) / `SUPER_ADMIN_USER_PROTECTED`(403)；`PUT /users/{id}` 补充两个 403（关闭编辑表单停用受保护用户的旁路）。机制结论见 docs/mechanisms.md §5。 |
 | 2026-08-30 | v0.8 | 契约 v1.4.7：登录鉴权加固——`POST /auth/login` 新增 `USER_DISABLED`(401)（停用用户拒绝新登录）；用户名查询过滤 `deleted_at`（软删除用户不可登录）；每请求鉴权对软删除/停用用户返回 401；用户软删除时同步清理 `user_roles` 与 `refresh_tokens`。 |
 | 2026-08-31 | v0.9 | 契约 v1.4.8：日志模块增强——`Log` schema 新增操作人摘要 `username / displayName / email / avatar`（`GET /logs`、`GET /logs/{id}` left join users，软删除用户仍回显）；新增 `DELETE /logs?ids=` 批量删除（BATCH_DELETE 位，任一 ID 无效整体 400 INVALID_OPERATION）；`LoginResponse.user` 与 `GET /auth/me`（登录/每请求鉴权共用视图）新增 `email` 字段。 |
+| 2026-09-09 | v1.0 | 契约 v1.7.1 契约对齐补录（以实现为准的文档追认）：POST /roles 与 PUT /roles/{id} 补 409（ROLE_CODE_EXISTS / ROLE_NAME_EXISTS）、PUT /roles/{id} 补 403 SUPER_ADMIN_ROLE_PROTECTED（停用保护）、PUT /roles/{id}/menus 400 补 INVALID_OPERATION、POST /dict/types 补 409 DICT_TYPE_CODE_EXISTS；Role / DictType / DictItem 请求 schema 补字段长度与格式约束（与最近表单校验三端对齐提交同步）、AddChildRequest 补 4 个布尔字段、DeptSortRequest 补 maxItems 200、password minLength 6、email format、移除 DictItemCreateRequest.typeCode 历史冗余字段、修复 AuthUser.tags items 缩进错位；管理端 User 视图补录 lastLoginAt。实现侧同步收紧三处兜底校验：website maxLength 255、notice content 非空、notifications 查询参数 DTO 化。§4 错误码清单补登 v1.4 后各模块全部错误码。 |

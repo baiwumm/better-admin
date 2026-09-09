@@ -6,6 +6,7 @@ import {
   IsString,
   Length,
   Matches,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 import { type TransformFnParams, Transform } from 'class-transformer';
@@ -46,6 +47,7 @@ export class UpdateAccountProfileDto {
    */
   @IsOptional()
   @Transform(stripPrefix(/^https?:\/\//i))
+  @MaxLength(255)
   @Matches(
     /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,63}(?::\d{1,5})?(?:\/\S*)?$/,
     { message: '网站格式不正确，示例：baidu.com' },

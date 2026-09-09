@@ -2,6 +2,7 @@ import { Controller, Get, HttpCode, Param, Post, Query, Req, UseGuards } from '@
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { NotificationsService } from './notifications.service';
+import { NotificationQueryDto } from './dto/notification-query.dto';
 import { AuthUser } from '../../auth/auth.service';
 
 /**
@@ -19,16 +20,11 @@ export class NotificationsController {
 
   /** GET /api/notifications —— 通知列表（铃铛面板） */
   @Get()
-  findAll(
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
-    @Query('unreadOnly') unreadOnly?: string,
-    @Req() req?: Request,
-  ) {
-    return this.notificationsService.findAll(this.userId(req!), {
-      page: page ? Number(page) : 1,
-      pageSize: pageSize ? Number(pageSize) : 10,
-      unreadOnly: unreadOnly === 'true',
+  findAll(@Query() query: NotificationQueryDto, @Req() req: Request) {
+    return this.notificationsService.findAll(this.userId(req), {
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 10,
+      unreadOnly: query.unreadOnly === 'true',
     });
   }
 

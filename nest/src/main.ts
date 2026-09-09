@@ -43,10 +43,11 @@ async function bootstrap() {
   );
 
   // Swagger 文档（挂在 /docs，与 openapi-design.md §6 约定一致）
+  // 版本号与 openapi.yaml info.version 保持同步（契约唯一事实来源）
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Better Admin API')
     .setDescription('Better Admin Phase 2 (NestJS + PostgreSQL) API Contract')
-    .setVersion('1.2.0')
+    .setVersion('1.7.1')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);

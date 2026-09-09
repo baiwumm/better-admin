@@ -1,4 +1,4 @@
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsIn, IsOptional, IsString, MaxLength, Matches, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString, MaxLength, Matches, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /** 发布范围单项（与 NoticeScope 对齐） */
@@ -21,6 +21,7 @@ export class NoticeCreateDto {
 
   /** 富文本内容（Tiptap HTML，非空；渲染端消毒防 XSS） */
   @IsString()
+  @IsNotEmpty({ message: 'content 不能为空' })
   content!: string;
 
   @IsArray()
@@ -51,6 +52,7 @@ export class NoticeUpdateDto {
 
   @IsOptional()
   @IsString()
+  @IsNotEmpty({ message: 'content 不能为空' })
   content?: string;
 
   @IsOptional()
