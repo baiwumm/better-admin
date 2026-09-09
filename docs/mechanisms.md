@@ -419,3 +419,49 @@ URL 参数一律用 `useSearch({ strict: false })` / `useParams({ strict: false 
   employeeNo）用 `InputGroup.Suffix` 实时字数 `x/上限`（参考 `dict-type-form-dialog`）。
 - **注意**：`ValidationPipe` 需 `transform: true`（`main.ts` 已配）Transform 才会在
   validate 前执行——trim 后的值参与 `@MinLength(1)` 校验，纯空格输入会被拦截。
+
+---
+
+## 13. vue-i18n 与 i18next 文案语法冲突：裸 `@` 编译崩溃 + Reka Select 空串 value（Vue 端）
+
+- **裸 `@` 是 vue-i18n linked message 语法前缀**：`sync-locales` 从 react 复制的
+  文案含 `@`（如 `features.users.form.emailPlaceholder` = `name@example.com`）时，
+  vue-i18n 把 `@e...` 解析为 linked format，消息编译抛 `SyntaxError: Invalid linked
+  format`（unhandledrejection），**引用该文案的组件渲染中断**——表现为「点击新增
+  用户弹窗不打开、控制台报错」。i18next 无此语法，react 真源无需修改。
+- **修复机制在同步脚本**：`vue/scripts/sync-locales.mjs` 在 `cpSync` 后递归遍历
+  `locales/<locale>/*.json`，把消息值中的 `@` 统一转义为字面量插值 `{'@'}`；先还原
+  已有 `{'@'}` 再统一转义保证**幂等**。JSON 往返用 `JSON.stringify(msg, null, 2)`，
+  与源格式（2 空格缩进扁平键）一致，diff 仅含转义行。注意 `readdirSync` 不递归，
+  locale 是两级目录结构，必须自写递归收集。
+- **Reka UI 保留空串 SelectItem value**：Nuxt UI `USelect` 底层 Reka UI 约定空串
+  value 是「清除选择回到 placeholder」的保留值，业务空选项（性别「未设置」
+  `{ value: '' }`、主岗「无主岗」）会刷 `A <SelectItem /> must have a value prop
+  that is not an empty string` 告警。修法：**哨兵值 + 提交/回显映射**——组件内定义
+  `GENDER_UNSET = "unset"` / `MAIN_POST_NONE = "none"`，schema 枚举含哨兵，提交经
+  `toNullable(value, sentinel)` 转 `null`（泛型 `Exclude<T, S>` 保持 API 入参字面量
+  类型），回显 `null ?? sentinel`；列表 store 联动 watch 需排除哨兵避免误重置。
+- **排查提醒**：`UModal` 关闭后 teleport DOM 残留（视觉已卸载、a11y/DOM 查询仍可见），
+  自动化判定弹窗开关必须按 `display`/`offsetParent` 过滤或以截图为准（M1 已知问题在
+  用户表单验证中再次出现）。
+
+---
+
+## 14. UInputDate 与字符串日期字段桥接：writable computed，state 语义不变（Vue 端）
+
+- **`UInputDate`/`UCalendar` 的模型是 `DateValue`（`CalendarDate`）对象**，而项目
+  API 契约与 UForm zod schema 的日期字段是 `YYYY-MM-DD` 字符串。不要把 schema/state
+  改成对象语义——用 writable computed 桥接：`get` 把 `state.entryDate` 字符串经
+  `parseDate`（`@internationalized/date`，非法抛错 catch 后返回 undefined = 未设置）
+  转为 `CalendarDate`，`set` 用 `toString()` 转回 `YYYY-MM-DD`（`CalendarDate.toString()`
+  即 ISO 扩展格式）。这样 zod 校验（`ENTRY_DATE_RE`）、编辑回显、提交 `|| null` 映射
+  全部零改动，`UCalendar` 弹层与 `UInputDate` 共用同一 computed 即可双向同步。
+- **`UInputDate` 的 `placeholder` prop 是日期不是文本**（Reka DatePickerRoot 的
+  占位 `DateValue`，控制无值时日历聚焦月份），传字符串会 TS 报错；分段输入的空态
+  占位（yyyy/mm/dd）由组件内置渲染，无障碍名用 `aria-label` 提供。
+- **日历弹层结构**：`#trailing` 插槽内 `UPopover :reference="input?.inputsRef.at(-1)?.$el"`
+  把日历锚定到最后一个分段输入（官方示例 `inputsRef[3]` 同义，`.at(-1)` 对粒度变化
+  更稳）；popover 打开后自身也是 `[role=dialog]`（与业务 UModal 同角色），自动化
+  判定弹窗可见性需按内容区分；日期单元格定位用 `div[data-reka-calendar-cell-trigger]
+  [data-value="YYYY-MM-DD"]`（v4 不渲染 `table[role=grid]`）。既有范例：
+  `NoticeFormDialog` 发布日期 / `UserFormDialog` 入职日期。

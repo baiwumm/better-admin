@@ -2,6 +2,20 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Vue 用户表单样式微调 + 入职日期改用 UInputDate（2026-09-10）
+
+- **用户样式调整**：用户管理弹窗全部输入框（UserFormDialog / PasswordField）移除 `variant="soft"` 回归 Nuxt UI 默认外观；状态开关外框 `rounded-lg` → `rounded-xl` + `border-default`。
+- **入职日期 UInputDate 改造**（原生 `UInput type="date"` → `UInputDate` 分段输入 + `#trailing` 内嵌 `UPopover`+`UCalendar` 日历弹窗，结构对齐公告表单发布日期与官方示例）：`state.entryDate` 保持字符串语义不变（UForm zod 校验、编辑回显、提交 `|| null` 映射零改动），新增 writable computed `entryDateValue` 双向桥接——get 经 `parseDate` 转 `CalendarDate`（语义非法日期如 02-31 catch 后视同未设置）、set 经 `toString()` 转回 `YYYY-MM-DD`。注意 `UInputDate` 的 `placeholder` prop 是 Reka DatePickerRoot 的占位日期（`DateValue` 类型）而非文本占位，分段空态占位由组件内置。
+- **验证**：`vue-tsc` / eslint / vitest（22/22）/ `vite build` 全绿；浏览器端到端（本地 dev + Nest）——日历选 2026-09-15 分段回填、新增 `test-ui` 用户提交成功（entryDate 合法下发）、编辑重开回显 `2026/9/15`、删除测试用户数据清理。排障备注：Nuxt UI v4 `UCalendar` 弹层不渲染 `table[role=grid]`（日期是 `TD[role=gridcell]` 内 `div[data-reka-calendar-cell-trigger]`），自动化定位以 `data-value` 属性为准；且 UPopover 打开后本身也是 `[role=dialog]`，弹窗可见性判定需按内容区分。
+
+### Vue 用户管理 v1.7.3 对齐 + 「新增用户」弹窗打不开修复（2026-09-09）
+
+- **弹窗打不开根因（vue-i18n 与 i18next 文案语法冲突）**：`features.users.form.emailPlaceholder` = `name@example.com` 中的裸 `@` 被 vue-i18n 解析为 linked message 前缀，消息编译抛 `SyntaxError: Invalid linked format`，引用该文案的 UserFormDialog 渲染中断——点击「新增用户」弹窗不打开。修复分两层：locale 值就地转义为字面量插值 `name{'@'}example.com`；机制层在 `vue/scripts/sync-locales.mjs` 同步后递归转义所有 JSON 文案值的 `@` → `{'@'}`（先还原再转义保证幂等），防止 `predev` 每次同步把裸 `@` 带回来复发（验证过程中 dev server 重启即复现过一次）。机制沉淀 `docs/mechanisms.md` §13。
+- **契约 v1.7.3 表单对齐**（对齐 React 端 `user-form-dialog` / `user-reset-password-dialog`）：① `UserFormDialog` password superRefine 补 `> 72` 分支（与 `< 6` 同报「密码长度为 6-72 位」）；② `UserResetPasswordDialog` newPassword 补 `.max(72)`；③ 共享常量 `PASSWORD_MAX_LENGTH = 72` 落 `vue/src/lib/constants.ts`（React 端在 user-form-dialog 导出，Vue 端考虑 M3 账户改密卡复用放公共常量）；④ username / displayName / email / employeeNo 四输入框加 `UInput #trailing` 实时字数 `x/上限`（风格对齐 `MenuFormModal`：`pe-13/pe-16` 预留 + `text-dimmed text-xs tabular-nums`），schema 长度上限同步常量化。
+- **顺手修复（同弹窗范围）**：① gender「未设置」与主岗「无主岗」下拉的空串 value 触发 Reka UI `SelectItem must have a value prop` 告警刷屏（空串是 placeholder 清除语义保留值）——改哨兵值 `GENDER_UNSET` / `MAIN_POST_NONE` + `toNullable` 提交映射 null、回显 `?? 哨兵`、岗位联动 watch 排除哨兵；② `UsersPage` 状态筛选 placeholder 引用已删键 `features.users.filter.all`（裸 key 直显），改用列名键（对齐 LogsPage 模式）。
+- **验证**：`vue-tsc --noEmit` / eslint（0 error）/ vitest（22/22）/ `vite build` 全绿；浏览器实测（本地 dev + Nest）：弹窗正常打开、email placeholder 渲染 `name@example.com`、四字段字数统计显示、控制台无编译错误与 SelectItem 告警、新增表单与重置密码弹窗输入 80 位密码提交均报「密码长度为 6-72 位」且弹窗保持打开。
+- **范围说明**：仅动 `/vue` 用户管理相关 + sync 脚本 + 文档；工作区中公告 UEditor 重构等他人进行中改动未触碰。
+
 ### 契约 v1.7.3 同步 Next.js 端：server 校验 + web 表单（2026-09-09）
 
 - **server 端（路由层校验为主，与既有分层一致）**：`POST /api/users` 补 username/displayName ≤50、email ≤100、password ≤72（required 块已有 trim）；`PUT /api/users/:id` 补 displayName trim 后 1-50（路由 trim 后传 service，对齐 nest `@Transform` 行为）、email ≤100；`users-service.resetUserPassword` 长度兜底改「6-72 位」；`PUT /api/account/password` 路由校验补 `> 72`，错误信息同步（next 端 bcryptjs 与原生 bcrypt 同为 72 字节静默截断口径）。
