@@ -561,7 +561,7 @@ export default { name: "NoticesPage" };
         :aria-label="t('features.notices.filter.status')"
         :items="statusOptions"
         :model-value="store.filters.status ?? undefined"
-        :placeholder="t('common.datatable.filterAll')"
+        :placeholder="t('features.notices.filter.status')"
         class="w-36"
         value-key="value"
         @update:model-value="

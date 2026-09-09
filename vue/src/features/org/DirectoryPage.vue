@@ -387,7 +387,7 @@ export default { name: "DirectoryPage" };
             :aria-label="t('features.directory.filter.employment')"
             :items="employmentOptions"
             :model-value="store.filters.employmentStatus ?? undefined"
-            :placeholder="t('common.datatable.filterAll')"
+            :placeholder="t('features.directory.filter.employment')"
             class="w-36"
             value-key="value"
             @update:model-value="

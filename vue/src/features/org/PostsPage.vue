@@ -370,7 +370,7 @@ export default { name: "PostsPage" };
         <DeptTreeSelect
           :aria-label="t('features.posts.filter.dept')"
           :model-value="store.filters.deptId ?? ''"
-          :placeholder="t('common.datatable.filterAll')"
+          :placeholder="t('features.posts.filter.dept')"
           :tree="tree"
           @update:model-value="
             (key: unknown) =>
@@ -382,7 +382,7 @@ export default { name: "PostsPage" };
         :aria-label="t('features.posts.filter.category')"
         :items="categoryOptions"
         :model-value="store.filters.category ?? undefined"
-        :placeholder="t('common.datatable.filterAll')"
+        :placeholder="t('features.posts.filter.category')"
         class="w-36"
         value-key="value"
         @update:model-value="
@@ -394,7 +394,7 @@ export default { name: "PostsPage" };
         :aria-label="t('features.posts.filter.status')"
         :items="statusOptions"
         :model-value="store.filters.status ?? undefined"
-        :placeholder="t('common.datatable.filterAll')"
+        :placeholder="t('features.posts.filter.status')"
         class="w-36"
         value-key="value"
         @update:model-value="

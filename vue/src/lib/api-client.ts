@@ -259,9 +259,13 @@ export async function fetchApiRaw(
         response.status,
         err.code,
         err.message ??
-          getErrorMessage("errors.api.requestFailed", "请求失败（{{status}}）", {
-            status: response.status,
-          }),
+          getErrorMessage(
+            "errors.api.requestFailed",
+            "请求失败（{{status}}）",
+            {
+              status: response.status,
+            },
+          ),
       );
 
       notifyErrorHandler(apiError);

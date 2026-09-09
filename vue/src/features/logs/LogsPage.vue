@@ -388,7 +388,7 @@ async function confirmBatchDelete() {
         :aria-label="t('features.logs.column.type')"
         :items="typeOptions"
         :model-value="store.filters.type ?? undefined"
-        :placeholder="t('features.logs.filter.all')"
+        :placeholder="t('features.logs.column.type')"
         value-key="value"
         class="w-50"
         @update:model-value="

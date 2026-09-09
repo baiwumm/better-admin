@@ -88,7 +88,7 @@ export default { name: "OrgChartPage" };
 
 <template>
   <div class="flex h-full min-h-0 flex-col">
-    <div class="bg-default min-h-120 flex-1 overflow-hidden rounded-xl border">
+    <div class="min-h-120 flex-1 overflow-hidden">
       <!-- 加载骨架：与图谱节点卡片同形 -->
       <div
         v-if="treeQuery.isLoading.value"
