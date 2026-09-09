@@ -2,6 +2,15 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 错误页重设计为 Result 风格 + 异常页菜单上线（React / Next）（2026-09-09）
+
+- **Result 风格重设计**：三个错误页换为 Ant Design Result 的信息结构（插画 250px → 标题 24px/600 → 副标题 14px 次要色 → 操作区，整页居中）。插画取自 ant-design 仓库源码（MIT，SVG 原样），强调色保留 antd 原值维持语义（404 蓝 / 500 橙红 / 403 紫，不跟主题色切换——用户确认场景色语义优先）；删除旧样式（error-page-shell 毛玻璃壳、error-page-glyph 线稿、error-page.css 动效/流光）。Next 端同步（路由 API 为 bprogress router / next/link，/500 保留 ?from 重试语义）。
+- **错误页登录收紧**：此前两端都将 /403 /404 /500 列入匿名白名单（React 路由在 _authenticated 守卫之外；Next proxy PUBLIC_PATHS + matcher 双重豁免）。按「仅登录页匿名」口径收紧：React 三个路由加 beforeLoad（redirect /sign-in 携带回跳地址）；Next PUBLIC_PATHS 收紧为仅 /sign-in 且 matcher 同步移除三路径（否则请求不进守卫）。
+- **异常页菜单（/exception/403、/exception/404、/exception/500）**：`ResultPage` 加 `variant` 形态（fullscreen 默认 / embedded 撑满父容器，插画 max-h-[45vh] 防小窗滚动条），三个页面组件透传；React 布局内路由（_authenticated/exception/*）+ Next (authenticated) 组 page；两端 FULL_WIDTH_ROUTES 加入三路径（main 去 padding 贴边撑满）；sys_menus 直插菜单数据（目录「异常页」shield-alert + 三个子菜单 ban/file-question/server-crash，i18n_key=menu.exception.*，事务+幂等脚本；超管经全量掩码免过滤自动可见，普通角色需角色管理授权）；locales 两端四份 menu.json 加中英文案。菜单页与错误跳转路径分离——真实错误仍走全屏 /403 /404 /500，菜单页为 embedded 演示形态。
+- **验证**：React tsc / eslint / vitest（76 用例）/ vite build（routeTree 含 exception 路由）；Next tsc / eslint / check-locales / next build（输出 /exception/* 三路由）全绿。
+
+---
+
 ### React 错误页回滚为跳转独立页，四端行为统一到跳转口径（2026-09-09）
 
 - **背景**：上一条目完成主体区直显改造（ef9f53b）后重新评估跨端对齐：Next 端机制特殊（404 由路由层兜底到根 not-found、403 门卫是有意的服务端 proxy 架构），用户决策 Next 不改；「Next 不变」约束下直显无法四端统一，而跳转口径在四端都落在各自框架惯用机制上（React 客户端跳转 / Next proxy redirect + 框架兜底 / Vue M0 catch-all 全屏页），且直显的产品价值集中于 403 单一场景，不值长期分叉代价。用户拍板 React 改回跳转。

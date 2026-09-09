@@ -30,6 +30,9 @@ import { Route as AuthenticatedOrgNoticesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedOrgDirectoryRouteImport } from './routes/_authenticated/org/directory'
 import { Route as AuthenticatedOrgDeptsRouteImport } from './routes/_authenticated/org/depts'
 import { Route as AuthenticatedOrgChartRouteImport } from './routes/_authenticated/org/chart'
+import { Route as AuthenticatedException500RouteImport } from './routes/_authenticated/exception/500'
+import { Route as AuthenticatedException404RouteImport } from './routes/_authenticated/exception/404'
+import { Route as AuthenticatedException403RouteImport } from './routes/_authenticated/exception/403'
 import { Route as AuthenticatedOrgNoticesNoticeIdRouteImport } from './routes/_authenticated/org/notices_.$noticeId'
 
 const R500Route = R500RouteImport.update({
@@ -143,6 +146,24 @@ const AuthenticatedOrgChartRoute = AuthenticatedOrgChartRouteImport.update({
   path: '/org/chart',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedException500Route =
+  AuthenticatedException500RouteImport.update({
+    id: '/exception/500',
+    path: '/exception/500',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedException404Route =
+  AuthenticatedException404RouteImport.update({
+    id: '/exception/404',
+    path: '/exception/404',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedException403Route =
+  AuthenticatedException403RouteImport.update({
+    id: '/exception/403',
+    path: '/exception/403',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOrgNoticesNoticeIdRoute =
   AuthenticatedOrgNoticesNoticeIdRouteImport.update({
     id: '/org/notices_/$noticeId',
@@ -158,6 +179,9 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof authSignInRoute
   '/account': typeof AuthenticatedAccountRoute
   '/my-notices': typeof AuthenticatedMyNoticesRoute
+  '/exception/403': typeof AuthenticatedException403Route
+  '/exception/404': typeof AuthenticatedException404Route
+  '/exception/500': typeof AuthenticatedException500Route
   '/org/chart': typeof AuthenticatedOrgChartRoute
   '/org/depts': typeof AuthenticatedOrgDeptsRoute
   '/org/directory': typeof AuthenticatedOrgDirectoryRoute
@@ -180,6 +204,9 @@ export interface FileRoutesByTo {
   '/account': typeof AuthenticatedAccountRoute
   '/my-notices': typeof AuthenticatedMyNoticesRoute
   '/': typeof AuthenticatedIndexRoute
+  '/exception/403': typeof AuthenticatedException403Route
+  '/exception/404': typeof AuthenticatedException404Route
+  '/exception/500': typeof AuthenticatedException500Route
   '/org/chart': typeof AuthenticatedOrgChartRoute
   '/org/depts': typeof AuthenticatedOrgDeptsRoute
   '/org/directory': typeof AuthenticatedOrgDirectoryRoute
@@ -205,6 +232,9 @@ export interface FileRoutesById {
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/my-notices': typeof AuthenticatedMyNoticesRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/exception/403': typeof AuthenticatedException403Route
+  '/_authenticated/exception/404': typeof AuthenticatedException404Route
+  '/_authenticated/exception/500': typeof AuthenticatedException500Route
   '/_authenticated/org/chart': typeof AuthenticatedOrgChartRoute
   '/_authenticated/org/depts': typeof AuthenticatedOrgDeptsRoute
   '/_authenticated/org/directory': typeof AuthenticatedOrgDirectoryRoute
@@ -229,6 +259,9 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/account'
     | '/my-notices'
+    | '/exception/403'
+    | '/exception/404'
+    | '/exception/500'
     | '/org/chart'
     | '/org/depts'
     | '/org/directory'
@@ -251,6 +284,9 @@ export interface FileRouteTypes {
     | '/account'
     | '/my-notices'
     | '/'
+    | '/exception/403'
+    | '/exception/404'
+    | '/exception/500'
     | '/org/chart'
     | '/org/depts'
     | '/org/directory'
@@ -275,6 +311,9 @@ export interface FileRouteTypes {
     | '/_authenticated/account'
     | '/_authenticated/my-notices'
     | '/_authenticated/'
+    | '/_authenticated/exception/403'
+    | '/_authenticated/exception/404'
+    | '/_authenticated/exception/500'
     | '/_authenticated/org/chart'
     | '/_authenticated/org/depts'
     | '/_authenticated/org/directory'
@@ -447,6 +486,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOrgChartRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/exception/500': {
+      id: '/_authenticated/exception/500'
+      path: '/exception/500'
+      fullPath: '/exception/500'
+      preLoaderRoute: typeof AuthenticatedException500RouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/exception/404': {
+      id: '/_authenticated/exception/404'
+      path: '/exception/404'
+      fullPath: '/exception/404'
+      preLoaderRoute: typeof AuthenticatedException404RouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/exception/403': {
+      id: '/_authenticated/exception/403'
+      path: '/exception/403'
+      fullPath: '/exception/403'
+      preLoaderRoute: typeof AuthenticatedException403RouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/org/notices_/$noticeId': {
       id: '/_authenticated/org/notices_/$noticeId'
       path: '/org/notices/$noticeId'
@@ -473,6 +533,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedMyNoticesRoute: typeof AuthenticatedMyNoticesRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedException403Route: typeof AuthenticatedException403Route
+  AuthenticatedException404Route: typeof AuthenticatedException404Route
+  AuthenticatedException500Route: typeof AuthenticatedException500Route
   AuthenticatedOrgChartRoute: typeof AuthenticatedOrgChartRoute
   AuthenticatedOrgDeptsRoute: typeof AuthenticatedOrgDeptsRoute
   AuthenticatedOrgDirectoryRoute: typeof AuthenticatedOrgDirectoryRoute
@@ -492,6 +555,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedMyNoticesRoute: AuthenticatedMyNoticesRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedException403Route: AuthenticatedException403Route,
+  AuthenticatedException404Route: AuthenticatedException404Route,
+  AuthenticatedException500Route: AuthenticatedException500Route,
   AuthenticatedOrgChartRoute: AuthenticatedOrgChartRoute,
   AuthenticatedOrgDeptsRoute: AuthenticatedOrgDeptsRoute,
   AuthenticatedOrgDirectoryRoute: AuthenticatedOrgDirectoryRoute,

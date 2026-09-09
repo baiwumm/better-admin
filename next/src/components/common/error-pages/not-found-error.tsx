@@ -5,8 +5,13 @@ import { ResultPage } from "./result-page";
 
 import { useTranslation } from "@/i18n";
 
-/** 404 页面不存在页（/404 路由与根 not-found 兜底），操作区用默认双按钮。 */
-export function NotFoundErrorPage() {
+type NotFoundErrorPageProps = {
+  /** 渲染形态,透传 ResultPage(菜单页用 embedded,错误跳转页默认全屏) */
+  variant?: "fullscreen" | "embedded";
+};
+
+/** 404 页面不存在页(/404 路由与 /exception/404 菜单页)。 */
+export function NotFoundErrorPage({ variant }: NotFoundErrorPageProps) {
   const { t } = useTranslation();
 
   return (
@@ -14,6 +19,7 @@ export function NotFoundErrorPage() {
       image={<IllustrationNotFound />}
       subTitle={t("errors.notFound.description")}
       title={t("errors.notFound.title")}
+      variant={variant}
     />
   );
 }

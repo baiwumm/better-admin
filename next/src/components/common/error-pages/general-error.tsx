@@ -10,14 +10,19 @@ import { ResultPage } from "./result-page";
 
 import { useTranslation } from "@/i18n";
 
+type GeneralErrorPageProps = {
+  /** 渲染形态,透传 ResultPage(菜单页用 embedded,错误跳转页默认全屏) */
+  variant?: "fullscreen" | "embedded";
+};
+
 /**
- * 500 服务器错误页（/500 路由页与 app/error.tsx 错误边界内容）。
+ * 500 服务器错误页（/500 路由页与 /exception/500 菜单页、app/error.tsx 错误边界内容）。
  *
  * 「重试」语义：出错方跳转本页时携带 `?from=<原URL>`，存在 from 时
  * 回原 URL 重新渲染；直接访问 /500（无 from）时整页刷新兜底。
  * 与 403/404 的默认双按钮区分。
  */
-export function GeneralErrorPage() {
+export function GeneralErrorPage({ variant }: GeneralErrorPageProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -47,6 +52,7 @@ export function GeneralErrorPage() {
       image={<IllustrationServerError />}
       subTitle={t("errors.serverError.description")}
       title={t("errors.serverError.title")}
+      variant={variant}
     />
   );
 }

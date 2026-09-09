@@ -7,14 +7,19 @@ import { ResultPage } from "./result-page";
 import { useTranslation } from "@/i18n";
 import { type ErrorRedirectState } from "@/router";
 
+type GeneralErrorPageProps = {
+  /** 渲染形态,透传 ResultPage(菜单页用 embedded,错误跳转页默认全屏) */
+  variant?: "fullscreen" | "embedded";
+};
+
 /**
- * 500 服务器错误页（/500 路由）。
- * 页面渲染期间抛出未捕获错误时，根路由 errorComponent 携带出错 URL
- * （router state.from）跳转至本页展示，避免白屏。
- * 「重试」语义：携带 from 时回原 URL 重新渲染（错误边界随卸载重置）；
- * 直接访问 /500（无 from）时整页刷新兜底。与 403/404 的默认双按钮区分。
+ * 500 服务器错误页(/500 路由与 /exception/500 菜单页)。
+ * 页面渲染期间抛出未捕获错误时,根路由 errorComponent 携带出错 URL
+ * (router state.from)跳转至本页展示,避免白屏。
+ * 「重试」语义:携带 from 时回原 URL 重新渲染(错误边界随卸载重置);
+ * 直接访问 /500(无 from)时整页刷新兜底。与 403/404 的默认双按钮区分。
  */
-export function GeneralErrorPage() {
+export function GeneralErrorPage({ variant }: GeneralErrorPageProps) {
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -46,6 +51,7 @@ export function GeneralErrorPage() {
       image={<IllustrationServerError />}
       subTitle={t("errors.serverError.description")}
       title={t("errors.serverError.title")}
+      variant={variant}
     />
   );
 }

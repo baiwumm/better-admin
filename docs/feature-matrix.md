@@ -53,6 +53,7 @@
 | 多标签页              | ✅     | ✅       | ❌   | ❌    | Vue 端规划（M3）：原生 KeepAlive（include/max） |
 | 命令面板              | ✅     | ✅       | ✅   | ❌    | Vue M0：UDashboardSearch 接菜单导航（Cmd+K 内置） |
 | 错误页（403/404/500）  | ✅     | ✅       | ✅   | ❌    | 四端统一跳转独立全屏页（React 2026-09-09 回滚直显改造对齐 Next/Vue，机制各自、行为一致）；Vue M0：全屏错误页 + catch-all 404 |
+| 异常页菜单（/exception/*） | ✅     | ✅       | ❌   | ❌    | 错误页 Result 风格的菜单化展示（embedded 撑满主体区，FULL_WIDTH 白名单），菜单数据配置于 sys_menus（超管免授权可见） |
 | 路由权限守卫            | ✅     | ✅       | ✅   | ❌    | React: KeepAlive / Next: proxy.ts / Vue M0: 全局 beforeEach 三层；M1 冒烟验收通过 |
 
 ## 已知架构差异（非功能缺失）
