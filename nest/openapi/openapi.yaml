@@ -106,7 +106,18 @@ info:
     实现侧同步收紧三处兜底校验：AccountProfileUpdateRequest.website 补 maxLength 255 服务端校验、
     NoticeCreateRequest / NoticeUpdateRequest.content 补非空校验（契约「非空」语义落地为 minLength 1）、
     GET /notifications 查询参数补 DTO 校验（page / pageSize 枚举与契约一致）。
-  version: 1.7.1
+    v1.7.2 列表排序口径统一（默认排序行为变更，接口参数不变）：
+    权重型列表 sort 降序（数字越大越靠前）——GET /roles、GET /org/depts（默认列）/org/depts/tree；
+    序号型列表 sort 升序（菜单为导航序号、字典项为枚举序，seed 与存量数据按此口径，
+    翻转需数据迁移故保持）——GET /menus、GET /menus/tree（order 缺省 asc）、GET /dict/types/{code}/items；
+    流水型列表 createdAt 降序——GET /logs、GET /notifications、GET /dict/types、
+    GET /org/posts/{id}/members（原为 createdAt 升序）；
+    内容型列表置顶优先——GET /notices 置顶在前 → 排序列 → createdAt 降序；
+    全部分页列表统一追加 id 降序兜底（同秒多条时分页顺序稳定，防重复/丢行）；
+    支持表头排序的接口（GET /users、GET /org/posts、GET /org/directory、GET /org/depts、GET /notices）
+    的 sort/order 参数仅替换主排序列，次级兜底链固定不变；
+    用户/账户角色摘要（GET /users、GET /auth/me 内嵌 roles）排序与角色管理列表同口径（sort 降序、name 字母序兜底）。
+  version: 1.7.2
 
 servers:
   - url: https://nest.baiwumm.com/api

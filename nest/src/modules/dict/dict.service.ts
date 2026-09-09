@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { count, eq } from 'drizzle-orm';
+import { asc, count, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { dictTypes, dictItems, logs } from '../../db/schema';
 import { DictTypeCreateDto } from './dto/dict-type-create.dto';
@@ -72,10 +72,11 @@ export class DictService {
 
   // ---------------- Dict Types ----------------
   async listTypes() {
+    // 无 sort 字段：按创建时间降序（新类型在前），id 兜底保证同秒插入分页稳定
     const rows = await db
       .select()
       .from(dictTypes)
-      .orderBy(dictTypes.createdAt);
+      .orderBy(desc(dictTypes.createdAt), desc(dictTypes.id));
     return rows.map((r) => ({
       id: r.id,
       code: r.code,
@@ -194,11 +195,13 @@ export class DictService {
         message: '字典类型不存在',
       });
     }
+    // sort 为枚举序语义（小在前，下拉/标签顺序依赖此口径，seed 均按此填写）；
+    // createdAt 降序 + id 兜底保证同 sort 值时新项在前
     const rows = await db
       .select()
       .from(dictItems)
       .where(eq(dictItems.typeCode, typeCode))
-      .orderBy(dictItems.sort, dictItems.createdAt);
+      .orderBy(asc(dictItems.sort), desc(dictItems.createdAt), desc(dictItems.id));
     return rows.map((r) => ({
       id: r.id,
       typeCode: r.typeCode,

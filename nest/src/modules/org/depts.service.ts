@@ -277,11 +277,11 @@ export class DeptsService {
     }
   }
 
-  /** 组织树（全量，未删除，含停用组织；同级按 sort 降序、createdAt 升序稳定排序） */
+  /** 组织树（全量，未删除，含停用组织；同级按 sort 降序、createdAt 降序稳定排序） */
   async findTree(): Promise<DeptTreeNodeView[]> {
     const rows = await this.baseSelect()
       .where(isNull(depts.deletedAt))
-      .orderBy(desc(depts.sort), asc(depts.createdAt));
+      .orderBy(desc(depts.sort), desc(depts.createdAt), desc(depts.id));
 
     const childrenMap = new Map<string | null, DeptRow[]>();
     for (const row of rows) {
@@ -333,7 +333,8 @@ export class DeptsService {
       .from(depts)
       .where(where);
 
-    // 排序白名单避免注入；默认同级排序号降序（数字越大越靠前）
+    // 排序白名单避免注入；默认同级排序号降序（数字越大越靠前）；
+    // 次级 createdAt 降序 + id 兜底，主列即 createdAt 时不重复加
     const sortCol =
       query.sort && SORTABLE.has(query.sort) ? query.sort : 'sort';
     const dir = query.order === 'asc' ? asc : desc;
@@ -341,7 +342,11 @@ export class DeptsService {
 
     const rows = await this.baseSelect()
       .where(where)
-      .orderBy(orderBy, asc(depts.createdAt))
+      .orderBy(
+        orderBy,
+        ...(sortCol === 'createdAt' ? [] : [desc(depts.createdAt)]),
+        desc(depts.id),
+      )
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 

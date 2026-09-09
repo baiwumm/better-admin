@@ -42,7 +42,8 @@ export class NotificationsService {
       .select()
       .from(notifications)
       .where(where)
-      .orderBy(desc(notifications.createdAt))
+      // 创建时间降序 + id 兜底，保证同秒多条站内信分页顺序稳定
+      .orderBy(desc(notifications.createdAt), desc(notifications.id))
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 

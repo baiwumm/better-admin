@@ -152,7 +152,8 @@ export class PostsService {
       .from(posts)
       .where(where);
 
-    // 排序白名单避免注入；默认创建时间降序
+    // 排序白名单避免注入；默认创建时间降序；
+    // 次级 createdAt 降序 + id 兜底，主列即 createdAt 时不重复加
     const sortCol =
       query.sort && SORTABLE.has(query.sort) ? query.sort : 'createdAt';
     const dir = query.order === 'asc' ? asc : desc;
@@ -162,7 +163,11 @@ export class PostsService {
       .select()
       .from(posts)
       .where(where)
-      .orderBy(orderBy, asc(posts.createdAt))
+      .orderBy(
+        orderBy,
+        ...(sortCol === 'createdAt' ? [] : [desc(posts.createdAt)]),
+        desc(posts.id),
+      )
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 
@@ -341,7 +346,8 @@ export class PostsService {
       .from(userPosts)
       .innerJoin(users, and(eq(userPosts.userId, users.id), employedUserFilter))
       .where(where)
-      .orderBy(asc(users.createdAt))
+      // 与全站列表口径一致：创建时间降序 + id 兜底保证分页稳定
+      .orderBy(desc(users.createdAt), desc(users.id))
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 

@@ -67,7 +67,8 @@ export class LogsService {
       // 操作人摘要：软删除用户仍回显（历史记录，user_id 仅在硬删时置空）
       .leftJoin(users, eq(logs.userId, users.id))
       .where(where)
-      .orderBy(desc(logs.createdAt))
+      // 创建时间降序 + id 兜底，保证同秒多条日志分页顺序稳定
+      .orderBy(desc(logs.createdAt), desc(logs.id))
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 

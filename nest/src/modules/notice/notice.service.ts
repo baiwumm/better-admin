@@ -434,7 +434,7 @@ export class NoticesService {
       query.sort && SORTABLE.has(query.sort) ? query.sort : 'createdAt';
     const dir = query.order === 'asc' ? asc : desc;
 
-    // 置顶在前、其次按排序列
+    // 置顶在前、其次按排序列；次级 createdAt 降序 + id 兜底，主列即 createdAt 时不重复加
     const rows = await db
       .select({
         id: notices.id,
@@ -452,7 +452,12 @@ export class NoticesService {
       .from(notices)
       .leftJoin(users, eq(notices.publisherId, users.id))
       .where(where)
-      .orderBy(desc(notices.isTop), dir((notices as any)[sortCol]))
+      .orderBy(
+        desc(notices.isTop),
+        dir((notices as any)[sortCol]),
+        ...(sortCol === 'createdAt' ? [] : [desc(notices.createdAt)]),
+        desc(notices.id),
+      )
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 
@@ -688,7 +693,7 @@ export class NoticesService {
             ),
           )
           .where(inArray(notices.id, ids))
-          .orderBy(desc(notices.isTop), desc(notices.publishTime))
+          .orderBy(desc(notices.isTop), desc(notices.publishTime), desc(notices.id))
       : [];
 
     return {

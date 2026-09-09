@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, count, eq, inArray, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { roles, roleMenus, userRoles, menus, logs } from '../../db/schema';
 import {
@@ -142,7 +142,8 @@ export class RolesService {
       .select()
       .from(roles)
       .where(where)
-      .orderBy(roles.sort, roles.createdAt)
+      // sort 权重语义：大在前；createdAt/id 兜底保证同 sort 值时新角色在前、分页稳定
+      .orderBy(desc(roles.sort), desc(roles.createdAt), desc(roles.id))
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 

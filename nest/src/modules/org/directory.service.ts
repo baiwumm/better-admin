@@ -93,7 +93,11 @@ export class DirectoryService {
       })
       .from(users)
       .where(where)
-      .orderBy(orderBy, asc(users.createdAt))
+      .orderBy(
+        orderBy,
+        ...(sortCol === 'createdAt' ? [] : [desc(users.createdAt)]),
+        desc(users.id),
+      )
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 

@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, count, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { db } from '../../db/client';
 import { menus, roleMenus, userRoles, roles, logs } from '../../db/schema';
 import {
@@ -184,10 +184,12 @@ export class MenusService {
     }
 
     const allowedIds = await this.buildAllowedMenuIds(user);
+    // sort 为导航序号语义（小在前，seed 与既有数据均按此口径）；
+    // createdAt 降序 + id 兜底保证同 sort 值时新菜单在前、分页/树序稳定
     const rows = await db
       .select()
       .from(menus)
-      .orderBy(menus.sort, menus.createdAt);
+      .orderBy(asc(menus.sort), desc(menus.createdAt), desc(menus.id));
 
     const filteredRows =
       allowedIds === null ? rows : rows.filter((r) => allowedIds.has(r.id));

@@ -313,7 +313,8 @@ export class UsersService {
       .from(userRoles)
       .innerJoin(roles, eq(userRoles.roleId, roles.id))
       .where(inArray(userRoles.userId, userIds))
-      .orderBy(roles.sort, roles.name);
+      // 与角色管理列表同口径：sort 大在前；名称字母序兜底
+      .orderBy(desc(roles.sort), asc(roles.name));
 
     const map = new Map<string, UserRoleView[]>();
     for (const r of rows) {
@@ -444,7 +445,7 @@ export class UsersService {
       .from(users)
       .where(where);
 
-    // 排序白名单，避免注入
+    // 排序白名单，避免注入；次级 createdAt 降序 + id 兜底，主列即 createdAt 时不重复加
     const sortCol = query.sort && SORTABLE.has(query.sort) ? query.sort : 'createdAt';
     const dir = query.order === 'asc' ? asc : desc;
     const orderBy = dir((users as any)[sortCol]);
@@ -453,7 +454,11 @@ export class UsersService {
       .select()
       .from(users)
       .where(where)
-      .orderBy(orderBy)
+      .orderBy(
+        orderBy,
+        ...(sortCol === 'createdAt' ? [] : [desc(users.createdAt)]),
+        desc(users.id),
+      )
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 

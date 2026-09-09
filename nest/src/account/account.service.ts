@@ -4,7 +4,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { eq, isNull, and } from 'drizzle-orm';
+import { desc, eq, isNull, and, asc } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 import { db } from '../db/client';
 import { logs, refreshTokens, roles, userRoles, users } from '../db/schema';
@@ -91,7 +91,8 @@ export class AccountService {
       .from(roles)
       .innerJoin(userRoles, eq(roles.id, userRoles.roleId))
       .where(eq(userRoles.userId, userId))
-      .orderBy(roles.sort, roles.name);
+      // 与角色管理列表同口径：sort 大在前；名称字母序兜底
+      .orderBy(desc(roles.sort), asc(roles.name));
     return rows.map((r) => ({
       id: r.roleId,
       name: r.roleName,
