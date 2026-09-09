@@ -373,7 +373,7 @@ export default { name: "DirectoryPage" };
       </DeptTreePanel>
 
       <!-- 右栏：人员列表 -->
-      <div class="flex min-w-0 flex-col">
+      <div class="flex min-w-0 flex-col gap-4">
         <DataTableToolbar>
           <UInput
             v-model="searchInput"
@@ -381,7 +381,6 @@ export default { name: "DirectoryPage" };
             :placeholder="t('features.directory.search.placeholder')"
             class="w-56"
             icon="i-lucide-search"
-            size="sm"
             @keyup.enter="applySearch"
           />
           <USelect
@@ -390,7 +389,6 @@ export default { name: "DirectoryPage" };
             :model-value="store.filters.employmentStatus ?? undefined"
             :placeholder="t('common.datatable.filterAll')"
             class="w-36"
-            size="sm"
             value-key="value"
             @update:model-value="
               (value: unknown) =>
@@ -405,17 +403,14 @@ export default { name: "DirectoryPage" };
             @reset="resetFilters"
             @search="applySearch"
           />
-          <template #actions>
-            <UButton
-              v-if="canExport"
-              :label="t('features.directory.export.button')"
-              :loading="isExporting"
-              icon="i-lucide-download"
-              size="sm"
-              variant="outline"
-              @click="handleExport"
-            />
-          </template>
+          <UButton
+            v-if="canExport"
+            :label="t('features.directory.export.button')"
+            :loading="isExporting"
+            icon="i-lucide-download"
+            variant="outline"
+            @click="handleExport"
+          />
         </DataTableToolbar>
 
         <ErrorContent

@@ -117,9 +117,9 @@ function handleExpandedUpdate(keys: string[]) {
 const selectedItem = computed<DeptTreeOption | null>(() => {
   const find = (list: DeptTreeOption[]): DeptTreeOption | null => {
     for (const option of list) {
-      if (option.dept.id === props.selectedId) return option;
+      if (option?.dept?.id === props.selectedId) return option;
 
-      const found = find(option.children ?? []);
+      const found = find(option?.children ?? []);
 
       if (found) return found;
     }
@@ -138,7 +138,7 @@ function flatten(
 ): { item: DeptTreeOption; parent: DeptTreeOption[]; index: number }[] {
   return list.flatMap((item, index) => [
     { item, parent, index },
-    ...(item.children?.length && expandedIds.value.has(item.dept.id)
+    ...(item.children?.length && expandedIds.value.has(item?.dept?.id)
       ? flatten(item.children, item.children)
       : []),
   ]);
@@ -171,8 +171,8 @@ function moveItem(oldIndex: number, newIndex: number) {
   emit(
     "reorder",
     updatedTarget.parent.map((sibling, idx) => ({
-      id: sibling.dept.id,
-      parentId: moved.dept.parentId ?? null,
+      id: sibling?.dept?.id ?? "",
+      parentId: moved?.dept?.parentId ?? null,
       sort: updatedTarget.parent.length - 1 - idx,
     })),
   );
@@ -202,7 +202,7 @@ export default { name: "DeptTree" };
     ref="tree"
     :items="items"
     :expanded="expandedList"
-    :get-key="(item: DeptTreeOption) => item.dept.id"
+    :get-key="(item: DeptTreeOption) => item?.dept?.id ?? ''"
     :model-value="selectedItem ?? undefined"
     :nested="false"
     :unmount-on-hide="false"

@@ -69,7 +69,7 @@ function onTreeSelect(
 }
 
 function getItemKey(item: GrantTreeItem) {
-  return item.key;
+  return item?.key ?? '';
 }
 
 async function onSave() {
