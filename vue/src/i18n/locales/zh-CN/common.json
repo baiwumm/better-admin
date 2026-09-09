@@ -12,7 +12,6 @@
   "common.datatable.columnOrderHint": "拖拽调整列顺序，勾选控制显隐",
   "common.datatable.columnSettings": "列设置",
   "common.datatable.empty": "暂无数据",
-  "common.datatable.filterAll": "全部",
   "common.datatable.firstPage": "第一页",
   "common.datatable.lastPage": "最后一页",
   "common.datatable.pageSizeItem": "{{count}} 条/页",

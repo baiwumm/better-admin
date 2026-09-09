@@ -510,7 +510,7 @@
   "features.users.form.displayNamePlaceholder": "如：张三",
   "features.users.form.email": "邮箱",
   "features.users.form.emailInvalid": "请输入合法的邮箱地址",
-  "features.users.form.emailPlaceholder": "name@example.com",
+  "features.users.form.emailPlaceholder": "name{'@'}example.com",
   "features.users.form.employeeNo": "工号",
   "features.users.form.employeeNoInvalid": "工号最长 50 个字符",
   "features.users.form.employeeNoPlaceholder": "如：EMP-001",

@@ -510,7 +510,7 @@
   "features.users.form.displayNamePlaceholder": "e.g. John Doe",
   "features.users.form.email": "Email",
   "features.users.form.emailInvalid": "Please enter a valid email address",
-  "features.users.form.emailPlaceholder": "name@example.com",
+  "features.users.form.emailPlaceholder": "name{'@'}example.com",
   "features.users.form.employeeNo": "Employee No.",
   "features.users.form.employeeNoInvalid": "Employee no. must be at most 50 characters",
   "features.users.form.employeeNoPlaceholder": "e.g. EMP-001",
