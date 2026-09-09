@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, count, eq } from "drizzle-orm";
+import { asc, count, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { dictItems, dictTypes, logs } from "@/db/schema";
@@ -112,12 +112,12 @@ function itemToView(row: typeof dictItems.$inferSelect): DictItemView {
 
 // ---------------- Dict Types ----------------
 
-/** GET /dict/types — 全量类型列表（按创建时间升序）。 */
+/** GET /dict/types — 全量类型列表（无 sort 字段：创建时间降序，新类型在前，id 兜底）。 */
 export async function listDictTypes(): Promise<DictTypeView[]> {
   const rows = await db
     .select()
     .from(dictTypes)
-    .orderBy(asc(dictTypes.createdAt));
+    .orderBy(desc(dictTypes.createdAt), desc(dictTypes.id));
 
   return rows.map(typeToView);
 }
@@ -246,7 +246,13 @@ export async function listDictItems(typeCode: string): Promise<DictItemView[]> {
     .select()
     .from(dictItems)
     .where(eq(dictItems.typeCode, typeCode))
-    .orderBy(asc(dictItems.sort), asc(dictItems.createdAt));
+    // sort 为枚举序语义（小在前，下拉/标签顺序依赖此口径，见契约 v1.7.2）；
+    // createdAt 降序 + id 兜底保证同 sort 值时新项在前
+    .orderBy(
+      asc(dictItems.sort),
+      desc(dictItems.createdAt),
+      desc(dictItems.id),
+    );
 
   return rows.map(itemToView);
 }

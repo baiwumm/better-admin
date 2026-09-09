@@ -2,7 +2,7 @@ import "server-only";
 
 import type { AuthUser, MenuNode } from "@/lib/api-types";
 
-import { and, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { count } from "drizzle-orm";
 
 import { db } from "@/db/client";
@@ -176,10 +176,12 @@ export async function findMenuTree(user: AuthUser | null): Promise<MenuNode[]> {
   }
 
   const allowedIds = await buildAllowedMenuIds(user);
+  // sort 为导航序号语义（小在前，seed 与既有数据均按此口径，见契约 v1.7.2）；
+  // createdAt 降序 + id 兜底保证同 sort 值时新菜单在前
   const rows = await db
     .select()
     .from(menus)
-    .orderBy(menus.sort, menus.createdAt);
+    .orderBy(asc(menus.sort), desc(menus.createdAt), desc(menus.id));
 
   const filteredRows =
     allowedIds === null ? rows : rows.filter((r) => allowedIds.has(r.id));

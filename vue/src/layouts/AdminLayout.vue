@@ -147,6 +147,11 @@ function retryMenus() {
       </template>
 
       <template #default="{ collapsed }">
+        <UDashboardSearchButton
+          :collapsed
+          class="bg-transparent ring-default"
+        />
+
         <!-- 菜单加载骨架屏（图标方块 + 两行文字占位） -->
         <div v-if="isLoading" class="flex flex-col gap-1">
           <div
@@ -226,7 +231,6 @@ function retryMenus() {
 
           <template #right>
             <div class="flex items-center gap-2">
-              <UDashboardSearchButton />
               <NoticeBell />
               <FullscreenButton />
               <LanguageSwitch />

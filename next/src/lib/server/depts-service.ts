@@ -302,11 +302,11 @@ async function assertNotSelfDescendant(
   }
 }
 
-/** 组织树（全量，未删除，含停用组织；同级按 sort 降序、createdAt 升序稳定排序）。 */
+/** 组织树（全量，未删除，含停用组织；同级按 sort 降序、createdAt 降序稳定排序）。 */
 export async function findDeptTree(): Promise<DeptTreeNodeView[]> {
   const rows = await baseSelect()
     .where(isNull(depts.deletedAt))
-    .orderBy(desc(depts.sort), asc(depts.createdAt));
+    .orderBy(desc(depts.sort), desc(depts.createdAt), desc(depts.id));
 
   const childrenMap = new Map<string | null, DeptRow[]>();
 
@@ -383,7 +383,8 @@ export async function listDepts(params: DeptListParams): Promise<{
     .from(depts)
     .where(where);
 
-  // 排序白名单避免注入；默认同级排序号降序（数字越大越靠前）
+  // 排序白名单避免注入；默认同级排序号降序（数字越大越靠前）；
+  // 次级 createdAt 降序 + id 兜底（对齐 nest 契约 v1.7.2）
   const sortCol =
     params.sort && SORTABLE.has(params.sort) ? params.sort : "sort";
   const dir = order === "asc" ? asc : desc;
@@ -391,7 +392,7 @@ export async function listDepts(params: DeptListParams): Promise<{
 
   const rows = await baseSelect()
     .where(where)
-    .orderBy(orderBy, asc(depts.createdAt))
+    .orderBy(orderBy, desc(depts.createdAt), desc(depts.id))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 

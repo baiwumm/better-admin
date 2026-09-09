@@ -71,7 +71,8 @@ async function attachRoles(rows: Omit<User, "roles">[]): Promise<User[]> {
     .from(userRoles)
     .innerJoin(roles, eq(roles.id, userRoles.roleId))
     .where(inArray(userRoles.userId, ids))
-    .orderBy(asc(roles.sort), asc(roles.name));
+    // 与角色管理列表同口径（契约 v1.7.2）：sort 大在前；名称字母序兜底
+    .orderBy(desc(roles.sort), asc(roles.name));
 
   const byUser = new Map<string, User["roles"]>();
 
@@ -263,7 +264,12 @@ export async function listUsers(params: UserListParams): Promise<{
     .select()
     .from(users)
     .where(where)
-    .orderBy(isAsc ? asc(sortColumn) : desc(sortColumn))
+    // 次级 createdAt 降序 + id 兜底，主列即 createdAt 时不重复加（契约 v1.7.2）
+    .orderBy(
+      isAsc ? asc(sortColumn) : desc(sortColumn),
+      ...(sortField === "createdAt" ? [] : [desc(users.createdAt)]),
+      desc(users.id),
+    )
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 

@@ -3,7 +3,7 @@ import "server-only";
 import type { AccountProfile } from "@/lib/api-types";
 
 import bcrypt from "bcryptjs";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { logs, refreshTokens, roles, userRoles, users } from "@/db/schema";
@@ -61,7 +61,8 @@ async function loadRoles(userId: string): Promise<AccountProfile["roles"]> {
     .from(roles)
     .innerJoin(userRoles, eq(roles.id, userRoles.roleId))
     .where(eq(userRoles.userId, userId))
-    .orderBy(asc(roles.sort), asc(roles.name));
+    // 与角色管理列表同口径（契约 v1.7.2）：sort 大在前；名称字母序兜底
+    .orderBy(desc(roles.sort), asc(roles.name));
 
   return rows.map((r) => ({
     id: r.roleId,

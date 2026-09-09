@@ -637,9 +637,13 @@ export async function listNotices(params: NoticeListParams): Promise<{
     .from(notices)
     .leftJoin(users, eq(notices.publisherId, users.id))
     .where(where)
+    // 置顶在前、其次按排序列；次级 createdAt 降序 + id 兜底，
+    // 主列即 createdAt 时不重复加（契约 v1.7.2）
     .orderBy(
       desc(notices.isTop),
       dir(notices[sortCol as "title" | "status" | "publishTime"]),
+      ...(sortCol === "createdAt" ? [] : [desc(notices.createdAt)]),
+      desc(notices.id),
     )
     .limit(pageSize)
     .offset((page - 1) * pageSize);
@@ -778,7 +782,11 @@ export async function listMyNotices(
           ),
         )
         .where(inArray(notices.id, ids))
-        .orderBy(desc(notices.isTop), desc(notices.publishTime))
+        .orderBy(
+          desc(notices.isTop),
+          desc(notices.publishTime),
+          desc(notices.id),
+        )
     : [];
 
   return {

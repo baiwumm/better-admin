@@ -16,7 +16,8 @@ export interface PagingParams {
  * 不做静默钳制 / 回落）：
  * - page 必须为 ≥1 整数（nest @Min(1)）；
  * - pageSize 必须在白名单内（nest @IsIn）；
- * - withOrder 时 order 仅接受 asc/desc（nest @IsIn），缺省 asc。
+ * - withOrder 时 order 仅接受 asc/desc（nest @IsIn），缺省 desc
+ *   （nest service 侧 dir = order === 'asc' ? asc : desc，缺省即降序）。
  */
 export function normalizePaging(
   params: PagingParams,
@@ -56,5 +57,5 @@ export function normalizePaging(
     );
   }
 
-  return { page, pageSize, order: params.order ?? "asc" };
+  return { page, pageSize, order: params.order ?? "desc" };
 }

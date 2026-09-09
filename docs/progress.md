@@ -2,6 +2,15 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 列表排序口径统一同步 Next.js 端（2026-09-09）
+
+- **四型口径全量对齐 nest 契约 v1.7.2**（`next/src/lib/server/` 11 个文件）：权重型（roles、depts 树/分页 sort 降序）、序号型（menus 树 / dict 项 sort 升序保持 + 次级翻 createdAt 降序）、流水型（logs / notifications / dictTypes / posts 成员列表 createdAt 降序）、内容型（notices 置顶优先 + 次级链）；全部分页列表补 `id DESC` 兜底；users / account 内嵌 roles 摘要与角色列表同口径（`sort DESC, name ASC`）；表头排序接口（users / posts / directory(在 posts-service) / depts / notices）次级兜底链固定、主列即 createdAt 时不重复拼接。
+- **修复跨端行为分叉（重要）**：next `normalizePaging` 的 order 缺省原为 `asc`，而 nest 端表头排序接口缺省为 `desc`（`dir = order === 'asc' ? asc : desc`）——即此前 next 端用户/岗位/通讯录/部门/公告列表不传 order 时默认「旧数据在前」，与 react（走 nest，新数据在前）不一致。统一改为缺省 `desc`，注释同步（前端仅通讯录表头显式传 order，其余列表吃缺省，无硬编码冲突）。
+- **已知既有差异（未动，留待后续）**：next depts / posts 列表排序白名单缺 `createdAt / updatedAt`（nest 含），表头可排序列范围两端不一致；与本次方向统一无关，行为等价（next 传 sort=createdAt 回落默认列）。
+- **验证**：`tsc --noEmit` / `eslint`（0 error）/ `next build` 全绿。
+
+---
+
 ### 列表排序口径统一：四型分类 + id 兜底（NestJS，契约 v1.7.2）（2026-09-09）
 
 - **背景**：nest 端各列表排序口径不一——菜单/角色/字典项 sort 升序且次级 createdAt **升序**（同为默认排序号时旧数据霸屏）、用户列表无次级排序（同秒多条翻页可能重复/丢行）、岗位成员列表按 createdAt 升序。经确认按业内惯例统一为「主排序列 → createdAt 降序 → id 降序」兜底链（id 兜底是分页正确性：nanoid 主键唯一稳定，消除非唯一列排序的不稳定顺序）。

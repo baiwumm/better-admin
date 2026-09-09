@@ -2,7 +2,7 @@ import "server-only";
 
 import type { RoleMenuGrant, RoleMenusPayload } from "@/lib/api-types";
 
-import { and, asc, count, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, or } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { logs, menus, roleMenus, roles, userRoles } from "@/db/schema";
@@ -167,7 +167,8 @@ export async function listRoles(params: {
     .select()
     .from(roles)
     .where(where)
-    .orderBy(asc(roles.sort), asc(roles.createdAt))
+    // sort 权重语义：大在前（对齐 nest 契约 v1.7.2）；createdAt/id 兜底保证分页稳定
+    .orderBy(desc(roles.sort), desc(roles.createdAt), desc(roles.id))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 

@@ -241,7 +241,8 @@ export async function listPosts(params: PostListParams): Promise<{
     .from(posts)
     .where(where);
 
-  // 排序白名单避免注入；默认创建时间降序
+  // 排序白名单避免注入；默认创建时间降序；
+  // 次级 createdAt 降序 + id 兜底（对齐 nest 契约 v1.7.2）
   const sortCol =
     params.sort && SORTABLE.has(params.sort) ? params.sort : "createdAt";
   const dir = order === "asc" ? asc : desc;
@@ -253,7 +254,7 @@ export async function listPosts(params: PostListParams): Promise<{
     .select()
     .from(posts)
     .where(where)
-    .orderBy(orderBy, asc(posts.createdAt))
+    .orderBy(orderBy, desc(posts.createdAt), desc(posts.id))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 
@@ -597,7 +598,8 @@ export async function listPostMembers(
     .from(userPosts)
     .innerJoin(users, and(eq(userPosts.userId, users.id), employedUserFilter))
     .where(where)
-    .orderBy(asc(users.createdAt))
+    // 与全站列表口径一致：创建时间降序 + id 兜底保证分页稳定
+    .orderBy(desc(users.createdAt), desc(users.id))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 
@@ -718,7 +720,7 @@ export async function listDirectory(params: DirectoryListParams): Promise<{
     })
     .from(users)
     .where(where)
-    .orderBy(orderBy, asc(users.createdAt))
+    .orderBy(orderBy, desc(users.createdAt), desc(users.id))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 
