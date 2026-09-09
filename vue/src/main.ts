@@ -36,4 +36,11 @@ bindAuthToApiClient();
 // 路由（path="/"），AppShell 会在公共页（如 /sign-in）误挂 AdminLayout，
 // 触发无 token 的 /menus 请求 → 401 → location.assign("/sign-in") 整页刷新，
 // 形成「加载 → 误挂布局 → 401 → 整页刷新」死循环（M1 冒烟验收定位）。
-router.isReady().then(() => app.mount("#app"));
+router.isReady().then(() => {
+  app.mount("#app");
+
+  // 移除 index.html 中的首屏全屏 Loading 占位。React 端 createRoot 渲染即整体
+  // 替换容器内容、占位自动消失；Vue 3 mount 只向容器插入渲染结果、不清空原内容，
+  // 故需主动移除（挂载抛错时不执行，占位保留继续展示加载态）。
+  document.getElementById("app-boot-loading")?.remove();
+});
