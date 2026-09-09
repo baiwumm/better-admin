@@ -1,14 +1,23 @@
-import { ArrayMaxSize, IsArray, IsEmail, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { Matches } from 'class-validator';
+import { type TransformFnParams, Transform } from 'class-transformer';
+
+/** trim 后入库：与前端 zod .trim() 口径一致 */
+const trimTransform = ({ value }: TransformFnParams): unknown =>
+  typeof value === 'string' ? value.trim() : value;
 
 /** PUT /api/users/:id 请求体（与 UserUpdateRequest 对齐，不允许改密码） */
 export class UpdateUserDto {
   @IsOptional()
   @IsEmail()
+  @MaxLength(100)
   email?: string;
 
   @IsOptional()
   @IsString()
+  @MinLength(1)
+  @MaxLength(50)
+  @Transform(trimTransform)
   displayName?: string;
 
   @IsOptional()

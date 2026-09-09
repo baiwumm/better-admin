@@ -9,20 +9,34 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { type TransformFnParams, Transform } from 'class-transformer';
+
+/** trim 后入库：与前端 zod .trim() 口径一致，空格参与唯一索引/保护比较属于脏数据 */
+const trimTransform = ({ value }: TransformFnParams): unknown =>
+  typeof value === 'string' ? value.trim() : value;
 
 /** POST /api/users 请求体（与 UserCreateRequest 对齐） */
 export class CreateUserDto {
   @IsString()
+  @MinLength(1)
+  @MaxLength(50)
+  @Transform(trimTransform)
   username!: string;
 
   @IsEmail()
+  @MaxLength(100)
   email!: string;
 
+  /** 6-72 位：72 为 bcrypt 输入上限，超出部分哈希时被截断忽略（契约 v1.7.3） */
   @IsString()
   @MinLength(6)
+  @MaxLength(72)
   password!: string;
 
   @IsString()
+  @MinLength(1)
+  @MaxLength(50)
+  @Transform(trimTransform)
   displayName!: string;
 
   @IsOptional()

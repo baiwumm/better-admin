@@ -42,12 +42,26 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "邮箱格式不正确");
     }
 
+    // 契约 v1.7.3：长度约束（对齐 nest UpdateUserDto @Size/@MaxLength）
+    if (
+      typeof body.displayName === "string" &&
+      (body.displayName.trim().length < 1 ||
+        body.displayName.trim().length > 50)
+    ) {
+      throw new ServerApiError(400, "VALIDATION_ERROR", "姓名长度为 1-50 字符");
+    }
+    if (typeof body.email === "string" && body.email.length > 100) {
+      throw new ServerApiError(400, "VALIDATION_ERROR", "邮箱最长 100 字符");
+    }
+
     const user = await updateUser(
       id,
       {
         email: typeof body.email === "string" ? body.email : undefined,
         displayName:
-          typeof body.displayName === "string" ? body.displayName : undefined,
+          typeof body.displayName === "string"
+            ? body.displayName.trim()
+            : undefined,
         avatar:
           body.avatar === undefined
             ? undefined

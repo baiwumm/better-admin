@@ -117,7 +117,13 @@ info:
     支持表头排序的接口（GET /users、GET /org/posts、GET /org/directory、GET /org/depts、GET /notices）
     的 sort/order 参数仅替换主排序列，次级兜底链固定不变；
     用户/账户角色摘要（GET /users、GET /auth/me 内嵌 roles）排序与角色管理列表同口径（sort 降序、name 字母序兜底）。
-  version: 1.7.2
+    v1.7.3 用户/密码输入长度约束补齐（前后端兜底口径统一）：
+    UserCreateRequest 补 username 1-50（trim 后入库）、displayName 1-50（trim 后入库）、email maxLength 100、password maxLength 72；
+    UserUpdateRequest 补 displayName 1-50（trim 后入库）、email maxLength 100；
+    ResetPasswordRequest.newPassword / AccountPasswordUpdateRequest.newPassword 补 maxLength 72
+    （72 为 bcrypt 输入上限：超出 72 字节的输入在哈希时被截断忽略，明文超长不再接受）。
+    超限 400 VALIDATION_ERROR。
+  version: 1.7.3
 
 servers:
   - url: https://nest.baiwumm.com/api
@@ -411,14 +417,23 @@ components:
       properties:
         username:
           type: string
+          minLength: 1
+          maxLength: 50
+          description: 登录账号（1-50 字符，trim 后入库，创建后不可变更）
         email:
           type: string
+          format: email
+          maxLength: 100
         password:
           type: string
           minLength: 6
-          description: 初始密码（≥6 位，与 AccountPasswordUpdateRequest / ResetPasswordRequest 一致）
+          maxLength: 72
+          description: 初始密码（6-72 位；72 为 bcrypt 输入上限，超出部分服务端哈希时被忽略，与 AccountPasswordUpdateRequest / ResetPasswordRequest 一致）
         displayName:
           type: string
+          minLength: 1
+          maxLength: 50
+          description: 姓名（1-50 字符，trim 后入库）
         avatar:
           type: string
           nullable: true
@@ -473,8 +488,12 @@ components:
         email:
           type: string
           format: email
+          maxLength: 100
         displayName:
           type: string
+          minLength: 1
+          maxLength: 50
+          description: 姓名（1-50 字符，trim 后入库；undefined 不修改）
         avatar:
           type: string
           nullable: true
@@ -529,7 +548,8 @@ components:
         newPassword:
           type: string
           minLength: 6
-          description: 新密码（≥6 位，与 AccountPasswordUpdateRequest 一致）
+          maxLength: 72
+          description: 新密码（6-72 位；72 为 bcrypt 输入上限，与 AccountPasswordUpdateRequest 一致）
 
     StatusUpdateRequest:
       type: object
@@ -668,7 +688,8 @@ components:
         newPassword:
           type: string
           minLength: 6
-          description: 新密码（≥6 位，与 ResetPasswordRequest 一致）
+          maxLength: 72
+          description: 新密码（6-72 位；72 为 bcrypt 输入上限，与 ResetPasswordRequest 一致）
 
     AccountAvatarResponse:
       type: object

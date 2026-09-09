@@ -13,7 +13,7 @@ import {
   Description,
   FieldError,
   Form,
-  Input,
+  InputGroup,
   Label,
   ListBox,
   Modal,
@@ -74,6 +74,13 @@ export interface UserFormDialogProps {
 
 const FORM_ID = "user-form";
 
+// 长度上限与后端 DTO（契约 v1.7.3）对齐；密码 72 为 bcrypt 输入上限
+export const PASSWORD_MAX_LENGTH = 72;
+const USERNAME_MAX_LENGTH = 50;
+const DISPLAY_NAME_MAX_LENGTH = 50;
+const EMAIL_MAX_LENGTH = 100;
+const EMPLOYEE_NO_MAX_LENGTH = 50;
+
 /**
  * 编辑态不含密码字段，schema 必须按模式跳过密码校验：
  * 若编辑时仍校验 password（空串不过 min(6)），resolver 会在未渲染字段上
@@ -82,9 +89,9 @@ const FORM_ID = "user-form";
 const buildUserFormSchema = (isEdit: boolean) =>
   z
     .object({
-      username: z.string().trim().min(1).max(50),
-      displayName: z.string().trim().min(1).max(50),
-      email: z.email().max(100),
+      username: z.string().trim().min(1).max(USERNAME_MAX_LENGTH),
+      displayName: z.string().trim().min(1).max(DISPLAY_NAME_MAX_LENGTH),
+      email: z.email().max(EMAIL_MAX_LENGTH),
       password: z.string(),
       confirmPassword: z.string(),
       status: z.enum(["active", "disabled"]),
@@ -93,7 +100,7 @@ const buildUserFormSchema = (isEdit: boolean) =>
       // 组织中心关联（契约 v1.6.0）："" = 未设置（提交映射 null）；
       // entryDate 仅接受 YYYY-MM-DD 或空；在职状态恒为显式值（存量 NULL 视为 employed）
       deptId: z.string(),
-      employeeNo: z.string().trim().max(50),
+      employeeNo: z.string().trim().max(EMPLOYEE_NO_MAX_LENGTH),
       entryDate: z
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}$/, "entryDateInvalid")
@@ -110,6 +117,13 @@ const buildUserFormSchema = (isEdit: boolean) =>
           code: "custom",
           path: ["password"],
           message: "passwordTooShort",
+        });
+      }
+      if (values.password.length > PASSWORD_MAX_LENGTH) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["password"],
+          message: "passwordTooLong",
         });
       }
       if (values.password !== values.confirmPassword) {
@@ -305,7 +319,7 @@ function UserFormModal({
       onOpenChange={onOpenChange}
     >
       <Modal.Container>
-        <Modal.Dialog className="sm:max-w-lg">
+        <Modal.Dialog className="sm:max-w-xl">
           <Modal.CloseTrigger />
           <Modal.Header>
             <Modal.Heading>
@@ -338,11 +352,18 @@ function UserFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.users.form.username")}</Label>
-                    <Input
-                      maxLength={50}
-                      placeholder={t("features.users.form.usernamePlaceholder")}
-                      variant="secondary"
-                    />
+                    {/* Suffix 实时字数（上限与后端 @MaxLength(50) 对齐） */}
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={USERNAME_MAX_LENGTH}
+                        placeholder={t(
+                          "features.users.form.usernamePlaceholder",
+                        )}
+                      />
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{USERNAME_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     {fieldState.error ? (
                       <FieldError>
                         {t("features.users.form.usernameInvalid")}
@@ -369,13 +390,18 @@ function UserFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.users.form.displayName")}</Label>
-                    <Input
-                      maxLength={50}
-                      placeholder={t(
-                        "features.users.form.displayNamePlaceholder",
-                      )}
-                      variant="secondary"
-                    />
+                    {/* Suffix 实时字数（上限与后端 @MaxLength(50) 对齐） */}
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={DISPLAY_NAME_MAX_LENGTH}
+                        placeholder={t(
+                          "features.users.form.displayNamePlaceholder",
+                        )}
+                      />
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{DISPLAY_NAME_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     {fieldState.error && (
                       <FieldError>
                         {t("features.users.form.displayNameInvalid")}
@@ -398,11 +424,16 @@ function UserFormModal({
                     onChange={field.onChange}
                   >
                     <Label>{t("features.users.form.email")}</Label>
-                    <Input
-                      maxLength={100}
-                      placeholder={t("features.users.form.emailPlaceholder")}
-                      variant="secondary"
-                    />
+                    {/* Suffix 实时字数（上限与后端 @MaxLength(100) 对齐） */}
+                    <InputGroup variant="secondary">
+                      <InputGroup.Input
+                        maxLength={EMAIL_MAX_LENGTH}
+                        placeholder={t("features.users.form.emailPlaceholder")}
+                      />
+                      <InputGroup.Suffix className="text-xs text-muted">
+                        {field.value?.length ?? 0}/{EMAIL_MAX_LENGTH}
+                      </InputGroup.Suffix>
+                    </InputGroup>
                     {fieldState.error && (
                       <FieldError>
                         {t("features.users.form.emailInvalid")}
@@ -706,13 +737,18 @@ function UserFormModal({
                       onChange={field.onChange}
                     >
                       <Label>{t("features.users.form.employeeNo")}</Label>
-                      <Input
-                        maxLength={50}
-                        placeholder={t(
-                          "features.users.form.employeeNoPlaceholder",
-                        )}
-                        variant="secondary"
-                      />
+                      {/* Suffix 实时字数（上限与后端 @MaxLength(50) 对齐） */}
+                      <InputGroup variant="secondary">
+                        <InputGroup.Input
+                          maxLength={EMPLOYEE_NO_MAX_LENGTH}
+                          placeholder={t(
+                            "features.users.form.employeeNoPlaceholder",
+                          )}
+                        />
+                        <InputGroup.Suffix className="text-xs text-muted">
+                          {field.value?.length ?? 0}/{EMPLOYEE_NO_MAX_LENGTH}
+                        </InputGroup.Suffix>
+                      </InputGroup>
                       {fieldState.error && (
                         <FieldError>
                           {t("features.users.form.employeeNoInvalid")}

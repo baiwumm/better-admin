@@ -397,3 +397,25 @@ URL 参数一律用 `useSearch({ strict: false })` / `useParams({ strict: false 
   代码跟着数据走，不跟「统一」走。
 
 
+
+---
+
+## 12. 用户/密码输入长度约束：bcrypt 72 字节截断是隐性口径（NestJS 端，契约 v1.7.3）
+
+- **bcrypt 只取前 72 字节（UTF-8）**：项目用原生 `bcrypt` 6.0.0，其 README 明确
+  超出 72 字节的输入「被忽略」——不报错、**静默截断**。后果是「设置 100 位密码，
+  前 72 字节即可登录」，与用户预期不符；且 72 是**字节**不是字符（中文/emoji 每字符
+  2-4 字节）。DTO 层 `@MaxLength(72)` 是字符级近似（全 4 字节字符时字节数仍可超 72），
+  把风险从「无限长」收敛到「最多 288 字节」，边缘场景接受截断不报 500。
+- **前后端口径统一为「6-72 位」**：服务端三处 DTO（`CreateUserDto.password` /
+  `ResetPasswordDto.newPassword` / `UpdateAccountPasswordDto.newPassword`）补
+  `@MaxLength(72)`；React 三处表单（用户新增 / 重置密码弹窗 / Account 改密卡）zod
+  同步 `.max(72)`，i18n 文案写「6-72 位」。上限常量 `PASSWORD_MAX_LENGTH` 由
+  `user-form-dialog.tsx` 导出、重置密码弹窗复用。
+- **文本字段两端同规**：username / displayName 后端补 `@MinLength(1) @MaxLength(50)`
+  + `@Transform` trim（与前端 zod `.trim()` 口径一致——trim 后的值才参与唯一索引与
+  `ADMIN_USERNAME` 精确比较，带空格绕过保护属于脏数据）；email 补 `@MaxLength(100)`；
+  employeeNo 原本就有 `@MaxLength(50)`。前端 4 字段（username / displayName / email /
+  employeeNo）用 `InputGroup.Suffix` 实时字数 `x/上限`（参考 `dict-type-form-dialog`）。
+- **注意**：`ValidationPipe` 需 `transform: true`（`main.ts` 已配）Transform 才会在
+  validate 前执行——trim 后的值参与 `@MinLength(1)` 校验，纯空格输入会被拦截。

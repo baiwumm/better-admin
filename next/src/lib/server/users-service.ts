@@ -855,8 +855,9 @@ export async function resetUserPassword(
   newPassword: string,
   operator: AuthUser,
 ): Promise<null> {
-  if (newPassword.length < 6) {
-    throw new ServerApiError(400, "VALIDATION_ERROR", "新密码长度至少 6 位");
+  // 6-72 位：72 为 bcrypt 输入上限，超出部分哈希时被截断忽略（契约 v1.7.3）
+  if (newPassword.length < 6 || newPassword.length > 72) {
+    throw new ServerApiError(400, "VALIDATION_ERROR", "新密码长度为 6-72 位");
   }
 
   await assertTargetOperable(operator, id);

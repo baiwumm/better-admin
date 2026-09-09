@@ -9,6 +9,7 @@ import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { getUserErrorMessage, resetUserPassword } from "./user-api";
+import { PASSWORD_MAX_LENGTH } from "./user-form-dialog";
 import { PasswordField } from "./password-field";
 
 import { useTranslation } from "@/i18n";
@@ -32,7 +33,8 @@ const FORM_ID = "user-reset-password-form";
 
 const resetPasswordSchema = z
   .object({
-    newPassword: z.string().min(6),
+    // 6-72 位：72 为 bcrypt 输入上限（契约 v1.7.3，与后端 ResetPasswordDto 对齐）
+    newPassword: z.string().min(6).max(PASSWORD_MAX_LENGTH),
     confirmPassword: z.string(),
   })
   .refine((values) => values.newPassword === values.confirmPassword, {

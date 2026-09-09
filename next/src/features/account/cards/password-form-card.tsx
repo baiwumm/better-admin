@@ -21,10 +21,13 @@ interface PasswordFormValues {
   confirmPassword: string;
 }
 
+// 6-72 位：72 为 bcrypt 输入上限（契约 v1.7.3，与后端 UpdateAccountPasswordDto 对齐）
+const PASSWORD_MAX_LENGTH = 72;
+
 const passwordFormSchema = z
   .object({
     currentPassword: z.string().min(1),
-    newPassword: z.string().min(6),
+    newPassword: z.string().min(6).max(PASSWORD_MAX_LENGTH),
     confirmPassword: z.string(),
   })
   .refine((values) => values.newPassword === values.confirmPassword, {

@@ -77,6 +77,20 @@ export async function POST(request: NextRequest) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "邮箱格式不正确");
     }
 
+    // 契约 v1.7.3：长度上限（对齐 nest CreateUserDto @Size/@MaxLength）
+    if (
+      body.username.trim().length > 50 ||
+      body.displayName.trim().length > 50 ||
+      body.email.length > 100 ||
+      body.password.length > 72
+    ) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "用户名/姓名最长 50 字符，邮箱最长 100 字符，密码长度为 6-72 位",
+      );
+    }
+
     const user = await createUser(
       {
         username: body.username.trim(),

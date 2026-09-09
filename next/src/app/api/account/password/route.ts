@@ -23,16 +23,18 @@ export async function PUT(request: NextRequest) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "请求体不是合法 JSON");
     }
 
+    // newPassword 6-72 位：72 为 bcrypt 输入上限，超出部分哈希时被截断忽略（契约 v1.7.3）
     if (
       typeof body?.currentPassword !== "string" ||
       body.currentPassword.length === 0 ||
       typeof body?.newPassword !== "string" ||
-      body.newPassword.length < 6
+      body.newPassword.length < 6 ||
+      body.newPassword.length > 72
     ) {
       throw new ServerApiError(
         400,
         "VALIDATION_ERROR",
-        "currentPassword 与 newPassword（≥6 位）为必填",
+        "currentPassword 与 newPassword（6-72 位）为必填",
       );
     }
 
