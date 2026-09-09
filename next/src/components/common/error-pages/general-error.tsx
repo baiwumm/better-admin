@@ -4,17 +4,17 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "@bprogress/next/app";
 import { Button } from "@heroui/react";
 import Link from "next/link";
-import { TriangleAlert } from "lucide-react";
 
-import { ErrorPageShell } from "./error-page-shell";
+import { IllustrationServerError } from "./illustration-server-error";
+import { ResultPage } from "./result-page";
 
 import { useTranslation } from "@/i18n";
 
 /**
- * 通用错误兜底（全屏），用作 /500 路由页与 app/error.tsx 错误边界内容。
+ * 500 服务器错误页（/500 路由页与 app/error.tsx 错误边界内容）。
  *
- * 「重试」语义与 React 版对齐：出错方跳转本页时携带 `?from=<原URL>`，
- * 存在 from 时回原 URL 重新渲染；直接访问 /500（无 from）时整页刷新兜底。
+ * 「重试」语义：出错方跳转本页时携带 `?from=<原URL>`，存在 from 时
+ * 回原 URL 重新渲染；直接访问 /500（无 from）时整页刷新兜底。
  * 与 403/404 的默认双按钮区分。
  */
 export function GeneralErrorPage() {
@@ -24,11 +24,10 @@ export function GeneralErrorPage() {
   const from = searchParams.get("from");
 
   return (
-    <ErrorPageShell
-      actions={
+    <ResultPage
+      extra={
         <>
           <Button
-            className="btn-shine"
             variant="primary"
             onPress={() => {
               if (from) {
@@ -41,17 +40,13 @@ export function GeneralErrorPage() {
             {t("common.retry")}
           </Button>
           <Link href="/">
-            <Button className="btn-shine" variant="outline">
-              {t("common.backHome")}
-            </Button>
+            <Button variant="outline">{t("common.backHome")}</Button>
           </Link>
         </>
       }
-      description={t("errors.serverError.description")}
-      icon={<TriangleAlert className="size-7" />}
-      status="500"
+      image={<IllustrationServerError />}
+      subTitle={t("errors.serverError.description")}
       title={t("errors.serverError.title")}
-      tone="warning"
     />
   );
 }

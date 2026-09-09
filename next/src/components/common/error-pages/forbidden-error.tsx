@@ -1,22 +1,19 @@
 "use client";
 
-import { Ban } from "lucide-react";
-
-import { ErrorPageShell } from "./error-page-shell";
+import { IllustrationForbidden } from "./illustration-forbidden";
+import { ResultPage } from "./result-page";
 
 import { useTranslation } from "@/i18n";
 
-/** 403 无权限（全屏）。 */
+/** 403 无权限页（/403 路由），操作区用 ResultPage 默认双按钮。 */
 export function ForbiddenErrorPage() {
   const { t } = useTranslation();
 
   return (
-    <ErrorPageShell
-      description={t("errors.forbidden.description")}
-      icon={<Ban className="size-7" />}
-      status="403"
+    <ResultPage
+      image={<IllustrationForbidden />}
+      subTitle={t("errors.forbidden.description")}
       title={t("errors.forbidden.title")}
-      tone="danger"
     />
   );
 }
