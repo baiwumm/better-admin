@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { Role, User } from "@/lib/api-types";
 import type { FormSubmitEvent } from "@nuxt/ui";
+import type { DateValue } from "@internationalized/date";
 
+import { CalendarDate, parseDate } from "@internationalized/date";
 import * as z from "zod";
 import { computed, h, reactive, ref, useTemplateRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -22,7 +24,7 @@ import PasswordField from "./PasswordField.vue";
 import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "@/features/org/dept-api";
 import { fetchPosts } from "@/features/org/post-api";
 import DeptTreeSelect from "@/features/org/DeptTreeSelect.vue";
-import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
+import { PASSWORD_MAX_LENGTH, SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
@@ -77,6 +79,17 @@ const isStatusLocked = computed(() => {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ENTRY_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+// 输入长度上限与后端 DTO（契约 v1.7.3）对齐；模板 trailing 实时计数复用
+const USERNAME_MAX_LENGTH = 50;
+const DISPLAY_NAME_MAX_LENGTH = 50;
+const EMAIL_MAX_LENGTH = 100;
+const EMPLOYEE_NO_MAX_LENGTH = 50;
+
+// Reka UI 保留空串 value 用于 placeholder 清除语义，SelectItem 空串 value
+// 会告警——「未设置/无主岗」用哨兵值表示，提交/回显时与 null 互转
+const GENDER_UNSET = "unset";
+const MAIN_POST_NONE = "none";
+
 // 校验规则与 React 端 buildUserFormSchema 一一对应；消息用函数延迟求值：
 // 语言切换后错误文案跟随当前 locale
 const schema = z
@@ -85,15 +98,21 @@ const schema = z
       .string()
       .trim()
       .min(1, { error: () => t("features.users.form.usernameInvalid") })
-      .max(50, { error: () => t("features.users.form.usernameInvalid") }),
+      .max(USERNAME_MAX_LENGTH, {
+        error: () => t("features.users.form.usernameInvalid"),
+      }),
     displayName: z
       .string()
       .trim()
       .min(1, { error: () => t("features.users.form.displayNameInvalid") })
-      .max(50, { error: () => t("features.users.form.displayNameInvalid") }),
+      .max(DISPLAY_NAME_MAX_LENGTH, {
+        error: () => t("features.users.form.displayNameInvalid"),
+      }),
     email: z
       .string()
-      .max(100, { error: () => t("features.users.form.emailInvalid") })
+      .max(EMAIL_MAX_LENGTH, {
+        error: () => t("features.users.form.emailInvalid"),
+      })
       .refine((value) => EMAIL_RE.test(value), {
         error: () => t("features.users.form.emailInvalid"),
       }),
@@ -110,13 +129,17 @@ const schema = z
     employeeNo: z.string(),
     entryDate: z.string(),
     employmentStatus: z.enum(["employed", "resigned"]),
-    gender: z.enum(["", "male", "female"]),
+    gender: z.enum(["unset", "male", "female"]),
     mainPostId: z.string(),
   })
   .superRefine((data, ctx) => {
-    // 密码仅创建时校验（编辑态无密码字段：改密走「重置密码」弹窗）
+    // 密码仅创建时校验（编辑态无密码字段：改密走「重置密码」弹窗）；
+    // 6-72 与后端契约 v1.7.3 对齐（72 为 bcrypt 输入上限，超长会被静默截断）
     if (!isEdit.value) {
-      if (data.password.length < 6) {
+      if (
+        data.password.length < 6 ||
+        data.password.length > PASSWORD_MAX_LENGTH
+      ) {
         ctx.addIssue({
           code: "custom",
           path: ["password"],
@@ -159,11 +182,32 @@ const state = reactive<Schema>({
   employeeNo: "",
   entryDate: "",
   employmentStatus: "employed",
-  gender: "",
+  gender: GENDER_UNSET,
   postIds: [],
-  mainPostId: "",
+  mainPostId: MAIN_POST_NONE,
 });
 const formRef = useTemplateRef("formRef");
+const entryDateInput = useTemplateRef("entryDateInput");
+
+// 入职日期模型桥接：state.entryDate 保持字符串（UForm 校验/回显/提交零改动），
+// UInputDate/UCalendar 经 computed 双向转换为 CalendarDate（@internationalized/date）
+function isoToCalendarDate(iso: string): CalendarDate | undefined {
+  if (!ENTRY_DATE_RE.test(iso)) return undefined;
+
+  try {
+    return parseDate(iso);
+  } catch {
+    return undefined; // 语义非法日期（如 02-31）视同未设置
+  }
+}
+
+const entryDateValue = computed({
+  get: (): CalendarDate | undefined =>
+    state.entryDate ? isoToCalendarDate(state.entryDate) : undefined,
+  set: (value?: DateValue) => {
+    state.entryDate = value?.toString() ?? "";
+  },
+});
 
 watch(
   () => props.open,
@@ -183,9 +227,10 @@ watch(
     state.employeeNo = user?.employeeNo ?? "";
     state.entryDate = user?.entryDate ?? "";
     state.employmentStatus = user?.employmentStatus ?? "employed";
-    state.gender = user?.gender ?? "";
+    state.gender = user?.gender ?? GENDER_UNSET;
     state.postIds = user?.posts.map((post) => post.id) ?? [];
-    state.mainPostId = user?.posts.find((post) => post.isMain)?.id ?? "";
+    state.mainPostId =
+      user?.posts.find((post) => post.isMain)?.id ?? MAIN_POST_NONE;
     formRef.value?.clear();
   },
   { immediate: true },
@@ -231,7 +276,10 @@ const postItems = computed(() =>
 
 // 主岗选项 = 已选岗位（主岗必须在 postIds 中）；取消勾选已设主岗的岗位时联动清空
 const mainPostItems = computed(() => [
-  { label: t("features.users.form.mainPostEmpty"), value: "" },
+  {
+    label: t("features.users.form.mainPostEmpty"),
+    value: MAIN_POST_NONE,
+  },
   ...postOptions.value
     .filter((post) => state.postIds.includes(post.id))
     .map((post) => ({ label: post.name, value: post.id })),
@@ -240,13 +288,27 @@ const mainPostItems = computed(() => [
 watch(
   () => state.postIds,
   (postIds) => {
-    if (state.mainPostId && !postIds.includes(state.mainPostId)) {
-      state.mainPostId = "";
+    if (
+      state.mainPostId &&
+      state.mainPostId !== MAIN_POST_NONE &&
+      !postIds.includes(state.mainPostId)
+    ) {
+      state.mainPostId = MAIN_POST_NONE;
     }
   },
 );
 
 const submitting = ref(false);
+
+/** 哨兵值 → 后端 null（未设置性别/无主岗与「未选择」同义） */
+function toNullable<T extends string, S extends T>(
+  value: T,
+  sentinel: S,
+): Exclude<T, S> | null {
+  if (value === sentinel || value === "") return null;
+
+  return value as Exclude<T, S>;
+}
 
 function close() {
   emit("update:open", false);
@@ -278,9 +340,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         employeeNo: event.data.employeeNo || null,
         entryDate: event.data.entryDate || null,
         employmentStatus: event.data.employmentStatus,
-        gender: event.data.gender || null,
+        gender: toNullable(event.data.gender, GENDER_UNSET),
         postIds: event.data.postIds,
-        mainPostId: event.data.mainPostId || null,
+        mainPostId: toNullable(event.data.mainPostId, MAIN_POST_NONE),
       });
     } else {
       await createUser({
@@ -294,9 +356,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         employeeNo: event.data.employeeNo || null,
         entryDate: event.data.entryDate || null,
         employmentStatus: event.data.employmentStatus,
-        gender: event.data.gender || null,
+        gender: toNullable(event.data.gender, GENDER_UNSET),
         postIds: event.data.postIds,
-        mainPostId: event.data.mainPostId || null,
+        mainPostId: toNullable(event.data.mainPostId, MAIN_POST_NONE),
       });
     }
 
@@ -357,11 +419,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <UInput
             v-model="state.username"
             :disabled="isEdit"
-            :maxlength="50"
+            :maxlength="USERNAME_MAX_LENGTH"
             :placeholder="t('features.users.form.usernamePlaceholder')"
+            :ui="{ base: 'pe-13' }"
             class="w-full"
-            variant="soft"
-          />
+          >
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.username.length }}/{{ USERNAME_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
         </UFormField>
 
         <UFormField
@@ -371,11 +439,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         >
           <UInput
             v-model="state.displayName"
-            :maxlength="50"
+            :maxlength="DISPLAY_NAME_MAX_LENGTH"
             :placeholder="t('features.users.form.displayNamePlaceholder')"
+            :ui="{ base: 'pe-13' }"
             class="w-full"
-            variant="soft"
-          />
+          >
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.displayName.length }}/{{ DISPLAY_NAME_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
         </UFormField>
 
         <UFormField
@@ -385,11 +459,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         >
           <UInput
             v-model="state.email"
-            :maxlength="100"
+            :maxlength="EMAIL_MAX_LENGTH"
             :placeholder="t('features.users.form.emailPlaceholder')"
+            :ui="{ base: 'pe-16' }"
             class="w-full"
-            variant="soft"
-          />
+          >
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.email.length }}/{{ EMAIL_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
         </UFormField>
 
         <template v-if="!isEdit">
@@ -410,7 +490,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         </template>
 
         <div
-          class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2"
+          class="border-default flex items-center justify-between gap-3 rounded-xl border px-3 py-2"
         >
           <span class="text-sm font-medium">
             {{ t("features.users.form.status") }}
@@ -484,18 +564,47 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <UFormField :label="t('features.users.form.employeeNo')">
             <UInput
               v-model="state.employeeNo"
-              :maxlength="50"
+              :maxlength="EMPLOYEE_NO_MAX_LENGTH"
               :placeholder="t('features.users.form.employeeNoPlaceholder')"
+              :ui="{ base: 'pe-13' }"
               class="w-full"
-              variant="soft"
-            />
+            >
+              <template #trailing>
+                <span class="text-dimmed text-xs tabular-nums">
+                  {{ state.employeeNo.length }}/{{ EMPLOYEE_NO_MAX_LENGTH }}
+                </span>
+              </template>
+            </UInput>
           </UFormField>
 
           <UFormField
             :label="t('features.users.form.entryDate')"
             name="entryDate"
           >
-            <UInput v-model="state.entryDate" class="w-full" type="date" />
+            <!-- 入职日期：日期分段输入 + 内嵌 UCalendar 日历弹窗（对齐公告表单发布日期） -->
+            <UInputDate
+              ref="entryDateInput"
+              v-model="entryDateValue"
+              :aria-label="t('features.users.form.entryDate')"
+              class="w-full"
+            >
+              <template #trailing>
+                <UPopover :reference="entryDateInput?.inputsRef.at(-1)?.$el">
+                  <UButton
+                    :aria-label="t('features.users.form.entryDate')"
+                    class="px-0"
+                    color="neutral"
+                    icon="i-lucide-calendar"
+                    size="sm"
+                    variant="link"
+                  />
+
+                  <template #content>
+                    <UCalendar v-model="entryDateValue" class="p-2" />
+                  </template>
+                </UPopover>
+              </template>
+            </UInputDate>
           </UFormField>
         </div>
 
@@ -522,7 +631,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             <USelect
               v-model="state.gender"
               :items="[
-                { label: t('features.users.gender.unset'), value: '' },
+                {
+                  label: t('features.users.gender.unset'),
+                  value: GENDER_UNSET,
+                },
                 { label: t('features.users.gender.male'), value: 'male' },
                 { label: t('features.users.gender.female'), value: 'female' },
               ]"

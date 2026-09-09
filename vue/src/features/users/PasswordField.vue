@@ -52,7 +52,6 @@ const visibilityLabel = computed(() =>
       :type="inputType"
       :model-value="modelValue"
       class="w-full"
-      variant="soft"
       @update:model-value="(value: string) => emit('update:modelValue', value)"
       @blur="emit('blur')"
     >

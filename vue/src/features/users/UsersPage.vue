@@ -468,7 +468,7 @@ const selectedUsers = computed(() =>
 </script>
 
 <template>
-  <div class="flex w-full flex-col">
+  <div class="flex w-full flex-col gap-4">
     <DataTableToolbar>
       <UInput
         v-model="searchInput"
@@ -476,16 +476,14 @@ const selectedUsers = computed(() =>
         :placeholder="t('features.users.searchPlaceholder')"
         class="w-64"
         icon="i-lucide-search"
-        size="sm"
         @keyup.enter="applySearch"
       />
       <USelect
         :aria-label="t('features.users.column.status')"
         :items="filterOptions"
         :model-value="store.filters.status ?? undefined"
-        :placeholder="t('features.users.filter.all')"
+        :placeholder="t('features.users.column.status')"
         class="w-36"
-        size="sm"
         value-key="value"
         @update:model-value="
           (value: unknown) => store.setFilters({ status: value as string })
@@ -499,16 +497,13 @@ const selectedUsers = computed(() =>
         @reset="resetFilters"
         @search="applySearch"
       />
-      <template #actions>
-        <UButton
-          v-if="canAdd"
-          :label="t('features.users.action.add')"
-          icon="i-lucide-plus"
-          size="sm"
-          variant="outline"
-          @click="openForm('create', null)"
-        />
-      </template>
+      <UButton
+        v-if="canAdd"
+        :label="t('features.users.action.add')"
+        icon="i-lucide-plus"
+        variant="outline"
+        @click="openForm('create', null)"
+      />
     </DataTableToolbar>
 
     <ErrorContent

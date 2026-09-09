@@ -11,6 +11,7 @@ import { getUserErrorMessage, resetUserPassword } from "./user-api";
 import PasswordField from "./PasswordField.vue";
 
 import Spinner from "@/components/ui/spinner/index.vue";
+import { PASSWORD_MAX_LENGTH } from "@/lib/constants";
 
 /**
  * 重置密码弹窗：POST /users/:id/reset-password（RESET_PASSWORD 位）。
@@ -34,12 +35,16 @@ const FORM_ID = "user-reset-password-form";
 const { t } = useI18n();
 const toast = useToast();
 
-// 一致性跨字段校验：不匹配时错误挂 confirmPassword 字段
+// 一致性跨字段校验：不匹配时错误挂 confirmPassword 字段；
+// 6-72 与后端契约 v1.7.3 对齐（72 为 bcrypt 输入上限）
 const schema = z
   .object({
-    newPassword: z.string().min(6, {
-      error: () => t("features.users.form.passwordInvalid"),
-    }),
+    newPassword: z
+      .string()
+      .min(6, { error: () => t("features.users.form.passwordInvalid") })
+      .max(PASSWORD_MAX_LENGTH, {
+        error: () => t("features.users.form.passwordInvalid"),
+      }),
     confirmPassword: z.string(),
   })
   .superRefine((data, ctx) => {

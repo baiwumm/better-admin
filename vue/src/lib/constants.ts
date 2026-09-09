@@ -2,6 +2,12 @@
 export const SUPER_ADMIN_ROLE_CODE = "super_admin";
 
 /**
+ * 密码输入上限（契约 v1.7.3）：72 为 bcrypt 输入上限，超长输入会被
+ * 静默截断，前端与后端 DTO @MaxLength(72) 同规拦截。
+ */
+export const PASSWORD_MAX_LENGTH = 72;
+
+/**
  * i18n 键格式校验正则（点分隔，如 dict.user_status.enabled）。
  * - 必须以字母开头
  * - 各段允许字母、数字、下划线
