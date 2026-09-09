@@ -15,6 +15,10 @@ import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import { type MenuNode } from "@/lib/api-types";
 import { getMenuLabel, type Translate } from "@/lib/menu-i18n";
 import { useTranslation } from "@/i18n";
+import {
+  SIDEBAR_LINKS,
+  SidebarLinkIcon,
+} from "@/layouts/components/app-sidebar";
 import { filterHiddenMenus } from "@/lib/permission";
 import { useMenus } from "@/hooks/use-menus";
 import { useThemeModeTransition } from "@/themes/use-theme-mode-transition";
@@ -198,6 +202,27 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
       .filter((section) => section.entries.length > 0);
   }, [normalizedQuery, sections]);
 
+  // 快捷链接条目（复用侧边栏 SIDEBAR_LINKS 数据源，外链新窗口；对齐 Vue 端命令面板）
+  const quickLinks = useMemo(
+    () =>
+      SIDEBAR_LINKS.map((link) => ({
+        id: `link-${link.kind}`,
+        href: link.href,
+        kind: link.kind,
+        label: t(link.labelKey),
+        searchText: t(link.labelKey).toLowerCase(),
+      })),
+    [t],
+  );
+
+  const visibleQuickLinks = useMemo(() => {
+    if (!normalizedQuery) return quickLinks;
+
+    return quickLinks.filter((link) =>
+      link.searchText.includes(normalizedQuery),
+    );
+  }, [normalizedQuery, quickLinks]);
+
   const visibleThemes = useMemo(() => {
     if (!normalizedQuery) return THEME_ENTRIES;
 
@@ -210,6 +235,7 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
 
   const totalCount =
     visibleSections.reduce((sum, s) => sum + s.entries.length, 0) +
+    visibleQuickLinks.length +
     visibleThemes.length;
 
   // 执行命令：先关面板再执行（对齐 react-shadcn 的 runCommand 时序）
@@ -223,6 +249,15 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
         const theme = THEME_ENTRIES.find((t) => t.id === id);
 
         if (theme) switchThemeMode(theme.mode);
+
+        return;
+      }
+
+      // 快捷链接：外链新窗口（与侧边栏快捷链接一致，noopener 防反向劫持）
+      if (id.startsWith("link-")) {
+        const link = SIDEBAR_LINKS.find((l) => `link-${l.kind}` === id);
+
+        if (link) window.open(link.href, "_blank", "noopener noreferrer");
 
         return;
       }
@@ -334,6 +369,24 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
                 ))}
               </ListBox.Section>
             ))}
+
+            {visibleQuickLinks.length > 0 && (
+              <ListBox.Section id="command-quick-links-section">
+                <Header>{t("layout.command.quickLinks")}</Header>
+                {visibleQuickLinks.map((link) => (
+                  <ListBox.Item
+                    key={link.id}
+                    id={link.id}
+                    textValue={link.label}
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <SidebarLinkIcon kind={link.kind} />
+                      <span className="truncate text-sm">{link.label}</span>
+                    </div>
+                  </ListBox.Item>
+                ))}
+              </ListBox.Section>
+            )}
 
             {visibleThemes.length > 0 && (
               <ListBox.Section id="command-theme-section">

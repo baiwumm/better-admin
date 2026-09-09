@@ -58,8 +58,9 @@ const TECH_STACKS: {
   { name: "Tailwind CSS", url: "https://tailwindcss.com", Icon: TailwindIcon },
 ];
 
-/** 底部快捷链接（菜单区与用户区之间）：新窗口跳转。 */
-const SIDEBAR_LINKS = [
+/** 底部快捷链接（菜单区与用户区之间）：新窗口跳转。
+ * 导出供命令面板「快捷链接组」复用同一数据源（对齐 Vue 端 AdminLayout）。 */
+export const SIDEBAR_LINKS = [
   {
     labelKey: "layout.sidebar.github",
     href: "https://github.com/baiwumm/better-admin",
@@ -86,8 +87,9 @@ function GithubIcon({ className }: { className?: string }) {
   );
 }
 
-/** 链接图标映射（Github 用内联 SVG，其余走 lucide）。 */
-function SidebarLinkIcon({ kind }: { kind: "github" | "blog" }) {
+/** 链接图标映射（Github 用内联 SVG，其余走 lucide）。
+ * 导出供命令面板「快捷链接组」复用（对齐 Vue 端 AdminLayout）。 */
+export function SidebarLinkIcon({ kind }: { kind: "github" | "blog" }) {
   if (kind === "github") {
     return <GithubIcon className="size-4 shrink-0" />;
   }
