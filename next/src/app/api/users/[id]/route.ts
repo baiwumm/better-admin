@@ -5,6 +5,7 @@ import { requireAuthUser } from "@/lib/server/route-auth";
 import { findUser, removeUser, updateUser } from "@/lib/server/users-service";
 import { ServerApiError } from "@/lib/server/http";
 import { jsonOk, handleRouteError } from "@/lib/server/route-helpers";
+import { EMAIL_PATTERN } from "@/lib/constants";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -34,6 +35,11 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       body = await request.json();
     } catch {
       throw new ServerApiError(400, "VALIDATION_ERROR", "请求体不是合法 JSON");
+    }
+
+    // 对齐 nest @IsOptional + @IsEmail：email 有传（含空串）须为合法邮箱
+    if (typeof body.email === "string" && !EMAIL_PATTERN.test(body.email)) {
+      throw new ServerApiError(400, "VALIDATION_ERROR", "邮箱格式不正确");
     }
 
     const user = await updateUser(

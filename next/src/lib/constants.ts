@@ -17,3 +17,10 @@ export const I18N_KEY_PATTERN = /^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)+$/;
  * - 允许字母、数字、下划线、中划线
  */
 export const DICT_TYPE_CODE_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
+
+/**
+ * 常规邮箱格式校验正则（server 端兜底，与 nest @IsEmail 的常规覆盖面一致；
+ * 前端表单用 zod 内建 email 校验）。users 创建/编辑与账户改邮箱共用。
+ */
+export const EMAIL_PATTERN =
+  /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;

@@ -27,6 +27,15 @@ export async function PATCH(request: NextRequest) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "items 为必填数组");
     }
 
+    // 对齐 nest @ArrayMaxSize(200)（契约 DeptSortRequest maxItems）
+    if (body.items.length > 200) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "items 数量不能超过 200",
+      );
+    }
+
     const items: DeptSortItem[] = [];
 
     for (const item of body.items as unknown[]) {

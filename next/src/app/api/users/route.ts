@@ -9,6 +9,7 @@ import {
 } from "@/lib/server/users-service";
 import { jsonList, jsonOk, handleRouteError } from "@/lib/server/route-helpers";
 import { ServerApiError } from "@/lib/server/http";
+import { EMAIL_PATTERN } from "@/lib/constants";
 
 /**
  * /api/users 集合路由（契约 GET/POST /users、DELETE /users?ids=）：
@@ -69,6 +70,11 @@ export async function POST(request: NextRequest) {
       body.displayName.trim().length === 0
     ) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "请求参数无效");
+    }
+
+    // 对齐 nest @IsEmail（契约 UserCreateRequest email format）
+    if (!EMAIL_PATTERN.test(body.email)) {
+      throw new ServerApiError(400, "VALIDATION_ERROR", "邮箱格式不正确");
     }
 
     const user = await createUser(

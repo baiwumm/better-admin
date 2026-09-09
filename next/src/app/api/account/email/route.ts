@@ -4,6 +4,7 @@ import { requireAuthUser } from "@/lib/server/route-auth";
 import { updateAccountEmail } from "@/lib/server/account-service";
 import { ServerApiError } from "@/lib/server/http";
 import { jsonOk, handleRouteError } from "@/lib/server/route-helpers";
+import { EMAIL_PATTERN } from "@/lib/constants";
 
 /** PUT /api/account/email（契约，仅需登录）— 改邮箱（当前密码确认，冲突 409）。 */
 export async function PUT(request: NextRequest) {
@@ -29,6 +30,11 @@ export async function PUT(request: NextRequest) {
         "VALIDATION_ERROR",
         "email 与 currentPassword 为必填",
       );
+    }
+
+    // 对齐 nest @IsEmail（契约 AccountEmailUpdateRequest email format）
+    if (!EMAIL_PATTERN.test(body.email)) {
+      throw new ServerApiError(400, "VALIDATION_ERROR", "邮箱格式不正确");
     }
 
     const profile = await updateAccountEmail(user.id, {

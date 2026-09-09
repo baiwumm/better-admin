@@ -2,15 +2,12 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
-### React 错误页回归主体区直显：403/404/500 布局内展示，推翻独立错误页跳转（2026-09-09）
+### Next server 端请求校验与契约对齐补齐（2026-09-09）
 
-- **背景**：用户需求调整——推翻 2026-08-30 v2「403/404/500 跳转独立全屏页」设计（提交 117e0e4），错误态只在 Admin 布局 main 主体区展示，侧边栏/顶栏/标签栏保留、可直接点其它菜单离开。三个错误页组件（ErrorPageShell 壳）保留待用户重新设计，尺寸本次不动。
-- **403**：`admin-layout.tsx` 恢复 forbidden 时 overlay 直显 `ForbiddenErrorPage`（URL 不变），删 replace 跳转与跳转前撤标签逻辑；保留动态路由父路径判定；无权路径仍登记标签（旧 overlay 方案语义，点回仍 403）。
-- **404**：新增 catch-all splat 路由 `routes/_authenticated/$.tsx` 兜住未匹配 URL 使布局稳定（router 不再触发 notFound 流程替换布局）；**刻意不注册 component**——KeepAliveOutlet 按 URL 解析 routeTree 叶子组件（`findRouteLeafComponent`），splat 若带组件会让任何未知路径「解析成功」、404 判定失效。AdminLayout 新增 notFound 判定（解析不到叶子组件 → overlay 直显 404，优先于 403）；TagsBar `openPath` 加守卫，无匹配路由的路径不登记标签；根路由 `notFoundComponent` 恢复直挂（布局外兜底，登录页等场景）。
-- **500**：`keep-alive-outlet.tsx` 新增面板级 `PaneErrorBoundary`（class 组件手写，不引依赖）——KeepAliveOutlet 旁路 TanStack Match 渲染，页面组件错误进不了路由器 errorComponent 边界、冒泡到根会导致整布局消失；面板级边界仅当前面板显示 500、其余保活面板不受影响，「重试」= 重置边界 + key 递增重挂载子树。`GeneralErrorPage` 增加可选 `onRetry` prop（缺省整页刷新，根路由兜底场景用）；根路由 `errorComponent` 恢复直挂。
-- **清理**：删除 `/403` `/404` `/500` 独立路由（重新生成 routeTree）；`router.ts` 删 `ErrorRedirectState`；`__root.tsx` 删 `NotFoundRedirect` / `ServerErrorRedirect` 两个中转。
-- **验证**：tsc、eslint、vitest（7 文件 76 用例）、vite build 全绿。
-- **待同步**：Next / Vue 端错误页仍为独立全屏页（Vue M0：全屏错误页 + catch-all 404），与 React 新行为分叉；后续各端跟进时按 React 新口径（主体区直显 + catch-all + 面板级 500）对齐，`docs/feature-matrix.md` 已备注。
+- **背景**：Nest 侧契约对齐补录（上一条目）后排查 Next server API 同口径现状：notifications 分页（normalizePaging 白名单）、dict types/items（route 层长度+格式校验）、roles（assertFieldLengths、409 冲突码、super_admin 停用 403）、menus addChild 布尔字段、password ≥6、notices POST content 非空均已对齐；发现 6 处缺口本轮补齐。
+- **补齐**（对齐 nest @IsEmail / @MaxLength / @IsNotEmpty / @ArrayMaxSize 与契约声明）：① PUT /notices/{id} content 有传须非空（此前空串可清空已发布公告内容，trim 口径与 POST 一致）；② PUT /account/profile 的 website 补 ≤255 上限（剥离前缀后的裸值口径，对齐 nest @MaxLength(255)）；③④⑤ users POST / users PUT / PUT /account/email 的 email 补格式校验（新增 EMAIL_PATTERN 共享正则于 lib/constants.ts，三处共用）；⑥ PATCH /org/depts/sort 的 items 补 ≤200 上限。
+- **顺手修复既有类型错误**：roles-service.ts assertFieldLengths 的 description 参数未含 null（7f2768f 遗留——UpdateRoleInput.description 为 string | null，tsc --noEmit 报 TS2345），typeof 窄化修复。
+- **验证**：tsc --noEmit 全绿、改动文件 eslint 0 error、Prettier 格式化。行为影响：均为服务端兜底，正常前端流程（react 端表单 zod 已有 email / website 255 约束）不可触发。
 
 ---
 

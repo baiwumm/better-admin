@@ -160,6 +160,14 @@ function normalizeProfileInput(
   if (dto.website !== undefined) {
     website =
       dto.website === null ? null : stripPrefix(/^https?:\/\//i, dto.website);
+    // 对齐 nest @MaxLength(255)：作用于剥离前缀后的裸值（契约 AccountProfileUpdateRequest）
+    if (website !== null && website.length > 255) {
+      throw new ServerApiError(
+        400,
+        "VALIDATION_ERROR",
+        "website 不能超过 255 个字符",
+      );
+    }
     assertMatches(
       website,
       /^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,63}(?::\d{1,5})?(?:\/\S*)?$/,

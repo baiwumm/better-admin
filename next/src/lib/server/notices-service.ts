@@ -1019,6 +1019,11 @@ export async function updateNotice(
       "公告标题不能超过 50 个字符",
     );
   }
+  // 对齐 nest UpdateDto @IsNotEmpty：content 有传须非空（trim 口径与 POST 一致），
+  // 防止空串经 `??` 分支把已发布公告内容清空
+  if (input.content !== undefined && input.content.trim().length === 0) {
+    throw new ServerApiError(400, "VALIDATION_ERROR", "公告内容不能为空");
+  }
   assertPublishTime(input.publishTime);
 
   if (existing.status === "withdrawn") {
