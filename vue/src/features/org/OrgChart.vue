@@ -2,7 +2,7 @@
 import type { DeptTreeNode } from "@/lib/api-types";
 import type { Edge, Node } from "@vue-flow/core";
 
-import { VueFlow } from "@vue-flow/core";
+import { VueFlow, useVueFlow } from "@vue-flow/core";
 import { Background, BackgroundVariant } from "@vue-flow/background";
 import { Controls } from "@vue-flow/controls";
 import { computed, useTemplateRef } from "vue";
@@ -44,6 +44,24 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const colorMode = useColorMode();
 const wrapperRef = useTemplateRef<HTMLElement>("wrapperRef");
+const { fitView } = useVueFlow();
+
+/**
+ * 初始居中：vue-flow 内置 fitViewOnInit 在首批节点测量后就执行（bounds 不完整，
+ * 且无 options prop 可传），实测画布偏右上、根节点被截断。改为监听
+ * nodes-initialized（全部节点完成测量，等价 React Flow 的 fitView 时机）后
+ * 以与 React 端一致的选项 fitView；只执行一次，展开 / 收起后不自动缩放
+ * （保持用户视角，对齐 React 端交互边界）。
+ */
+let didInitialFit = false;
+
+function handleNodesInitialized() {
+  if (didInitialFit) {
+    return;
+  }
+  didInitialFit = true;
+  void fitView({ maxZoom: 1, padding: 0.15 });
+}
 
 /** 过滤可见子树：收起节点的 children 整体剪掉（仅用于布局计算） */
 function filterVisible(
@@ -137,13 +155,13 @@ export default { name: "OrgChart" };
     <VueFlow
       :edges="edges"
       :edges-focusable="false"
-      :fit-view-init="{ maxZoom: 1, padding: 0.15 }"
       :max-zoom="1.5"
       :min-zoom="0.15"
       :nodes="nodes"
       :nodes-connectable="false"
       :nodes-draggable="false"
       :zoom-on-double-click="false"
+      @nodes-initialized="handleNodesInitialized"
       @node-click="({ node }) => emit('nodeClick', String(node.id))"
     >
       <template #node-dept="nodeProps">
