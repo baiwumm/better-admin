@@ -8,26 +8,31 @@ import type {
 import type { FormSubmitEvent } from "@nuxt/ui";
 import Spinner from "@/components/ui/spinner/index.vue";
 import * as z from "zod";
-import { computed, h, reactive, ref, watch } from "vue";
+import {
+  CalendarDate,
+  CalendarDateTime,
+  Time,
+  getLocalTimeZone,
+} from "@internationalized/date";
+import { computed, h, reactive, ref, useTemplateRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useInfiniteQuery, useQuery } from "@tanstack/vue-query";
 import { useToast } from "@nuxt/ui/composables";
 
 import { createNotice, fetchNoticeDetail, updateNotice } from "./notice-api";
 import NoticeScopeSelector from "./NoticeScopeSelector.vue";
-import RichTextEditor from "./RichTextEditor.vue";
 
 import { fetchApiList } from "@/lib/api-client";
 
 /**
  * 公告发布/编辑弹窗（契约 v1.7.0，对应 React 端 notice-form-dialog.tsx）。
  *
- * - 内容为 Tiptap 富文本（RichTextEditor，提交 HTML）；
+ * - 内容为 UEditor 富文本（Nuxt UI 内置 Tiptap，content-type html，提交 HTML）；
  * - 发布范围三粒度并集（NoticeScopeSelector，三类目标分别受控，
  *   「至少一项」校验失败经 UFormField 反馈）；
- * - 发布时间用原生 datetime-local 输入（分钟粒度）：缺省 = 立即发布；
- *   未来时间 = 定时草稿（后端 @Cron 自动发布）；提交转带本地时区偏移的
- *   RFC3339（toISOWithOffset，对齐 React 端）；
+ * - 发布时间为 UInputDate（内嵌 UCalendar 日历弹窗）+ UInputTime 组合
+ *   （分钟粒度）：缺省 = 立即发布；未来时间 = 定时草稿（后端 @Cron 自动
+ *   发布）；提交转带本地时区偏移的 RFC3339（toISOWithOffset，对齐 React 端）；
  * - 编辑态由内部按 noticeId 拉取详情（含 scopes），列表行仅传 id——
  *   列表 Notice 不含 scopes，强转会丢范围数据；
  * - 岗位/人员候选串行拉全量（React 端为滚动加载）：演示规模量级小、
@@ -59,27 +64,29 @@ const TITLE_MAX_LENGTH = 50;
 /** 候选分页每页条数（后端分页 DTO 白名单最大值 50） */
 const SCOPE_PAGE_SIZE = 50;
 
-/** ISO 时间戳 → 本地 "YYYY-MM-DDTHH:mm"（datetime-local 的受控值） */
-function toLocalMinuteInput(iso: string | null | undefined): string {
-  if (!iso) return "";
+/** ISO 时间戳 → 发布日期/时间分量（编辑回显；缺省或非法返回 undefined = 未设置） */
+function isoToPublishParts(iso: string | null | undefined): {
+  date: CalendarDate | undefined;
+  time: PublishTimeValue | undefined;
+} {
+  if (!iso) return { date: undefined, time: undefined };
   const d = new Date(iso);
 
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
+  if (Number.isNaN(d.getTime())) return { date: undefined, time: undefined };
 
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return {
+    date: new CalendarDate(d.getFullYear(), d.getMonth() + 1, d.getDate()),
+    time: new Time(d.getHours(), d.getMinutes()),
+  };
 }
 
 /**
- * datetime-local 本地值 → 带本地时区偏移的 ISO 时间戳。
- * 无时区的 "YYYY-MM-DDTHH:mm" 会被服务端按**服务器时区**解释，
+ * 定时发布时间 → 带本地时区偏移的 ISO 时间戳。
+ * DateValue 本身无时区语义，无偏移的本地墙钟会被服务端按**服务器时区**解释，
  * 服务器与用户时区不一致时定时发布时间漂移（契约 format: date-time 要求 RFC3339）。
  */
-function toISOWithOffset(localMinute: string): string {
-  if (!localMinute) return "";
-  const d = new Date(localMinute);
-
-  if (Number.isNaN(d.getTime())) return "";
+function toISOWithOffset(value: CalendarDateTime): string {
+  const d = value.toDate(getLocalTimeZone());
   const pad = (n: number) => String(Math.abs(n)).padStart(2, "0");
   const offset = -d.getTimezoneOffset();
   const sign = offset >= 0 ? "+" : "-";
@@ -89,6 +96,14 @@ function toISOWithOffset(localMinute: string): string {
     `T${pad(d.getHours())}:${pad(d.getMinutes())}:00` +
     `${sign}${pad(Math.floor(offset / 60))}:${pad(offset % 60)}`
   );
+}
+
+/**
+ * 富文本「视觉为空」判定：剥除标签后无可见文本。
+ * UEditor 空文档会 emit `<p></p>`，仅靠 trim 无法识别。
+ */
+function isEmptyNoticeHtml(html: string): boolean {
+  return html.replace(/<[^>]*>/g, "").trim() === "";
 }
 
 const isEdit = computed(() => props.mode === "edit");
@@ -177,14 +192,15 @@ const schema = z
     content: z
       .string()
       .trim()
-      .min(1, { error: () => t("features.notices.form.contentRequired") }),
+      // UEditor 空文档 emit `<p></p>`：剥除标签判空，与纯空串一并拦截
+      .refine((v) => !isEmptyNoticeHtml(v), {
+        error: () => t("features.notices.form.contentRequired"),
+      }),
     // 发布范围：三类目标分别受控，并集语义
     scopeDeptIds: z.array(z.string()),
     scopePostIds: z.array(z.string()),
     scopeUserIds: z.array(z.string()),
     isTop: z.boolean(),
-    /** "" = 立即发布 */
-    publishDate: z.string(),
   })
   // superRefine 回调在校验时执行：文案取当前 locale，语言切换后跟随
   .superRefine((v, ctx) => {
@@ -209,8 +225,84 @@ const state = reactive<Schema>({
   scopePostIds: [],
   scopeUserIds: [],
   isTop: false,
-  publishDate: "",
 });
+
+// 定时发布（分钟粒度，脱离 UForm schema 单独受控）：两者都有值才构成定时发布；
+// 时间值与 UInputTime 的 v-model 对齐（Time | CalendarDateTime）
+type PublishTimeValue = Time | CalendarDateTime;
+const publishDateValue = ref<CalendarDate>();
+const publishTimeValue = ref<PublishTimeValue>();
+const publishDateInput = useTemplateRef("publishDateInput");
+
+/**
+ * UEditor 工具栏按钮集（与 React 端公告编辑器功能范围一致，历史操作单独分组）：
+ * items 只声明形态（图标/无障碍文案/目标能力），执行逻辑由 UEditorToolbar
+ * 内置 handlers 驱动（active/禁用态自动跟随光标上下文）。
+ */
+const editorToolbarItems = computed(() => [
+  [
+    {
+      kind: "mark",
+      mark: "bold",
+      icon: "i-lucide-bold",
+      "aria-label": t("features.notices.editor.bold"),
+      tooltip: { text: t("features.notices.editor.bold") },
+    },
+    {
+      kind: "mark",
+      mark: "italic",
+      icon: "i-lucide-italic",
+      "aria-label": t("features.notices.editor.italic"),
+      tooltip: { text: t("features.notices.editor.italic") },
+    },
+    {
+      kind: "mark",
+      mark: "strike",
+      icon: "i-lucide-strikethrough",
+      "aria-label": t("features.notices.editor.strike"),
+      tooltip: { text: t("features.notices.editor.strike") },
+    },
+    {
+      kind: "heading",
+      level: 2,
+      icon: "i-lucide-heading-2",
+      "aria-label": t("features.notices.editor.heading"),
+      tooltip: { text: t("features.notices.editor.heading") },
+    },
+    {
+      kind: "bulletList",
+      icon: "i-lucide-list",
+      "aria-label": t("features.notices.editor.bulletList"),
+      tooltip: { text: t("features.notices.editor.bulletList") },
+    },
+    {
+      kind: "orderedList",
+      icon: "i-lucide-list-ordered",
+      "aria-label": t("features.notices.editor.orderedList"),
+      tooltip: { text: t("features.notices.editor.orderedList") },
+    },
+    {
+      kind: "blockquote",
+      icon: "i-lucide-quote",
+      "aria-label": t("features.notices.editor.quote"),
+      tooltip: { text: t("features.notices.editor.quote") },
+    },
+  ],
+  [
+    {
+      kind: "undo",
+      icon: "i-lucide-undo-2",
+      "aria-label": t("features.notices.editor.undo"),
+      tooltip: { text: t("features.notices.editor.undo") },
+    },
+    {
+      kind: "redo",
+      icon: "i-lucide-redo-2",
+      "aria-label": t("features.notices.editor.redo"),
+      tooltip: { text: t("features.notices.editor.redo") },
+    },
+  ],
+]);
 
 const submitting = ref(false);
 
@@ -232,7 +324,10 @@ watch(
       .filter((s) => s.scopeType === "user")
       .map((s) => s.targetId);
     state.isTop = notice.isTop;
-    state.publishDate = toLocalMinuteInput(notice.publishTime);
+    const parts = isoToPublishParts(notice.publishTime);
+
+    publishDateValue.value = parts.date;
+    publishTimeValue.value = parts.time;
   },
 );
 
@@ -250,7 +345,8 @@ watch(
     state.scopePostIds = [];
     state.scopeUserIds = [];
     state.isTop = false;
-    state.publishDate = "";
+    publishDateValue.value = undefined;
+    publishTimeValue.value = undefined;
   },
 );
 
@@ -259,6 +355,16 @@ function close() {
 }
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
+  // 日期/时间拆分输入的原子性：只填其一视为未完成，不进入提交流程
+  if (Boolean(publishDateValue.value) !== Boolean(publishTimeValue.value)) {
+    toast.add({
+      color: "error",
+      title: t("features.notices.form.publishTimeIncomplete"),
+    });
+
+    return;
+  }
+
   submitting.value = true;
 
   // toast.promise 三段式（对齐既有形态）
@@ -294,7 +400,18 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       content: event.data.content,
       scopeTargets,
       isTop: event.data.isTop,
-      publishTime: toISOWithOffset(event.data.publishDate) || null,
+      publishTime:
+        publishDateValue.value && publishTimeValue.value
+          ? toISOWithOffset(
+              new CalendarDateTime(
+                publishDateValue.value.year,
+                publishDateValue.value.month,
+                publishDateValue.value.day,
+                publishTimeValue.value.hour,
+                publishTimeValue.value.minute,
+              ),
+            )
+          : null,
     };
 
     const saved = isEdit.value
@@ -396,11 +513,26 @@ export default { name: "NoticeFormDialog" };
           name="content"
           required
         >
-          <RichTextEditor
+          <!-- UEditor（Nuxt UI 内置 Tiptap）：html 字符串进出，StarterKit schema 约束节点；
+               关闭 image/mention 扩展以对齐 React 端功能范围 -->
+          <UEditor
+            v-slot="{ editor }"
+            v-model="state.content"
             :aria-label="t('features.notices.form.content')"
-            :value="state.content"
-            @change="(html: string) => (state.content = html)"
-          />
+            :image="false"
+            :mention="false"
+            :placeholder="t('features.notices.form.contentPlaceholder')"
+            class="w-full rounded-lg border border-default bg-default"
+            :ui="{
+              base: 'min-h-40 max-h-72 overflow-y-auto px-3 py-2 text-sm',
+            }"
+          >
+            <UEditorToolbar
+              :editor="editor"
+              :items="editorToolbarItems"
+              :ui="{ base: 'flex-wrap border-default border-b p-1' }"
+            />
+          </UEditor>
         </UFormField>
 
         <UFormField name="scopeDeptIds" required>
@@ -418,13 +550,38 @@ export default { name: "NoticeFormDialog" };
         <UFormField
           :help="t('features.notices.form.publishTimeHint')"
           :label="t('features.notices.form.publishTime')"
-          name="publishDate"
         >
-          <UInput
-            v-model="state.publishDate"
-            type="datetime-local"
-            class="w-full"
-          />
+          <!-- 方案对齐官方示例：日期分段输入 + 内嵌 UCalendar 日历弹窗，时间独立分段输入 -->
+          <UFieldGroup class="w-full">
+            <UInputDate
+              ref="publishDateInput"
+              v-model="publishDateValue"
+              class="flex-1"
+              :aria-label="t('features.notices.form.publishDate')"
+            >
+              <template #trailing>
+                <UPopover :reference="publishDateInput?.inputsRef.at(-1)?.$el">
+                  <UButton
+                    :aria-label="t('features.notices.form.pickDate')"
+                    class="px-0"
+                    color="neutral"
+                    icon="i-lucide-calendar"
+                    size="sm"
+                    variant="link"
+                  />
+
+                  <template #content>
+                    <UCalendar v-model="publishDateValue" class="p-2" />
+                  </template>
+                </UPopover>
+              </template>
+            </UInputDate>
+            <UInputTime
+              v-model="publishTimeValue"
+              class="flex-1"
+              :aria-label="t('features.notices.form.publishTime')"
+            />
+          </UFieldGroup>
         </UFormField>
 
         <div

@@ -38,12 +38,6 @@ importers:
       '@tanstack/vue-virtual':
         specifier: ^3.13.35
         version: 3.13.36(vue@3.5.42(typescript@5.9.3))
-      '@tiptap/starter-kit':
-        specifier: ^3.31.2
-        version: 3.31.2
-      '@tiptap/vue-3':
-        specifier: ^3.31.2
-        version: 3.31.2(@floating-ui/dom@1.8.0)(@tiptap/core@3.31.2(@tiptap/pm@3.31.2))(@tiptap/pm@3.31.2)(vue@3.5.42(typescript@5.9.3))
       '@unhead/vue':
         specifier: ^3.3.2
         version: 3.4.0(@oxc-project/types@0.148.0)(esbuild@0.27.7)(lightningcss@1.33.0)(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0))(vue@3.5.42(typescript@5.9.3))
