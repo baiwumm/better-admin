@@ -26,6 +26,7 @@
     "sync-locales": "node scripts/sync-locales.mjs"
   },
   "dependencies": {
+    "@bprogress/vue": "^1.1.5",
     "@floating-ui/dom": "^1.8.0",
     "@iconify/vue": "^5.0.1",
     "@internationalized/date": "^3.12.3",

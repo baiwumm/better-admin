@@ -6,6 +6,7 @@ import { MENUS_QUERY_KEY } from "@/composables/use-menus";
 import { queryClient } from "@/lib/query-client";
 import type { MenuNode } from "@/lib/api-types";
 import { findMenuPath } from "@/lib/permission";
+import { progressRouteBegin } from "@/lib/progress";
 import {
   isLoginRequiredPath,
   isMenuRequiredPath,
@@ -27,6 +28,9 @@ import { useAuthStore } from "@/stores/auth-store";
  */
 export function setupRouterGuards(router: Router) {
   router.beforeEach(async (to) => {
+    // 路由切换进度条
+    progressRouteBegin();
+
     const auth = useAuthStore();
     const pathname = to.path;
 

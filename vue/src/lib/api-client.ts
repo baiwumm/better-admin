@@ -2,6 +2,7 @@ import type { ApiListEnvelope, ListQueryParams } from "@/lib/api-types";
 
 import { ENV } from "@/lib/env";
 import { getErrorMessage } from "@/i18n";
+import { progressStart, progressStop } from "@/lib/progress";
 
 /**
  * 统一 API 客户端（fetch 封装，与 React 端同构）。
@@ -184,90 +185,100 @@ export async function fetchApiRaw(
   options: RequestOptions = {},
 ): Promise<{ data: unknown; pagination?: unknown }> {
   const { body, auth = true, allowRetry = true, headers, ...rest } = options;
-  const requestHeaders: Record<string, string> = {
-    ...(headers as Record<string, string> | undefined),
-  };
 
-  if (body !== undefined && !(body instanceof FormData)) {
-    requestHeaders["Content-Type"] = "application/json";
-  }
+  // 进度条：仅业务请求触发（auth: false 为登录/刷新等内部请求，跳过）。
+  // try/finally 保证所有退出路径（含网络异常、解析异常）都配对释放计数；
+  // 401 重试分支不提前释放本层计数，避免重试间隙进度条归零闪烁。
+  if (auth) progressStart();
 
-  if (auth) {
-    const token = authSnapshot?.accessToken ?? null;
+  try {
+    const requestHeaders: Record<string, string> = {
+      ...(headers as Record<string, string> | undefined),
+    };
 
-    if (token) requestHeaders["Authorization"] = `Bearer ${token}`;
-  }
-
-  const finalBody =
-    body === undefined || body instanceof FormData
-      ? body
-      : JSON.stringify(body);
-
-  const response = await fetch(`${ENV.apiBaseUrl}${path}`, {
-    ...rest,
-    headers: requestHeaders,
-    body: finalBody as BodyInit | undefined,
-  });
-
-  // 401：尝试刷新 token 并重试一次（避免无限递归：重试请求 allowRetry=false）
-  if (response.status === 401 && auth && allowRetry) {
-    try {
-      await refreshAccessToken();
-    } catch (error) {
-      redirectToSignIn();
-
-      const unauthorized =
-        error instanceof ApiClientError
-          ? error
-          : new ApiClientError(
-              401,
-              "UNAUTHORIZED",
-              getErrorMessage(
-                "errors.api.loginExpired",
-                "登录已过期，请重新登录",
-              ),
-            );
-
-      notifyErrorHandler(unauthorized);
-
-      throw unauthorized;
+    if (body !== undefined && !(body instanceof FormData)) {
+      requestHeaders["Content-Type"] = "application/json";
     }
 
-    // 重试请求会递归进入 fetchApiRaw（allowRetry=false）
-    return fetchApiRaw(path, { ...options, allowRetry: false });
+    if (auth) {
+      const token = authSnapshot?.accessToken ?? null;
+
+      if (token) requestHeaders["Authorization"] = `Bearer ${token}`;
+    }
+
+    const finalBody =
+      body === undefined || body instanceof FormData
+        ? body
+        : JSON.stringify(body);
+
+    const response = await fetch(`${ENV.apiBaseUrl}${path}`, {
+      ...rest,
+      headers: requestHeaders,
+      body: finalBody as BodyInit | undefined,
+    });
+
+    // 401：尝试刷新 token 并重试一次（避免无限递归：重试请求 allowRetry=false）
+    if (response.status === 401 && auth && allowRetry) {
+      try {
+        await refreshAccessToken();
+      } catch (error) {
+        redirectToSignIn();
+
+        const unauthorized =
+          error instanceof ApiClientError
+            ? error
+            : new ApiClientError(
+                401,
+                "UNAUTHORIZED",
+                getErrorMessage(
+                  "errors.api.loginExpired",
+                  "登录已过期，请重新登录",
+                ),
+              );
+
+        notifyErrorHandler(unauthorized);
+
+        throw unauthorized;
+      }
+
+      // 重试请求会递归进入 fetchApiRaw（allowRetry=false）
+      return fetchApiRaw(path, { ...options, allowRetry: false });
+    }
+
+    if (response.status === 204) {
+      // 无内容响应（如 logout）
+      return { data: null };
+    }
+
+    const text = await response.text();
+    const json = text ? (JSON.parse(text) as unknown) : null;
+
+    if (!response.ok) {
+      const err = (json ?? {}) as ApiErrorBody;
+      const apiError = new ApiClientError(
+        response.status,
+        err.code,
+        err.message ??
+          getErrorMessage("errors.api.requestFailed", "请求失败（{{status}}）", {
+            status: response.status,
+          }),
+      );
+
+      notifyErrorHandler(apiError);
+
+      throw apiError;
+    }
+
+    // 信封约定：{ data } 或 { data, pagination }
+    if (json && typeof json === "object" && "data" in json) {
+      return json as { data: unknown; pagination?: unknown };
+    }
+
+    // 非信封结构（兜底）
+    return { data: json };
+  } finally {
+    if (auth) progressStop();
   }
-
-  if (response.status === 204) {
-    // 无内容响应（如 logout）
-    return { data: null };
-  }
-
-  const text = await response.text();
-  const json = text ? (JSON.parse(text) as unknown) : null;
-
-  if (!response.ok) {
-    const err = (json ?? {}) as ApiErrorBody;
-    const apiError = new ApiClientError(
-      response.status,
-      err.code,
-      err.message ??
-        getErrorMessage("errors.api.requestFailed", "请求失败（{{status}}）", {
-          status: response.status,
-        }),
-    );
-
-    notifyErrorHandler(apiError);
-
-    throw apiError;
-  }
-
-  // 信封约定：{ data } 或 { data, pagination }
-  if (json && typeof json === "object" && "data" in json) {
-    return json as { data: unknown; pagination?: unknown };
-  }
-
-  // 非信封结构（兜底）
-  return { data: json };
 }
 
 /** 将查询参数对象序列化为 query string（跳过 undefined / null / 空字符串）。 */
