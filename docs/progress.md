@@ -2,6 +2,17 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Vue M3 阶段启动：偏好设置补齐 + 多标签页落地（2026-09-10 ~ 09-11，进行中）
+
+- **M3-1 偏好设置补齐**（`08c173d`，GUI 冒烟通过）：design-theme-store（Pinia）单一真源 + localStorage 逐项持久化，`initDesignTheme` 在 `app.mount` 前同步应用防首帧闪烁，store 随应用常驻（Black 档需在登录页也跟随明暗重算）。主题色按 better-nuxt 机制：运行时覆盖 `--ui-color-primary-{50..950}`（`--ui-primary` 的亮 500/暗 400 分档链自动跟随），Black 档清 shade 覆盖、改覆盖 `--ui-primary` 为 black/white 并随 isDark 重算，与色板互斥；圆角覆盖 `--ui-radius`，档位文案对齐 React、数值按 Nuxt UI 标度 0/0.125/0.25/0.5rem（默认档不写 DOM）。主题模式并入 store：`useColorMode({ emitAuto: true })` 原样读写 auto（否则「跟随系统」回显错），真源仍是 `vueuse-color-scheme` 键（index.html 防闪烁脚本共用）。主题色/模式/色彩模式切换走 Vue 版 `runViewTransition`（VT 回调内 mutate + `await nextTick()`，对应 React flushSync 收敛提交语义）；平移三个样式文件与色弱 SVG 滤镜；抽屉为 better-nuxt 按钮网格形态（PrefOptionGrid 复用），移除与 Header 重复的语言项。
+- **机制结论（Vue 偏好设置）**：① `useAppConfig()` 在 Vue 端是 reactive 单例且 Nuxt UI colors 插件经 glob 也会在 Vue 端加载——理论上可直接改 `appConfig.ui.colors.primary` 触发整套 shade 变量重生成，但其经 unhead 异步更新 `<style>`，与 ViewTransition「mutate 回调内同步完成 DOM 变更」冲突且依赖内部行为，故仍用公开 CSS 变量手动覆盖；② vueuse useStorage 对字符串用裸存储（`dark` 无引号）——index.html 防闪烁脚本原 `'"dark"'` 比较永不成立且 auto 未跟随系统，已修正（裸/带引号兼容 + auto 跟随系统）；③ 色弱滤镜节点（feColorMatrix）平移至 vue/index.html 零尺寸内联 SVG。
+- **M3-2 多标签页**（`a10f9eb`，GUI 冒烟通过）：tabs-model 纯函数 + 32 用例自 React 原样平移；tabs-store（Pinia）sessionStorage 持久化（paths + 标题/图标快照）+ refreshSeq + prune/登出 reset（auth-store clearSession 接入）/语言切换 clearTabsCache。TagsBar：UButton 标签 + 关闭热区 + 中键关闭 + UContextMenu 六动作（capture 阶段记录目标标签）+ mask 渐隐/chevron/滚轮横滚/拖拽平移/激活滚入 + 进场动画。KeepAliveOutlet 替代裸 RouterView：**每条路径包一层 `name=path` 的宿主组件**（KeepAlive 的 include 按组件 name 匹配，页面组件名与路径无关且 index.vue 同名冲突，宿主组件按路径缓存保证类型稳定），`include = 已打开标签 ∩ 菜单 keepAlive`（关闭标签即销毁缓存实例）、`max=10` LRU；「刷新」= key 序号重挂载 + include 摘一拍触发 KeepAlive 剪除旧缓存（否则旧实例残留至 LRU 淘汰）；路由切换面板 body 滚动回顶；显隐开关接偏好 showTabs。
+- **机制结论（Vue 多标签页，与 React 端差异）**：Vue 原生 KeepAlive 无 React `<Activity>` 的 effects 暂停——隐藏页 vue-query 订阅仍活跃（数据保鲜不冻结，语义差异记录在案）；RouterView 作用域插槽的 `Component` 是 VNode，宿主内经 `h()` 克隆渲染。
+- **验证**：两次 GUI 冒烟（本地 Nest + 浏览器实测）——偏好 9 项逐项即时生效 + 刷新持久 + 重置复原（揭示动画后弹 toast）+ Black 随明暗重算；标签登记/快照、keepAlive 页两次切换输入保留、关闭销毁后重开全新、关闭当前页跳右侧幸存者、右键菜单禁用态、刷新重建，全部通过；`vue-tsc` / `eslint` / `vitest`（73 用例）/ `vite build` 四绿贯穿。
+- **M3 剩余**：页面切换 VT 编排 + 导航方向感知（route-transitions.css 已就位，data-route-vt 门控待接；Nuxt UI toast 是否误触发根级 VT 待验证）；DataTable 列设置；我的账户；命令面板菜单/路由数据核对。
+
+---
+
 ### 密码策略 v1.8.0 同步 Vue 端（2026-09-10）
 
 - **范围**：Vue 端尚无「我的账户」模块，本次仅涉及用户管理的两个弹窗（新建用户初始密码 / 重置密码）；规则口径与 React 端完全一致。
