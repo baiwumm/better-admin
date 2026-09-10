@@ -510,7 +510,6 @@
   "features.users.form.postsPlaceholder": "Select posts",
   "features.users.form.roles": "Roles",
   "features.users.form.rolesEmpty": "No assignable roles",
-  "features.users.form.rolesLoading": "Loading roles…",
   "features.users.form.rolesMax": "Up to 5 roles can be assigned",
   "features.users.form.rolesPlaceholder": "Select roles (optional)",
   "features.users.form.saving": "Saving…",

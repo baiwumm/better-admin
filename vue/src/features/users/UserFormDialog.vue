@@ -86,8 +86,8 @@ const EMAIL_MAX_LENGTH = 100;
 const EMPLOYEE_NO_MAX_LENGTH = 50;
 
 // Reka UI 保留空串 value 用于 placeholder 清除语义，SelectItem 空串 value
-// 会告警——「未设置/无主岗」用哨兵值表示，提交/回显时与 null 互转
-const GENDER_UNSET = "unset";
+// 会告警——「无主岗」用哨兵值表示，提交/回显时与 null 互转；
+// 性别无需哨兵：USelectMenu clear 清空即置 null（null = 未设置）
 const MAIN_POST_NONE = "none";
 
 // 校验规则与 React 端 buildUserFormSchema 一一对应；消息用函数延迟求值：
@@ -129,7 +129,8 @@ const schema = z
     employeeNo: z.string(),
     entryDate: z.string(),
     employmentStatus: z.enum(["employed", "resigned"]),
-    gender: z.enum(["unset", "male", "female"]),
+    // null = 未设置（USelectMenu clear 清空即 null，对齐 React 端空串语义）
+    gender: z.enum(["male", "female"]).nullable(),
     mainPostId: z.string(),
   })
   .superRefine((data, ctx) => {
@@ -182,7 +183,7 @@ const state = reactive<Schema>({
   employeeNo: "",
   entryDate: "",
   employmentStatus: "employed",
-  gender: GENDER_UNSET,
+  gender: null,
   postIds: [],
   mainPostId: MAIN_POST_NONE,
 });
@@ -227,7 +228,7 @@ watch(
     state.employeeNo = user?.employeeNo ?? "";
     state.entryDate = user?.entryDate ?? "";
     state.employmentStatus = user?.employmentStatus ?? "employed";
-    state.gender = user?.gender ?? GENDER_UNSET;
+    state.gender = user?.gender ?? null;
     state.postIds = user?.posts.map((post) => post.id) ?? [];
     state.mainPostId =
       user?.posts.find((post) => post.isMain)?.id ?? MAIN_POST_NONE;
@@ -237,7 +238,7 @@ watch(
 );
 
 // 角色下拉选项：仅启用角色；pageSize 上限 50，超出由 fetchRoleOptions 续拉
-const { data: fetchedRoleOptions } = useQuery({
+const { data: fetchedRoleOptions, isLoading: rolesLoading } = useQuery({
   queryKey: ROLE_OPTIONS_QUERY_KEY,
   queryFn: fetchRoleOptions,
   staleTime: 60_000,
@@ -254,21 +255,23 @@ const roleItems = computed(() =>
 );
 
 // 组织中心数据源：组织树（与组织/岗位页共享缓存）+ 岗位选项（首页 50 条）
-const { data: deptTree } = useQuery({
+const { data: deptTree, isLoading: deptTreeLoading } = useQuery({
   queryKey: DEPTS_TREE_QUERY_KEY,
   queryFn: fetchDeptTree,
   staleTime: 60_000,
 });
-const { data: postOptionsRes } = useQuery({
+const { data: postOptionsRes, isLoading: postsLoading } = useQuery({
   queryKey: ["org", "posts", "options"],
   queryFn: () => fetchPosts({ page: 1, pageSize: 50 }),
   staleTime: 60_000,
 });
 const postOptions = computed(() => postOptionsRes.value?.data ?? []);
+// description 为 SelectMenu 选项次行（label 下方 muted 小字），展示岗位所属
+// 组织路径，对齐 React 端 ListBox.Item 两行结构
 const postItems = computed(() =>
   postOptions.value.map((post) => ({
     label: post.name,
-    hint: post.deptPath,
+    description: post.deptPath,
     value: post.id,
     disabled: post.status !== "enabled",
   })),
@@ -300,7 +303,7 @@ watch(
 
 const submitting = ref(false);
 
-/** 哨兵值 → 后端 null（未设置性别/无主岗与「未选择」同义） */
+/** 哨兵值 → 后端 null（无主岗与「未选择」同义） */
 function toNullable<T extends string, S extends T>(
   value: T,
   sentinel: S,
@@ -340,7 +343,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         employeeNo: event.data.employeeNo || null,
         entryDate: event.data.entryDate || null,
         employmentStatus: event.data.employmentStatus,
-        gender: toNullable(event.data.gender, GENDER_UNSET),
+        gender: event.data.gender || null,
         postIds: event.data.postIds,
         mainPostId: toNullable(event.data.mainPostId, MAIN_POST_NONE),
       });
@@ -356,7 +359,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         employeeNo: event.data.employeeNo || null,
         entryDate: event.data.entryDate || null,
         employmentStatus: event.data.employmentStatus,
-        gender: toNullable(event.data.gender, GENDER_UNSET),
+        gender: event.data.gender || null,
         postIds: event.data.postIds,
         mainPostId: toNullable(event.data.mainPostId, MAIN_POST_NONE),
       });
@@ -511,8 +514,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <USelectMenu
             v-model="state.roleIds"
             :items="roleItems"
+            :loading="rolesLoading"
             :placeholder="
-              roleItems.length === 0
+              !rolesLoading && roleItems.length === 0
                 ? t('features.users.form.rolesEmpty')
                 : t('features.users.form.rolesPlaceholder')
             "
@@ -527,7 +531,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           :help="t('features.users.form.deptHint')"
           :ui="{ help: 'text-dimmed text-xs' }"
         >
-          <DeptTreeSelect v-model="state.deptId" :tree="deptTree ?? []" />
+          <DeptTreeSelect
+            v-model="state.deptId"
+            :is-loading="deptTreeLoading"
+            :tree="deptTree ?? []"
+          />
         </UFormField>
 
         <UFormField
@@ -539,8 +547,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <USelectMenu
             v-model="state.postIds"
             :items="postItems"
+            :loading="postsLoading"
             :placeholder="
-              postItems.length === 0
+              !postsLoading && postItems.length === 0
                 ? t('features.users.form.postsEmpty')
                 : t('features.users.form.postsPlaceholder')
             "
@@ -632,17 +641,19 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           </UFormField>
 
           <UFormField :label="t('features.users.form.gender')">
-            <USelect
+            <!-- 未设置 = clear 清空（null），对齐 React 端清空图标交互；
+                 仅两个选项，隐藏搜索框 -->
+            <USelectMenu
               v-model="state.gender"
+              :aria-label="t('features.users.form.gender')"
               :items="[
-                {
-                  label: t('features.users.gender.unset'),
-                  value: GENDER_UNSET,
-                },
                 { label: t('features.users.gender.male'), value: 'male' },
                 { label: t('features.users.gender.female'), value: 'female' },
               ]"
+              :placeholder="t('features.users.gender.unset')"
+              :search-input="false"
               class="w-full"
+              clear
               value-key="value"
             />
           </UFormField>

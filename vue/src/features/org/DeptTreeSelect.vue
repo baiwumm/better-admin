@@ -18,7 +18,9 @@ import { useI18n } from "vue-i18n";
  * - selfId 传入时禁选自身及其全部后代（组织父级防环）；
  * - 停用组织一律禁选（停用后不可关联新数据）；
  * - clear 内置清除（替代此前外挂关闭 Button）；其清除按钮不跟随
- *   disabled（USelectMenu 内部 as="span"），禁用时须显式关闭 clear。
+ *   disabled（USelectMenu 内部 as="span"），禁用时须显式关闭 clear；
+ * - isLoading 透传 USelectMenu loading：组织树初始加载时 trigger 尾部
+ *   渲染 Spinner（替代下拉箭头），对齐 React 端 DeptTreeSelect isLoading。
  */
 const modelValue = defineModel<string>({ default: "" });
 
@@ -28,10 +30,17 @@ const props = withDefaults(
     /** 禁选自身及后代（组织表单编辑防环场景）；缺省不禁 */
     selfId?: string | null;
     isDisabled?: boolean;
+    /** 组织树初始加载态（用户表单等异步数据源场景）；缺省 false */
+    isLoading?: boolean;
     /** 占位文案（筛选器场景传「全部」语义）；缺省为选择组织 */
     placeholder?: string;
   }>(),
-  { selfId: null, isDisabled: false, placeholder: undefined },
+  {
+    selfId: null,
+    isDisabled: false,
+    isLoading: false,
+    placeholder: undefined,
+  },
 );
 
 const { t } = useI18n();
@@ -105,6 +114,7 @@ function onSelect(key: unknown) {
     :avatar="selectedOption?.avatar"
     :clear="!isDisabled"
     :disabled="isDisabled"
+    :loading="isLoading"
     :placeholder="placeholder ?? t('features.org.deptTreeSelect.placeholder')"
     class="w-full"
     value-key="value"
