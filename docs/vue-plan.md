@@ -187,10 +187,11 @@ vue/src/pages/
 - 顺序：组织管理 → 岗位 → 通讯录（URL Query 同步）→ 公告管理（TipTap）→ 我的公告 + 站内信 → 架构图谱（vue-flow）→ Excel 导出。
 - 验收：图谱四交互 + `?deptId=` 贯通；导出样式对齐（品牌蓝表头/斑马纹/冻结首行）；公告 HTML 与 React 端互发渲染一致。
 
-### M3 — 偏好设置补齐 + 我的账户 + 多标签页 + 收尾
+### M3 — 偏好设置补齐 + 我的账户 + 多标签页 + 列设置 + 收尾
 
-- 顺序：偏好设置补齐（store + 抽屉全项）→ 多标签页（KeepAlive include/max + 关闭即销毁）→ 页面切换动画 + 多标签页显隐开关 → 我的账户（双 Tab + 头像裁剪上传闭环）→ 命令面板接入菜单/路由数据。
-- 验收：偏好全项即时生效 + 刷新持久 + 重置复原（带揭示动画）；主题色 / 圆角与 React 数值不要求一致（两端组件库标度不同，见下）；标签页保活行为对照 React；头像上传后全局刷新；Cmd/Ctrl+K 唤起。
+- 顺序：偏好设置补齐（store + 抽屉全项）→ 多标签页（KeepAlive include/max + 关闭即销毁）→ 页面切换动画 + 多标签页显隐开关 → 列设置（DataTable 组合件）→ 我的账户（双 Tab + 头像裁剪上传闭环）→ 命令面板接入菜单/路由数据。
+- 验收：偏好全项即时生效 + 刷新持久 + 重置复原（带揭示动画）；主题色 / 圆角与 React 数值不要求一致（两端组件库标度不同，见下）；标签页保活行为对照 React；列设置持久化与重置行为对照 React；头像上传后全局刷新；Cmd/Ctrl+K 唤起。
+- **列设置（M1 延后决策回收；React 端 `data-table-view-options` 已全量实现，延后理由消失）**：可见性勾选 + 拖拽排序面板，参与列 = 可隐藏列（行选择 / 操作等功能列固定首尾不进面板）；持久化 key `column-setting:{userId}:{routePath}`（不含查询参数，与 React 对齐），存 `{ hidden, order }`；重置按钮恢复默认；拖拽用 **vue-draggable-plus**（M2 组织树已在用，纵向限制不出容器），不引 dnd-kit 类新依赖。
 - **偏好设置实现指引（2026-09-10 评审定稿；M3 实现完成后删除本条）**：
   - 目标口径：对齐 React 端 `theme-settings-drawer` 全部 9 项（主题色 / 主题模式 / 色彩模式 / 动画方向 / 路由动画 / 路由速度 / 圆角 / 多标签页显隐 / 重置），实现以 Vue 机制为主；其中主题色与圆角两项不照搬 React 数值方案，定制如下：
   - **主题色（参考 better-nuxt `app/components/theme/ThemePickerPrimaryColor.vue`）**：纯 Vite + `vue-plugin` 模式下无 Nuxt colors 插件、不可改 `appConfig.ui.colors`——改为运行时覆盖 `<html>` 上 `--ui-color-primary-{50..950}` 共 11 个 shade 变量（`--ui-primary → var(--ui-color-primary-*)` 间接链自动跟随；亮色取 500、暗色取 400 的分档自动正确）；色板集合与色点预览用 `tailwindcss/colors`；色名**硬编码英文首字母大写（Black / Red / …），不走 i18n**（§3 i18n 键冻结规则的例外项）；**Black 档 = blackAsPrimary**（better-nuxt 模式）：清除 shade 覆盖、改覆盖 `--ui-primary = dark ? 'white' : 'black'`，选中色板时反向清除该覆盖（双向互斥），跟随 isDark 变化重算；随机换色排除当前激活项（React 端已有交互）。

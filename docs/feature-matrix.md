@@ -52,6 +52,7 @@
 | 主题系统（明暗模式）        | ✅     | ✅       | ✅   | ❌    | Vue M0：Nuxt UI 默认 Design Tokens + @vueuse/core useColorMode；M1 冒烟验收通过 |
 | 偏好设置抽屉             | ✅     | ✅       | 🔧   | ❌    | 9 项：主题色（含随机换色 + Black 黑白主题）/ 模式 / 色彩模式（正常/灰色/色弱）/ 动画方向 / 路由动画（9 预设）/ 速度 / 圆角 4 档 / 多标签页显隐 / 重置；Vue M0 仅主题模式 + 语言 2 项，M3 补齐全项（主题色 / 圆角参考 better-nuxt 机制、色名硬编码，i18n 键冻结规则见 vue-plan §3） |
 | 多标签页              | ✅     | ✅       | ❌   | ❌    | Vue 端规划（M3）：原生 KeepAlive（include/max） |
+| DataTable 列设置        | ✅     | ✅       | ❌   | ❌    | 可见性勾选 + 拖拽排序（`column-setting:{userId}:{routePath}` 持久化）；Vue M1 延后，M3 回收（拖拽复用 vue-draggable-plus） |
 | 命令面板              | ✅     | ✅       | ✅   | ❌    | Vue M0：UDashboardSearch 接菜单导航（Cmd+K 内置） |
 | 错误页（403/404/500）  | ✅     | ✅       | ✅   | ❌    | 四端统一跳转独立全屏页（React 2026-09-09 回滚直显改造对齐 Next/Vue，机制各自、行为一致）；Vue M0：全屏错误页 + catch-all 404；2026-09-09 Vue 同步 React Result 风格（ant-design 插画 + ResultPage 结构，替代纯文本大数字壳） |
 | 异常页菜单（/exception/*） | ✅     | ✅       | ✅   | ❌    | 错误页 Result 风格的菜单化展示（embedded 撑满主体区，FULL_WIDTH 白名单），菜单数据配置于 sys_menus（超管免授权可见）；Vue 2026-09-09 已对齐（(authenticated)/exception/* 三页 + AdminLayout 全宽白名单 + 文档标题键） |
