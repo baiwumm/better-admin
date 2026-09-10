@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { type AuthUser, type LoginResponse } from "@/lib/api-types";
-import { fetchApi, bindAuthSnapshot } from "@/lib/api-client";
+import { fetchApi, ApiClientError, bindAuthSnapshot } from "@/lib/api-client";
 import { fetchMenus } from "@/lib/menu-fetch";
 import { queryClient } from "@/lib/query-client";
 import { MENUS_QUERY_KEY } from "@/hooks/use-menus";
@@ -87,26 +87,60 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      /**
+       * 主动退出（与 Next / Vue 端同构语义）：
+       * - 本地 clearSession 同步、立即执行——离线/弱网/连接挂起均立即完成
+       *   本地退出（isAuthenticated 立即变 false），不被服务端撤销阻塞；
+       * - 撤销请求用已捕获的 token 尽力而为（5s 超时）：服务端响应错误（含
+       *   500）或网络失败只记日志、不向调用方抛出；未撤销的 refreshToken
+       *   残留到自然过期，属已知限制；
+       * - allowRetry:false —— 退出是主动行为，禁止触发 401 自动刷新与整页跳登录。
+       */
       logout: async () => {
+        // 1. 捕获 token 到局部变量（clearSession 之后 store 内已清空，撤销请求用）
         const { accessToken, refreshToken } = get();
 
-        try {
-          // 仅在仍有 token 时调用后端 logout；无 token 直接清本地。
-          // allowRetry:false —— 关键：退出是主动行为，禁止触发 401 自动刷新
-          // 与整页跳登录（否则 accessToken 过期时会被动跳走，表现为异常跳转）。
-          // 后端注销失败（401/过期）视为会话已失效，本地照常清理。
-          // 带 refreshToken：服务端精确撤销本设备托管会话（契约 v1.2）。
-          if (accessToken) {
+        // 2. 立即清本地会话——不等网络
+        get().clearSession();
+
+        // 3. 尾部尽力而为撤销：仅在仍有 token 时调用；无 token 直接完成本地退出。
+        // 带 refreshToken：服务端精确撤销本设备托管会话（契约 v1.2）。
+        if (accessToken) {
+          try {
             await fetchApi("/auth/logout", {
               method: "POST",
               allowRetry: false,
+              // 5s 超时：服务端撤销是尽力而为，不阻塞本地退出
+              signal: AbortSignal.timeout(5_000),
+              // 本地已清、快照无 token，显式带捕获的令牌保证撤销可鉴权
+              headers: { Authorization: `Bearer ${accessToken}` },
               body: refreshToken ? { refreshToken } : {},
             });
+          } catch (error) {
+            if (error instanceof ApiClientError) {
+              // 服务端有响应（含 4xx/5xx）：不代表会话一定失效，可能是服务端处理出错
+              console.debug(
+                "[auth] logout 服务端响应错误（含 500），按本地退出处理",
+                error,
+              );
+            } else if (
+              error instanceof TypeError ||
+              (error instanceof DOMException &&
+                (error.name === "AbortError" || error.name === "TimeoutError"))
+            ) {
+              // 网络层：fetch 失败 / 手动 abort / AbortSignal.timeout 超时
+              console.warn(
+                "[auth] logout 服务端撤销网络失败（不影响本地退出）",
+                error,
+              );
+            } else {
+              // 其余为意外异常（含代码 bug），不得静默成「网络失败」
+              console.error(
+                "[auth] logout 撤销流程意外异常（不影响本地退出）",
+                error,
+              );
+            }
           }
-        } catch {
-          // 忽略后端错误（含 401/网络），本地清理照常进行。
-        } finally {
-          get().clearSession();
         }
       },
 

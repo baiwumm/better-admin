@@ -82,25 +82,25 @@ export function SidebarUser({ collapsed }: SidebarUserProps) {
     if (link) openExternalLink(link.url);
   };
 
-  /** 确认退出：调后端 logout，成功后清会话并跳登录页；失败仅提示、保持登录。 */
+  /**
+   * 确认退出：本地会话由 store 无条件清理（离线/服务端撤销失败也按已退出
+   * 处理，产品语义「离线退出始终成功」），统一提示已退出并跳登录页。
+   */
   const handleConfirmLogout = async () => {
     setIsLoggingOut(true);
     try {
       await logout();
-      // 本地会话已清（无论后端成败），提示成功并跳登录页。
-      toast.success(t("layout.user.signedOut"));
-      exitDialog.close();
-      void navigate({ to: "/sign-in" });
     } catch (error) {
-      // 仅网络层等真实异常才会到这（后端 401/过期已在 logout 内按失效处理）；
-      // 提示用户但不退出、保持登录态。
-      toast.danger(
-        error instanceof Error ? error.message : t("layout.user.signOutFailed"),
-      );
-      exitDialog.close();
+      // store 不向调用方抛业务/网络错误；此分支仅兜 UI 层意外异常，
+      // 不回滚登录态（会话清理已由 store 完成）
+      console.error("[auth] logout 意外异常", error);
     } finally {
       setIsLoggingOut(false);
     }
+
+    toast.success(t("layout.user.signedOut"));
+    exitDialog.close();
+    void navigate({ to: "/sign-in" });
   };
 
   return (

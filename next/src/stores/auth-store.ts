@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 import { type AuthUser, type LoginResponse } from "@/lib/api-types";
-import { fetchApi } from "@/lib/api-client";
+import { fetchApi, ApiClientError } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 
 /**
@@ -71,19 +71,51 @@ export const useAuthStore = create<AuthState>()((set) => ({
     }
   },
 
+  /**
+   * 主动退出（与 React / Vue 端同构语义；cookie 模式无客户端 token）：
+   * - 本地 clearSession 同步、立即执行——离线/弱网/连接挂起均立即完成
+   *   本地退出（isAuthenticated 立即变 false），不被服务端撤销阻塞；
+   * - 撤销请求尽力而为（5s 超时，凭 Cookie 鉴权）：服务端响应错误（含 500）
+   *   或网络失败只记日志、不向调用方抛出；未撤销的会话 Cookie 残留到
+   *   自然过期，属已知限制；
+   * - allowRetry:false —— 主动退出禁止触发 401 自动刷新与整页跳登录。
+   */
   logout: async () => {
+    // 立即清本地会话——不等网络（cookie 模式无客户端 token，撤销凭 Cookie）
+    useAuthStore.getState().clearSession();
+
+    // 尾部尽力而为撤销：服务端按 Cookie 精确撤销本设备托管会话并清除双令牌 Cookie。
     try {
-      // 主动退出禁止触发 401 自动刷新与整页跳登录（allowRetry:false）；
-      // 服务端按 Cookie 精确撤销本设备托管会话并清除双令牌 Cookie。
-      // 后端注销失败（401/过期）视为会话已失效，本地清理照常进行。
       await fetchApi("/auth/logout", {
         method: "POST",
         allowRetry: false,
+        // 5s 超时：服务端撤销是尽力而为，不阻塞本地退出
+        signal: AbortSignal.timeout(5_000),
       });
-    } catch {
-      // 忽略后端错误（含 401/网络），本地清理照常进行。
-    } finally {
-      useAuthStore.getState().clearSession();
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        // 服务端有响应（含 4xx/5xx）：不代表会话一定失效，可能是服务端处理出错
+        console.debug(
+          "[auth] logout 服务端响应错误（含 500），按本地退出处理",
+          error,
+        );
+      } else if (
+        error instanceof TypeError ||
+        (error instanceof DOMException &&
+          (error.name === "AbortError" || error.name === "TimeoutError"))
+      ) {
+        // 网络层：fetch 失败 / 手动 abort / AbortSignal.timeout 超时
+        console.warn(
+          "[auth] logout 服务端撤销网络失败（不影响本地退出）",
+          error,
+        );
+      } else {
+        // 其余为意外异常（含代码 bug），不得静默成「网络失败」
+        console.error(
+          "[auth] logout 撤销流程意外异常（不影响本地退出）",
+          error,
+        );
+      }
     }
   },
 
