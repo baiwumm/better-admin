@@ -13,18 +13,22 @@ import { findActivePath } from "@/lib/menu-utils";
 import { ROUTE_TITLE_KEYS } from "@/lib/route-access";
 import ConfigDrawer from "@/components/layout/ConfigDrawer.vue";
 import FullscreenButton from "@/components/layout/FullscreenButton.vue";
+import KeepAliveOutlet from "@/components/layout/KeepAliveOutlet.vue";
 import LanguageSwitch from "@/components/layout/LanguageSwitch.vue";
 import NoticeBell from "@/components/layout/NoticeBell.vue";
 import SidebarBrand from "@/components/layout/SidebarBrand.vue";
+import TagsBar from "@/components/layout/TagsBar.vue";
 import UserMenu from "@/components/layout/UserMenu.vue";
+import { useDesignThemeStore } from "@/stores/design-theme-store";
 
 /**
  * Admin 双栏布局（Nuxt UI Dashboard 套件，结构对齐 React 端 admin-layout）：
  * - 侧边栏：品牌下拉（技术栈入口）+ 导航菜单（骨架屏 / 失败重试 / 折叠 tooltip
  *   + 悬浮子菜单）+ 底部快捷链接（GitHub / 博客）+ 用户菜单
  * - 顶栏：折叠按钮（leading，移动端为打开抽屉）+ 面包屑 + 右侧
- *   搜索 / 通知占位 / 全屏 / 语言 / 偏好抽屉
- * - 主体：全宽页面（架构图谱 / 我的公告）去内边距
+ *   搜索 / 通知 / 全屏 / 语言 / 偏好抽屉；顶栏下方为多标签页栏（偏好可隐藏）
+ * - 主体：KeepAliveOutlet（标签页联动的 KeepAlive 保活 + 刷新）；全宽页面
+ *   （架构图谱 / 我的公告）去内边距
  * - useAuthSync：挂载时 /auth/me 快照同步（mechanisms §6）
  */
 useAuthSync();
@@ -32,6 +36,7 @@ useAuthSync();
 const { t } = useI18n();
 const route = useRoute();
 const queryClient = useQueryClient();
+const designTheme = useDesignThemeStore();
 
 const { data: menus, isLoading, error } = useMenus();
 
@@ -249,10 +254,13 @@ function retryMenus() {
             </div>
           </template>
         </UDashboardNavbar>
+
+        <!-- 多标签页栏：偏好设置可隐藏（关闭仅隐藏 UI，不清空已打开标签） -->
+        <TagsBar v-if="designTheme.showTabs" />
       </template>
 
       <template #body>
-        <RouterView />
+        <KeepAliveOutlet />
       </template>
     </UDashboardPanel>
   </UDashboardGroup>

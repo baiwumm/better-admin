@@ -1,0 +1,58 @@
+/* 多标签页栏动效与滚动容器（平移自 React 端 tags-bar.css，滚动阴影为 Vue 端 CSS 实现）
+ *
+ * - 新标签进场：淡入 + 顺导航方向的轻微位移（--rt-dir-x 由
+ *   route-transitions.css 维护，后退时自动反转）；仅挂载时播放一次。
+ * - 激活态切换的平滑过渡由 Nuxt UI Button 自带的 transition 承担，
+ *   此处不重复声明。
+ * - 滚动容器：隐藏原生滚动条（避免占用固定栏高挤压标签），溢出方向经
+ *   data-shadow 属性以 mask 渐隐提示（对应 React 端 ScrollShadow）。
+ * - prefers-reduced-motion：全部关闭。
+ */
+
+@keyframes tab-enter {
+  from {
+    opacity: 0;
+    transform: translateX(calc(10px * var(--rt-dir-x, 1)));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+[data-tab-enter="true"] {
+  animation: tab-enter 220ms var(--rt-ease, ease-out) backwards;
+}
+
+.tags-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tags-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.tags-scroll[data-shadow="left"] {
+  mask-image: linear-gradient(to right, transparent, black 24px);
+}
+
+.tags-scroll[data-shadow="right"] {
+  mask-image: linear-gradient(to left, transparent, black 24px);
+}
+
+.tags-scroll[data-shadow="both"] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 24px,
+    black calc(100% - 24px),
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-tab-enter="true"] {
+    animation: none;
+  }
+}

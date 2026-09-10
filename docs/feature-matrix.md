@@ -51,7 +51,7 @@
 | 全站 i18n（zh-CN/en） | ✅     | ✅       | ✅   | ❌    | Vue M0：vue-i18n（messageResolver 扁平键）+ 复用 react locales；M1 冒烟验收通过 |
 | 主题系统（明暗模式）        | ✅     | ✅       | ✅   | ❌    | Vue M0：Nuxt UI 默认 Design Tokens + @vueuse/core useColorMode；M1 冒烟验收通过 |
 | 偏好设置抽屉             | ✅     | ✅       | ✅   | ❌    | 9 项：主题色（含随机换色 + Black 黑白主题）/ 模式 / 色彩模式（正常/灰色/色弱）/ 动画方向 / 路由动画（9 预设）/ 速度 / 圆角 4 档 / 多标签页显隐 / 重置；Vue M3（2026-09-10）全项补齐并 GUI 冒烟通过：主题色 = Tailwind 17 色板运行时覆盖 `--ui-color-primary-*` + Black 覆盖 `--ui-primary`（随明暗重算）、圆角按 Nuxt UI 标度 0/0.125/0.25/0.5rem、design-theme-store 单一真源 + `app.mount` 前恢复；路由动画 / 多标签页开关的实际编排接入见对应行 |
-| 多标签页              | ✅     | ✅       | ❌   | ❌    | Vue 端规划（M3）：原生 KeepAlive（include/max） |
+| 多标签页              | ✅     | ✅       | ✅   | ❌    | Vue M3（2026-09-11）落地并 GUI 冒烟通过：tabs-model 纯函数与 32 用例原样平移、Pinia tabs-store（sessionStorage 持久化 + 标题快照）；TagsBar（固定控制台 / 关闭热区 / 中键关闭 / UContextMenu 六动作 / 横向滚动 mask+chevron+滚轮+拖拽 / 进场动画）；KeepAliveOutlet = 原生 `<KeepAlive :include :max=10>`，include = 已打开标签 ∩ 菜单 keepAlive（关闭即销毁），刷新 = key 序号重挂载 + include 摘一拍清旧缓存；显隐开关已接偏好；**页面切换 VT 编排待 M3 下一子项** |
 | DataTable 列设置        | ✅     | ✅       | ❌   | ❌    | 可见性勾选 + 拖拽排序（`column-setting:{userId}:{routePath}` 持久化）；Vue M1 延后，M3 回收（拖拽复用 vue-draggable-plus） |
 | 命令面板              | ✅     | ✅       | ✅   | ❌    | Vue M0：UDashboardSearch 接菜单导航（Cmd+K 内置） |
 | 错误页（403/404/500）  | ✅     | ✅       | ✅   | ❌    | 四端统一跳转独立全屏页（React 2026-09-09 回滚直显改造对齐 Next/Vue，机制各自、行为一致）；Vue M0：全屏错误页 + catch-all 404；2026-09-09 Vue 同步 React Result 风格（ant-design 插画 + ResultPage 结构，替代纯文本大数字壳） |
@@ -73,10 +73,10 @@
 | ------- | --- | --- | --- |
 | React   | 22  | 1   | 96% |
 | Next.js | 22  | 1   | 96% |
-| Vue     | 20  | 3   | 87% |
+| Vue     | 21  | 2   | 91% |
 | Nuxt    | 0   | 23  | 0%  |
 
 > 统计口径（2026-09-08 按行修正）：核心业务模块 9 项 + 组织中心 8 项 + 基础设施 6 项 = **23 项**（Dashboard 计入核心业务模块）。
 > 上表不含"已知架构差异"行。
-> Vue 端：M0（2026-09-05）工程基建与骨架；M1（2026-09-06）六模块 RBAC 冒烟验收通过；M2（2026-09-08）组织中心 8 项全量落地（2026-09-09 GUI 冒烟验收全部通过）；剩余「我的账户 / 多标签页」（M3）与「Dashboard」（各端均未实现，P3）。方案见 `docs/vue-plan.md`。
+> Vue 端：M0（2026-09-05）工程基建与骨架；M1（2026-09-06）六模块 RBAC 冒烟验收通过；M2（2026-09-08）组织中心 8 项全量落地（2026-09-09 GUI 冒烟验收全部通过）；M3 进行中：偏好设置补齐（2026-09-10）与多标签页（2026-09-11）已落地；剩余「我的账户」（M3）与「Dashboard」（各端均未实现，P3）。方案见 `docs/vue-plan.md`。
 

@@ -37,6 +37,22 @@ export function collectMenuPaths(
 }
 
 /**
+ * 收集菜单树中 keepAlive 为 true 的叶子路径（KeepAliveOutlet 的缓存白名单来源：
+ * 打开且未关闭的标签 ∩ 本集合 = 实际保活集合）。
+ */
+export function collectKeepAlivePaths(
+  nodes: MenuNode[],
+  acc: Set<string> = new Set(),
+): Set<string> {
+  for (const node of nodes) {
+    if (node.keepAlive && node.to) acc.add(node.to);
+    if (node.children?.length) collectKeepAlivePaths(node.children, acc);
+  }
+
+  return acc;
+}
+
+/**
  * 递归查找当前路径对应的叶子节点及祖先链（侧边栏高亮展开用；
  * Nuxt UI UNavigationMenu 按 to 自动 active，此函数供需要显式路径链的场景）。
  */

@@ -6,6 +6,7 @@ import { defineStore } from "pinia";
 import { fetchApi, ApiClientError, bindAuthSnapshot } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 import { MENUS_QUERY_KEY, menusQueryOptions } from "@/composables/use-menus";
+import { useTabsStore } from "@/stores/tabs-store";
 
 /**
  * 当前用户快照（/auth/me）查询 key。定义在 auth-store（下层）供
@@ -205,7 +206,9 @@ export const useAuthStore = defineStore("auth", () => {
     rememberMe.value = false;
     isAuthenticated.value = false;
 
-    // 多标签页属于用户级 UI 态，不跨会话残留（M1 接入 tabs-store 时同步 reset）
+    // 多标签页属于用户级 UI 态，不跨会话残留
+    useTabsStore().resetTabs();
+
     queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY });
     queryClient.removeQueries({ queryKey: MENUS_QUERY_KEY });
   }

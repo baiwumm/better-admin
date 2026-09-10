@@ -8,6 +8,7 @@ import {
   readStoredLanguage,
 } from "@/i18n/config";
 import { setGlobalLanguage } from "@/i18n";
+import { useTabsStore } from "@/stores/tabs-store";
 
 /**
  * 语言偏好 store：localStorage 持久化（key: better-admin:language），
@@ -21,6 +22,9 @@ export const useLanguageStore = defineStore("language", () => {
 
     locale.value = next;
     setGlobalLanguage(next);
+
+    // 标签标题快照为切换前语言下的取词结果，清空后回退实时菜单名称
+    useTabsStore().clearTabsCache();
 
     try {
       localStorage.setItem(LANGUAGE_STORAGE_KEY, next);
