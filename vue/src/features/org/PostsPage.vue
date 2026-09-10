@@ -370,7 +370,7 @@ export default { name: "PostsPage" };
         <DeptTreeSelect
           :aria-label="t('features.posts.filter.dept')"
           :model-value="store.filters.deptId ?? ''"
-          :placeholder="t('features.posts.filter.dept')"
+          :placeholder="t('features.org.deptTreeSelect.placeholder')"
           :tree="tree"
           @update:model-value="
             (key: unknown) =>
@@ -378,25 +378,29 @@ export default { name: "PostsPage" };
           "
         />
       </div>
-      <USelect
+      <USelectMenu
         :aria-label="t('features.posts.filter.category')"
         :items="categoryOptions"
         :model-value="store.filters.category ?? undefined"
-        :placeholder="t('features.posts.filter.category')"
+        :placeholder="t('features.posts.column.category')"
         class="w-36"
         value-key="value"
+        clear
+        :search-input="false"
         @update:model-value="
           (value: unknown) =>
             store.setFilters({ category: value ? String(value) : null })
         "
       />
-      <USelect
+      <USelectMenu
         :aria-label="t('features.posts.filter.status')"
         :items="statusOptions"
         :model-value="store.filters.status ?? undefined"
-        :placeholder="t('features.posts.filter.status')"
+        :placeholder="t('features.posts.column.status')"
         class="w-36"
         value-key="value"
+        clear
+        :search-input="false"
         @update:model-value="
           (value: unknown) =>
             store.setFilters({ status: value ? String(value) : null })

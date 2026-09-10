@@ -384,12 +384,14 @@ async function confirmBatchDelete() {
         icon="i-lucide-search"
         @keyup.enter="applySearch"
       />
-      <USelect
+      <USelectMenu
         :aria-label="t('features.logs.column.type')"
         :items="typeOptions"
         :model-value="store.filters.type ?? undefined"
         :placeholder="t('features.logs.column.type')"
         value-key="value"
+        clear
+        :search-input="false"
         class="w-50"
         @update:model-value="
           (value: unknown) =>

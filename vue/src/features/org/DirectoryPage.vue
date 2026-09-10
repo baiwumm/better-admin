@@ -383,13 +383,15 @@ export default { name: "DirectoryPage" };
             icon="i-lucide-search"
             @keyup.enter="applySearch"
           />
-          <USelect
+          <USelectMenu
             :aria-label="t('features.directory.filter.employment')"
             :items="employmentOptions"
             :model-value="store.filters.employmentStatus ?? undefined"
-            :placeholder="t('features.directory.filter.employment')"
+            :placeholder="t('features.directory.column.status')"
             class="w-36"
             value-key="value"
+            clear
+            :search-input="false"
             @update:model-value="
               (value: unknown) =>
                 store.setFilters({

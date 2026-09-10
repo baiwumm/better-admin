@@ -478,13 +478,15 @@ const selectedUsers = computed(() =>
         icon="i-lucide-search"
         @keyup.enter="applySearch"
       />
-      <USelect
+      <USelectMenu
         :aria-label="t('features.users.column.status')"
         :items="filterOptions"
         :model-value="store.filters.status ?? undefined"
         :placeholder="t('features.users.column.status')"
         class="w-36"
         value-key="value"
+        clear
+        :search-input="false"
         @update:model-value="
           (value: unknown) => store.setFilters({ status: value as string })
         "

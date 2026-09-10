@@ -336,13 +336,15 @@ const UBadge = resolveComponent("UBadge");
         icon="i-lucide-search"
         @keyup.enter="applySearch"
       />
-      <USelect
+      <USelectMenu
         :aria-label="t('features.roles.column.enabled')"
         :items="filterOptions"
         :model-value="store.filters.enabled ?? undefined"
         :placeholder="t('features.roles.column.enabled')"
         class="w-36"
         value-key="value"
+        clear
+        :search-input="false"
         @update:model-value="
           (value: unknown) => store.setFilters({ enabled: value as string })
         "

@@ -557,13 +557,15 @@ export default { name: "NoticesPage" };
 <template>
   <div class="flex w-full flex-col gap-4">
     <DataTableToolbar>
-      <USelect
+      <USelectMenu
         :aria-label="t('features.notices.filter.status')"
         :items="statusOptions"
         :model-value="store.filters.status ?? undefined"
-        :placeholder="t('features.notices.filter.status')"
+        :placeholder="t('features.notices.column.status')"
         class="w-36"
         value-key="value"
+        clear
+        :search-input="false"
         @update:model-value="
           (value: unknown) =>
             store.setFilters({ status: value ? String(value) : null })
