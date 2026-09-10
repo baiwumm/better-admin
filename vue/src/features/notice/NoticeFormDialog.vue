@@ -359,7 +359,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (Boolean(publishDateValue.value) !== Boolean(publishTimeValue.value)) {
     toast.add({
       color: "error",
-      title: t("features.notices.form.publishTimeIncomplete"),
+      title: t("features.notices.form.publishTimeInvalid"),
     });
 
     return;
@@ -521,7 +521,6 @@ export default { name: "NoticeFormDialog" };
             :aria-label="t('features.notices.form.content')"
             :image="false"
             :mention="false"
-            :placeholder="t('features.notices.form.contentPlaceholder')"
             class="w-full rounded-lg border border-default bg-default"
             :ui="{
               base: 'min-h-40 max-h-72 overflow-y-auto px-3 py-2 text-sm',
@@ -557,12 +556,12 @@ export default { name: "NoticeFormDialog" };
               ref="publishDateInput"
               v-model="publishDateValue"
               class="flex-1"
-              :aria-label="t('features.notices.form.publishDate')"
+              :aria-label="t('features.notices.form.publishTime')"
             >
               <template #trailing>
                 <UPopover :reference="publishDateInput?.inputsRef.at(-1)?.$el">
                   <UButton
-                    :aria-label="t('features.notices.form.pickDate')"
+                    :aria-label="t('features.notices.form.publishTime')"
                     class="px-0"
                     color="neutral"
                     icon="i-lucide-calendar"

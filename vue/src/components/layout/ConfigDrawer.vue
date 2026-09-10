@@ -51,7 +51,7 @@ const languageOptions = computed(() => [
           />
         </UFormField>
 
-        <UFormField :label="t('common.language.label')">
+        <UFormField :label="t('common.language.choose')">
           <USelect
             :model-value="languageStore.locale"
             :items="languageOptions"

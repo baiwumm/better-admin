@@ -174,7 +174,9 @@ const columns = computed<AppColumnDef<MenuNode>[]>(() => [
         [
           row.getCanExpand()
             ? h(UButton, {
-                "aria-label": t("features.menus.tree.toggle"),
+                "aria-label": row.getIsExpanded()
+                  ? t("features.menus.tree.collapse")
+                  : t("features.menus.tree.expand"),
                 class: "shrink-0",
                 color: "neutral",
                 icon: row.getIsExpanded()

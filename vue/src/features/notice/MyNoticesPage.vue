@@ -269,7 +269,7 @@ export default { name: "MyNoticesPage" };
           >
             <template v-if="searchInput" #trailing>
               <UButton
-                :aria-label="t('common.reset')"
+                :aria-label="t('common.datatable.reset')"
                 class="p-0.5"
                 color="neutral"
                 icon="i-lucide-x"

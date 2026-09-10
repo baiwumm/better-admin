@@ -449,14 +449,12 @@ async function confirmBatchDelete() {
 
     <ConfirmDialog
       v-model:open="deleteOpen"
-      :confirm-keyword="deleteTarget?.action"
       :confirm-text="t('common.delete')"
       :description="
         t('features.logs.message.deleteDesc', {
           action: deleteTarget?.action ?? '',
         })
       "
-      :keyword-label="t('features.logs.message.deleteKeyword')"
       :loading="deleteSubmitting"
       :title="t('features.logs.message.deleteTitle')"
       destructive

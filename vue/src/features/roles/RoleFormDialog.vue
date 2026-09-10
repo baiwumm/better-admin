@@ -71,7 +71,7 @@ const schema = z
       ctx.addIssue({
         code: "custom",
         path: ["code"],
-        message: t("features.roles.form.codeInvalid"),
+        message: t("features.roles.form.codeFormat"),
       });
     }
   });
