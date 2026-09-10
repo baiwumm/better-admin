@@ -475,10 +475,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         <template v-if="!isEdit">
           <PasswordField
             v-model="state.password"
-            :description="t('features.users.form.passwordHint')"
+            :help="t('features.users.form.passwordHint')"
             :label="t('features.users.form.password')"
             :placeholder="t('features.users.form.passwordPlaceholder')"
             name="password"
+            :ui="{ help: 'text-dimmed text-xs' }"
           />
 
           <PasswordField
@@ -523,15 +524,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
         <UFormField
           :label="t('features.users.form.dept')"
-          :description="t('features.users.form.deptHint')"
+          :help="t('features.users.form.deptHint')"
+          :ui="{ help: 'text-dimmed text-xs' }"
         >
           <DeptTreeSelect v-model="state.deptId" :tree="deptTree ?? []" />
         </UFormField>
 
         <UFormField
           :label="t('features.users.form.posts')"
-          :description="t('features.users.form.postsHint')"
+          :help="t('features.users.form.postsHint')"
           name="postIds"
+          :ui="{ help: 'text-dimmed text-xs' }"
         >
           <USelectMenu
             v-model="state.postIds"
@@ -549,7 +552,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
         <UFormField
           :label="t('features.users.form.mainPost')"
-          :description="t('features.users.form.mainPostHint')"
+          :help="t('features.users.form.mainPostHint')"
+          :ui="{ help: 'text-dimmed text-xs' }"
         >
           <USelect
             v-model="state.mainPostId"
