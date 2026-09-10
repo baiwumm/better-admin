@@ -403,7 +403,7 @@ Phase 7  统一测试 → 部署全部版本
 - **当前阶段**：React + NestJS 全栈已完成，Next.js 全栈版已上线；`website/` 官方文档站已落地（Next 16 + Fumadocs，ogimg 黑白风格，内容由 `docs/` 真源自动同步，详见 progress.md，待 Vercel 部署绑 docs.baiwumm.com）。Vue / Nuxt 尚未启动。
 - **React 端已完成模块**：登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）。
 - **Next.js 端已完成模块**：与 React 端对齐（认证 / Admin 布局 / 用户 / 角色 / 菜单 / 字典 / 日志 / 我的账户 / 组织中心全套）。
-- **当前待办**：Dashboard 概览页（React / Next.js 均未实现，图表库已定 Recharts）；Next.js Vercel 部署 + CI 挂接；`docs/mechanisms.md` 沉淀 Next 期机制结论。Vue / Nuxt 后续实现时直接跟上最新契约版本（详见 progress.md 各阶段条目）。
+- **当前待办**：演示上线准备 + Dashboard 概览页 + Playground 演示场（计划清单见 [`docs/plan-dashboard-playground.md`](docs/plan-dashboard-playground.md)：整体排在 Vue 全功能对齐 + 冒烟测试通过之后，顺序 Phase 0 演示上线准备（faker 数据重置 / 只读守卫 / 快捷登录 / 日志降噪）→ Phase C Dashboard → Phase A/B Playground；图表库已定 Recharts）；Next.js Vercel 部署 + CI 挂接；`docs/mechanisms.md` 沉淀 Next 期机制结论。Vue / Nuxt 后续实现时直接跟上最新契约版本（详见 progress.md 各阶段条目）。
 - **TanStack 官方 Agent Skills（已评估、暂缓安装，勿遗忘）**：官方 SKILL.md 内嵌于 npm 包（`skills/<name>/SKILL.md`，随包版本更新，机制见 tanstack.com/intent）；项目已装版本（react-query 5.99 / 5.102.8、table 9.2.x、router 1.168）**尚不含 skills 目录**，须升级依赖才可获得。安排：待三端下次例行升级 react-query / react-table / react-router（含 vue-query / vue-table 对应版本）时随包带入，升级后在 §20 补指路条目；**不要为获取 Skill 而单独发起依赖升级**（§15 锁版本约定）。
 - **super_admin 保护设计依据（重要，勿推翻）**：超管的"全量权限"不是代码身份判定，而是 seed 写入 role_menus 的 -1n 全量位经登录/每请求实时 OR 聚合而来（`auth.service.aggregatePermissions`）；PermissionsGuard 与菜单可见性的"超管免检"分支判据都是聚合值。清空其授权 = 全后台立即 403 且无自助恢复手段，故 `PUT /roles/{id}/menus` 与 `DELETE /roles/{id}` 对 `code === 'super_admin'` 必须返回 403 `SUPER_ADMIN_ROLE_PROTECTED`（详细背景见 progress.md 契约 v1.4.2/v1.4.3 条目）。
 
