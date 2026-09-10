@@ -3,20 +3,23 @@ import type { User } from "@/lib/api-types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Button, Form, Modal, Spinner, toast } from "@heroui/react";
+import { useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { getUserErrorMessage, resetUserPassword } from "./user-api";
-import { PASSWORD_MAX_LENGTH } from "./user-form-dialog";
 import { PasswordField } from "./password-field";
 
 import { useTranslation } from "@/i18n";
+import { buildPasswordSchema } from "@/lib/password-validation";
 
 /**
  * 重置密码弹窗：POST /users/:id/reset-password（RESET_PASSWORD 位）。
  *
  * 后端行为：bcrypt 重新散列 + tokenVersion+1 + 物理清空该用户全部
  * refreshTokens——成功后该用户所有已登录设备即刻下线，需重新登录。
+ * 密码策略（契约 v1.8.0）：格式 + 「不含目标用户名」在前端预检；
+ * 「不能与其当前密码相同」由后端 400 PASSWORD_SAME_AS_OLD 兜底。
  */
 
 export interface UserResetPasswordDialogProps {
@@ -29,18 +32,18 @@ export interface UserResetPasswordDialogProps {
 
 const FORM_ID = "user-reset-password-form";
 
-const resetPasswordSchema = z
-  .object({
-    // 6-72 位：72 为 bcrypt 输入上限（契约 v1.7.3，与后端 ResetPasswordDto 对齐）
-    newPassword: z.string().min(6).max(PASSWORD_MAX_LENGTH),
-    confirmPassword: z.string(),
-  })
-  .refine((values) => values.newPassword === values.confirmPassword, {
-    message: "confirmPasswordMismatch",
-    path: ["confirmPassword"],
-  });
+const buildResetPasswordSchema = (username: string) =>
+  z
+    .object({
+      newPassword: buildPasswordSchema(username),
+      confirmPassword: z.string(),
+    })
+    .refine((values) => values.newPassword === values.confirmPassword, {
+      message: "confirmPasswordMismatch",
+      path: ["confirmPassword"],
+    });
 
-type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
+type ResetPasswordValues = z.infer<ReturnType<typeof buildResetPasswordSchema>>;
 
 export function UserResetPasswordDialog({
   isOpen,
@@ -75,9 +78,14 @@ function ResetPasswordFormModal({
   onSaved,
 }: ResetPasswordFormProps) {
   const { t } = useTranslation();
+  // 外层按 user.id 重挂载，用户名在弹窗生命周期内不变，schema 只需构建一次
+  const schema = useMemo(
+    () => buildResetPasswordSchema(user.username),
+    [user.username],
+  );
 
   const { control, handleSubmit } = useForm<ResetPasswordValues>({
-    resolver: zodResolver(resetPasswordSchema),
+    resolver: zodResolver(schema),
     defaultValues: { newPassword: "", confirmPassword: "" },
   });
 
@@ -134,9 +142,12 @@ function ResetPasswordFormModal({
                 render={({ field, fieldState }) => (
                   <PasswordField
                     autoComplete="new-password"
+                    description={t("features.users.resetPassword.passwordHint")}
                     error={
                       fieldState.error
-                        ? t("features.users.form.passwordInvalid")
+                        ? t(
+                            `features.users.form.password.${fieldState.error.message}`,
+                          )
                         : undefined
                     }
                     label={t("features.users.resetPassword.newPassword")}

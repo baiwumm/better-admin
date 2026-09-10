@@ -30,6 +30,10 @@ import { SUPER_ADMIN_ROLE_CODE } from "@/lib/server/permissions";
 import { ServerApiError } from "@/lib/server/http";
 import { generateRecordId } from "@/lib/server/ids";
 import { normalizePaging } from "@/lib/server/pagination";
+import {
+  assertPasswordNotContainingUsername,
+  assertPasswordNotSameAsCurrent,
+} from "@/lib/server/password-policy";
 
 /**
  * 用户管理服务（与 nest/src/modules/users/users.service.ts 对齐）。
@@ -518,11 +522,14 @@ export interface CreateUserInput {
   mainPostId?: string | null;
 }
 
-/** POST /users — 创建（密码必传 ≥6 位；roleIds/postIds 全量写入关联表）。 */
+/** POST /users — 创建（密码格式已在路由层断言；roleIds/postIds 全量写入关联表）。 */
 export async function createUser(
   dto: CreateUserInput,
   operatorId: string | null,
 ): Promise<User> {
+  // 密码策略跨字段项（v1.8.0）：初始密码不能包含 username
+  assertPasswordNotContainingUsername(dto.password, dto.username);
+
   if (dto.roleIds && dto.roleIds.length > 5) {
     throw new ServerApiError(400, "VALIDATION_ERROR", "角色数量超出上限（5）");
   }
@@ -849,17 +856,12 @@ export async function batchRemoveUsers(
   return null;
 }
 
-/** POST /users/:id/reset-password — 重置密码（tokenVersion+1 + 清托管会话）。 */
+/** POST /users/:id/reset-password — 重置密码（tokenVersion+1 + 清托管会话；格式已在路由层断言）。 */
 export async function resetUserPassword(
   id: string,
   newPassword: string,
   operator: AuthUser,
 ): Promise<null> {
-  // 6-72 位：72 为 bcrypt 输入上限，超出部分哈希时被截断忽略（契约 v1.7.3）
-  if (newPassword.length < 6 || newPassword.length > 72) {
-    throw new ServerApiError(400, "VALIDATION_ERROR", "新密码长度为 6-72 位");
-  }
-
   await assertTargetOperable(operator, id);
 
   const existing = await db.query.users.findFirst({
@@ -869,6 +871,10 @@ export async function resetUserPassword(
   if (!existing) {
     throw new ServerApiError(404, "USER_NOT_FOUND", "用户不存在");
   }
+
+  // 密码策略跨字段项（v1.8.0）：不能包含目标用户名、不能与其当前密码相同
+  assertPasswordNotContainingUsername(newPassword, existing.username);
+  await assertPasswordNotSameAsCurrent(newPassword, existing.passwordHash);
 
   const passwordHash = await bcrypt.hash(newPassword, 10);
 

@@ -43,6 +43,7 @@ import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "@/features/org/dept-api";
 import { fetchPosts } from "@/features/org/post-api";
 import { useTranslation } from "@/i18n";
 import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
+import { getPasswordError } from "@/lib/password-validation";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
@@ -74,8 +75,7 @@ export interface UserFormDialogProps {
 
 const FORM_ID = "user-form";
 
-// 长度上限与后端 DTO（契约 v1.7.3）对齐；密码 72 为 bcrypt 输入上限
-export const PASSWORD_MAX_LENGTH = 72;
+// 长度上限与后端 DTO（契约 v1.7.3）对齐；密码规则见 @/lib/password-validation（契约 v1.8.0）
 const USERNAME_MAX_LENGTH = 50;
 const DISPLAY_NAME_MAX_LENGTH = 50;
 const EMAIL_MAX_LENGTH = 100;
@@ -83,7 +83,7 @@ const EMPLOYEE_NO_MAX_LENGTH = 50;
 
 /**
  * 编辑态不含密码字段，schema 必须按模式跳过密码校验：
- * 若编辑时仍校验 password（空串不过 min(6)），resolver 会在未渲染字段上
+ * 若编辑时仍校验 password（空串不过密码策略），resolver 会在未渲染字段上
  * 产生错误，handleSubmit 静默失败（表现为「点保存没反应」）。
  */
 const buildUserFormSchema = (isEdit: boolean) =>
@@ -112,18 +112,18 @@ const buildUserFormSchema = (isEdit: boolean) =>
     })
     .superRefine((values, ctx) => {
       if (isEdit) return;
-      if (values.password.length < 6) {
+      // 密码策略含「不能包含用户名」跨字段项，故在对象级 superRefine 中校验；
+      // issue.message 为 PasswordErrorKey，渲染时拼 features.users.form.password.* 取文案
+      const passwordError = getPasswordError(
+        values.password,
+        values.username.trim(),
+      );
+
+      if (passwordError) {
         ctx.addIssue({
           code: "custom",
           path: ["password"],
-          message: "passwordTooShort",
-        });
-      }
-      if (values.password.length > PASSWORD_MAX_LENGTH) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["password"],
-          message: "passwordTooLong",
+          message: passwordError,
         });
       }
       if (values.password !== values.confirmPassword) {
@@ -454,7 +454,9 @@ function UserFormModal({
                         description={t("features.users.form.passwordHint")}
                         error={
                           fieldState.error
-                            ? t("features.users.form.passwordInvalid")
+                            ? t(
+                                `features.users.form.password.${fieldState.error.message}`,
+                              )
                             : undefined
                         }
                         label={t("features.users.form.password")}

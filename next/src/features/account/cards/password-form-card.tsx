@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Button, Card, Form, Spinner, toast } from "@heroui/react";
+import { useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -12,6 +13,7 @@ import { PasswordStrength } from "../password-strength";
 import { PasswordInput } from "@/components/common/password-input/password-input";
 import { useAuthStore } from "@/stores/auth-store";
 import { useTranslation } from "@/i18n";
+import { buildPasswordSchema } from "@/lib/password-validation";
 
 const FORM_ID = "account-password-form";
 
@@ -21,27 +23,31 @@ interface PasswordFormValues {
   confirmPassword: string;
 }
 
-// 6-72 位：72 为 bcrypt 输入上限（契约 v1.7.3，与后端 UpdateAccountPasswordDto 对齐）
-const PASSWORD_MAX_LENGTH = 72;
-
-const passwordFormSchema = z
-  .object({
-    currentPassword: z.string().min(1),
-    newPassword: z.string().min(6).max(PASSWORD_MAX_LENGTH),
-    confirmPassword: z.string(),
-  })
-  .refine((values) => values.newPassword === values.confirmPassword, {
-    message: "confirmPasswordMismatch",
-    path: ["confirmPassword"],
-  });
+/**
+ * 新密码按密码策略（契约 v1.8.0）预检，含「不能包含本人用户名」；
+ * 「不能与当前密码相同」前端无法比对，由后端 400 PASSWORD_SAME_AS_OLD 兜底提示
+ */
+const buildPasswordFormSchema = (username: string | undefined) =>
+  z
+    .object({
+      currentPassword: z.string().min(1),
+      newPassword: buildPasswordSchema(username),
+      confirmPassword: z.string(),
+    })
+    .refine((values) => values.newPassword === values.confirmPassword, {
+      message: "confirmPasswordMismatch",
+      path: ["confirmPassword"],
+    });
 
 /** 密码卡：成功后端全端强制下线（tokenVersion+1），前端清会话跳登录页 */
 export function PasswordFormCard() {
   const { t } = useTranslation();
   const clearSession = useAuthStore((state) => state.clearSession);
+  const username = useAuthStore((state) => state.user?.username);
+  const schema = useMemo(() => buildPasswordFormSchema(username), [username]);
 
   const { control, handleSubmit } = useForm<PasswordFormValues>({
-    resolver: zodResolver(passwordFormSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       currentPassword: "",
       newPassword: "",
@@ -128,9 +134,15 @@ export function PasswordFormCard() {
                 <PasswordStrength password={field.value ?? ""} />
                 {fieldState.error ? (
                   <p className="text-xs text-danger" role="alert">
-                    {t("features.account.password.newPasswordInvalid")}
+                    {t(
+                      `features.account.password.new.${fieldState.error.message}`,
+                    )}
                   </p>
-                ) : null}
+                ) : (
+                  <p className="text-xs text-muted">
+                    {t("features.account.password.newPasswordHint")}
+                  </p>
+                )}
               </div>
             )}
           />

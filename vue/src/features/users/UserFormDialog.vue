@@ -24,7 +24,8 @@ import PasswordField from "./PasswordField.vue";
 import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "@/features/org/dept-api";
 import { fetchPosts } from "@/features/org/post-api";
 import DeptTreeSelect from "@/features/org/DeptTreeSelect.vue";
-import { PASSWORD_MAX_LENGTH, SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
+import { SUPER_ADMIN_ROLE_CODE } from "@/lib/constants";
+import { getPasswordError } from "@/lib/password-validation";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
@@ -135,16 +136,19 @@ const schema = z
   })
   .superRefine((data, ctx) => {
     // 密码仅创建时校验（编辑态无密码字段：改密走「重置密码」弹窗）；
-    // 6-72 与后端契约 v1.7.3 对齐（72 为 bcrypt 输入上限，超长会被静默截断）
+    // 密码策略（契约 v1.8.0）含「不能包含用户名」跨字段项，故在对象级 superRefine 中校验，
+    // getPasswordError 返回的 key 拼 features.users.form.password.* 取精确文案
     if (!isEdit.value) {
-      if (
-        data.password.length < 6 ||
-        data.password.length > PASSWORD_MAX_LENGTH
-      ) {
+      const passwordError = getPasswordError(
+        data.password,
+        data.username.trim(),
+      );
+
+      if (passwordError) {
         ctx.addIssue({
           code: "custom",
           path: ["password"],
-          message: t("features.users.form.passwordInvalid"),
+          message: t(`features.users.form.password.${passwordError}`),
         });
       }
 

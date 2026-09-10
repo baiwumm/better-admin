@@ -8,6 +8,10 @@ import { desc, eq, isNull, and, asc } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 import { db } from '../db/client';
 import { logs, refreshTokens, roles, userRoles, users } from '../db/schema';
+import {
+  assertPasswordNotContainingUsername,
+  assertPasswordNotSameAsCurrent,
+} from '../common/validators/password-policy';
 import { AvatarStorageService } from './avatar-storage.service';
 import {
   UpdateAccountEmailDto,
@@ -189,7 +193,7 @@ export class AccountService {
   }
 
   /**
-   * 自助修改密码：校验当前密码 → 写入新 hash + tokenVersion+1 → 清空托管 refreshToken。
+   * 自助修改密码：校验当前密码 → 密码策略跨字段项 → 写入新 hash + tokenVersion+1 → 清空托管 refreshToken。
    * 当前会话（含本请求使用的 access token）随即全部失效，客户端须引导重新登录。
    */
   async updatePassword(
@@ -199,12 +203,10 @@ export class AccountService {
     const existing = await this.loadRow(userId);
     await this.assertCurrentPassword(existing.passwordHash, dto.currentPassword);
 
-    // 新旧密码相同：静默成功（v0.9 决策）——不 bump tokenVersion、不清托管会话，
-    // 避免无谓的全端下线；仅记审计日志
-    if (await bcrypt.compare(dto.newPassword, existing.passwordHash)) {
-      await this.writeLog('account.password_update_noop', userId, null);
-      return null;
-    }
+    // 密码策略跨字段项（v1.8.0）：不能包含本人用户名；新旧相同由「静默成功」（v0.9）
+    // 改为 400 PASSWORD_SAME_AS_OLD——前端可明确提示，且与重置密码口径一致
+    assertPasswordNotContainingUsername(dto.newPassword, existing.username);
+    await assertPasswordNotSameAsCurrent(dto.newPassword, existing.passwordHash);
 
     const passwordHash = await bcrypt.hash(dto.newPassword, 10);
     // 写新密码（tokenVersion+1）与清空托管 refreshToken 同一事务（不留中间态）

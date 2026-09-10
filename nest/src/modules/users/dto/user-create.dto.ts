@@ -10,6 +10,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { type TransformFnParams, Transform } from 'class-transformer';
+import { IsPolicyPassword } from '../../../common/validators/password-policy';
 
 /** trim 后入库：与前端 zod .trim() 口径一致，空格参与唯一索引/保护比较属于脏数据 */
 const trimTransform = ({ value }: TransformFnParams): unknown =>
@@ -27,10 +28,9 @@ export class CreateUserDto {
   @MaxLength(100)
   email!: string;
 
-  /** 6-72 位：72 为 bcrypt 输入上限，超出部分哈希时被截断忽略（契约 v1.7.3） */
+  /** 密码策略见 common/validators/password-policy（契约 v1.8.0）；含 username 的跨字段检查在 service 层 */
   @IsString()
-  @MinLength(6)
-  @MaxLength(72)
+  @IsPolicyPassword()
   password!: string;
 
   @IsString()

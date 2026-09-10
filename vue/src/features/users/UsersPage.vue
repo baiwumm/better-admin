@@ -176,7 +176,7 @@ const columns = computed<AppColumnDef<User>[]>(() => [
     id: "user",
     enableSorting: false,
     header: () => t("features.users.column.user"),
-    cell: ({ row }) => h(UserInfo, { user: row.original }),
+    cell: ({ row }) => h(UserInfo, { user: row.original, sub: "email" }),
   },
   {
     accessorKey: "username",

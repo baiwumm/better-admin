@@ -123,7 +123,16 @@ info:
     ResetPasswordRequest.newPassword / AccountPasswordUpdateRequest.newPassword 补 maxLength 72
     （72 为 bcrypt 输入上限：超出 72 字节的输入在哈希时被截断忽略，明文超长不再接受）。
     超限 400 VALIDATION_ERROR。
-  version: 1.7.3
+    v1.8.0 密码策略收紧（三个设置密码入口口径统一，登录不受影响、存量密码静默兼容）：
+    UserCreateRequest.password / ResetPasswordRequest.newPassword / AccountPasswordUpdateRequest.newPassword
+    由 6-72 位改为 8-20 位，仅允许 ASCII 可打印字符（0x21-0x7E，天然排除空格及任何空白与非 ASCII 字符），
+    且必须同时包含字母和数字（可含特殊符号）；格式不符 400 VALIDATION_ERROR。
+    新增业务校验：密码不能包含用户名（用户名 ≥3 位时做不区分大小写的包含检查，
+    POST /users 对 body.username、reset-password 对目标用户、PUT /account/password 对本人）
+    → 400 PASSWORD_CONTAINS_USERNAME；新密码不能与当前密码相同（reset-password 与
+    PUT /account/password 均以 bcrypt 比对现有 hash）→ 400 PASSWORD_SAME_AS_OLD
+    （PUT /account/password 原「相同则静默成功」的 v0.9 行为废止，改为明确报错）。
+  version: 1.8.0
 
 servers:
   - url: https://nest.baiwumm.com/api
@@ -426,9 +435,13 @@ components:
           maxLength: 100
         password:
           type: string
-          minLength: 6
-          maxLength: 72
-          description: 初始密码（6-72 位；72 为 bcrypt 输入上限，超出部分服务端哈希时被忽略，与 AccountPasswordUpdateRequest / ResetPasswordRequest 一致）
+          minLength: 8
+          maxLength: 20
+          pattern: '^(?=.*[A-Za-z])(?=.*[0-9])[\x21-\x7E]{8,20}$'
+          description: >
+            初始密码（v1.8.0 密码策略）：8-20 位，仅允许 ASCII 可打印字符（不含空格及任何空白），
+            必须同时包含字母和数字，可含特殊符号；不能包含 username（≥3 位时不区分大小写包含检查，
+            400 PASSWORD_CONTAINS_USERNAME）。与 ResetPasswordRequest / AccountPasswordUpdateRequest 口径一致。
         displayName:
           type: string
           minLength: 1
@@ -547,9 +560,14 @@ components:
       properties:
         newPassword:
           type: string
-          minLength: 6
-          maxLength: 72
-          description: 新密码（6-72 位；72 为 bcrypt 输入上限，与 AccountPasswordUpdateRequest 一致）
+          minLength: 8
+          maxLength: 20
+          pattern: '^(?=.*[A-Za-z])(?=.*[0-9])[\x21-\x7E]{8,20}$'
+          description: >
+            新密码（v1.8.0 密码策略）：8-20 位，仅允许 ASCII 可打印字符（不含空格及任何空白），
+            必须同时包含字母和数字，可含特殊符号；不能包含目标用户的 username（≥3 位时不区分大小写包含检查，
+            400 PASSWORD_CONTAINS_USERNAME）；不能与该用户当前密码相同（400 PASSWORD_SAME_AS_OLD）。
+            与 UserCreateRequest / AccountPasswordUpdateRequest 口径一致。
 
     StatusUpdateRequest:
       type: object
@@ -687,9 +705,14 @@ components:
           type: string
         newPassword:
           type: string
-          minLength: 6
-          maxLength: 72
-          description: 新密码（6-72 位；72 为 bcrypt 输入上限，与 ResetPasswordRequest 一致）
+          minLength: 8
+          maxLength: 20
+          pattern: '^(?=.*[A-Za-z])(?=.*[0-9])[\x21-\x7E]{8,20}$'
+          description: >
+            新密码（v1.8.0 密码策略）：8-20 位，仅允许 ASCII 可打印字符（不含空格及任何空白），
+            必须同时包含字母和数字，可含特殊符号；不能包含本人 username（≥3 位时不区分大小写包含检查，
+            400 PASSWORD_CONTAINS_USERNAME）；不能与当前密码相同（400 PASSWORD_SAME_AS_OLD）。
+            与 UserCreateRequest / ResetPasswordRequest 口径一致。
 
     AccountAvatarResponse:
       type: object
@@ -1946,14 +1969,25 @@ paths:
                     nullable: true
         '400':
           description: >
-            当前密码错误（CURRENT_PASSWORD_INCORRECT）；或参数校验失败（VALIDATION_ERROR）。
+            当前密码错误（CURRENT_PASSWORD_INCORRECT）；新密码包含本人用户名（PASSWORD_CONTAINS_USERNAME，v1.8.0）；
+            新密码与当前密码相同（PASSWORD_SAME_AS_OLD，v1.8.0）；或参数校验失败（VALIDATION_ERROR，含密码格式不符）。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              example:
-                code: CURRENT_PASSWORD_INCORRECT
-                message: 当前密码不正确
+              examples:
+                currentPasswordIncorrect:
+                  value:
+                    code: CURRENT_PASSWORD_INCORRECT
+                    message: 当前密码不正确
+                passwordContainsUsername:
+                  value:
+                    code: PASSWORD_CONTAINS_USERNAME
+                    message: 密码不能包含用户名
+                passwordSameAsOld:
+                  value:
+                    code: PASSWORD_SAME_AS_OLD
+                    message: 新密码不能与当前密码相同
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -2128,7 +2162,22 @@ paths:
                   data:
                     $ref: '#/components/schemas/User'
         '400':
-          $ref: '#/components/responses/ValidationError'
+          description: >
+            参数校验失败（VALIDATION_ERROR，含密码格式不符 / 角色不存在 / 主岗不在关联岗位中）；
+            或初始密码包含 username（PASSWORD_CONTAINS_USERNAME，v1.8.0）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                validation:
+                  value:
+                    code: VALIDATION_ERROR
+                    message: 请求参数校验失败
+                passwordContainsUsername:
+                  value:
+                    code: PASSWORD_CONTAINS_USERNAME
+                    message: 密码不能包含用户名
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2370,14 +2419,27 @@ paths:
                     type: object
                     nullable: true
         '400':
-          description: 不能重置当前登录用户本人的密码（v1.4.6；本人改密走 Auth 模块）
+          description: >
+            不能重置当前登录用户本人的密码（SELF_OPERATION_FORBIDDEN，v1.4.6；本人改密走 Account 模块）；
+            新密码包含目标用户的用户名（PASSWORD_CONTAINS_USERNAME，v1.8.0）；
+            新密码与目标用户当前密码相同（PASSWORD_SAME_AS_OLD，v1.8.0）；或参数校验失败（VALIDATION_ERROR，含密码格式不符）。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              example:
-                code: SELF_OPERATION_FORBIDDEN
-                message: 不能操作当前登录用户
+              examples:
+                selfOperationForbidden:
+                  value:
+                    code: SELF_OPERATION_FORBIDDEN
+                    message: 不能操作当前登录用户
+                passwordContainsUsername:
+                  value:
+                    code: PASSWORD_CONTAINS_USERNAME
+                    message: 密码不能包含用户名
+                passwordSameAsOld:
+                  value:
+                    code: PASSWORD_SAME_AS_OLD
+                    message: 新密码不能与当前密码相同
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

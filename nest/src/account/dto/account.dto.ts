@@ -10,6 +10,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { type TransformFnParams, Transform } from 'class-transformer';
+import { IsPolicyPassword } from '../../common/validators/password-policy';
 
 /** 剥离可选协议与平台主页前缀，trim 后返回剩余裸值；空串归一为 null（语义 = 清空） */
 function stripPrefix(pattern: RegExp) {
@@ -89,9 +90,8 @@ export class UpdateAccountPasswordDto {
   @MinLength(1)
   currentPassword!: string;
 
-  /** 6-72 位：72 为 bcrypt 输入上限，超出部分哈希时被截断忽略（契约 v1.7.3） */
+  /** 密码策略见 common/validators/password-policy（契约 v1.8.0）；含用户名 / 与原密码相同的检查在 service 层 */
   @IsString()
-  @MinLength(6)
-  @MaxLength(72)
+  @IsPolicyPassword()
   newPassword!: string;
 }

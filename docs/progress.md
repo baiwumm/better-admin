@@ -2,6 +2,38 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 密码策略 v1.8.0 同步 Vue 端（2026-09-10）
+
+- **范围**：Vue 端尚无「我的账户」模块，本次仅涉及用户管理的两个弹窗（新建用户初始密码 / 重置密码）；规则口径与 React 端完全一致。
+- **规则模块**：新建 `lib/password-validation.ts`，常量 + `passwordContainsUsername` + `getPasswordError` 纯函数部分与 React 端逐行相同；**不带 zod 字段工厂**——UForm 直接展示 `issue.message`，翻译须在表单的对象级 superRefine 中完成（React 端是 issue.message 存 key、渲染层再 `t()`，两端在表单层的接法不同但规则源一致，头注释已注明差异）。`lib/constants.ts` 的 `PASSWORD_MAX_LENGTH = 72` 删除（长度常量随规则迁入新模块）。
+- **两个弹窗**：`UserFormDialog` superRefine 改调 `getPasswordError(password, username.trim())`，issue.message 为 `t(\`features.users.form.password.${key}\`)` 精确文案；`UserResetPasswordDialog` 由 `.min(6).max(72)` 字段级校验改为与 UserFormDialog 同构的对象级 superRefine（用户名在校验时从 `props.user` 读取，无需 computed schema），并补 `features.users.resetPassword.passwordHint` 提示（写法沿用 UserFormDialog 的 `:help` + `:ui` 样式透传）。`user-api.getUserErrorMessage` 补 `PASSWORD_CONTAINS_USERNAME` / `PASSWORD_SAME_AS_OLD` 映射。
+- **语言包**：`pnpm sync-locales` 从 React 端同步（`@` 转义机制正常，`emailPlaceholder` 仍为 `name{'@'}example.com`）；新增键 `features.users.form.password.*` 与既有叶子键 `features.users.form.password` 共存，Vue 端自定义 `messageResolver` 对扁平 map 精确查找，无嵌套冲突（同 React `keySeparator: false` 语义）。
+- **验证**：`vue-tsc --noEmit` / eslint（0 error）/ vitest（31/31，含新增 `lib/__tests__/password-validation.test.ts` 9 用例，边界口径与 React / Nest 一致）/ `vite build` 全绿。
+- **至此四端对齐**：契约 v1.8.0 密码策略在 NestJS / React / Next / Vue 全部落地（Vue 账户改密卡待其「我的账户」模块启动时按同一规则实现）。
+
+---
+
+### 密码策略 v1.8.0 同步 Next.js 端：server + web（2026-09-10）
+
+- **server 端**：新建 `lib/server/password-policy.ts`（server-only），与 nest `common/validators/password-policy` 一一对齐——规则本体不再另写一份，直接复用同构模块 `@/lib/password-validation` 的纯函数（`getPasswordError` / `passwordContainsUsername`），此处仅做「规则 → ServerApiError」映射：`assertPasswordFormat`（格式项 → 400 VALIDATION_ERROR，等价 nest DTO 管道）、`assertPasswordNotContainingUsername`（→ 400 PASSWORD_CONTAINS_USERNAME）、`assertPasswordNotSameAsCurrent`（bcryptjs 比对 → 400 PASSWORD_SAME_AS_OLD）。分层与 nest 一致：三个路由（`POST /api/users`、`POST /api/users/[id]/reset-password`、`PUT /api/account/password`）在必填检查后调 `assertPasswordFormat`，原 6-72 位长度判断全部移除；`users-service.createUser` 对 body.username 查包含、`resetUserPassword` 对目标用户查包含 + hash 比对（原 service 内 6-72 兜底删除，格式改由路由层负责）、`account-service.updateAccountPassword` 对本人查包含 + hash 比对（noop 分支删除，`account.password_update_noop` 日志 action 全仓不再产生）。
+- **web 端**：`lib/password-validation.ts` 从 React 端逐字节复制（同构副本，server 亦复用）；`user-form-dialog` / `user-reset-password-dialog` / `account/password-form-card` / `account/password-strength` / `account-api` / `user-api` 六文件与 React 端逐行一致（仅多 `"use client"` 头）整文件同步；四个语言包 JSON 直接复制，`pnpm check-locales` 由 42 处差异恢复为完全一致。
+- **React 端顺带微调**（保证两端 `password-validation.ts` 逐字节相同）：`getPasswordError` 内的用户名包含判断抽为导出函数 `passwordContainsUsername`（Next server 断言需要单独调用），行为不变，10 个单测全过。
+- **验证**：next `tsc --noEmit` / eslint（0 error，2 个既有 `writeLog` console warning）/ `check-locales` / `next build` 全绿；react 单测 / eslint / tsc 复跑全绿。
+- **Vue 待同步（用户指令后进行）**：`lib/constants.ts` 的 `PASSWORD_MAX_LENGTH = 72` 与 UserFormDialog / UserResetPasswordDialog 的 6-72 校验、账户改密卡（M3）按同一规则落地。
+
+---
+
+### 密码策略收紧：契约 v1.8.0，NestJS + React 首轮落地（2026-09-10）
+
+- **需求与决策**：三个设置密码入口（新建用户初始密码 / 管理员重置密码 / 我的账户改密）统一为——8-20 位；仅 ASCII 可打印字符（0x21-0x7E，天然排除空格及任何空白、中文 / emoji 等非 ASCII）；必须同时包含字母和数字，可含特殊符号；不能包含用户名（用户名 ≥3 位时才做不区分大小写的包含检查，避免单字符用户名无法设密）；不能与当前密码相同。评估阶段拍板：**不做弱密码字典**（字母+数字即可）；「与原密码相同」由改密场景的「静默成功」（v0.9）改为明确报错，且重置密码场景同样校验（后端持有 hash，一次 bcrypt 比对）。登录不套用策略，**存量不合规密码静默兼容**，下次改密时被强制升级——无迁移。
+- **契约先行（v1.8.0）**：`openapi.yaml` 三个密码字段改 `minLength 8 / maxLength 20 / pattern ^(?=.*[A-Za-z])(?=.*[0-9])[\x21-\x7E]{8,20}$`；新增错误码 `PASSWORD_CONTAINS_USERNAME` / `PASSWORD_SAME_AS_OLD`（400），`POST /users`、`POST /users/{id}/reset-password`、`PUT /account/password` 三端点 400 响应补 examples；`main.ts` Swagger setVersion 同步 1.8.0。
+- **NestJS**：新建 `common/validators/password-policy.ts` 集中策略——`getPasswordFormatError`（格式四规则按序短路）+ `@IsPolicyPassword()` DTO 装饰器（格式项走 class-validator 管道 → 400 VALIDATION_ERROR；命名避开 class-validator 内置 `IsStrongPassword`）+ `assertPasswordNotContainingUsername` / `assertPasswordNotSameAsCurrent` 两个 service 层断言（跨字段 / 需查库项）。三个 DTO 换装饰器（原 `MinLength(6)/MaxLength(72)` 移除，72 位 bcrypt 上限说明随之退场）；`users.service.create` 对 body.username 查包含、`resetPassword` 对目标用户查包含 + hash 比对、`account.service.updatePassword` 对本人查包含 + hash 比对（noop 分支删除，`account.password_update_noop` 日志 action 不再产生）。
+- **React**：新建 `lib/password-validation.ts`（与 Nest 同规则的前端预检副本：常量 + `getPasswordError` 返回 i18n key 末段 + `buildPasswordSchema(username)` zod 工厂）；`user-form-dialog` superRefine 改调 `getPasswordError(password, username)`（原导出常量 `PASSWORD_MAX_LENGTH = 72` 删除）、`user-reset-password-dialog` schema 改为按目标用户名构建的工厂（useMemo）、`account/password-form-card` 从 auth-store 取本人 username 构建 schema 并在无错误时显示规则提示；三处错误渲染由「统一文案」改为按 `issue.message` 拼 `features.users.form.password.*` / `features.account.password.new.*` 精确提示；`PasswordStrength` 最低档阈值 6 → `PASSWORD_MIN_LENGTH`；`getAccountErrorMessage` / `getUserErrorMessage` 补两个新错误码映射。i18n zh/en：新增 12 个 features 键 + 4 个 errors 键、改 3 个提示/占位值、删 2 个死键（`passwordInvalid` / `newPasswordInvalid`）。新增 `lib/__tests__/password-validation.test.ts`（10 用例，边界口径与后端验证用例一致，前后端漂移由此暴露）。
+- **验证**：nest `tsc` / eslint 全绿，策略函数以 dist 产物跑 21 个边界用例全过（Nest 端无测试框架，按 §15 不为此引入）；react `tsc --noEmit` / eslint / vitest（86/86，含新增 10）全绿。
+- **Next / Vue 未动（待同步，用户指令）**：① Next 端 server 校验 + 三表单 + `account-service` noop 分支改报错，语言包按 `pnpm check-locales` 差异报告（当前 42 处，全部为本次密码文案）对齐后恢复通过——**该脚本在 Next 同步前预期失败**；② Vue 端 `lib/constants.ts` 的 `PASSWORD_MAX_LENGTH = 72` 与 UserFormDialog / UserResetPasswordDialog 的 6-72 校验、账户改密卡（M3）按同一规则落地。契约版本引用统一升至 v1.8.0。
+
+---
+
 ### Vue 用户表单样式微调 + 入职日期改用 UInputDate（2026-09-10）
 
 - **用户样式调整**：用户管理弹窗全部输入框（UserFormDialog / PasswordField）移除 `variant="soft"` 回归 Nuxt UI 默认外观；状态开关外框 `rounded-lg` → `rounded-xl` + `border-default`。

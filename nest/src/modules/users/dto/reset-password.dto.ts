@@ -1,10 +1,10 @@
-import { IsString, MaxLength, MinLength } from 'class-validator';
+import { IsString } from 'class-validator';
+import { IsPolicyPassword } from '../../../common/validators/password-policy';
 
 /** POST /api/users/:id/reset-password 请求体 */
 export class ResetPasswordDto {
-  /** 6-72 位：72 为 bcrypt 输入上限，超出部分哈希时被截断忽略（契约 v1.7.3） */
+  /** 密码策略见 common/validators/password-policy（契约 v1.8.0）；含用户名 / 与原密码相同的检查在 service 层 */
   @IsString()
-  @MinLength(6)
-  @MaxLength(72)
+  @IsPolicyPassword()
   newPassword!: string;
 }

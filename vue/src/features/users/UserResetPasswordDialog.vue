@@ -11,13 +11,15 @@ import { getUserErrorMessage, resetUserPassword } from "./user-api";
 import PasswordField from "./PasswordField.vue";
 
 import Spinner from "@/components/ui/spinner/index.vue";
-import { PASSWORD_MAX_LENGTH } from "@/lib/constants";
+import { getPasswordError } from "@/lib/password-validation";
 
 /**
  * 重置密码弹窗：POST /users/:id/reset-password（RESET_PASSWORD 位）。
  *
  * 后端行为：bcrypt 重新散列 + tokenVersion+1 + 物理清空该用户全部
  * refreshTokens——成功后该用户所有已登录设备即刻下线，需重新登录。
+ * 密码策略（契约 v1.8.0）：格式 + 「不含目标用户名」在前端预检；
+ * 「不能与其当前密码相同」由后端 400 PASSWORD_SAME_AS_OLD 兜底。
  */
 const props = defineProps<{
   open: boolean;
@@ -35,19 +37,27 @@ const FORM_ID = "user-reset-password-form";
 const { t } = useI18n();
 const toast = useToast();
 
-// 一致性跨字段校验：不匹配时错误挂 confirmPassword 字段；
-// 6-72 与后端契约 v1.7.3 对齐（72 为 bcrypt 输入上限）
+// 对象级 superRefine（与 UserFormDialog 同构）：密码策略含「不含目标用户名」跨字段项，
+// 用户名在校验时从 props.user 读取；不匹配时错误挂 confirmPassword 字段
 const schema = z
   .object({
-    newPassword: z
-      .string()
-      .min(6, { error: () => t("features.users.form.passwordInvalid") })
-      .max(PASSWORD_MAX_LENGTH, {
-        error: () => t("features.users.form.passwordInvalid"),
-      }),
+    newPassword: z.string(),
     confirmPassword: z.string(),
   })
   .superRefine((data, ctx) => {
+    const passwordError = getPasswordError(
+      data.newPassword,
+      props.user?.username,
+    );
+
+    if (passwordError) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["newPassword"],
+        message: t(`features.users.form.password.${passwordError}`),
+      });
+    }
+
     if (data.newPassword !== data.confirmPassword) {
       ctx.addIssue({
         code: "custom",
@@ -147,9 +157,11 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
         <PasswordField
           v-model="state.newPassword"
+          :help="t('features.users.resetPassword.passwordHint')"
           :label="t('features.users.resetPassword.newPassword')"
           :placeholder="t('features.users.form.passwordPlaceholder')"
           name="newPassword"
+          :ui="{ help: 'text-dimmed text-xs' }"
         />
 
         <PasswordField

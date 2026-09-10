@@ -2,11 +2,13 @@ import { cn } from "@heroui/react";
 import { useMemo } from "react";
 
 import { useTranslation } from "@/i18n";
+import { PASSWORD_MIN_LENGTH } from "@/lib/password-validation";
 
 /**
  * 密码强度指示（5 档）：5 段色条 + 档位文案。
  * 评分维度：长度（≥8 / ≥12）+ 字符多样性（大小写 / 数字 / 符号），
- * 长度不足 6 位（与后端 MinLength(6) 对齐）直接判为最低档；未输入时不渲染。
+ * 长度不足策略下限（8 位，见 password-validation）直接判为最低档；未输入时不渲染。
+ * 仅作视觉提示，是否合规以 zod 校验（buildPasswordSchema）为准。
  */
 
 /** 档位色条与文案颜色（弱→ danger，中→ warning，较强→ accent，强→ success） */
@@ -21,7 +23,7 @@ const LEVEL_STYLES = [
 /** 评分 0-4（-1 表示未输入） */
 function scorePassword(password: string): number {
   if (!password) return -1;
-  if (password.length < 6) return 0;
+  if (password.length < PASSWORD_MIN_LENGTH) return 0;
 
   let score = 0;
 

@@ -78,6 +78,16 @@ export function getAccountErrorMessage(error: unknown): string {
         "errors.account.currentPasswordIncorrect",
         "当前密码不正确",
       );
+    case "PASSWORD_CONTAINS_USERNAME":
+      return getErrorMessage(
+        "errors.account.passwordContainsUsername",
+        "新密码不能包含用户名",
+      );
+    case "PASSWORD_SAME_AS_OLD":
+      return getErrorMessage(
+        "errors.account.passwordSameAsOld",
+        "新密码不能与当前密码相同",
+      );
     case "EMAIL_EXISTS":
       return getErrorMessage("errors.account.emailExists", "邮箱已被占用");
     case "AVATAR_FILE_INVALID":

@@ -24,6 +24,10 @@ import {
   assertValidDeptId,
   assertValidPostIds,
 } from '../org/org-views';
+import {
+  assertPasswordNotContainingUsername,
+  assertPasswordNotSameAsCurrent,
+} from '../../common/validators/password-policy';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/user-create.dto';
 import { UpdateUserDto } from './dto/user-update.dto';
@@ -494,6 +498,9 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto, operatorId: string | null) {
+    // 密码策略跨字段项（v1.8.0）：初始密码不能包含 username（格式项已在 DTO 层校验）
+    assertPasswordNotContainingUsername(dto.password, dto.username);
+
     const roleIds = dto.roleIds ?? [];
     // 外键校验：角色 id 必须全部有效，避免外键报错（VALIDATION_ERROR）
     await this.assertValidRoleIds(roleIds);
@@ -740,8 +747,11 @@ export class UsersService {
         message: '用户不存在',
       });
     }
-    // v1.4.6 保护：不能重置自己/受保护用户的密码（本人改密走 Auth 模块接口）
+    // v1.4.6 保护：不能重置自己/受保护用户的密码（本人改密走 Account 模块接口）
     await this.assertTargetOperable(existing, operatorId);
+    // 密码策略跨字段项（v1.8.0）：不能包含目标用户名、不能与其当前密码相同（格式项已在 DTO 层校验）
+    assertPasswordNotContainingUsername(newPassword, existing.username);
+    await assertPasswordNotSameAsCurrent(newPassword, existing.passwordHash);
     const passwordHash = await bcrypt.hash(newPassword, 10);
     // 同步 bump tokenVersion：该用户全部存量 access/refresh token 立即失效（强制重登）；
     // 与撤销其全部托管 refreshToken 同一事务（中途失败不留中间态，与 remove 口径一致）

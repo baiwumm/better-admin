@@ -9,6 +9,7 @@ import {
 } from "@/lib/server/users-service";
 import { jsonList, jsonOk, handleRouteError } from "@/lib/server/route-helpers";
 import { ServerApiError } from "@/lib/server/http";
+import { assertPasswordFormat } from "@/lib/server/password-policy";
 import { EMAIL_PATTERN } from "@/lib/constants";
 
 /**
@@ -65,7 +66,6 @@ export async function POST(request: NextRequest) {
       typeof body?.email !== "string" ||
       body.email.length === 0 ||
       typeof body?.password !== "string" ||
-      body.password.length < 6 ||
       typeof body?.displayName !== "string" ||
       body.displayName.trim().length === 0
     ) {
@@ -77,19 +77,21 @@ export async function POST(request: NextRequest) {
       throw new ServerApiError(400, "VALIDATION_ERROR", "邮箱格式不正确");
     }
 
-    // 契约 v1.7.3：长度上限（对齐 nest CreateUserDto @Size/@MaxLength）
+    // 契约 v1.7.3：长度上限（对齐 nest CreateUserDto @MaxLength）
     if (
       body.username.trim().length > 50 ||
       body.displayName.trim().length > 50 ||
-      body.email.length > 100 ||
-      body.password.length > 72
+      body.email.length > 100
     ) {
       throw new ServerApiError(
         400,
         "VALIDATION_ERROR",
-        "用户名/姓名最长 50 字符，邮箱最长 100 字符，密码长度为 6-72 位",
+        "用户名/姓名最长 50 字符，邮箱最长 100 字符",
       );
     }
+
+    // 契约 v1.8.0 密码策略格式项（对齐 nest @IsPolicyPassword）；含 username 的跨字段项在 createUser
+    assertPasswordFormat(body.password);
 
     const user = await createUser(
       {

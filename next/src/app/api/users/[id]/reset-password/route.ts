@@ -4,6 +4,7 @@ import { Permissions } from "@/lib/server/permissions";
 import { requireAuthUser } from "@/lib/server/route-auth";
 import { resetUserPassword } from "@/lib/server/users-service";
 import { ServerApiError } from "@/lib/server/http";
+import { assertPasswordFormat } from "@/lib/server/password-policy";
 import { jsonOk, handleRouteError } from "@/lib/server/route-helpers";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -11,6 +12,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 /**
  * POST /api/users/:id/reset-password（契约，200，RESET_PASSWORD 位）。
  * 保护校验同删除（不能重置自己的密码）；成功后该用户全端下线。
+ * 密码策略（契约 v1.8.0）：格式项在此断言，含目标用户名 / 与其当前密码相同的检查在 service。
  */
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
@@ -29,6 +31,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (typeof body?.newPassword !== "string") {
       throw new ServerApiError(400, "VALIDATION_ERROR", "newPassword 为必填");
     }
+    assertPasswordFormat(body.newPassword);
 
     await resetUserPassword(id, body.newPassword, operator);
 

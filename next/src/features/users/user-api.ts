@@ -124,6 +124,16 @@ export function getUserErrorMessage(error: unknown): string {
       return getErrorMessage("errors.users.emailExists", "邮箱已被占用");
     case "USER_NOT_FOUND":
       return getErrorMessage("errors.users.notFound", "用户不存在或已被删除");
+    case "PASSWORD_CONTAINS_USERNAME":
+      return getErrorMessage(
+        "errors.users.passwordContainsUsername",
+        "密码不能包含用户名",
+      );
+    case "PASSWORD_SAME_AS_OLD":
+      return getErrorMessage(
+        "errors.users.passwordSameAsOld",
+        "新密码不能与该用户当前密码相同",
+      );
     case "VALIDATION_ERROR":
       return getErrorMessage(
         "errors.users.validation",
