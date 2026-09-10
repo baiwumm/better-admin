@@ -5,6 +5,10 @@
 @import "./fonts.css";
 /* 认证页（登录 / 后续注册、忘记密码）专属背景与动效 */
 @import "./sign-in.css";
+/* 偏好设置（design-theme-store 驱动）：主题切换揭示动画 / 路由过渡预设 / 色彩模式滤镜 */
+@import "./theme-transition.css";
+@import "./route-transitions.css";
+@import "./color-vision.css";
 
 /* 全局字体：Maple Mono CN（对齐 React 端 --font-sans）；
    覆盖 Tailwind v4 默认 --font-sans，body/preflight 自动继承 */

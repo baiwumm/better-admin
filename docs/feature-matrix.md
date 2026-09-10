@@ -50,7 +50,7 @@
 | ----------------- | ----- | ------- | --- | ---- | --------------------------------- |
 | 全站 i18n（zh-CN/en） | ✅     | ✅       | ✅   | ❌    | Vue M0：vue-i18n（messageResolver 扁平键）+ 复用 react locales；M1 冒烟验收通过 |
 | 主题系统（明暗模式）        | ✅     | ✅       | ✅   | ❌    | Vue M0：Nuxt UI 默认 Design Tokens + @vueuse/core useColorMode；M1 冒烟验收通过 |
-| 偏好设置抽屉             | ✅     | ✅       | 🔧   | ❌    | 9 项：主题色（含随机换色 + Black 黑白主题）/ 模式 / 色彩模式（正常/灰色/色弱）/ 动画方向 / 路由动画（9 预设）/ 速度 / 圆角 4 档 / 多标签页显隐 / 重置；Vue M0 仅主题模式 + 语言 2 项，M3 补齐全项（主题色 / 圆角参考 better-nuxt 机制、色名硬编码，i18n 键冻结规则见 vue-plan §3） |
+| 偏好设置抽屉             | ✅     | ✅       | ✅   | ❌    | 9 项：主题色（含随机换色 + Black 黑白主题）/ 模式 / 色彩模式（正常/灰色/色弱）/ 动画方向 / 路由动画（9 预设）/ 速度 / 圆角 4 档 / 多标签页显隐 / 重置；Vue M3（2026-09-10）全项补齐并 GUI 冒烟通过：主题色 = Tailwind 17 色板运行时覆盖 `--ui-color-primary-*` + Black 覆盖 `--ui-primary`（随明暗重算）、圆角按 Nuxt UI 标度 0/0.125/0.25/0.5rem、design-theme-store 单一真源 + `app.mount` 前恢复；路由动画 / 多标签页开关的实际编排接入见对应行 |
 | 多标签页              | ✅     | ✅       | ❌   | ❌    | Vue 端规划（M3）：原生 KeepAlive（include/max） |
 | DataTable 列设置        | ✅     | ✅       | ❌   | ❌    | 可见性勾选 + 拖拽排序（`column-setting:{userId}:{routePath}` 持久化）；Vue M1 延后，M3 回收（拖拽复用 vue-draggable-plus） |
 | 命令面板              | ✅     | ✅       | ✅   | ❌    | Vue M0：UDashboardSearch 接菜单导航（Cmd+K 内置） |

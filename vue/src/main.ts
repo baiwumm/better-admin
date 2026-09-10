@@ -11,7 +11,15 @@ import { i18n } from "./i18n";
 import { queryClient } from "./lib/query-client";
 import { setupRouterGuards } from "./router/guards";
 import { bindAuthToApiClient } from "./stores/auth-store";
+import {
+  initDesignTheme,
+  useDesignThemeStore,
+} from "./stores/design-theme-store";
 import "./styles/main.css";
+
+// 偏好设置（主题色 / 圆角 / 色彩模式 / 路由动画）在首帧前同步应用到 <html>，
+// 否则挂载后才恢复会闪一帧默认主题；明暗 class 已由 index.html 内联脚本设好
+initDesignTheme();
 
 const app = createApp(App);
 
@@ -23,7 +31,9 @@ const router = createRouter({
 // 三层守卫（登录拦截 / 会话保障+菜单权限 / 白名单）与文档标题
 setupRouterGuards(router);
 
-app.use(createPinia());
+const pinia = createPinia();
+
+app.use(pinia);
 app.use(VueQueryPlugin, { queryClient });
 app.use(i18n);
 app.use(router);
@@ -31,6 +41,10 @@ app.use(ui);
 
 // auth-store 与 api-client 解耦绑定（读取 token 的唯一通道）
 bindAuthToApiClient();
+
+// 偏好 store 随应用生命周期常驻：Black 黑白主题需在任何页面（含登录页）
+// 跟随明暗切换重算，不能等到偏好抽屉首次渲染才建立监听
+useDesignThemeStore(pinia);
 
 // 必须等路由初始导航解析完成后再挂载：挂载过早时 useRoute() 仍是初始占位
 // 路由（path="/"），AppShell 会在公共页（如 /sign-in）误挂 AdminLayout，

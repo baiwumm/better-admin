@@ -1,39 +1,58 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useColorMode } from "@vueuse/core";
+import { useToast } from "@nuxt/ui/composables";
 
-import { useLanguageStore } from "@/stores/language-store";
+import ColorVisionPicker from "./prefs/ColorVisionPicker.vue";
+import RadiusPicker from "./prefs/RadiusPicker.vue";
+import RouteTransitionPicker from "./prefs/RouteTransitionPicker.vue";
+import RouteTransitionSpeedPicker from "./prefs/RouteTransitionSpeedPicker.vue";
+import ShowTabsPicker from "./prefs/ShowTabsPicker.vue";
+import ThemeColorPicker from "./prefs/ThemeColorPicker.vue";
+import ThemeModePicker from "./prefs/ThemeModePicker.vue";
+import TransitionDirectionPicker from "./prefs/TransitionDirectionPicker.vue";
+
+import { useDesignThemeStore } from "@/stores/design-theme-store";
 
 /**
- * 偏好配置抽屉（对齐 React 端 Header 操作区的 ConfigDrawer 位置）。
- * M0 提供：主题模式 + 语言两项；React 端的侧栏变体 / 布局模式等
- * 偏好由 Nuxt UI Dashboard 套件内置行为接管，M3 再评审剩余项。
+ * 偏好设置抽屉（对齐 React 端 theme-settings-drawer）：Header 右侧 paint-bucket
+ * 按钮触发，右侧 USlideover 弹出。配置项各自抽为独立组件（prefs/），顺序与
+ * React 端一致：
+ * - ThemeColorPicker           主题色（Black 黑白 + Tailwind 色板 + 随机）
+ * - ThemeModePicker            主题模式
+ * - ColorVisionPicker          色彩模式（正常 / 灰色 / 色弱，全局滤镜）
+ * - TransitionDirectionPicker  主题动画方向（主题色 / 模式切换的揭示方向）
+ * - RouteTransitionPicker      页面切换动画
+ * - RouteTransitionSpeedPicker 页面切换速度
+ * - RadiusPicker               圆角（直角 / 小 / 中 / 大，全站圆角整体缩放）
+ * - ShowTabsPicker             显示多标签页
+ *
+ * 语言切换由 Header 的 LanguageSwitch 承担，不在抽屉内重复提供。
+ * 底部「重置设置」由 store.resetPreferences 在单次揭示动画内原子完成，
+ * 动画结束后再弹成功 toast。
  */
 const open = ref(false);
+const resetting = ref(false);
 const { t } = useI18n();
-const languageStore = useLanguageStore();
+const toast = useToast();
+const store = useDesignThemeStore();
 
-const colorMode = useColorMode();
+async function handleReset() {
+  resetting.value = true;
 
-const themeOptions = computed<
-  { label: string; value: "auto" | "light" | "dark" }[]
->(() => [
-  { label: t("layout.prefs.themeMode.system"), value: "auto" },
-  { label: t("layout.prefs.themeMode.light"), value: "light" },
-  { label: t("layout.prefs.themeMode.dark"), value: "dark" },
-]);
-
-const languageOptions = computed(() => [
-  { label: t("common.language.zhCN"), value: "zh-CN" },
-  { label: t("common.language.en"), value: "en" },
-]);
+  try {
+    await store.resetPreferences();
+    toast.add({ color: "success", title: t("layout.prefs.resetSuccess") });
+  } finally {
+    resetting.value = false;
+  }
+}
 </script>
 
 <template>
   <USlideover v-model:open="open" :title="t('layout.prefs.title')">
     <UButton
-      aria-label="Preferences"
+      :aria-label="t('layout.prefs.title')"
       color="neutral"
       icon="i-lucide-paint-bucket"
       variant="ghost"
@@ -42,27 +61,26 @@ const languageOptions = computed(() => [
 
     <template #body>
       <div class="flex flex-col gap-6">
-        <UFormField :label="t('layout.prefs.themeMode.label')">
-          <USelect
-            v-model="colorMode"
-            :items="themeOptions"
-            class="w-full"
-            value-key="value"
-          />
-        </UFormField>
-
-        <UFormField :label="t('common.language.choose')">
-          <USelect
-            :model-value="languageStore.locale"
-            :items="languageOptions"
-            class="w-full"
-            value-key="value"
-            @update:model-value="
-              (value) => languageStore.changeLanguage(value as 'zh-CN' | 'en')
-            "
-          />
-        </UFormField>
+        <ThemeColorPicker />
+        <ThemeModePicker />
+        <ColorVisionPicker />
+        <TransitionDirectionPicker />
+        <RouteTransitionPicker />
+        <RouteTransitionSpeedPicker />
+        <RadiusPicker />
+        <ShowTabsPicker />
       </div>
+    </template>
+
+    <template #footer>
+      <UButton
+        block
+        color="error"
+        icon="i-lucide-rotate-ccw"
+        :label="t('layout.prefs.reset')"
+        :loading="resetting"
+        @click="handleReset"
+      />
     </template>
   </USlideover>
 </template>
