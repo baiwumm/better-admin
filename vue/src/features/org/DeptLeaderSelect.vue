@@ -15,7 +15,8 @@ import { fetchApiList } from "@/lib/api-client";
  *
  * - 数据用 useInfiniteQuery 缓存（跨弹窗共享、staleTime 内开关弹窗不重复请求）；
  * - 无限滚动挂 USelectMenu 的 viewportRef（useInfiniteScroll），翻页中不重复触发；
- * - 选中回显头像走 USelectMenu 的 avatar prop（leading 位），选项自带 avatar；
+ * - 选中回显头像走 USelectMenu 的 avatar prop（leading 位），选项自带 avatar：
+ *   有头像显示图片，无头像显示名称首字（对齐 React 端 UserInfo）；
  * - 编辑回显兜底：当前负责人不在已加载用户列表中时补为首条候选；
  * - 无权限（403）等加载失败：禁用选择器，不阻塞表单其余字段编辑。
  */
@@ -57,23 +58,26 @@ const hasNextPage = computed(() => usersQuery.hasNextPage.value);
 interface LeaderOption {
   label: string;
   value: string;
-  avatar?: { src: string; alt: string };
+  /** UAvatar props（src 缺省时 UAvatar 用 text 兜底显示首字） */
+  avatar: { src?: string; alt: string; text: string };
 }
 
 const items = computed<LeaderOption[]>(() => {
   const options = (usersQuery.data.value?.pages ?? []).flatMap((page) =>
-    page.data.map((user) => ({
-      label: user.displayName || user.username,
-      value: user.id,
-      ...(user.avatar
-        ? {
-            avatar: {
-              src: user.avatar,
-              alt: user.displayName || user.username,
-            },
-          }
-        : {}),
-    })),
+    page.data.map((user) => {
+      const name = user.displayName || user.username;
+
+      return {
+        label: name,
+        value: user.id,
+        avatar: {
+          alt: name,
+          text: name.slice(0, 1),
+          ...(user.avatar ? { src: user.avatar } : {}),
+          color: "primary",
+        },
+      };
+    }),
   );
 
   // 编辑回显兜底：当前负责人不在已加载用户列表中时补为首条候选
@@ -82,9 +86,12 @@ const items = computed<LeaderOption[]>(() => {
     props.modelValue &&
     !options.some((option) => option.value === props.currentLeader!.id)
   ) {
+    const name = props.currentLeader.displayName;
+
     options.unshift({
-      label: props.currentLeader.displayName,
+      label: name,
       value: props.currentLeader.id,
+      avatar: { alt: name, text: name.slice(0, 1), color: "primary" },
     });
   }
 
