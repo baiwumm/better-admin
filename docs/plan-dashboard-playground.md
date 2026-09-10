@@ -25,7 +25,7 @@
 
 两个 Gate 均达成后，按 **Phase 0 演示上线准备 → Phase C Dashboard → Phase A → Phase B Playground** 顺序推进；每个 Phase 完成后按 `AGENTS.md` §10 提交并更新 `progress.md`。
 
-> Phase 0 排在 Dashboard 之前的原因：Dashboard 的趋势图与 KPI 环比依赖有时间分布的日志 / 用户数据，用 faker 数据集开发才看得到真实效果。Phase 0 中的重置脚本可在 Gate 达成前于本地库先行验证，但**线上执行与 `DEMO_MODE` 开启一律在 Gate 之后**。
+> Phase 0 排在 Dashboard 之前的原因：Dashboard 的趋势图与 KPI 环比依赖有时间分布的日志 / 用户数据，用 faker 数据集开发才看得到真实效果。Phase 0 中的重置脚本可在 Gate 达成前先行开发验证（本地与线上共用同一 Supabase 库，脚本验证即一次真实重置，跑完可继续开发，Gate 后再洗一次），但**开启 `DEMO_MODE` 切入演示模式一律在 Gate 之后**。
 
 ---
 
@@ -33,7 +33,12 @@
 
 ### 3.1 演示数据重置与生成（faker）
 
-- **脚本**：`nest/scripts/demo-reset.ts`，命令 `pnpm db:demo-reset --confirm`；**安全阀**：仅在 `DEMO_MODE=true` 环境允许执行，防止误跑开发库；幂等（先清后生），**固定 faker seed**，重复执行产出完全一致的数据集，便于截图 / 文档 / 三端对比稳定。
+- **脚本**：`nest/scripts/demo-reset.ts`，命令 `pnpm db:demo-reset --confirm`；**安全阀**：必须显式携带 `--confirm`，执行前打印目标数据库 host 与将删除的行数预估；幂等（先清后生），**固定 faker seed**，重复执行产出完全一致的数据集，便于截图 / 文档 / 三端对比稳定。`DEMO_MODE` 是线上运行时只读开关，与脚本执行解耦。
+- **执行语义与时机**（本地与线上共用同一 Supabase 库，重置即两端同时生效）：
+  - 重置会清空 refresh_tokens，**全端会话同时失效**，重置后需重新登录（快捷登录下成本极低）；
+  - 数据写入用**事务包裹**保证原子性（头像上传是网络 IO 放事务外：先传文件，事务内落 URL），清空到生成的中间态对外基本不可见；
+  - 定位是**日常可重跑的「洗数据」命令**而非一次性脚本：开发期写操作弄脏数据后，随时重跑即恢复标准演示数据集；
+  - 批量插入按 50~100 条分批（Supabase 连接池限制）。
 - **依赖**：`@faker-js/faker`（devDependency，`zh_CN` locale）；不用 `drizzle-seed`（中文数据失真）。
 - **清理范围与顺序**（按外键依赖）：真实日志 → refresh_tokens → notifications / notices → user_roles（非超管）→ users（非超管）→ posts → depts → roles（非超管）。**保留**：`super_admin` 角色、超管用户（**密码哈希原样保留，脚本不得重设**）、菜单、字典、settings。
 - **生成规模与逼真度设计**：
@@ -47,7 +52,7 @@
 | 公告 | 30~50 | 富文本正文、不同范围 / 状态 / 发布时间 |
 | 日志 | 500~1000 | login / operation / api / error 四类，**时间分布近 30 天**，打 `seed` 标记（见 §3.4 永久布景） |
 
-- **头像**：脚本在**服务端下载真人风格头像后转存 Supabase Storage `avatars` bucket**（脚本持密钥、浏览器不接触，符合 `AGENTS.md` §5 豁免规则），头像 URL 落库为自家 Storage 域名，无外链依赖。来源选逼真的真人照片风格（faker `image.personPortrait({ sex })` 或同等真人风格数据集），**性别与用户性别字段匹配**；单张下载失败回退空头像走首字。
+- **头像**：脚本在**服务端下载真人风格头像后转存 Supabase Storage `avatars` bucket**（脚本持密钥、浏览器不接触，符合 `AGENTS.md` §5 豁免规则），头像 URL 落库为自家 Storage 域名，无外链依赖。来源选逼真的真人照片风格（faker `image.personPortrait({ sex })` 或同等真人风格数据集），**性别与用户性别字段匹配**；单张下载失败回退空头像走首字。**Storage 文件名用确定性命名**（如 `demo/0012.jpg`，按 seed 序号），重置时同名覆盖——用户主键是 nanoid 每次重置都会变，文件名若跟主键走会在 Storage 累积垃圾文件。
 
 ### 3.2 只读守卫（服务端权威 + 前端识别）
 
@@ -86,12 +91,12 @@
 
 ### 3.6 实施顺序
 
-1. [ ] faker 重置脚本（含头像转存）在本地库验证通过（可先于 Gate）
+1. [ ] faker 重置脚本（含头像转存）验证通过：本地与线上共用同一 Supabase 库，验证即一次真实重置，跑完可继续开发，上线前再洗一次（可先于 Gate）
 2. [ ] OpenAPI v1.9.0（demo-login + `DEMO_READONLY`）
 3. [ ] Nest：`DemoReadonlyGuard` + `@DemoAllowed` + 过滤器排除 + 拦截器 GET 跳过 + demo-login + cleanup 跳过 seed + 超管双保险
 4. [ ] React / Vue：登录页两按钮 + 拦截器 toast + i18n
 5. [ ] Next：同名实现（Nuxt 仅记录）
-6. [ ] Gate 达成 → 线上执行 `demo-reset` → 开启 `DEMO_MODE` 上线
+6. [ ] Gate 达成 → 执行 `demo-reset` 洗数据 → 开启 `DEMO_MODE` 上线
 7. [ ] `feature-matrix.md` / `progress.md` 更新
 
 ---
@@ -284,7 +289,7 @@ type DemoMeta = {
 - [ ] 超管不出现在任何快捷登录池；仅用户名密码可登录；重置脚本执行后超管密码哈希未变。
 - [ ] 「管理员」登录到系统管理员角色用户；「随机用户」多次登录能覆盖全部演示角色。
 - [ ] 全部头像来自自家 Supabase Storage 域名，无外链；性别与头像匹配。
-- [ ] `demo-reset` 幂等：重复执行数据集一致；非 `DEMO_MODE` 环境拒绝执行。
+- [ ] `demo-reset` 幂等：重复执行数据集一致；未带 `--confirm` 拒绝执行。
 - [ ] 日志：GET 不产生 api 日志；`DEMO_READONLY` 拦截不产生 error 日志；30 天后 seed 布景日志仍在，真实日志正常滚动。
 
 ### 9.2 Dashboard（Phase C）
