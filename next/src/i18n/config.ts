@@ -34,10 +34,10 @@ function isLanguage(value: unknown): value is Language {
  * 每个文件内是**完整字面量键**（如 menu.json 内的 "menu.users"），
  * 此处合并为单一 translation 扁平对象。
  *
- * 采用扁平键 + keySeparator: false 的原因：后端菜单 i18nKey 存在
- * "menu.settings"（组）与 "menu.settings.profile"（子项）这类叶子/分支
- * 共存的键，i18next 的嵌套结构（按 "." 逐级下钻）无法表达；扁平 map
- * 天然支持任意字面量键，与后端 i18nKey 一字不差直连。
+ * 采用扁平键 + keySeparator: false 的原因：后端菜单 i18nKey 可能存在
+ * 组键与子项键（如 "menu.settings"（组）与 "menu.settings.profile"（子项））
+ * 这类叶子/分支共存的键，i18next 的嵌套结构（按 "." 逐级下钻）无法表达；
+ * 扁平 map 天然支持任意字面量键，与后端 i18nKey 一字不差直连。
  */
 /**
  * 语言资源（导出供 createI18nInstance 等独立实例复用同一份内置资源）。

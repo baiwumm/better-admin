@@ -21,7 +21,6 @@
   "menu.pageTitle.menus": "Menu Management",
   "menu.pageTitle.myNotices": "My Notices",
   "menu.pageTitle.notices": "Notice Management",
-  "menu.pageTitle.org": "Organization Center",
   "menu.pageTitle.permissions": "Permission Management",
   "menu.pageTitle.posts": "Post Management",
   "menu.pageTitle.roles": "Role Management",
@@ -30,12 +29,6 @@
   "menu.permissions": "Permission Management",
   "menu.posts": "Post Management",
   "menu.roles": "Role Management",
-  "menu.settings": "System Settings",
-  "menu.settings.account": "Account",
-  "menu.settings.appearance": "Appearance",
-  "menu.settings.display": "Display",
-  "menu.settings.notifications": "Notifications",
-  "menu.settings.profile": "Profile",
   "menu.system": "System Management",
   "menu.users": "User Management"
 }
