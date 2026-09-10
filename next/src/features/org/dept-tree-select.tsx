@@ -2,7 +2,14 @@
 
 import type { DeptTreeNode } from "@/lib/api-types";
 
-import { Avatar, ListBox, Select, Label, FieldError } from "@heroui/react";
+import {
+  Avatar,
+  ListBox,
+  Select,
+  Label,
+  FieldError,
+  Spinner,
+} from "@heroui/react";
 import { useMemo } from "react";
 
 import { useTranslation } from "@/i18n";
@@ -67,6 +74,8 @@ export interface DeptTreeSelectProps {
   tree: DeptTreeNode[];
   /** 禁选自身及后代（组织表单编辑防环场景）；缺省不禁 */
   selfId?: string | null;
+  /** 选项加载中：Indicator 渲染为 Spinner（其余状态回落默认下拉箭头） */
+  isLoading?: boolean;
   ariaLabel: string;
   className?: string;
   isDisabled?: boolean;
@@ -79,6 +88,7 @@ export function DeptTreeSelect({
   onChange,
   tree,
   selfId = null,
+  isLoading = false,
   ariaLabel,
   className,
   isDisabled = false,
@@ -103,7 +113,14 @@ export function DeptTreeSelect({
       {showLabel && <Label>{t("features.posts.form.dept")}</Label>}
       <Select.Trigger>
         <Select.Value />
-        <Select.Indicator />
+        {/* 加载中 Indicator 渲染为 Spinner；其余状态回落默认下拉箭头 */}
+        {isLoading ? (
+          <Select.Indicator>
+            <Spinner size="sm" />
+          </Select.Indicator>
+        ) : (
+          <Select.Indicator />
+        )}
       </Select.Trigger>
       <Select.Popover>
         <ListBox aria-label={ariaLabel}>

@@ -231,12 +231,12 @@ function UserFormModal({
   );
 
   // 组织中心数据源：组织树（与组织/岗位页共享缓存）+ 岗位选项（首页 50 条）
-  const { data: deptTree = [] } = useQuery({
+  const { data: deptTree = [], isLoading: deptTreeLoading } = useQuery({
     queryKey: DEPTS_TREE_QUERY_KEY,
     queryFn: fetchDeptTree,
     staleTime: 60_000,
   });
-  const { data: postOptionsRes } = useQuery({
+  const { data: postOptionsRes, isLoading: postsLoading } = useQuery({
     queryKey: ["org", "posts", "options"],
     queryFn: () => fetchPosts({ page: 1, pageSize: 50 }),
     staleTime: 60_000,
@@ -538,11 +538,9 @@ function UserFormModal({
                         className="w-full"
                         isInvalid={Boolean(fieldState.error)}
                         placeholder={
-                          rolesLoading
-                            ? t("features.users.form.rolesLoading")
-                            : roleOptions.length === 0
-                              ? t("features.users.form.rolesEmpty")
-                              : t("features.users.form.rolesPlaceholder")
+                          !rolesLoading && roleOptions.length === 0
+                            ? t("features.users.form.rolesEmpty")
+                            : t("features.users.form.rolesPlaceholder")
                         }
                         selectionMode="multiple"
                         value={selected}
@@ -554,7 +552,14 @@ function UserFormModal({
                         <Label>{t("features.users.form.roles")}</Label>
                         <Select.Trigger>
                           <Select.Value />
-                          <Select.Indicator />
+                          {/* 加载中 Indicator 渲染为 Spinner；其余状态回落默认下拉箭头 */}
+                          {rolesLoading ? (
+                            <Select.Indicator>
+                              <Spinner size="sm" />
+                            </Select.Indicator>
+                          ) : (
+                            <Select.Indicator />
+                          )}
                         </Select.Trigger>
                         <Select.Popover>
                           <ListBox selectionMode="multiple">
@@ -591,6 +596,7 @@ function UserFormModal({
                     <DeptTreeSelect
                       ariaLabel={t("features.users.form.dept")}
                       className="w-full"
+                      isLoading={deptTreeLoading}
                       tree={deptTree}
                       value={field.value}
                       onChange={(key) => field.onChange(key)}
@@ -614,7 +620,7 @@ function UserFormModal({
                         className="w-full"
                         isInvalid={Boolean(fieldState.error)}
                         placeholder={
-                          postOptions.length === 0
+                          !postsLoading && postOptions.length === 0
                             ? t("features.users.form.postsEmpty")
                             : t("features.users.form.postsPlaceholder")
                         }
@@ -628,7 +634,14 @@ function UserFormModal({
                         <Label>{t("features.users.form.posts")}</Label>
                         <Select.Trigger>
                           <Select.Value />
-                          <Select.Indicator />
+                          {/* 加载中 Indicator 渲染为 Spinner；其余状态回落默认下拉箭头 */}
+                          {postsLoading ? (
+                            <Select.Indicator>
+                              <Spinner size="sm" />
+                            </Select.Indicator>
+                          ) : (
+                            <Select.Indicator />
+                          )}
                         </Select.Trigger>
                         <Select.Popover>
                           <ListBox selectionMode="multiple">
@@ -895,11 +908,31 @@ function UserFormModal({
                           key === null ? "" : String(key as "male" | "female"),
                         )
                       }
+                      onKeyDown={(e) => {
+                        // 键盘清空补偿：清空图标在 trigger 内不可聚焦（button 内
+                        // 禁嵌套可聚焦元素），Delete/Backspace 触发清空
+                        if (
+                          (e.key === "Delete" || e.key === "Backspace") &&
+                          field.value
+                        ) {
+                          field.onChange("");
+                        }
+                      }}
                     >
                       <Label>{t("features.users.form.gender")}</Label>
                       <Select.Trigger>
                         <Select.Value />
-                        <Select.Indicator />
+                        {/* 有选中值时 Indicator 渲染为内嵌清空图标：onPointerDown 阻断
+                            trigger 的 press 链防止误开下拉；无值传 undefined 回落默认
+                            下拉箭头 */}
+                        <Select.Indicator className="size-4">
+                          {field.value ? (
+                            <X
+                              onClick={() => field.onChange("")}
+                              onPointerDown={(e) => e.stopPropagation()}
+                            />
+                          ) : undefined}
+                        </Select.Indicator>
                       </Select.Trigger>
                       <Select.Popover>
                         <ListBox>

@@ -510,7 +510,6 @@
   "features.users.form.postsPlaceholder": "选择关联岗位",
   "features.users.form.roles": "角色",
   "features.users.form.rolesEmpty": "暂无可分配角色",
-  "features.users.form.rolesLoading": "正在加载角色…",
   "features.users.form.rolesMax": "最多关联 5 个角色",
   "features.users.form.rolesPlaceholder": "请选择角色（可不选）",
   "features.users.form.saving": "保存中…",
