@@ -158,7 +158,9 @@ vue/src/pages/
 
 原则：每个里程碑独立可验收、可构建（`pnpm dev/build/lint/test` 四绿）；结束即更新 `docs/feature-matrix.md` 与 `docs/progress.md` 并按 AGENTS §10 提交；只动 `/vue`（+ 文档）。提交规范：每个验收点独立 commit，前缀 `vue(Mn):`。
 
-### M0 — 工程基建与骨架（当前阶段）
+**i18n 键冻结（持久规则）**：Vue 端**禁止新增 / 修改 / 删除 i18n key**——`src/i18n/locales` 是 React 真源的镜像产物（`scripts/sync-locales.mjs` 全量覆盖拷贝 + 裸 `@` 转义），Vue 本地加键会在下次同步时被抹掉；文案变更一律先改 React 语言包再执行 sync 同步。仅有的例外：纯品牌/专名文案允许组件内硬编码（如主题色色名 Black / Red，见 M3）。
+
+### M0 — 工程基建与骨架（已完成 2026-09-05）
 
 1. Vite + Vue 3.5 + TS strict 脚手架；ESLint 9（flat config + eslint-plugin-vue）+ Prettier；vitest（globals + jsdom）。
 2. Nuxt UI v4 接入：`@nuxt/ui/vite` 插件 + `@nuxt/ui/vue-plugin` + CSS `@import "tailwindcss"; @import "@nuxt/ui";` + `UApp` 包裹 + `auto-imports.d.ts` / `components.d.ts`。
@@ -185,10 +187,17 @@ vue/src/pages/
 - 顺序：组织管理 → 岗位 → 通讯录（URL Query 同步）→ 公告管理（TipTap）→ 我的公告 + 站内信 → 架构图谱（vue-flow）→ Excel 导出。
 - 验收：图谱四交互 + `?deptId=` 贯通；导出样式对齐（品牌蓝表头/斑马纹/冻结首行）；公告 HTML 与 React 端互发渲染一致。
 
-### M3 — 我的账户 + 多标签页 + 收尾
+### M3 — 偏好设置补齐 + 我的账户 + 多标签页 + 收尾
 
-- 账户双 Tab + 头像裁剪上传闭环；多标签页（KeepAlive include/max + 关闭即销毁）；命令面板接入菜单/路由数据。
-- 验收：标签页保活行为对照 React；头像上传后全局刷新；Cmd/Ctrl+K 唤起。
+- 顺序：偏好设置补齐（store + 抽屉全项）→ 多标签页（KeepAlive include/max + 关闭即销毁）→ 页面切换动画 + 多标签页显隐开关 → 我的账户（双 Tab + 头像裁剪上传闭环）→ 命令面板接入菜单/路由数据。
+- 验收：偏好全项即时生效 + 刷新持久 + 重置复原（带揭示动画）；主题色 / 圆角与 React 数值不要求一致（两端组件库标度不同，见下）；标签页保活行为对照 React；头像上传后全局刷新；Cmd/Ctrl+K 唤起。
+- **偏好设置实现指引（2026-09-10 评审定稿；M3 实现完成后删除本条）**：
+  - 目标口径：对齐 React 端 `theme-settings-drawer` 全部 9 项（主题色 / 主题模式 / 色彩模式 / 动画方向 / 路由动画 / 路由速度 / 圆角 / 多标签页显隐 / 重置），实现以 Vue 机制为主；其中主题色与圆角两项不照搬 React 数值方案，定制如下：
+  - **主题色（参考 better-nuxt `app/components/theme/ThemePickerPrimaryColor.vue`）**：纯 Vite + `vue-plugin` 模式下无 Nuxt colors 插件、不可改 `appConfig.ui.colors`——改为运行时覆盖 `<html>` 上 `--ui-color-primary-{50..950}` 共 11 个 shade 变量（`--ui-primary → var(--ui-color-primary-*)` 间接链自动跟随；亮色取 500、暗色取 400 的分档自动正确）；色板集合与色点预览用 `tailwindcss/colors`；色名**硬编码英文首字母大写（Black / Red / …），不走 i18n**（§3 i18n 键冻结规则的例外项）；**Black 档 = blackAsPrimary**（better-nuxt 模式）：清除 shade 覆盖、改覆盖 `--ui-primary = dark ? 'white' : 'black'`，选中色板时反向清除该覆盖（双向互斥），跟随 isDark 变化重算；随机换色排除当前激活项（React 端已有交互）。
+  - **圆角（参考 better-nuxt `ThemePickerRadius.vue`，改 4 档）**：覆盖 `--ui-radius`；档位文案对齐 React（直角 / 小圆角 / 中圆角 / 大圆角），数值按 Nuxt UI 标度重定：0 / 0.125 / 0.25（默认）/ 0.5rem——React（HeroUI）基准 `--radius` 为 0.5rem，照搬其数值会整体偏大一倍；默认档不写 DOM、不落存储（对齐 React 语义）；`rounded-full` 圆形件不受档位影响，两端一致。
+  - **其余项平移 React 机制（Vue 机制实现）**：pinia design-theme-store 单一真源 + localStorage 持久化（`@vueuse/core` useStorage；SPA 无 SSR，不需要 better-nuxt 的 cookie 方案）；色彩模式 = `html[data-color-vision]` + CSS filter 直接平移（框架无关）；动画方向 / 路由动画 / 速度 = 原生 `document.startViewTransition` + React 三个样式文件（theme-transition / route-transitions / color-vision）平移；路由 VT 编排层与多标签页 KeepAlive 容器同层（对齐 React `KeepAliveOutlet` 的编排位置），VT 回调需等待异步组件加载与新页 DOM 提交；Nuxt UI toast 走 Vue Transition 不起根级 VT，React 的 `data-route-vt` 防误触发门控可评估简化（实现时验证）；主题模式并入 store 真源（store 写 `useColorMode().value`，避免两处状态）；重置按钮在一次揭示动画内原子重置全部偏好，动画结束后再弹成功 toast。
+  - **恢复时序**：全部偏好在 `main.ts` 的 `app.mount()` 之前同步应用（localStorage 同步读），否则首帧闪默认主题。
+  - i18n 全部走既有 `layout.prefs.*` 键（已随 sync-locales 到位，无需新增）；颜色名硬编码（见主题色条）。
 
 ### M4 — 部署与文档收尾
 
