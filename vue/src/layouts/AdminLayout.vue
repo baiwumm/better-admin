@@ -3,7 +3,11 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { useQueryClient } from "@tanstack/vue-query";
-import type { NavigationMenuItem } from "@nuxt/ui";
+import type {
+  CommandPaletteGroup,
+  CommandPaletteItem,
+  NavigationMenuItem,
+} from "@nuxt/ui";
 
 import type { MenuNode } from "@/lib/api-types";
 import { useAuthSync } from "@/composables/use-auth-sync";
@@ -19,7 +23,10 @@ import NoticeBell from "@/components/layout/NoticeBell.vue";
 import SidebarBrand from "@/components/layout/SidebarBrand.vue";
 import TagsBar from "@/components/layout/TagsBar.vue";
 import UserMenu from "@/components/layout/UserMenu.vue";
-import { useDesignThemeStore } from "@/stores/design-theme-store";
+import {
+  type ThemeMode,
+  useDesignThemeStore,
+} from "@/stores/design-theme-store";
 
 /**
  * Admin 双栏布局（Nuxt UI Dashboard 套件，结构对齐 React 端 admin-layout）：
@@ -110,14 +117,88 @@ const crumbs = computed(() => {
   return titleKey ? [{ label: t(titleKey) }] : [];
 });
 
-/** 命令面板：菜单树保持层级结构 + 快捷链接组。 */
-const searchGroups = computed(() => [
-  {
-    id: "menus",
-    label: t("layout.command.search"),
-    items: sidebarItems.value,
-  },
-  {
+/** 菜单节点显示名（i18nKey 优先） */
+function menuLabel(node: MenuNode): string {
+  return node.i18nKey ? t(node.i18nKey) : node.label;
+}
+
+/** 命令面板条目：Nuxt UI CommandPaletteItem + 自定义过滤文本（fuse keys 追加 searchText） */
+interface CommandItem extends CommandPaletteItem {
+  label: string;
+  /** 过滤文本：祖先链 + 自身名 + 分组名，搜「用户管理」或「系统管理」都能命中 */
+  searchText: string;
+}
+
+/** 主题切换条目（labelKey 经 t() 取词；keywords 供英文关键字搜索） */
+const THEME_COMMANDS: { mode: ThemeMode; icon: string; keywords: string }[] = [
+  { mode: "light", icon: "i-lucide-sun", keywords: "light" },
+  { mode: "dark", icon: "i-lucide-moon", keywords: "dark" },
+  { mode: "system", icon: "i-lucide-monitor", keywords: "system auto" },
+];
+
+/**
+ * 命令面板分组（对齐 React 端 command-menu 的 collectMenuSections）：
+ * - 顶层分组节点 → 一节（标题为分组名），其下叶子递归拍平；多级时条目名显示「父级 › 页面」；
+ * - 顶层叶子节点（如控制台）→ 无标题单条目节；
+ * - 快捷链接组（外链新窗口）+ 主题组（经 design-theme-store 切换，带揭示动画；
+ *   故关闭 UDashboardSearch 内置的 colorMode 组，避免绕过 store 无动画直改）。
+ * 数据源与侧边栏同一份 hideInMenu 过滤后的菜单树。
+ */
+const searchGroups = computed<CommandPaletteGroup[]>(() => {
+  const groups: CommandPaletteGroup[] = [];
+
+  const walk = (
+    nodes: MenuNode[],
+    trail: string[],
+    rootLabel: string,
+    out: CommandItem[],
+  ) => {
+    for (const node of nodes) {
+      const label = menuLabel(node);
+
+      if (node.children?.length) {
+        walk(node.children, [...trail, label], rootLabel, out);
+        continue;
+      }
+      if (!node.to) continue;
+
+      const parent = trail.at(-1);
+
+      out.push({
+        label: parent ? `${parent} › ${label}` : label,
+        icon: node.icon ? `i-lucide-${node.icon}` : undefined,
+        to: node.to,
+        searchText: `${[...trail, label].join(" ")} ${rootLabel}`.trim(),
+      });
+    }
+  };
+
+  for (const node of filterHiddenMenus(menus.value ?? [])) {
+    const rootLabel = menuLabel(node);
+
+    if (node.children?.length) {
+      const items: CommandItem[] = [];
+
+      walk(node.children, [], rootLabel, items);
+      if (items.length > 0) {
+        groups.push({ id: `menu-${node.id}`, label: rootLabel, items });
+      }
+    } else if (node.to) {
+      groups.push({
+        id: `menu-${node.id}`,
+        items: [
+          {
+            label: rootLabel,
+            icon: node.icon ? `i-lucide-${node.icon}` : undefined,
+            to: node.to,
+            searchText: rootLabel,
+          },
+        ],
+      });
+    }
+  }
+
+  groups.push({
     id: "quickLinks",
     label: t("layout.command.quickLinks"),
     items: [
@@ -126,16 +207,36 @@ const searchGroups = computed(() => [
         icon: "i-lucide-github",
         to: "https://github.com/baiwumm/better-admin",
         target: "_blank",
+        searchText: t("layout.sidebar.github"),
       },
       {
         label: t("layout.sidebar.blog"),
         icon: "i-lucide-house",
         to: "https://www.baiwumm.com",
         target: "_blank",
+        searchText: t("layout.sidebar.blog"),
       },
     ],
-  },
-]);
+  });
+
+  groups.push({
+    id: "theme",
+    label: t("layout.command.themeGroup"),
+    items: THEME_COMMANDS.map(({ mode, icon, keywords }) => {
+      const label = t(`layout.prefs.themeMode.${mode}`);
+
+      return {
+        label,
+        icon,
+        active: designTheme.themeMode === mode,
+        searchText: `${label} ${keywords}`,
+        onSelect: () => designTheme.setThemeMode(mode),
+      };
+    }),
+  });
+
+  return groups;
+});
 
 /** 全宽页面白名单（主体区无内边距，对齐 React 端 FULL_WIDTH_ROUTES）。 */
 const FULL_WIDTH_ROUTES = [
@@ -228,10 +329,22 @@ function retryMenus() {
       </template>
     </UDashboardSidebar>
 
-    <UDashboardSearch :groups="searchGroups" />
+    <!-- 命令面板（Cmd/Ctrl+K）：分组数据见 searchGroups；fuse 追加 searchText 键
+         使祖先链 / 分组名 / 主题英文关键字可被搜索；主题组自建（关闭内置 colorMode 组） -->
+    <UDashboardSearch
+      :color-mode="false"
+      :fuse="{ fuseOptions: { keys: ['label', 'suffix', 'searchText'] } }"
+      :groups="searchGroups"
+      :placeholder="t('layout.command.placeholder')"
+    />
 
+    <!-- 面板 body（滚动容器）绑定 route-vt-main：view-transition-name: main-content，
+         路由过渡动画只作用于主体区（侧边栏 / 顶栏不参与，见 styles/route-transitions.css），
+         主题切换 VT 期间由 theme-transition.css 临时摘名并入 root 组统一揭示 -->
     <UDashboardPanel
-      :ui="{ body: isFullWidthPage ? 'p-0! sm:p-0!' : undefined }"
+      :ui="{
+        body: isFullWidthPage ? 'route-vt-main p-0! sm:p-0!' : 'route-vt-main',
+      }"
     >
       <template #header>
         <UDashboardNavbar>
