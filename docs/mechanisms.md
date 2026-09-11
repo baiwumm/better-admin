@@ -23,7 +23,9 @@
   横向不做整幅平移；覆盖类改用**盒内 `clip-path` 擦除**，视觉上仍是"推入"）；
   ② 给**组盒** `::view-transition-group(main-content) { overflow: clip }` 兜底——
   实测可完全消除顶栏/侧边栏污染，且对忽略该属性的内核会退化为原行为、无害。
-- **落地**：`react/src/styles/route-transitions.css` 与 Vue 端同源副本（2026-09-11 起同款）。
+- **落地**：`react/src/styles/route-transitions.css`（提交 `c0dd121`）与 Vue 端同源副本
+  （规则层已逐条对齐，仅差 Vue 特有的 `.route-vt-main` 承载规则）；
+  **Next 端尚未同步，见本节 §0.1。**
 
 **结论二：View Transition 的旧/新快照默认同时起跑同时收尾（`startViewTransition` 的模型），
 可用 `animation-delay` + `fill-mode: both` 拆成"旧页先行、新页压后"，且**总时长不变**。**
@@ -40,6 +42,30 @@
 - **排查提醒**：`Page.captureScreenshot` 在本机 Chrome/Edge 上会把 VT 覆盖层拍成**终态**
   （暂停帧与真实时钟两种口径都试过），因此"过渡中帧"不能用它验证；用冻结帧 + 逐像素读取
   或用 `getComputedStyle(el, '::view-transition-…')` 读关键帧值更可靠。
+
+### 0.1 待同步：Next 端 `route-transitions.css` 仍是旧参数（2026-09-11 标记，按指示暂不动）
+
+**结论：上面的修复目前只在 React（`c0dd121`）与 Vue（同源副本，规则层已对齐）落地；
+`next/src/styles/route-transitions.css` 仍是旧参数——动画偏大、无分时、`reveal`/`circle` 多 60ms
+尾巴。按用户指示本轮不修改 Next，仅在此登记，后续同步时按下列清单逐条比对。**
+
+- **Next 待同步差异点（对齐 React 的核对清单）**：
+  1. `:root` 补 `--rt-exit` / `--rt-enter` / `--rt-stagger` 三个派生变量；
+  2. `glide` / `rise` / `zoom` / `blur` 改为**分时**：old 用 `var(--rt-exit)`、
+     new 用 `var(--rt-enter) … var(--rt-stagger)`；
+  3. `reveal` / `circle` 去掉 `calc(var(--rt-duration) + 60ms)` 尾巴，回归 `var(--rt-duration)`；
+  4. 幅度收敛：`glide` 横向 14% / 22% → 4% / 5%；`rise` 位移 -20px / 40px → -6px / 10px；
+     `zoom` 1.08 / 0.94 → 1.02 / 0.99；`blur` 去掉 `scale`、blur 10px → 8px；
+  5. `cover` 由整幅横向平移改为**盒内 `clip-path` 擦除**（`rt-cover-in` 换成
+     `inset(0 0 0 100%) → inset(0 0 0 0)`），并新增 `rt-cover-in-reverse` 与
+     `html[data-rt-direction="back"] ::view-transition-new(.rt-cover) { animation-name: … }`；
+  6. 组盒兜底 `overflow: clip`——Next 端组名由 React 自动分配、无法静态书写，用
+     `::view-transition-group(.rt)` 形式并收在 `@media (prefers-reduced-motion: no-preference)` 内，
+     避免波及第三方 VT；reduced-motion 分支同时补上上面三个变量归零。
+- **选择器形态差异（同步时注意，关键帧与变量语义必须逐字一致）**：
+  Next 用 `::view-transition-old/new(.rt-<id>)` 类选择器（依赖
+  `<ViewTransition update="rt rt-<id>">` 写入的 `view-transition-class`），
+  React / Vue 用 `::view-transition-old/new(main-content)` + `html[data-route-vt]` 门控。
 
 ---
 
