@@ -32,7 +32,10 @@ import {
   LOGIN_REQUIRED_PATHS,
   LOGIN_REQUIRED_PREFIXES,
 } from "@/lib/route-access";
-import { buildRouteTitleKeyMap, findRouteTitleKey } from "@/lib/route-title";
+import {
+  buildRouteStaticMetaMap,
+  findRouteStaticMeta,
+} from "@/lib/route-title";
 import { isPinnedTab } from "@/lib/tabs-model";
 import { useTabsStore } from "@/stores/tabs-store";
 
@@ -160,10 +163,11 @@ export function TagsBar() {
     );
   }, [menuTree, pruneTabs]);
 
-  // 路由 staticData.titleKey 映射：非菜单路由（如登录白名单页 /account）
-  // 在菜单树中没有标题来源，回退到路由声明的 titleKey（与 useDocumentTitle 同源）。
-  const routeTitleKeyByPath = useMemo(
-    () => buildRouteTitleKeyMap(router),
+  // 路由 staticData 兜底映射：非菜单路由（如登录白名单页 /account）在菜单树
+  // 中没有标题/图标来源，回退到路由声明（titleKey 与 useDocumentTitle 同源，
+  // icon 与用户下拉菜单入口一致）。
+  const routeStaticByPath = useMemo(
+    () => buildRouteStaticMetaMap(router),
     [router],
   );
 
@@ -458,16 +462,16 @@ export function TagsBar() {
           {paths.map((path) => {
             const live = liveMetaByPath.get(path);
             const cached = cachedMeta[path];
-            const routeTitleKey = findRouteTitleKey(routeTitleKeyByPath, path);
+            const routeStatic = findRouteStaticMeta(routeStaticByPath, path);
             const title =
               live?.title ??
               cached?.title ??
-              (routeTitleKey !== undefined
-                ? t(routeTitleKey)
+              (routeStatic !== undefined
+                ? t(routeStatic.titleKey)
                 : isPinnedTab(path)
                   ? t("menu.pageTitle.console")
                   : null);
-            const icon = live?.icon ?? cached?.icon;
+            const icon = live?.icon ?? cached?.icon ?? routeStatic?.icon;
             const active = path === pathname;
             const pinned = isPinnedTab(path);
 

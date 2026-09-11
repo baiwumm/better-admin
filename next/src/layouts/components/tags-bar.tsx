@@ -32,7 +32,7 @@ import { type MenuNode } from "@/lib/api-types";
 import { collectMenuPaths, flattenLeafMenus } from "@/lib/menu-utils";
 import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
 import { markRouteDirection } from "@/lib/route-direction";
-import { routeTitleKeyByPath } from "@/lib/route-title";
+import { routeStaticMetaByPath } from "@/lib/route-title";
 import { isPinnedTab } from "@/lib/tabs-model";
 import { useTabsStore } from "@/stores/tabs-store";
 
@@ -464,16 +464,17 @@ export function TagsBar({ menuTree }: TagsBarProps) {
           {paths.map((path) => {
             const live = liveMetaByPath.get(path);
             const cached = cachedMeta[path];
-            const routeTitleKey = routeTitleKeyByPath.get(path);
+            const routeStatic = routeStaticMetaByPath.get(path);
             const title =
               live?.title ??
               cached?.title ??
-              (routeTitleKey !== undefined
-                ? t(routeTitleKey)
+              (routeStatic !== undefined
+                ? t(routeStatic.titleKey)
                 : isPinnedTab(path)
                   ? t("menu.pageTitle.console")
                   : null);
-            const icon = live?.icon ?? cached?.icon;
+            // 图标与标题同构的兜底链：非菜单路由（登录白名单页）取路由登记图标
+            const icon = live?.icon ?? cached?.icon ?? routeStatic?.icon;
             const active = path === pathname;
             const pinned = isPinnedTab(path);
 

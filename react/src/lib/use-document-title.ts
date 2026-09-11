@@ -10,6 +10,8 @@ declare module "@tanstack/react-router" {
   interface StaticDataRouteOption {
     /** 浏览器标签页标题的翻译 key（如 menu.pageTitle.users），由 useDocumentTitle 统一取词拼接品牌名 */
     titleKey?: string;
+    /** 标签栏图标名（lucide kebab-case，如 id-card），非菜单路由的图标兜底来源 */
+    icon?: string;
   }
 }
 

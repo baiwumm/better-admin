@@ -22,7 +22,10 @@ import { useTranslation } from "@/i18n";
 import { getMenuLabel } from "@/lib/menu-i18n";
 import { filterHiddenMenus } from "@/lib/permission";
 import { findActivePath, getBreadcrumbNodes } from "@/lib/menu-utils";
-import { buildRouteTitleKeyMap, findRouteTitleKey } from "@/lib/route-title";
+import {
+  buildRouteStaticMetaMap,
+  findRouteStaticMeta,
+} from "@/lib/route-title";
 import { useDisplayedPathStore } from "@/stores/displayed-path-store";
 import { useTabsStore } from "@/stores/tabs-store";
 
@@ -76,8 +79,8 @@ export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
 
   // 路由标题兜底映射与菜单数据无关，仅在路由器实例变化时重建。
   const router = useRouter();
-  const routeTitleKeyByPath = useMemo(
-    () => buildRouteTitleKeyMap(router),
+  const routeStaticByPath = useMemo(
+    () => buildRouteStaticMetaMap(router),
     [router],
   );
 
@@ -110,9 +113,9 @@ export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
         : [{ id: target, label: live.title }];
     }
 
-    const titleKey = findRouteTitleKey(routeTitleKeyByPath, target);
+    const routeStatic = findRouteStaticMeta(routeStaticByPath, target);
 
-    return titleKey ? [{ id: target, label: t(titleKey) }] : [];
+    return routeStatic ? [{ id: target, label: t(routeStatic.titleKey) }] : [];
   })();
 
   return (

@@ -84,6 +84,24 @@ export const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/settings/logs": "menu.pageTitle.logs",
 };
 
+/**
+ * 路径 → 标签栏图标（React 端 route staticData.icon 的等价物）。
+ *
+ * 仅为「不在菜单树中的登录白名单页」登记（菜单路由图标来自菜单树，
+ * tabs 快照亦无这些路径的图标来源）；图标取 lucide kebab-case 名
+ * （与 React / Next 端同口径），标签栏消费时自行拼 `i-lucide-` 前缀。
+ * 与用户下拉菜单入口图标保持一致（IdCard / BellRing）。
+ */
+export const ROUTE_TAB_ICONS: Record<string, string> = {
+  "/account": "id-card",
+  "/my-notices": "bell-ring",
+};
+
+/** 解析路径的标签栏图标名（无登记返回 undefined；TagsBar 拼 i-lucide- 前缀）。 */
+export function resolveRouteTabIcon(pathname: string): string | undefined {
+  return ROUTE_TAB_ICONS[pathname];
+}
+
 /** 公共页判定（守卫放行：无需登录）。 */
 export function isPublicPath(pathname: string): boolean {
   return (PUBLIC_PATHS as readonly string[]).includes(pathname);

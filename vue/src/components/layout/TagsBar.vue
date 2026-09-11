@@ -19,6 +19,7 @@ import { collectMenuPaths, flattenLeafMenus } from "@/lib/menu-utils";
 import {
   LOGIN_REQUIRED_PATHS,
   LOGIN_REQUIRED_PREFIXES,
+  resolveRouteTabIcon,
   resolveRouteTitleKey,
 } from "@/lib/route-access";
 import { isPinnedTab } from "@/lib/tabs-model";
@@ -109,7 +110,9 @@ watch(
   { immediate: true },
 );
 
-/** 标签展示数据：标题（实时 → 快照 → 路由标题键 → 控制台 → null 骨架）+ 图标。 */
+/** 标签展示数据：标题（实时 → 快照 → 路由标题键 → 控制台 → null 骨架）
+ * + 图标（实时 → 快照 → 路由登记图标，与标题兜底同构；非菜单路由的
+ * 登录白名单页图标来自 ROUTE_TAB_ICONS，如 /account 的 IdCard）。 */
 const tabs = computed(() =>
   paths.value.map((path) => {
     const live = liveMetaByPath.value.get(path);
@@ -123,11 +126,15 @@ const tabs = computed(() =>
         : isPinnedTab(path)
           ? t("menu.pageTitle.console")
           : null);
+    const routeIcon = resolveRouteTabIcon(path);
 
     return {
       path,
       title,
-      icon: live?.icon ?? cached?.icon,
+      icon:
+        live?.icon ??
+        cached?.icon ??
+        (routeIcon !== undefined ? `i-lucide-${routeIcon}` : undefined),
       active: path === route.path,
       pinned: isPinnedTab(path),
     };

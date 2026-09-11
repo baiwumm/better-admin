@@ -2,6 +2,28 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 非菜单路由标签页图标兜底：Next / Vue 两端同步 React（2026-09-11）
+
+- **背景**：承接「React：非菜单路由标签页图标兜底」条目（/account、/my-notices 标签页补图标），
+  将同一能力对齐到 Next 与 Vue 两端，图标名与图标来源口径完全一致（`id-card` / `bell-ring`，
+  与各自用户下拉菜单入口图标一致）。
+- **Next 端**（App Router 无 staticData 机制，走手写静态映射表，与标题兜底同表同源）：
+  - `lib/route-title.ts`：映射表由 `Record<string, string>`（titleKey）扩为
+    `Record<string, RouteStaticMeta>`（`{ titleKey, icon? }`），新增 `getRouteStaticMeta` /
+    `routeStaticMetaByPath`；保留 `getRouteTitleKey`（use-page-title / app-header 面包屑继续用，行为不变）；
+  - `layouts/components/tags-bar.tsx`：图标回退链改为 `live ?? cached ?? routeStatic.icon`，
+    与标题三级回退同构。
+- **Vue 端**（路由标题走 route-access.ts 集中登记，图标同址登记）：
+  - `lib/route-access.ts`：新增 `ROUTE_TAB_ICONS`（路径 → lucide kebab-case 图标名，
+    仅登录白名单页登记，菜单路由图标来自菜单树）与 `resolveRouteTabIcon`；
+  - `components/layout/TagsBar.vue`：图标回退链改为 `live ?? cached ?? i-lucide-<routeIcon>`
+    （Vue 端 UIcon 消费 `i-lucide-*` 完整名，前缀在消费处拼）。
+- **验证**：Next `pnpm build` + `lint` 通过（仅存量警告）；Vue `type-check` + `lint` + `test`
+  （85 用例）通过（仅存量警告）；两端图标集均确认含 `id-card` / `bell-ring`
+  （lucide-react 1.37.0 / @iconify-json/lucide 1.2.129）。
+- **无需同步**：数据库 / OpenAPI 契约不涉及（图标仅前端登记，不进菜单表）；Nuxt 端尚未立项，
+  其标签页实现时按本条目口径登记。
+
 ### 契约 v1.8.1：账户资料电话收紧为 11 位大陆手机号 + 基本信息显示名称实时字数（五端同步）（2026-09-11）
 
 - **需求**：「我的账户 → 基本信息」电话字段此前仅宽松校验（`^\+?[0-9][0-9\- ]{3,19}$`，允许 + 前缀 /

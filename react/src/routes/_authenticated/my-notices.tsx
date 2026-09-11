@@ -7,7 +7,8 @@ interface MyNoticesSearch {
 }
 
 export const Route = createFileRoute("/_authenticated/my-notices")({
-  staticData: { titleKey: "menu.pageTitle.myNotices" },
+  // icon 与用户下拉菜单「我的站内信」入口一致（BellRing）
+  staticData: { titleKey: "menu.pageTitle.myNotices", icon: "bell-ring" },
   validateSearch: (search: Record<string, unknown>): MyNoticesSearch => ({
     noticeId:
       typeof search.noticeId === "string" && search.noticeId
