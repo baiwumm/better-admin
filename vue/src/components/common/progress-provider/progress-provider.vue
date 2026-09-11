@@ -8,8 +8,8 @@ import ProgressBridge from "./progress-bridge.vue";
  *
  * 封装 @bprogress/vue，统一配置进度条样式，避免在业务代码中直接暴露第三方库细节。
  * 注意：Vue 版 ProgressProvider 的 props 仅含 color / height / options 等样式项，
- * 时序参数（startPosition / delay / stopDelay）由内部 ProgressBridge 经
- * bindProgress 下发给 progress.ts 状态机（单一来源，对齐 React 端机制）。
+ * 时序参数（startPosition / delay / stopDelay）收敛在 progress.ts 状态机内，
+ * 由内部 ProgressBridge 订阅其响应式展示态驱动 bprogress（单一来源，对齐 React 端机制）。
  * delay=200 的意义：短导航 / 快速接口全程不闪进度条。
  */
 </script>
