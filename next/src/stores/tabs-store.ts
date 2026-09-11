@@ -7,6 +7,7 @@ import {
   closeRightTabPaths,
   closeTabPaths,
   ensureHomeTab,
+  moveTabPath,
   parseStoredTabs,
   pruneTabPaths,
   withOpenedPath,
@@ -51,6 +52,8 @@ interface TabsState {
   refreshSeq: Record<string, number>;
   /** 打开标签（去重追加 + 数量治理 + 控制台首位保证）。 */
   openPath: (path: string, currentPath: string) => void;
+  /** 拖拽排序：将标签移动到目标下标（固定标签不可移动、首位不可被占据）。 */
+  moveTab: (path: string, targetIndex: number) => void;
   /** 关闭单个标签；返回需要导航的目标（null = 无需导航），由调用方执行导航。 */
   closePath: (path: string, currentPath: string) => string | null;
   /** 关闭其他（仅保留固定标签与锚点）；返回值语义同 closePath。 */
@@ -109,6 +112,12 @@ export const useTabsStore = create<TabsState>()(() => ({
   openPath: (path, currentPath) => {
     useTabsStore.setState((state) => ({
       paths: ensureHomeTab(withOpenedPath(state.paths, path, currentPath)),
+    }));
+  },
+
+  moveTab: (path, targetIndex) => {
+    useTabsStore.setState((state) => ({
+      paths: moveTabPath(state.paths, path, targetIndex),
     }));
   },
 

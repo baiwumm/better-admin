@@ -665,3 +665,35 @@ props 上的业务 id 在关闭态是空值；任何以该 id 为参数的 `useQ
 - **判定原则**：新增「全屏但需登录」的页面（如未来的独立结果页 / 授权回调页）时，
   只加入 `FULLSCREEN_PATHS`，**不要**加入 `PUBLIC_PATHS`。
 
+
+---
+
+## 10. dnd-kit 拖拽与 react-aria pressable 共存：激活事件必须走 React 捕获阶段（React / Next 端，标签栏拖拽排序）
+
+**结论：当 dnd-kit 的 sortable/draggable 节点内部包含 react-aria pressable（如 HeroUI Button）
+时，PointerSensor 的激活事件应改走 React 捕获阶段（自定义 Sensor 子类把 activator 的
+`eventName` 设为 `onPointerDownCapture`），否则会被 `usePress` 的缺省 `stopPropagation`
+切断，表现为「只能拖一次」或「完全无法拖拽」。**
+
+- **机理**：react-aria `usePress` 的 `onPointerDown` 冒泡 handler 调用 `triggerPressStart`，
+  其返回值 `shouldStopPropagation` **缺省为 `true`**——只有 `onPressStart` 回调里显式
+  `event.continuePropagation()` 才翻为 `false`；`onPressStart` 未传时同样执行
+  `e.stopPropagation()`。React 合成事件的 `stopPropagation` 会同时终止原生传播，
+  挂在外层容器上的 dnd-kit 合成 `onPointerDown` 永远收不到事件。
+- **双层失效链（标签栏实测）**：① 初始态：按下即被 stopPropagation → 完全无法拖拽
+  （`onPressStart=continuePropagation` 可修）；② press 状态机卡死态：拖拽后若吞掉
+  click 的传播，`usePress` 依赖 click 复位 `isPressed` 的路径断裂，后续 pointerdown
+  走「已按下」分支跳过 `triggerPressStart`、缺省 stopPropagation 再次生效 →
+  「只能拖一次」——放行 click 不能完全根治（状态机还有其他错过收尾时机的路径）。
+- **根治**：自定义 Sensor 子类覆盖 `activators`（`eventName: "onPointerDownCapture"`，
+  handler 自查 `isPrimary` / `button` / 排除关闭热区）。React 合成捕获阶段先于冒泡阶段
+  的 `stopPropagation` 分派，结构性免疫；dnd-kit 运行时仅把 eventName 当 listeners 的
+  React prop key，类型上的字面量限制用断言绕过即可。
+- **配套约束**：排序后的 click **不要吞传播**（交给 RAC 收尾状态机），防误导航改为在
+  `onPress` handler 里检查 `sortMovedRef`（onPress 先于 onDragEnd 触发——RAC 的
+  pointerup 在 target 上、dnd-kit 在 document 冒泡——ref 须在 `onDragStart` 置位，
+  `requestAnimationFrame` 兜底复位）；关闭热区（原生捕获截停的 span）加 `data-tab-close`
+  供 capture handler 排除。
+- **落地**：`react/src/layouts/components/tags-bar.tsx` 与 `next/src/layouts/components/tags-bar.tsx`
+  （`TabPointerSensor` + `SortableTabItem`，2026-09-12）；背景与验证详见 `docs/progress.md`
+  对应条目。

@@ -4,7 +4,7 @@
  * 从 tags-store 抽离以便独立单测（对齐 keepalive-pool 的工程模式）：
  * - 标签以 pathname 为键（与 KeepAliveOutlet 池键、菜单匹配、权限校验一致，
  *   search 变化不新开标签）；
- * - 控制台（HOME_TAB_PATH）为固定标签：恒在首位、不可关闭；
+ * - 控制台（HOME_TAB_PATH）为固定标签：恒在首位、不可关闭、不可拖拽移动；
  * - 所有 close* 操作统一返回 { paths, redirect }：redirect 非空表示被关闭的
  *   是当前所在页面，需要导航到回退目标（右侧第一个幸存者 → 左侧最后一个
  *   幸存者 → 固定首页），由调用方负责执行导航（store 不耦合路由器）；
@@ -72,6 +72,34 @@ export function withOpenedPath(
 
     next = next.filter((p) => p !== victim);
   }
+
+  return next;
+}
+
+/**
+ * 拖拽排序：将某标签移动到目标下标（数组序即展示序）。
+ * 固定标签（控制台）不可移动；目标位置 clamp 到 ≥1（首位恒为固定标签）；
+ * 目标不存在 / 位置不变 / 顺序无变化时返回原引用（跳过更新与持久化）。
+ */
+export function moveTabPath(
+  paths: string[],
+  path: string,
+  targetIndex: number,
+): string[] {
+  if (isPinnedTab(path)) return paths;
+
+  const from = paths.indexOf(path);
+
+  if (from === -1) return paths;
+
+  const to = Math.min(Math.max(targetIndex, 1), paths.length - 1);
+
+  if (to === from) return paths;
+
+  const next = [...paths];
+
+  next.splice(from, 1);
+  next.splice(to, 0, path);
 
   return next;
 }

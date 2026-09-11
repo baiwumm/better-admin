@@ -9,6 +9,7 @@ import {
   ensureHomeTab,
   HOME_TAB_PATH,
   MAX_OPEN_TABS,
+  moveTabPath,
   parseStoredTabs,
   pruneTabPaths,
   withOpenedPath,
@@ -235,6 +236,60 @@ describe("ensureHomeTab", () => {
     const paths = [HOME_TAB_PATH, "/a"];
 
     expect(ensureHomeTab(paths)).toBe(paths);
+  });
+});
+
+describe("moveTabPath", () => {
+  it("向左移动：插入到目标下标（先移除再插入）", () => {
+    expect(moveTabPath([HOME_TAB_PATH, "/a", "/b", "/c"], "/c", 1)).toEqual([
+      HOME_TAB_PATH,
+      "/c",
+      "/a",
+      "/b",
+    ]);
+  });
+
+  it("向右移动：落到目标原位置（末尾语义一致）", () => {
+    expect(moveTabPath([HOME_TAB_PATH, "/a", "/b", "/c"], "/a", 3)).toEqual([
+      HOME_TAB_PATH,
+      "/b",
+      "/c",
+      "/a",
+    ]);
+  });
+
+  it("目标下标为 0（固定标签位置）时 clamp 到 1，首位不被占据", () => {
+    expect(moveTabPath([HOME_TAB_PATH, "/a", "/b"], "/b", 0)).toEqual([
+      HOME_TAB_PATH,
+      "/b",
+      "/a",
+    ]);
+  });
+
+  it("目标下标超界时 clamp 到末尾", () => {
+    expect(moveTabPath([HOME_TAB_PATH, "/a", "/b"], "/a", 99)).toEqual([
+      HOME_TAB_PATH,
+      "/b",
+      "/a",
+    ]);
+  });
+
+  it("固定标签不可移动（返回原引用）", () => {
+    const paths = [HOME_TAB_PATH, "/a"];
+
+    expect(moveTabPath(paths, HOME_TAB_PATH, 2)).toBe(paths);
+  });
+
+  it("目标不存在时返回原数组引用", () => {
+    const paths = [HOME_TAB_PATH, "/a"];
+
+    expect(moveTabPath(paths, "/missing", 1)).toBe(paths);
+  });
+
+  it("位置无变化时返回原数组引用", () => {
+    const paths = [HOME_TAB_PATH, "/a", "/b"];
+
+    expect(moveTabPath(paths, "/a", 1)).toBe(paths);
   });
 });
 

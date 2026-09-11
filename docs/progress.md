@@ -2,6 +2,16 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 多标签页拖拽排序：React + Next 双端落地（2026-09-12）
+
+- **功能**：普通标签支持拖拽排序（控制台恒首位不可拖），标签上按住拖 = 排序、空白区按住拖 = 平移滚动、右键 / 中键关闭不受影响；拖起视觉 = 微放大 + 轻透明 + 高阴影。排序仅改展示序，sessionStorage 持久化与刷新恢复自动跟随。
+- **数据层**：`tabs-model.ts` 新增 `moveTabPath` 纯函数（固定标签不可移动、目标位置 clamp ≥1、无变化返回原引用跳过持久化；React 端补 7 单测），store 新增 `moveTab` action。保活层零影响（React 端池按插入序常驻，`reconcileWithTabs` 按 Set 内容幂等；Next 端无实例池）。
+- **视图层**：dnd-kit（两端已有依赖，零新增）+ `SortableContext` 只登记普通标签 + `useSortable({ disabled: pinned })` 三层防护；`restrictToHorizontalAxis` + 6px 激活约束（与平移手势同阈值）；`TabPointerSensor` 自定义传感器 + `SortableTabItem` 组件（listeners 挂 li 保键盘 Space 拾起不被 RAC press 消费）。
+- **关键坑：react-aria 双层 stopPropagation 导致「只能拖一次」**（React / Next 同源问题，事件流诊断定位）：① `usePress` 的 `onPointerDown` 缺省 `stopPropagation`（`shouldStopPropagation` 缺省 true）切断冒泡到 li 的合成事件——`onPressStart` 显式 `continuePropagation` 修复；② press 状态机依赖 click 收尾复位 `isPressed`，若吞掉排序后的 click 传播会卡死状态机（后续 pointerdown 走已按下分支再次 stopPropagation）——根治方案为自定义 `TabPointerSensor` 把激活事件改走 React 捕获阶段（`onPointerDownCapture`，先于冒泡层 stopPropagation 分派，结构性免疫），同时排序后的 click 放行（防误导航由 `handleSelect` 检查 `sortMovedRef` 承担，rAF 兜底复位）；关闭热区加 `data-tab-close` 在 capture handler 排除。
+- **机制结论**：React 合成事件分派中，捕获阶段 handler 先于冒泡阶段的 `stopPropagation` 执行——与 react-aria pressable 元素同场景的 dnd-kit 拖拽，listeners 应用 capture 事件名挂载。已沉淀至 `docs/mechanisms.md`。
+- **验证**：两端 `tsc` / `lint`（0 error）全绿，React 端 93 单测通过；IAB 浏览器实测（React 5173 / Next 3001，admin 账号）——连续 6 次拖拽轮转零失效、无误导航、点击导航 / 右键菜单 / 中键与 X 关闭 / 排序持久化与刷新恢复全部回归通过。
+- **无需同步**：数据库 / OpenAPI 契约不涉及；Vue 端待对齐（可用已有 `vue-draggable-plus`），Nuxt 待排期（`docs/feature-matrix.md` 已同步）。
+
 ### Vue 端 DataTable 内聚错误态与分页条：页面模板三段式收敛为单组件（2026-09-11）
 
 - **背景**：Vue 六个列表页此前各自维护「ErrorContent `v-if` / DataTable `v-else` / DataTablePagination

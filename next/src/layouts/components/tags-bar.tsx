@@ -1,10 +1,34 @@
 "use client";
 
-import type { Key, MouseEvent as ReactMouseEvent } from "react";
+import type {
+  Key,
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+} from "react";
+import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "@bprogress/next/app";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  restrictToHorizontalAxis,
+  restrictToParentElement,
+} from "@dnd-kit/modifiers";
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   Button,
   Dropdown,
@@ -55,6 +79,33 @@ const MIDDLE_BUTTON = 1;
 
 /** 鼠标左键按键值。 */
 const MAIN_BUTTON = 0;
+
+/**
+ * 标签栏专用 PointerSensor：激活事件改走 React 捕获阶段（onPointerDownCapture）。
+ *
+ * 标签主体是 HeroUI Button（react-aria usePress），其 onPointerDown 冒泡
+ * handler 在 press 状态机未收尾时会 stopPropagation（shouldStopPropagation
+ * 缺省 true），切断冒泡到 li 的合成事件、dnd-kit 收不到 pointerdown，
+ * 表现为「只能拖一次」。React 合成捕获阶段先于冒泡阶段的 stopPropagation
+ * 分派，结构性免疫该问题。关闭热区（data-tab-close）自带关闭语义，
+ * 从其上按下不启动排序。
+ */
+class TabPointerSensor extends PointerSensor {
+  static activators = [
+    {
+      eventName: "onPointerDownCapture",
+      handler: ({ nativeEvent: event }: ReactPointerEvent) => {
+        const target = event.target instanceof Element ? event.target : null;
+
+        if (target?.closest("[data-tab-close]")) return false;
+
+        return event.isPrimary && event.button === MAIN_BUTTON;
+      },
+    },
+    // eventName 改为捕获事件：dnd-kit 类型把基类 eventName 锁定为字面量，
+    // 运行时仅作为 listeners 的 React prop key 使用，断言安全。
+  ] as unknown as typeof PointerSensor.activators;
+}
 
 /** chevron 按钮单次滚动距离（px）。 */
 const SCROLL_STEP = 160;
@@ -114,12 +165,23 @@ function useIsolatedClick(onClose: () => void) {
 
 /**
  * 多标签页栏（TagsView）：置于顶栏下方，记录路由访问轨迹。
- * - 控制台为固定标签：恒在首位、不可关闭（ensureHomeTab 保证至少一个标签），
+ * - 控制台为固定标签：恒在首位、不可关闭（ensureHomeTab 保证至少一个标签）、
+ *   不可拖拽移动（useSortable disabled + moveTabPath clamp 三层防护），
  *   结构为「菜单图标 名称 Pin 图标」；普通标签尾部为关闭热区；
  * - 标签主体为 HeroUI Button（未激活 outline / 激活 tertiary 原生样式），
  *   关闭热区位于 Button 内部（useIsolatedClick 隔离 press）；
+ * - 普通标签支持拖拽排序（dnd-kit headless 逻辑，项目已有依赖）：
+ *   指针位移 ≥ DRAG_THRESHOLD 才激活（与平移手势同阈值，点击导航不受影响），
+ *   restrictToHorizontalAxis 限定水平轴；useSortable 的 attributes/listeners
+ *   挂在 li（非 Button）——Space 键不被 react-aria press 消费，键盘排序可用；
+ * - 手势分工：标签上按住拖动 = 排序；标签间空隙 / 空白区按住拖动 = 平移滚动
+ *   （平移手势 pointerdown 时排除 [data-tab-item]）；
+ *   排序激活后经 sortMovedRef 忽略拖拽后的 click 导航，防止误切换标签
+ *   （onPress 先于 onDragEnd 触发，故 ref 在 onDragStart 置位、rAF 兜底复位；
+ *   click 本身不吞传播——react-aria press 状态机依赖 click 收尾）；
+ * - 右键菜单、中键关闭不受影响（TabPointerSensor 仅响应左键）；
  * - 标签过多时横向滚动（ScrollShadow 渐隐阴影 + chevron + 滚轮横滚 +
- *   鼠标按住拖拽平移，隐藏原生滚动条避免占用固定栏高挤压标签），
+ *   空白区按住拖拽平移，隐藏原生滚动条避免占用固定栏高挤压标签），
  *   激活标签自动滚动进可视区；新标签带进场动画（styles/tags-bar.css）；
  * - 标题优先取菜单实时数据，其次取 sessionStorage 快照（刷新后立即可渲染
  *   中文标题），两者皆无时显示骨架占位；
@@ -135,6 +197,7 @@ export function TagsBar({ menuTree }: TagsBarProps) {
   const paths = useTabsStore((s) => s.paths);
   const cachedMeta = useTabsStore((s) => s.meta);
   const openPath = useTabsStore((s) => s.openPath);
+  const moveTab = useTabsStore((s) => s.moveTab);
   const closePathAction = useTabsStore((s) => s.closePath);
   const closeOthers = useTabsStore((s) => s.closeOthers);
   const closeLeft = useTabsStore((s) => s.closeLeft);
@@ -177,11 +240,34 @@ export function TagsBar({ menuTree }: TagsBarProps) {
     syncMeta(Object.fromEntries(liveMetaByPath));
   }, [liveMetaByPath, syncMeta]);
 
+  // ── 拖拽排序（dnd-kit，项目已有依赖）──
+  // SortableContext 只登记普通标签：固定标签不参与排序计算与落点检测，
+  // 普通标签不会试图移入控制台位置（数据层 moveTabPath 另有 clamp 兜底）。
+  const sortablePaths = useMemo(
+    () => paths.filter((path) => !isPinnedTab(path)),
+    [paths],
+  );
+
+  // 指针位移阈值与容器平移手势一致（6px），点击导航不受影响。
+  const sensors = useSensors(
+    useSensor(TabPointerSensor, {
+      activationConstraint: { distance: DRAG_THRESHOLD },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
   // ── 横向滚动 ──
   const scrollRef = useRef<HTMLDivElement>(null);
   const [visibility, setVisibility] = useState<ScrollState>("none");
   // 最近一次指针手势是否发生了拖拽平移（吞掉其后的 click，防误切换标签）。
   const dragMovedRef = useRef(false);
+  // 最近一次排序拖拽是否已激活：onPress 先于 onDragEnd 触发（RAC 的
+  // pointerup 在 target 上、dnd-kit 在 document 冒泡），因此须在
+  // onDragStart 置位；handleSelect 读它忽略拖拽后的 click，复位统一由
+  // handleDragEnd 的 rAF 兜底（同步的 click 先于 rAF 被读到）。
+  const sortMovedRef = useRef(false);
 
   // 溢出检测 / 滚轮横滚 / 按住拖拽平移：统一挂在滚动容器上（一次性挂载）。
   // 可见性必须自管理——隐藏原生滚动条后不再有「滚动条出现改变容器
@@ -233,10 +319,18 @@ export function TagsBar({ menuTree }: TagsBarProps) {
 
     // 按住拖拽平移（仅鼠标左键）：位移超过阈值判定为拖动并捕获指针，
     // 拖动中阻止选中文本；结束后的 click 一律吞掉防止误触发点击。
+    // 标签上的按下让位给拖拽排序手势——平移仅保留给标签间空隙 / 空白区。
     let drag: { startX: number; startScroll: number } | null = null;
 
     const onPointerDown = (event: PointerEvent) => {
       if (event.pointerType !== "mouse" || event.button !== MAIN_BUTTON) return;
+
+      if (
+        event.target instanceof Element &&
+        event.target.closest("[data-tab-item]")
+      ) {
+        return;
+      }
 
       drag = { startX: event.clientX, startScroll: el.scrollLeft };
       dragMovedRef.current = false;
@@ -262,6 +356,12 @@ export function TagsBar({ menuTree }: TagsBarProps) {
       drag = null;
     };
 
+    // 平移拖拽结束后的 click 一律吞掉（RAC 未参与该手势，无状态机收尾需求）。
+    // 注意排序拖拽的 click 不能在此吞传播：松手点仍在原标签上时，react-aria
+    // press 状态机依赖 click 收尾复位 isPressed——若 stopPropagation 会卡死
+    // 状态机，后续 pointerdown 走已按下分支、默认 stopPropagation，
+    // dnd-kit 传感器收不到事件导致「只能拖一次」。排序的防误导航由
+    // handleSelect 检查 sortMovedRef 承担（onPress 在 click 内触发）。
     const onClickCapture = (event: MouseEvent) => {
       if (!dragMovedRef.current) return;
 
@@ -415,9 +515,39 @@ export function TagsBar({ menuTree }: TagsBarProps) {
     }
   };
 
-  /** 点击标签切换路由（刚发生拖拽平移时忽略，防误触）。 */
+  /** 排序拖拽收尾：rAF 复位吞 click 标记。拖拽后的同步 click 先于 rAF
+   * 被 handleSelect 读到（导航被忽略、RAC 状态机正常收尾）；click 未派发
+   * （拖出标签栏外抬起）时由 rAF 兜底复位，避免残留标记吞掉下一次点击。 */
+  const settleSortDrag = () => {
+    requestAnimationFrame(() => {
+      sortMovedRef.current = false;
+    });
+  };
+
+  const handleDragStart = (_event: DragStartEvent) => {
+    sortMovedRef.current = true;
+  };
+
+  /** 落点校验与变更交数据层：moveTabPath 自带固定标签守卫与 clamp。 */
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (over && active.id !== over.id) {
+      const overIndex = paths.indexOf(String(over.id));
+
+      if (overIndex >= 0) moveTab(String(active.id), overIndex);
+    }
+
+    settleSortDrag();
+  };
+
+  const handleDragCancel = () => {
+    settleSortDrag();
+  };
+
+  /** 点击标签切换路由（刚发生平移 / 排序拖拽时忽略，防误触）。 */
   const handleSelect = (path: string) => {
-    if (dragMovedRef.current || path === pathname) return;
+    if (dragMovedRef.current || sortMovedRef.current || path === pathname) {
+      return;
+    }
 
     // 方向标记须先于 router.push（VT 快照生成前 CSS 变量需已生效）
     markRouteDirection(path);
@@ -449,86 +579,65 @@ export function TagsBar({ menuTree }: TagsBarProps) {
         <ChevronLeft size={16} />
       </Button>
 
-      <ScrollShadow
-        ref={scrollRef}
-        hideScrollBar
-        // 手型光标仅在可滚动（溢出）时展示：无可平移内容时提示拖拽会误导。
-        className={`min-w-0 flex-1 ${
-          visibility === "none" ? "" : "cursor-grab active:cursor-grabbing"
-        }`}
-        orientation="horizontal"
-        size={24}
-        visibility={visibility === "leftRight" ? "both" : visibility}
+      <DndContext
+        collisionDetection={closestCenter}
+        modifiers={[restrictToHorizontalAxis, restrictToParentElement]}
+        sensors={sensors}
+        onDragCancel={handleDragCancel}
+        onDragEnd={handleDragEnd}
+        onDragStart={handleDragStart}
       >
-        <ul className="flex w-max items-center gap-1 px-0.5 py-1.5">
-          {paths.map((path) => {
-            const live = liveMetaByPath.get(path);
-            const cached = cachedMeta[path];
-            const routeStatic = routeStaticMetaByPath.get(path);
-            const title =
-              live?.title ??
-              cached?.title ??
-              (routeStatic !== undefined
-                ? t(routeStatic.titleKey)
-                : isPinnedTab(path)
-                  ? t("menu.pageTitle.console")
-                  : null);
-            // 图标与标题同构的兜底链：非菜单路由（登录白名单页）取路由登记图标
-            const icon = live?.icon ?? cached?.icon ?? routeStatic?.icon;
-            const active = path === pathname;
-            const pinned = isPinnedTab(path);
+        <ScrollShadow
+          ref={scrollRef}
+          hideScrollBar
+          // 手型光标仅在可滚动（溢出）时展示：无可平移内容时提示拖拽会误导。
+          className={`min-w-0 flex-1 ${
+            visibility === "none" ? "" : "cursor-grab active:cursor-grabbing"
+          }`}
+          orientation="horizontal"
+          size={24}
+          visibility={visibility === "leftRight" ? "both" : visibility}
+        >
+          <SortableContext
+            items={sortablePaths}
+            strategy={horizontalListSortingStrategy}
+          >
+            <ul className="flex w-max items-center gap-1 px-0.5 py-1.5">
+              {paths.map((path) => {
+                const live = liveMetaByPath.get(path);
+                const cached = cachedMeta[path];
+                const routeStatic = routeStaticMetaByPath.get(path);
+                const title =
+                  live?.title ??
+                  cached?.title ??
+                  (routeStatic !== undefined
+                    ? t(routeStatic.titleKey)
+                    : isPinnedTab(path)
+                      ? t("menu.pageTitle.console")
+                      : null);
+                // 图标与标题同构的兜底链：非菜单路由（登录白名单页）取路由登记图标
+                const icon = live?.icon ?? cached?.icon ?? routeStatic?.icon;
+                const active = path === pathname;
+                const pinned = isPinnedTab(path);
 
-            return (
-              <li
-                key={path}
-                className="flex shrink-0 items-center"
-                data-tab-enter="true"
-              >
-                {/* HeroUI Button 作为标签主体：图标 名称 尾部标识全部在 Button 内 */}
-                <Button
-                  aria-current={active ? "page" : undefined}
-                  className="h-7 min-w-0 max-w-44 gap-1.5 px-3"
-                  data-tab-active={active}
-                  size="sm"
-                  variant={active ? "tertiary" : "outline"}
-                  onAuxClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
-                    if (event.button === MIDDLE_BUTTON && !pinned) {
-                      // 阻止中键默认行为（自动滚动 / 链接新开）
-                      event.preventDefault();
-                      handleClose(path);
-                    }
-                  }}
-                  onContextMenu={(event) => openContextMenu(event, path)}
-                  onPress={() => handleSelect(path)}
-                >
-                  {icon && (
-                    <DynamicIcon
-                      className="shrink-0 size-3.5"
-                      name={icon as IconName}
-                    />
-                  )}
-                  {title !== null ? (
-                    <span className="truncate text-xs">{title}</span>
-                  ) : (
-                    /* 菜单未就绪且无快照：骨架占位（避免闪现原始路径） */
-                    <Skeleton className="h-3 w-14 rounded-full" />
-                  )}
-                  {pinned ? (
-                    <Pin className="shrink-0 text-muted" size={14} />
-                  ) : (
-                    title !== null && (
-                      <TabCloseTrigger
-                        title={title}
-                        onClose={() => handleClose(path)}
-                      />
-                    )
-                  )}
-                </Button>
-              </li>
-            );
-          })}
-        </ul>
-      </ScrollShadow>
+                return (
+                  <SortableTabItem
+                    key={path}
+                    active={active}
+                    icon={icon}
+                    path={path}
+                    pinned={pinned}
+                    title={title}
+                    onClose={handleClose}
+                    onContextMenu={openContextMenu}
+                    onSelect={handleSelect}
+                  />
+                );
+              })}
+            </ul>
+          </SortableContext>
+        </ScrollShadow>
+      </DndContext>
 
       {/* 右侧 chevron */}
       <Button
@@ -622,9 +731,116 @@ function TabCloseTrigger({
       ref={ref}
       aria-label={t("layout.tags.closeNamed", { title })}
       className="-mr-1 flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-50 transition-opacity hover:bg-default hover:opacity-100"
+      data-tab-close="true"
       role="button"
     >
       <X className="size-3" />
     </span>
+  );
+}
+
+interface SortableTabItemProps {
+  path: string;
+  icon?: string;
+  /** null = 菜单未就绪且无快照（渲染骨架占位）。 */
+  title: string | null;
+  active: boolean;
+  pinned: boolean;
+  onSelect: (path: string) => void;
+  onClose: (path: string) => void;
+  onContextMenu: (event: ReactMouseEvent, path: string) => void;
+}
+
+/**
+ * 单个标签项：li 承担 dnd-kit sortable 角色（拖拽手柄 + 键盘空格拾起），
+ * 内部 HeroUI Button 承担导航 / 右键 / 中键关闭。
+ * - attributes/listeners 挂 li 而非 Button：避免 KeyboardSensor 的 Space
+ *   拾起与 react-aria press（Space 触发导航）在同一元素上冲突；
+ * - 固定标签 useSortable disabled：不可拖拽、不参与落点检测（控制台
+ *   恒在首位另由 SortableContext items 过滤与 moveTabPath clamp 兜底）；
+ * - 关闭热区在原生捕获阶段截停 pointerdown，天然不会误启动排序；
+ * - 拖起视觉：置顶 + 微放大 + 轻透明浮起 + 高阴影（scale 用 Tailwind v4
+ *   独立属性，不与 dnd-kit 的 transform 位移冲突）；
+ * - 触屏不加 touch-none：保留浏览器原生横滚，轻拖不满足 6px 约束
+ *   不会误触发排序（鼠标为主场景，触屏降级可接受）。
+ */
+function SortableTabItem({
+  path,
+  icon,
+  title,
+  active,
+  pinned,
+  onSelect,
+  onClose,
+  onContextMenu,
+}: SortableTabItemProps) {
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ disabled: pinned, id: path });
+
+  return (
+    <li
+      ref={setNodeRef}
+      className={`flex shrink-0 items-center ${
+        isDragging
+          ? /* 拖起视觉：置顶 + 微放大 + 轻透明浮起 + 高阴影；
+               scale 用 Tailwind v4 独立属性，不与 dnd-kit 的 transform 位移冲突 */
+            "z-10 cursor-grabbing scale-105 opacity-80 shadow-lg"
+          : pinned
+            ? ""
+            : "cursor-grab"
+      }`}
+      data-tab-enter="true"
+      data-tab-item="true"
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+      {...(pinned ? {} : attributes)}
+      {...(pinned ? {} : listeners)}
+    >
+      {/* HeroUI Button 作为标签主体：图标 名称 尾部标识全部在 Button 内。
+          onPressStart 显式 continuePropagation：react-aria usePress 的
+          onPointerDown 默认 stopPropagation（shouldStopPropagation 缺省 true），
+          会切断冒泡到 li 的合成事件、dnd-kit 传感器收不到 pointerdown 导致
+          拖拽无法激活；恢复传播不影响 press 语义，平移手势已按
+          data-tab-item 排除标签、其余全局监听行为不变。 */}
+      <Button
+        aria-current={active ? "page" : undefined}
+        className="h-7 min-w-0 max-w-44 gap-1.5 px-3"
+        data-tab-active={active}
+        size="sm"
+        variant={active ? "tertiary" : "outline"}
+        onAuxClick={(event: ReactMouseEvent<HTMLButtonElement>) => {
+          if (event.button === MIDDLE_BUTTON && !pinned) {
+            // 阻止中键默认行为（自动滚动 / 链接新开）
+            event.preventDefault();
+            onClose(path);
+          }
+        }}
+        onContextMenu={(event) => onContextMenu(event, path)}
+        onPress={() => onSelect(path)}
+        onPressStart={(event) => event.continuePropagation()}
+      >
+        {icon && (
+          <DynamicIcon className="shrink-0 size-3.5" name={icon as IconName} />
+        )}
+        {title !== null ? (
+          <span className="truncate text-xs">{title}</span>
+        ) : (
+          /* 菜单未就绪且无快照：骨架占位（避免闪现原始路径） */
+          <Skeleton className="h-3 w-14 rounded-full" />
+        )}
+        {pinned ? (
+          <Pin className="shrink-0 text-muted" size={14} />
+        ) : (
+          title !== null && (
+            <TabCloseTrigger title={title} onClose={() => onClose(path)} />
+          )
+        )}
+      </Button>
+    </li>
   );
 }
