@@ -1,4 +1,9 @@
 import { GeneralErrorPage } from "@/components/common/error-pages/general-error";
+import { generateRouteMetadata } from "@/lib/server/route-metadata";
+
+/** 页面标题：服务端按语言渲染进初始 HTML（key 与 React 端 staticData 同源）。 */
+export const generateMetadata = () =>
+  generateRouteMetadata("menu.exception.500");
 
 /** 500 异常页演示（菜单页,主体区 embedded 形态,区别于错误跳转的全屏 /500）。 */
 export default function Exception500Page() {

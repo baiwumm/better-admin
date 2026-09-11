@@ -2,6 +2,53 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Next 端路由标题服务端化：generateMetadata 进初始 HTML（2026-09-12，待审核未提交）
+
+- **背景**：Next 端「平台化」评估的落地项（经用户拍板只做本项）。此前页面标题由 admin-shell 的
+  `usePageTitle` 客户端 effect 写入，刷新 / 直链 / 分享场景首帧标题为应用名、菜单加载后才被改写。
+- **实现**：20 个叶子路由（控制台 / settings 六页 / org 五页 / account / my-notices / 布局内异常页
+  三页 / 全屏 403·404·500）+ 登录页（客户端页面经新建 sign-in 服务端薄 layout）导出
+  `generateMetadata`，调用新建 `lib/server/route-metadata.ts` 的 `generateRouteMetadata(titleKey)`
+  ——读语言 Cookie → `createI18nInstance` 服务端实例取词 → 根 layout 的 `title.template`
+  拼「%s - 应用名」。titleKey 与 React 端 staticData 逐字同源。
+- **关键决策**：① 标题来源用静态 key 而非菜单树（零 DB 开销，与 React staticData 语义同构，
+  机制见 `docs/mechanisms.md` §18）；② `createI18nInstance` 从 `@/i18n` 入口下沉到 config.ts
+  （RSC 只能引 config，入口连带 react-i18next 会在 react-server 构建崩溃），入口 re-export
+  维持 providers.tsx 引入路径不变；③ `route-title.ts` 补登记 `/exception/*` 三路径（对齐 React
+  的 `menu.exception.*`），避免 hook 水合后把 metadata 标题回写成应用名；④ `/org/notices/[noticeId]`
+  详情页**不加** metadata（`findActivePath` 精确匹配，hook 本就回退应用名，加了会首帧对→水合后退化，
+  与 React 的既有差异待后续单独对齐）；⑤ `usePageTitle` 保留（运行期语言切换即时刷新）。
+- **验证**：`lint`（0 error，21 条存量 warning）/ `next build`（含 TS 全量检查）通过；生产服务器
+  curl 实测——`/sign-in` 默认中文「用户登录 - Better Admin」、带 `better-admin-language=en` 返回
+  「Sign In - Better Admin」，语言感知生效；叶子路由全部编译为动态渲染（读 Cookie 的预期形态）。
+- **无需同步**：数据库 / OpenAPI 契约不涉及；feature-matrix 无功能变化；React / Vue / NestJS 端无对应改动。
+
+### 多标签页拖拽排序：Vue 端对齐（2026-09-12）
+
+- **技术选型**：沿用三端依赖清理后保留的 `@vueuse/integrations useSortable`（sortablejs）——与
+  DataTable 列设置（手柄拖拽）、组织树（UTree 节点拖拽 + 点击选中并存）同源方案，零新增依赖
+  （`vue-draggable-plus` 已在依赖清理中移除，不回引）。
+- **实现**（`TagsBar.vue` + `tabs-model.ts` + `tabs-store.ts`）：tabs-model 新增 `moveTabPath`
+  纯函数 + 7 单测（与 React 端逐字一致），store 新增 `moveTab` action；useSortable 配
+  `draggable: 'li:not([data-tab-pinned])'`（固定标签不可拖、不参与 sortable 索引与落点交换，
+  数据层 clamp 另有兜底）、`filter: '[data-tab-close]'`（关闭热区 pointerdown 已 stop，filter
+  双保险）、`ghostClass` 占位 + `chosenClass` 拖起浮起（scale-105 + 轻透明 + 高阴影）；
+  平移手势 pointerdown 排除 `[data-tab-item]`（标签上拖 = 排序、空白区拖 = 平移，对齐 React 端）。
+- **关键差异点——索引补偿**：sortablejs 的 `oldIndex/newIndex` 相对 `draggable` 选择器集合
+  （不含固定标签），而 store 的 `paths` 首位为固定标签，`onUpdate` 里索引 +1 后调 `moveTab`。
+- **与 React 端实现差异（无需对齐项）**：React 端 react-aria 的捕获阶段 Sensor 适配
+  （`TabPointerSensor` / `onPressStart=continuePropagation` / `sortMovedRef`）在 Vue 端不需要——
+  Vue 原生事件绑定 + sortablejs 原生监听，不存在 RAC 合成层 stopPropagation 问题；拖拽后的
+  click 由 sortablejs 自行抑制，`handleSelect` 仅保留平移的 `dragMoved` 检查。
+- **已知差异**：sortablejs 无键盘排序（React / Next 端 dnd-kit KeyboardSensor 支持
+  空格拾起 + 方向键移动），记入 feature-matrix。
+- **验证**：`type-check` / `lint`（0 error）/ `test`（92 用例，含新增 7 个）全绿；浏览器实测
+  （5174，admin 账号）：store → 视图 → sessionStorage 持久化链路、点击导航、中键关闭回归通过。
+  **自动化边界说明**：sortablejs 在 Chromium 上走原生 HTML5 DnD（`nativeDraggable`），
+  `dispatchEvent` 合成事件无法驱动 UA 级拖拽启动、IAB CUA drag 亦超时，物理拖拽的最终
+  冒烟以用户真实鼠标为准（同管线列设置 / 组织树已生产验证）。
+- **无需同步**：数据库 / OpenAPI 契约不涉及；Nuxt 端待排期。
+
 ### 三端依赖清理：vue / react / next 共移除 10 项未使用包（2026-09-12）
 
 - **清理清单**：vue 删 `vue-draggable-plus`（M2 后被 useSortable 取代，业务零引用）；react 删 `axios`（请求层实为 fetch 封装 api-client，全仓零引用）、`react-router-dom`（已迁移 TanStack Router）、`@tanstack/react-query-devtools` / `@tanstack/react-router-devtools`（从未接入）、`tailwind-variants`（HeroUI 内部依赖，业务未直接使用）、`eslint-plugin-node`（eslint 配置零引用，插件已停维护）；next 删 `eslint-config-next`（eslint 实用 `@next/eslint-plugin-next` flat config）、`eslint-plugin-node`、`@types/bcryptjs`（bcryptjs 3.x 自带类型）——next 三项原本只挂在 package.json，lockfile 本就不含，删除后首次对齐。

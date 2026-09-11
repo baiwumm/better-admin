@@ -27,6 +27,17 @@ const ROUTE_STATIC_META_BY_PATH: Record<string, RouteStaticMeta> = {
     // 与用户下拉菜单「我的站内信」入口一致（BellRing）
     icon: "bell-ring",
   },
+  // 布局内异常页（与 React 端 staticData 同 key；全屏错误页 /403 /404 /500
+  // 的标题由各页 generateMetadata 以 errors.*.title 提供，不经本映射）
+  "/exception/403": {
+    titleKey: "menu.exception.403",
+  },
+  "/exception/404": {
+    titleKey: "menu.exception.404",
+  },
+  "/exception/500": {
+    titleKey: "menu.exception.500",
+  },
 };
 
 /** 获取路径的兜底元数据（无登记返回 undefined）。 */

@@ -111,4 +111,29 @@ export const i18n = createInstance({
   returnNull: false,
 });
 
+/**
+ * 创建独立的 i18n 实例（服务端 SSR / RSC 用）。
+ *
+ * 模块单例是浏览器端的会话实例；服务端若复用同一单例，会以「首个请求的
+ * Cookie 语言」初始化并跨请求污染后续用户的渲染语言（模块级可变状态禁止
+ * 承载请求态）。因此服务端每次 SSR 用启动语言创建独立实例。
+ * 定义在本文件（而非 @/i18n 入口）的原因：入口会连带评估 react-i18next
+ * （其 createContext 在 react-server 构建中不存在），服务端模块只能引
+ * config——generateMetadata 等服务端取词经本函数创建实例。
+ */
+export function createI18nInstance(language?: string) {
+  const instance = createInstance({
+    fallbackLng: FALLBACK_LANGUAGE,
+    keySeparator: false,
+    nsSeparator: false,
+    interpolation: { escapeValue: false },
+    resources,
+    returnNull: false,
+  });
+
+  instance.init({ lng: isLanguage(language) ? language : FALLBACK_LANGUAGE });
+
+  return instance;
+}
+
 export { isLanguage };

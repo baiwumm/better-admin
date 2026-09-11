@@ -723,3 +723,33 @@ VueUse composable 托管，禁止手写 onMounted 注册 + onUnmounted 摘除对
 - **落地**：`react/src/layouts/components/tags-bar.tsx` 与 `next/src/layouts/components/tags-bar.tsx`
   （`TabPointerSensor` + `SortableTabItem`，2026-09-12）；背景与验证详见 `docs/progress.md`
   对应条目。
+
+---
+
+## 18. Next 端路由标题服务端化：generateMetadata + 语言 Cookie，与 usePageTitle 双轨（Next 端，2026-09-12）
+
+**结论：App Router 下叶子路由的 `page.tsx`（薄服务端组件）直接导出 `generateMetadata`，
+经 `lib/server/route-metadata.ts` 的 `generateRouteMetadata(titleKey)` 按语言 Cookie 渲染
+标题进初始 HTML；`admin-shell` 的 `usePageTitle` 保留，负责运行期语言切换即时刷新。**
+titleKey 与 React 端 TanStack Router 的 `staticData.titleKey` 一字不差（同一套扁平 i18n 键）。
+
+- **为什么不用菜单树派生服务端标题**：标题来源本就是「每路由一个静态 i18nKey」
+  （React 端 staticData 即如此，菜单树只影响侧边栏/面包屑）；静态 key 取词只读 Cookie
+  + 内存语言资源，零 DB / 网络开销。走菜单树（getSessionUser + findMenuTree）会给每次
+  客户端导航增加服务端查询，且与 proxy 的路径门控重复。
+- **RSC 铁律：服务端模块只能引 `@/i18n/config`**——`@/i18n` 入口会连带评估
+  react-i18next（其 createContext 在 react-server 构建中不存在）而崩溃。
+  故 `createI18nInstance` 从入口下沉到 config.ts，入口仅 re-export 维持客户端
+  （providers.tsx）引入路径不变。
+- **`"use client"` 页面不能导出 metadata**：sign-in 页是唯一客户端页面本体，
+  经新建 `app/(auth)/sign-in/layout.tsx`（服务端薄壳，仅导出 metadata + 透传 children）提供。
+- **与 usePageTitle 的一致性**：两者消费同一套 key，终态字符串相同，无闪烁冲突；
+  为此 `route-title.ts` 补登记 `/exception/403|404|500`（→ `menu.exception.*`，对齐 React）——
+  否则服务端 metadata 的标题会被 hook 在水合后回写成应用名（先对后错的回归）。
+- **边界**：`/org/notices/[noticeId]` 详情页**不加** metadata——`findActivePath` 为精确
+  路径匹配，hook 对详情路径本就回退应用名；加 metadata 会造成「首帧正确 → 水合后退化」，
+  属既有与 React（staticData 给 notices 标题）的差异，待后续单独对齐。
+- **验证**（2026-09-12 实测，next start + curl）：`/sign-in` 无 Cookie →
+  「用户登录 - Better Admin」；带 `better-admin-language=en` → 「Sign In - Better Admin」
+  （语言感知生效）；全屏错误页未登录被 proxy 重定向，属 §16.5 既有语义。
+  叶子路由全部编译为动态渲染（ƒ），与根 layout 读 Cookie 的既有形态一致。
