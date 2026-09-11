@@ -28,10 +28,10 @@ export class UpdateAccountProfileDto {
   @Length(1, 50)
   displayName?: string;
 
-  /** 电话，可传 null 清空；允许 + 前缀与数字、空格、短横线，4-20 位 */
+  /** 电话，可传 null 清空；11 位大陆手机号（1 开头、第二位 3-9，契约 v1.8.1 收紧） */
   @IsOptional()
-  @Matches(/^\+?[0-9][0-9\- ]{3,19}$/, {
-    message: '电话格式不正确',
+  @Matches(/^1[3-9]\d{9}$/, {
+    message: '请输入 11 位有效手机号',
   })
   phone?: string | null;
 

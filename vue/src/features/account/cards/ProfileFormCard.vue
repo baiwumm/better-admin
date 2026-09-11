@@ -20,7 +20,11 @@ const FORM_ID = "account-profile-form";
 const { t } = useI18n();
 const toast = useToast();
 
-const PHONE_PATTERN = /^\+?[0-9][0-9\- ]{3,19}$/;
+// 长度上限与后端 DTO 对齐（契约 v1.8.1）；手机号收窄为 11 位大陆手机号标准格式
+const DISPLAY_NAME_MAX_LENGTH = 50;
+const PHONE_MAX_LENGTH = 11;
+// 选填：为空合法；填写时必须是 11 位大陆手机号（1 开头，第二位 3-9）
+const PHONE_PATTERN = /^1[3-9]\d{9}$/;
 
 // 错误文案在校验时经 t() 取词（随语言切换）；规则与 React 端 zod schema 一致
 const schema = z
@@ -32,7 +36,10 @@ const schema = z
   .superRefine((data, ctx) => {
     const displayName = data.displayName.trim();
 
-    if (displayName.length < 1 || displayName.length > 50) {
+    if (
+      displayName.length < 1 ||
+      displayName.length > DISPLAY_NAME_MAX_LENGTH
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["displayName"],
@@ -111,18 +118,26 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         :label="t('features.account.profile.displayName')"
         name="displayName"
       >
+        <!-- trailing 实时字数（与用户表单姓名一致，上限与后端 @Length(1, 50) 对齐） -->
         <UInput
           v-model="state.displayName"
-          :maxlength="50"
+          :maxlength="DISPLAY_NAME_MAX_LENGTH"
           :placeholder="t('features.account.profile.displayNamePlaceholder')"
+          :ui="{ base: 'pe-13' }"
           class="w-full"
-        />
+        >
+          <template #trailing>
+            <span class="text-dimmed text-xs tabular-nums">
+              {{ state.displayName.length }}/{{ DISPLAY_NAME_MAX_LENGTH }}
+            </span>
+          </template>
+        </UInput>
       </UFormField>
 
       <UFormField :label="t('features.account.profile.phone')" name="phone">
         <UInput
           v-model="state.phone"
-          :maxlength="20"
+          :maxlength="PHONE_MAX_LENGTH"
           :placeholder="t('features.account.profile.phonePlaceholder')"
           class="w-full"
           inputmode="tel"

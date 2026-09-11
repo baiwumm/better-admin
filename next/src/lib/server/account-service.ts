@@ -157,7 +157,8 @@ function normalizeProfileInput(
 
   if (dto.phone !== undefined) {
     phone = dto.phone === null ? null : dto.phone.trim() || null;
-    assertMatches(phone, /^\+?[0-9][0-9\- ]{3,19}$/, "电话格式不正确");
+    // 对齐 nest @Matches（契约 v1.8.1）：11 位大陆手机号
+    assertMatches(phone, /^1[3-9]\d{9}$/, "请输入 11 位有效手机号");
   }
 
   let website: string | null | undefined;

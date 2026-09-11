@@ -11,6 +11,7 @@ import {
   FieldError,
   Form,
   Input,
+  InputGroup,
   Label,
   Spinner,
   TextField,
@@ -35,6 +36,10 @@ export interface ProfileFormCardProps {
 
 const FORM_ID = "account-profile-form";
 
+// 长度上限与后端 DTO 对齐（契约 v1.8.1）；手机号收窄为 11 位大陆手机号标准格式
+const DISPLAY_NAME_MAX_LENGTH = 50;
+const PHONE_MAX_LENGTH = 11;
+
 interface ProfileFormValues {
   displayName: string;
   phone: string;
@@ -42,11 +47,12 @@ interface ProfileFormValues {
 }
 
 const profileFormSchema = z.object({
-  displayName: z.string().trim().min(1).max(50),
+  displayName: z.string().trim().min(1).max(DISPLAY_NAME_MAX_LENGTH),
+  // 选填：为空合法；填写时必须是 11 位大陆手机号（1 开头，第二位 3-9）
   phone: z
     .string()
     .trim()
-    .regex(/^\+?[0-9][0-9\- ]{3,19}$/)
+    .regex(/^1[3-9]\d{9}$/)
     .or(z.literal("")),
   tags: z.array(z.string()),
 });
@@ -125,13 +131,18 @@ export function ProfileFormCard({ profile, onSaved }: ProfileFormCardProps) {
                 onChange={field.onChange}
               >
                 <Label>{t("features.account.profile.displayName")}</Label>
-                <Input
-                  maxLength={50}
-                  placeholder={t(
-                    "features.account.profile.displayNamePlaceholder",
-                  )}
-                  variant="secondary"
-                />
+                {/* Suffix 实时字数（与用户表单姓名一致，上限与后端 @MaxLength(50) 对齐） */}
+                <InputGroup variant="secondary">
+                  <InputGroup.Input
+                    maxLength={DISPLAY_NAME_MAX_LENGTH}
+                    placeholder={t(
+                      "features.account.profile.displayNamePlaceholder",
+                    )}
+                  />
+                  <InputGroup.Suffix className="text-xs text-muted">
+                    {field.value?.length ?? 0}/{DISPLAY_NAME_MAX_LENGTH}
+                  </InputGroup.Suffix>
+                </InputGroup>
                 {fieldState.error ? (
                   <FieldError>
                     {t("features.account.profile.displayNameInvalid")}
@@ -155,7 +166,7 @@ export function ProfileFormCard({ profile, onSaved }: ProfileFormCardProps) {
                 <Label>{t("features.account.profile.phone")}</Label>
                 <Input
                   inputMode="tel"
-                  maxLength={20}
+                  maxLength={PHONE_MAX_LENGTH}
                   placeholder={t("features.account.profile.phonePlaceholder")}
                   type="tel"
                   variant="secondary"

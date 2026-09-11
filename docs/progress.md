@@ -2,6 +2,57 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 契约 v1.8.1：账户资料电话收紧为 11 位大陆手机号 + 基本信息显示名称实时字数（五端同步）（2026-09-11）
+
+- **需求**：「我的账户 → 基本信息」电话字段此前仅宽松校验（`^\+?[0-9][0-9\- ]{3,19}$`，允许 + 前缀 /
+  空格 / 短横线，maxLength 20），收紧为 11 位大陆手机号标准格式；显示名称补实时字数展示，口径同
+  用户管理表单「姓名」（`n/50`）。
+- **契约先行（`nest/openapi/openapi.yaml` → v1.8.1）**：`AccountProfileUpdateRequest.phone`
+  `maxLength` 20 → 11、新增 `pattern: '^1[3-9]\d{9}$'`，仍可传 `null` 清空；格式不符 400 VALIDATION_ERROR。
+- **同一条宽松正则原分布 5 处，本轮全部同步**：
+  - NestJS `account/dto/account.dto.ts`：`@Matches` 换 11 位正则，消息「请输入 11 位有效手机号」；
+  - Next 服务端 `lib/server/account-service.ts`：`assertMatches` 同步（Next 独立后端，不走 NestJS；
+    `route.ts` 只做 body 归一化、无格式校验，无需改）；
+  - React / Next `features/account/cards/profile-form-card.tsx`：zod 正则 + `maxLength` 11 +
+    显示名称改 `InputGroup` + `Suffix` 实时字数（同 `user-form-dialog.tsx` 姓名写法）；
+  - Vue `features/account/cards/ProfileFormCard.vue`：`PHONE_PATTERN` + `maxlength` 11 +
+    显示名称 `UInput #trailing` 实时字数（沿用 Vue 端 `UserFormDialog.vue` 既有写法，不照搬 HeroUI 结构）；
+  - 三端语言包 `features.account.profile.phoneInvalid` / `phonePlaceholder` 改为「手机号」口径
+    （React → Next 直接同步整文件，diff 确认仅此两行差异；Vue 精确改两行，保留其既有 `{'@'}` 转义差异）。
+- **关键决策**：
+  - 契约 `maxLength: 11` 不单独加长度断言，Nest / Next 两端服务端均靠正则天然限定恰好 11 位，口径一致；
+  - 存量宽松格式值不做数据迁移：读取不受影响，用户下次保存资料时须改为标准格式方可提交
+    （seed 不写 phone，存量仅来自用户自填）；
+  - Nuxt 尚未启动，M0 时直接跟 v1.8.1 契约；`feature-matrix.md` 无需变更（各端功能状态未变）。
+- **已知限制（既有、本轮未动，待拍板）**：Nest 对 phone **不 trim**（DTO `@Matches` 校验原始值、service
+  `patch.phone = dto.phone` 原样入库），Next 则 `dto.phone.trim() || null` **先 trim 再校验**——直调 API 传
+  `" 13800138000 "` 时 Nest 400 / Next 通过，传纯空格时 Nest 400 / Next 视为清空。三端前端提交前均已
+  `trim()`，界面流量不受影响。若统一，倾向 Next 对齐 Nest（与 displayName「校验原始字符串」既有口径一致）。
+- **验证**：`react/scripts/check-locales.mjs` React / Next 14 个语言包完全一致；React / Next / Nest
+  `tsc --noEmit` + `eslint` 通过（Next 仅 1 个既有 `no-console` 警告，`account-service.ts:421`，非本轮）；
+  Vue `vue-tsc` / `eslint` / `vitest`（85 用例）三绿；Nest 无测试文件。
+
+### React：非菜单路由标签页图标兜底（/account、/my-notices 加图标）（2026-09-11）
+
+- **问题**：标签栏（TagsBar）中「我的账户」标签只显示名称没有图标。根因：标签图标唯一来源是菜单树
+  （`liveMetaByPath`）+ tabs 快照（`syncMeta` 持久化），而 `/account`、`/my-notices` 是登录白名单页
+  （`route-access.ts`），不在菜单树也不在种子数据，标题有 `staticData.titleKey` 兜底但图标没有，
+  于是图标为空、标题正常。
+- **方案**：图标接入与标题同一套 staticData 兜底链路，不新增机制：
+  - `lib/route-title.ts`：`buildRouteTitleKeyMap` / `findRouteTitleKey` 重构为
+    `buildRouteStaticMetaMap` / `findRouteStaticMeta`，映射值从 `titleKey: string` 扩为
+    `{ titleKey, icon? }`（调用方 tags-bar / app-header 同步改名，行为不变）；
+  - `lib/use-document-title.ts`：`StaticDataRouteOption` 模块扩充新增可选 `icon?: string`
+    （lucide kebab-case 图标名）；
+  - `routes/_authenticated/account.tsx` 声明 `icon: "id-card"`（与侧边栏用户下拉菜单「我的账户」
+    入口 `IdCard` 一致）、`my-notices.tsx` 声明 `icon: "bell-ring"`（同 `BellRing`）；
+  - `tags-bar.tsx`：`icon` 回退链改为 `live ?? cached ?? routeStatic.icon`，与标题三级回退同构。
+- **验证**：`pnpm build`（含 tsc 类型检查）/ `lint`（仅存量警告）/ `test`（86 用例）三绿；
+  确认 lucide-react 1.33.0 `dynamicIconImports` 含 `id-card` / `bell-ring`，`DynamicIcon` 可解析。
+- **待同步（跨技术栈一致性）**：Vue 端（`vue/src`）标签页对同一问题如法处理时，图标同样取
+  `id-card` / `bell-ring`；Next 端如实现同款标签栏也走同一图标名。无需改数据库 / OpenAPI 契约
+  （图标仅前端 staticData，不进菜单表）。
+
 ### 路由过渡动画：Next 端同步 React 的「位移收敛 + 进出场分时」两条硬约束（2026-09-11）
 
 - **背景**：`docs/mechanisms.md` §0.1 登记的 6 条 Next 待同步差异点，本轮按 React 端同源参数逐条对齐

@@ -132,7 +132,11 @@ info:
     → 400 PASSWORD_CONTAINS_USERNAME；新密码不能与当前密码相同（reset-password 与
     PUT /account/password 均以 bcrypt 比对现有 hash）→ 400 PASSWORD_SAME_AS_OLD
     （PUT /account/password 原「相同则静默成功」的 v0.9 行为废止，改为明确报错）。
-  version: 1.8.0
+    v1.8.1 账户资料电话收紧为 11 位大陆手机号（AccountProfileUpdateRequest.phone）：
+    由「允许 + 前缀与数字、空格、短横线，4-20 位」改为 ^1[3-9]\d{9}$（maxLength 20 → 11），
+    仍可传 null 清空；格式不符 400 VALIDATION_ERROR。存量宽松格式值读取不受影响，
+    下次保存时须改为标准格式方可提交。
+  version: 1.8.1
 
 servers:
   - url: https://nest.baiwumm.com/api
@@ -655,8 +659,9 @@ components:
         phone:
           type: string
           nullable: true
-          maxLength: 20
-          description: 电话，可空；允许 + 前缀与数字、空格、短横线
+          maxLength: 11
+          pattern: '^1[3-9]\d{9}$'
+          description: 11 位大陆手机号（1 开头、第二位 3-9），可空；v1.8.1 收紧为标准格式
         tags:
           type: array
           maxItems: 10
