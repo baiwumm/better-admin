@@ -18,10 +18,10 @@
 
 ## 2. 启动门槛（Gate，硬性）与总顺序
 
-> 三大功能块整体排期在 Vue 端对齐完成之后，**不与 Vue 开发并行抢占**：
+> 三大功能块整体排期在 **Nuxt 端功能全部完成之后**，**不与 Nuxt 开发并行抢占**：
 
-- [ ] **Gate-1**：Vue 端与 React 基准**功能全部对齐**（`docs/feature-matrix.md` 中 Vue 列全部 ✅）。
-- [ ] **Gate-2**：Vue 端**冒烟测试通过**（登录 / 菜单加载 / 各模块列表与 CRUD / 权限边界 / 登出，见 §9.4 冒烟清单口径）。
+- [ ] **Gate-1**：Nuxt 端与 React 基准**功能全部对齐**（`docs/feature-matrix.md` 中 Nuxt 列全部 ✅；口径为现有业务功能对齐，不含本计划三块，避免循环依赖）。
+- [ ] **Gate-2**：Nuxt 端**冒烟测试通过**（登录 / 菜单加载 / 各模块列表与 CRUD / 权限边界 / 登出，见 §9.4 冒烟清单口径）。
 
 两个 Gate 均达成后，按 **Phase 0 演示上线准备 → Phase C Dashboard → Phase A → Phase B Playground** 顺序推进；每个 Phase 完成后按 `AGENTS.md` §10 提交并更新 `progress.md`。
 
