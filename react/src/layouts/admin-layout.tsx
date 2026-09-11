@@ -200,7 +200,7 @@ export function AdminLayout() {
             在每次页面切换完成后会将滚动位置重置到顶部。 */}
         <main
           className={cn(
-            "min-h-0 flex-1 overflow-y-auto",
+            "min-h-0 flex-1 overflow-y-auto [view-transition-name:main-content]",
             isFullWidthPage ? "" : "p-4 md:p-6",
           )}
           data-vt-name="main-content"
