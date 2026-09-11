@@ -568,7 +568,7 @@ Sidebar
 | UI | React 19 + TypeScript（strict）+ Vite + Tailwind CSS v4 |
 | 组件 | **Hero UI（为主，`@heroui/react`）** + **shadcn/ui（补充，new-york，源码在 `src/components/ui/`，存量保留）** + Radix UI 原语 |
 | 路由 | TanStack Router（文件式 `src/routes/`） |
-| 数据请求 | TanStack Query + axios |
+| 数据请求 | TanStack Query + fetch 封装（`src/lib/api-client.ts`） |
 | 表格 | TanStack Table + 自研 DataTable 封装 |
 | 表单 | react-hook-form + zod + @hookform/resolvers |
 | 状态 | Zustand（全局）+ Context（主题/字体/布局/搜索）+ 页面 Provider |

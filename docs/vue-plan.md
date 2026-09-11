@@ -58,7 +58,7 @@
 
 | 功能模块 | React 状态 | Vue 需实现内容（技术映射） | 依赖 API | 优先级 |
 | --- | --- | --- | --- | --- |
-| 组织管理 | ✅ | 左树右表 + 拖拽排序（`vue-draggable-plus`） | `/org/depts` `/org/depts/tree` `/org/depts/sort` | P1 |
+| 组织管理 | ✅ | 左树右表 + 拖拽排序（`@vueuse/integrations` useSortable） | `/org/depts` `/org/depts/tree` `/org/depts/sort` | P1 |
 | 岗位管理 | ✅ | CRUD + 成员穿透 Drawer | `/org/posts` `/org/posts/{id}/members` | P1 |
 | 人员通讯录 | ✅ | 组织树筛选 + 服务端分页 + URL Query ↔ store 双向同步（防 epoch 循环） | `/org/directory` `/org/depts/tree` | P1 |
 | 公告管理 | ✅ | `@tiptap/vue-3`（同内核，HTML 序列化与 React 端互通）+ `dompurify`；范围选择/定时/撤回/催读；已读人员头像堆叠列 | `/notices` 系 | P2 |
@@ -89,7 +89,7 @@
 | 图谱 | @xyflow/react 12 | **@vue-flow/core**（懒加载独立 chunk） | ui-spec §1.3 预留决策 | — |
 | Excel | write-excel-file 4 | **原库复用**（框架无关） | mechanisms §7.3 直接适用 | — |
 | 图表 | Recharts（已定未实施） | **暂不引入；Dashboard 立项时推荐 ECharts + vue-echarts。若 React 端 Dashboard 先行采用 Recharts，Vue 端 ECharts 必须在配置中强制使用项目 chart tokens（--chart-1..5）确保 Dark/Light 色值与 React 端完全一致；Dashboard 立项时两端共同评审色值映射方案**（ui-spec §1.3「四端图表一致性靠规范保证」的显式色值约束） | Recharts 无 Vue 实现；依赖纪律不提前引入 | unovis / Chart.js |
-| 拖拽 | @dnd-kit | **vue-draggable-plus** | Vue 生态主流 | useSortable（@vueuse/integrations） |
+| 拖拽 | @dnd-kit | **@vueuse/integrations useSortable（sortablejs）** | 与组织树 / 列设置既有方案统一（`vue-draggable-plus` 依赖已移除，未引入过业务代码） | — |
 | 裁剪 | react-easy-crop | **vue-advanced-cropper** | Vue 生态成熟 | cropperjs |
 | 图标 | lucide-react | **不引入独立图标组件库**；Nuxt UI 内置 Icon（底层 `@iconify/vue`）+ `@iconify-json/lucide` 图标集，`icon` prop 用 `i-lucide-*` 名（`lucide-vue-next` 已移除） | 同一图标集 | — |
 | Toast | HeroUI toast | **Nuxt UI `useToast`**（`UApp` 提供上下文；api-client 全局错误经回调注入到 App 层转发） | 统一组件库 | vue-sonner |

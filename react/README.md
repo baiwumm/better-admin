@@ -9,7 +9,6 @@ This is a template for creating applications using Vite and HeroUI (v3).
 - [Vite](https://vitejs.dev/guide/)
 - [HeroUI v3](https://heroui.com)
 - [Tailwind CSS](https://tailwindcss.com)
-- [Tailwind Variants](https://tailwind-variants.org)
 - [TypeScript](https://www.typescriptlang.org)
 
 ## How to Use

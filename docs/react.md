@@ -33,7 +33,7 @@ Browser → React → NestJS API → PostgreSQL
 | UI 组件库 | **Hero UI**（`@heroui/react` + `@heroui/styles`）；**当前无任何 shadcn / radix 组件**，Shadcn UI 仅为策略上的补充选项（按需引入） | `3.2.4` |
 | 路由 | TanStack Router（文件式路由 `src/routes/`，自动生成 `src/routeTree.gen.ts`） | `1.168.22` |
 | 状态管理 | Zustand（全局 store，如 `src/stores/auth-store.ts`） | `5.0.12` |
-| 数据请求 | TanStack Query + axios（统一走 `src/lib/api-client.ts` 请求 NestJS REST API） | `5.99.0` / `1.15.0` |
+| 数据请求 | TanStack Query + fetch 封装（统一走 `src/lib/api-client.ts` 请求 NestJS REST API，无 axios） | `5.99.0` |
 | 表单 | react-hook-form + zod + `@hookform/resolvers` | `7.86.0` / `4.4.3` |
 | 表格 | TanStack Table（可复用 DataTable：列头、过滤、排序、分页） | `^9.2.3` |
 | 拖拽 | dnd-kit（core / modifiers / sortable / util） | `^6.3.1` 等 |

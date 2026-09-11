@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 三端依赖清理：vue / react / next 共移除 10 项未使用包（2026-09-12）
+
+- **清理清单**：vue 删 `vue-draggable-plus`（M2 后被 useSortable 取代，业务零引用）；react 删 `axios`（请求层实为 fetch 封装 api-client，全仓零引用）、`react-router-dom`（已迁移 TanStack Router）、`@tanstack/react-query-devtools` / `@tanstack/react-router-devtools`（从未接入）、`tailwind-variants`（HeroUI 内部依赖，业务未直接使用）、`eslint-plugin-node`（eslint 配置零引用，插件已停维护）；next 删 `eslint-config-next`（eslint 实用 `@next/eslint-plugin-next` flat config）、`eslint-plugin-node`、`@types/bcryptjs`（bcryptjs 3.x 自带类型）——next 三项原本只挂在 package.json，lockfile 本就不含，删除后首次对齐。
+- **关键保留判定**（按 import 搜不到 ≠ 可删）：三端 `@tiptap/pm`（`@tiptap/react` 必需 peer + 官方要求显式安装）；next 端 `pg`（drizzle-kit 0.31.10 内省崩溃坑的修复驱动，drizzle.config.ts 注释有记录）；`@types/node` / `eslint-plugin-react-hooks`（非 import 方式引用）；vue 端 `@tanstack/vue-virtual` 等 `optimizeDeps.include` 配套声明（`@nuxt/ui` 被排除出预构建，其传递依赖必须在 package.json 显式声明，vite.config.ts 注释有记录）。
+- **文档同步**：修正 5 处过时/错误表述——react.md 技术栈表与 ui-spec §18.1 的「TanStack Query + axios」（实为 fetch 封装）、vue-plan §1.3 组织管理与 §2 拖拽行的 `vue-draggable-plus`（实为 useSortable）、feature-matrix 组织管理行与标签页行（「可用已有 vue-draggable-plus」已失效）；website 站内容经 sync-docs 重新生成。
+- **验证**：vue `type-check` / `test`（85 用例）/ `build` / dev 冒烟通过；react `lint`（0 error）/ `test`（93 用例）/ `build` 全绿；next `lint`（0 error）/ `build` 成功。
+- **无需同步**：数据库 / OpenAPI 契约不涉及。
+
 ### Vue 端「Vue 化」收敛：三处命令式 API 迁移 VueUse + 进度条状态机响应式化（2026-09-12）
 
 - **背景**：功能与 React 端对齐后的内部实现收敛评估（经用户拍板执行）。逐模块排查「React 移植痕迹」——手动事件监听 / Observer / DOM API / 命令式桥接——共 4 项可替换点；路由过渡 VT vs Vue 内置 `<Transition>` 经评估**维持现状**（VT 快照动画质量 + 与 React 端同源，机制见 `docs/mechanisms.md` §15）。全部改动为行为等价替换、UX 零变化，feature-matrix 不涉及。
