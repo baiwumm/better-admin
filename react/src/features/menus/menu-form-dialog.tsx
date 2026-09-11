@@ -322,30 +322,16 @@ function MenuFormModal({
                   onChange={(key) =>
                     setValue("parentId", key ? String(key) : "")
                   }
-                  onKeyDown={(e) => {
-                    // 键盘清空补偿：清空图标在 trigger 内不可聚焦（button 内禁嵌套
-                    // 可聚焦元素），Delete/Backspace 触发清空
-                    if (
-                      (e.key === "Delete" || e.key === "Backspace") &&
-                      values.parentId
-                    ) {
-                      setValue("parentId", "");
-                    }
-                  }}
+                  onClear={() => setValue("parentId", "")}
                 >
                   <Select.Trigger>
                     <Select.Value />
-                    {/* 有选中值时 Indicator 渲染为内嵌清空图标：onPointerDown 阻断
-                        trigger 的 press 链防止误开下拉；无值传 undefined 回落默认
-                        下拉箭头 */}
-                    <Select.Indicator className="size-4">
-                      {values.parentId && mode !== "addChild" ? (
-                        <X
-                          onClick={() => setValue("parentId", "")}
-                          onPointerDown={(e) => e.stopPropagation()}
-                        />
-                      ) : undefined}
-                    </Select.Indicator>
+                    {/* Select.ClearButton 渲染为 span：有值时显示、无值自动隐藏；
+                        内置阻断 trigger press 链防止误开下拉，并使 trigger 支持
+                        Backspace/Delete 键盘清空，两条路径均触发 onClear。
+                        addChild 模式父级锁定，不渲染清空按钮 */}
+                    {mode !== "addChild" && <Select.ClearButton />}
+                    <Select.Indicator />
                   </Select.Trigger>
                   <Select.Popover>
                     <ListBox>

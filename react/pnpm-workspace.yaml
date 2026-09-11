@@ -1,5 +1,8 @@
 allowBuilds:
   esbuild: true
+minimumReleaseAgeExclude:
+  - '@heroui/react@3.2.5'
+  - '@heroui/styles@3.2.5'
 # 供应链策略兼容：全局 trustPolicy: no-downgrade 会对"早期版本带 provenance、
 # 后发布版本不带"的老包批量误报（均为多年稳定使用的已知安全版本）。
 # 发布超过 1 年（525600 分钟）的包跳过信任检查，保留对新增发布版本的降级防护。

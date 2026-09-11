@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import { ListBox, Select } from "@heroui/react";
-import { X } from "lucide-react";
 
 export interface DataTableFilterOption {
   value: string;
@@ -25,7 +24,7 @@ export interface DataTableFilterSelectProps {
  * 通用单选筛选器（HeroUI Select）：用于状态、类型等单值筛选；
  * 选项可由 dict.store 驱动（字典数据），也可为静态枚举。
  * 不设「全部」选项：无值时展示 placeholder 字段名占位；
- * 有值时 trigger 内渲染清空图标，清空即 onChange(null)。
+ * 有值时 trigger 内渲染 Select.ClearButton，清空即 onChange(null)。
  */
 export function DataTableFilterSelect({
   value,
@@ -52,27 +51,15 @@ export function DataTableFilterSelect({
       value={value}
       variant="secondary"
       onChange={handleChange}
-      onKeyDown={(e) => {
-        // 键盘清空补偿：清空图标在 trigger 内不可聚焦（button 内禁嵌套
-        // 可聚焦元素），Delete/Backspace 触发清空
-        if ((e.key === "Delete" || e.key === "Backspace") && value !== null) {
-          onChange(null);
-        }
-      }}
+      onClear={() => onChange(null)}
     >
       <Select.Trigger>
         <Select.Value />
-        {/* 有选中值时 Indicator 渲染为内嵌清空图标：onPointerDown 阻断
-            trigger 的 press 链防止误开下拉；无值传 undefined 回落默认
-            下拉箭头 */}
-        <Select.Indicator className="size-4">
-          {value !== null ? (
-            <X
-              onClick={() => onChange(null)}
-              onPointerDown={(e) => e.stopPropagation()}
-            />
-          ) : undefined}
-        </Select.Indicator>
+        {/* Select.ClearButton 渲染为 span（trigger 是 button，不可嵌套 button）：
+            有值时显示、无值自动隐藏；内置阻断 trigger press 链防止误开下拉，
+            并使 trigger 支持 Backspace/Delete 键盘清空，两条路径均触发 onClear */}
+        <Select.ClearButton />
+        <Select.Indicator />
       </Select.Trigger>
       <Select.Popover>
         <ListBox>

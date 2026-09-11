@@ -4,16 +4,21 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
 
+minimumReleaseAgeExclude:
+  - '@heroui/react@3.2.5'
+  - '@heroui/styles@3.2.5'
+
 # 供应链策略兼容：@tiptap/react 的 optional 依赖会解析到最新版，
 # 刚发布的包可能落在 minimumReleaseAge cutoff 内被锁文件校验拒绝；
 # 与 react 端保持一致锁定 3.30.5（同一发布窗口的版本）。
 overrides:
   '@tiptap/extension-bubble-menu': 3.30.5
   '@tiptap/extension-floating-menu': 3.30.5
-  # 收敛传递依赖与顶层声明的双版本（3.12.3/3.12.4）：两份类型声明的 #private
-  # 品牌字段使 CalendarDate/CalendarDateTime 与 HeroUI DatePicker 的 DateValue
-  # 类型不兼容（tsc 报 never），统一锁到顶层 pin 的 3.12.3。
-  '@internationalized/date': 3.12.3
+  # 收敛传递依赖与顶层声明的双版本（两份类型声明的 #private 品牌字段使
+  # CalendarDate/CalendarDateTime 与 HeroUI DatePicker 的 DateValue 类型不兼容，
+  # tsc 报 never）：统一锁 3.12.4——同时满足 react-aria 3.52.x 声明的 ^3.12.4
+  # 范围，并与 react 端（HeroUI 3.2.5 升级后自然收敛）保持一致。
+  '@internationalized/date': 3.12.4
 
 # 供应链策略兼容：全局 trustPolicy: no-downgrade 会对"早期版本带 provenance、
 # 后发布版本不带"的老包批量误报（均为多年稳定使用的已知安全版本）。
