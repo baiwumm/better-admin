@@ -5,7 +5,6 @@ import { usePreferredDark, useColorMode } from "@vueuse/core";
 
 import { ENV } from "@/lib/env";
 import LanguageSwitch from "@/components/layout/LanguageSwitch.vue";
-import ThemeSwitch from "@/components/layout/ThemeSwitch.vue";
 
 /**
  * 认证页统一布局（对应 React 端 (auth)/route.tsx 外壳）：
@@ -55,7 +54,7 @@ export default { name: "AuthLayout" };
     <!-- 右上角入口组：语言切换 + 主题切换 -->
     <div class="absolute right-4 top-4 z-30 flex items-center gap-1">
       <LanguageSwitch />
-      <ThemeSwitch />
+      <ConfigDrawer />
     </div>
 
     <div
