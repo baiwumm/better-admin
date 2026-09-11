@@ -7,6 +7,42 @@
 
 ---
 
+## 0. 路由过渡（View Transition）的两条硬约束：位移必须留痕在主体盒内 + 进出场可分时（React / Vue 端）
+
+**结论一：`::view-transition-old/new()` 只是挂在根级覆盖层里的位图，给它加 `overflow: clip`
+在 Chromium 上不生效——位移多少，快照就真的会越过主体区边界盖到标签栏 / 顶栏 / 侧边栏上。**
+
+- **机理**：`::view-transition` 是根上的固定层（UA `z-index: 2147483646`），只按**视口**裁剪；
+  具名组的旧/新快照是两张位图，`transform` 施加在图片上。给伪元素声明 `overflow: clip`
+  可计算值确实变成 `clip`（`getComputedStyle` 可验证），但**不参与绘制裁剪**。
+  给实时元素加 `clip-path: inset(0)` / `overflow: clip` 也不影响已捕获的快照。
+- **实测证据（本机 Chromium 152，CDP 驱动）**：`cover` 的 `translateX(100%)`（主体宽 960px）
+  会让新页整幅横穿侧边栏；`rise` 的 `translateY(40px)` 会把页面内容顶进标签栏
+  （像素级复现：t=400ms 冻结帧里黑色顶部内容条上移、红顶栏被吃掉一截）。
+- **唯一可靠的两条路**：① 把位移/缩放幅度压到"出不了盒"（纵向 ≤ ~10px、缩放 ≤ 1.02、
+  横向不做整幅平移；覆盖类改用**盒内 `clip-path` 擦除**，视觉上仍是"推入"）；
+  ② 给**组盒** `::view-transition-group(main-content) { overflow: clip }` 兜底——
+  实测可完全消除顶栏/侧边栏污染，且对忽略该属性的内核会退化为原行为、无害。
+- **落地**：`react/src/styles/route-transitions.css` 与 Vue 端同源副本（2026-09-11 起同款）。
+
+**结论二：View Transition 的旧/新快照默认同时起跑同时收尾（`startViewTransition` 的模型），
+可用 `animation-delay` + `fill-mode: both` 拆成"旧页先行、新页压后"，且**总时长不变**。**
+
+- **做法**：`:root` 派生 `--rt-exit`（0.6×基准）/ `--rt-enter`（0.65×基准）/ `--rt-stagger`（0.35×基准），
+  旧页用 `--rt-exit`、新页用 `--rt-enter` + `animation-delay: var(--rt-stagger)`；
+  `both` 填充保证延迟期间新页停在首帧（不提前露脸）、旧页延迟结束后停在末帧（不闪回）。
+  0.6×420 + 0.35×420 = 399ms ≤ 基准，新页结束时刻 = 147 + 273 = 420ms = 基准总时长。
+- **哪些预设不分时**：`fade` 的语义就是交叉淡化（保持全程重叠）；`reveal` / `circle` 本来就是
+  "旧页静止被覆盖"，分时反而破坏观感。
+- **验证口径**：`document.getAnimations()` 按 `effect.pseudoElement` 过滤后读 `effect.getTiming()`
+  即可核对（实测：glide/rise/zoom/blur = old 252ms/delay 0 + new 273ms/delay 147ms；
+  fade/reveal/cover/circle = 420ms/0）。
+- **排查提醒**：`Page.captureScreenshot` 在本机 Chrome/Edge 上会把 VT 覆盖层拍成**终态**
+  （暂停帧与真实时钟两种口径都试过），因此"过渡中帧"不能用它验证；用冻结帧 + 逐像素读取
+  或用 `getComputedStyle(el, '::view-transition-…')` 读关键帧值更可靠。
+
+---
+
 ## 1. `/api/permissions` 的请求与缓存（React 端）
 
 **结论：不是进入应用就加载，也没有持久化；全项目共用一份内存缓存，按需懒加载。**
@@ -498,3 +534,77 @@ URL 参数一律用 `useSearch({ strict: false })` / `useParams({ strict: false 
   判定弹窗可见性需按内容区分；日期单元格定位用 `div[data-reka-calendar-cell-trigger]
   [data-value="YYYY-MM-DD"]`（v4 不渲染 `table[role=grid]`）。既有范例：
   `NoticeFormDialog` 发布日期 / `UserFormDialog` 入职日期。
+
+---
+
+## 16. Vue 端 M4 冒烟四条机制结论（常驻挂载查询 / 动态标题 / Nuxt UI locale 缺键 / 无渲染组件）
+
+> 更新日期：2026-09-11。对应代码：`vue/src/features/roles/use-grant-tree.ts`、
+> `vue/src/lib/route-access.ts`、`vue/src/router/guards.ts`、`vue/src/layouts/AdminLayout.vue`、
+> `vue/src/components/layout/TagsBar.vue`、`vue/src/components/common/progress-provider/progress-bridge.vue`。
+
+### 16.1 常驻挂载的浮层组件：依赖 props 的 useQuery 必须显式 `enabled` 门控
+
+**结论：Vue 端浮层（Drawer / Modal / Slideover）以 `v-model:open` 受控、组件常驻挂载时，
+props 上的业务 id 在关闭态是空值；任何以该 id 为参数的 `useQuery` 都必须加
+`enabled: computed(() => id !== "")`，否则页面加载即发出畸形请求。**
+
+- **实例**：`RolesPage` 的 `<RoleGrantDrawer>` 无 `v-if`、关闭时传 `:role="null"`，
+  抽屉内 `roleId = props.role?.id ?? ""`；`useGrantTree` 的 `roleMenusQuery` 无门控
+  → 角色页一加载就请求 `GET /roles//menus`（双斜杠、空 id）→ 404 并污染控制台。
+- **为什么 React 端没有**：React 端 `role-grant-drawer.tsx` 的 query 在抽屉组件内部，
+  而抽屉由 HeroUI Modal 按需挂载（关闭即卸载），`roleId` 恒为有效值——
+  **这是「框架挂载语义差异」而非业务逻辑差异**，跨端移植时容易漏。
+- **修法**：`enabled: computed(() => roleId() !== "")`。注意 `queryKey` 用 computed
+  时，`enabled` 同样需为响应式（`MaybeRefOrGetter`），否则切换角色不会重新取数。
+- **同类排查面**：所有「列表页常驻渲染抽屉/弹窗 + 抽屉内按 id 取详情」的组合
+  （用户重置密码、日志详情、岗位成员、公告详情等）都要检查同一模式；
+  症状是页面初载出现 `/xxx//yyy` 或 `/xxx/undefined` 类请求。
+
+### 16.2 文档标题 / 面包屑 / 标签标题必须支持动态路由前缀匹配
+
+**结论：以 `Record<path, titleKey>[route.path]` 精确匹配的标题映射表无法覆盖动态路由
+（`/org/notices/:noticeId`），必须补「精确优先 + 最长前缀兜底」的解析函数，且文档标题、
+面包屑、多标签页标题三处共用同一函数。**
+
+- **症状**：公告详情（站内信消费路由）文档标题回退为裸品牌名 `Better Admin`，
+  面包屑与标签标题同时缺失。
+- **实现**（`lib/route-access.ts`）：新增 `ROUTE_TITLE_PREFIX_KEYS`
+  （`"/org/notices/": "menu.pageTitle.notices"`）+ `resolveRouteTitleKey(pathname)`
+  （先查 `ROUTE_TITLE_KEYS`，未命中则取最长匹配前缀）。
+- **三个消费点**：`router/guards.ts` 的 `afterEach`（`document.title`）、
+  `layouts/AdminLayout.vue` 的面包屑兜底、`components/layout/TagsBar.vue` 的标签标题。
+  改成解析函数时必须三处同改——只改一处会出现「文档标题对了、标签还缺」的割裂。
+- **与 React 端对齐**：React 的 `staticData.titleKey` 挂路由定义上，动态路由天然继承
+  同一 titleKey（`notices_.$noticeId.tsx` 与列表页同键），Vue 端需用前缀表手工等价。
+
+### 16.3 Nuxt UI 4.11.0 locale 包缺键：组件回退会把**原始键名**渲染到界面
+
+**结论：Nuxt UI 组件的兜底写法是 `props.x || t("someKey")`；当组件新增了文案而 locale
+包未同步补键时，缺失的不是空白而是字面键名（用户可见）。项目内对这类组件必须显式传
+文案 props，不能依赖 locale 包。**
+
+- **实例**：`UDashboardSearch` 的 `:title="props.title || t('dashboardSearch.title')"`
+  与 `:description` 同理，而 `@nuxt/ui` 4.11.0 的 `zh_cn.js` / `en.js` 中
+  `dashboardSearch` 分组**只有 `theme` 键**（无 title / description）→ 命令面板顶部
+  直接显示 `dashboardSearch.title` / `dashboardSearch.description`。
+- **判据**：`UApp :locale` 已正确配置（同页面的分页、表格「暂无数据」等文案均为中文），
+  仍出现 `xxx.yyy` 形态文本 → 即 locale 包缺该键，而非 i18n 未接入。
+- **修法**（`AdminLayout.vue`）：显式传 `:title="t('layout.command.palette')"` /
+  `:description="t('layout.command.search')"`，复用应用语言包（React 端 `layout.command.*`
+  同键）。**不修改 node_modules**，也不因上游缺键引入 locale 覆盖层。
+- **通用检查**：升级 `@nuxt/ui` 后，对新增/改动的组件文案键比对
+  `node_modules/@nuxt/ui/dist/runtime/locale/en.js` 是否已提供，缺失即在调用处显式传入。
+
+### 16.4 无渲染桥接组件的空模板触发 `vue/valid-template-root`
+
+**结论：仅含注释的 `<template>` 会被 eslint-plugin-vue 判为「模板缺少子元素」；
+无渲染组件应写 `<slot />`（默认插槽为空即不产出节点），而不是空注释模板。**
+
+- **实例**：`progress-bridge.vue`（桥接 `useProgress()` 到模块级状态机的无渲染组件）
+  长期携带 1 个 lint error，导致 `pnpm lint` 非零退出（M3 已记录为「未处理」）。
+- **修法**：`<template><slot /></template>`，语义不变（无调用的默认插槽不渲染内容），
+  `pnpm lint` 恢复 0 error。
+- **注意**：`<slot />` 会把组件变成「透传默认插槽」，若误传内容会被渲染；
+  真正的「零输出」语义需靠调用方不提供插槽内容维持，故该类组件应保留「无渲染」注释说明。
+

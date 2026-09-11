@@ -2,6 +2,64 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### React 路由过渡动画优化：位移收敛 + 进出场分时（React 端，Vue 同源副本同步）（2026-09-11）
+
+- **背景（用户报障）**：页面切换时"退出与进入同时执行"，且动画范围会盖到标签栏 / 顶栏 / 侧边栏。
+- **诊断（CDP 驱动无头 Chromium 152 实测，非推断）**：
+  - **同步执行确认**：`startViewTransition` 的模型就是旧/新快照并行播放；9 预设中 7 个（除 reveal / circle）
+    old/new 时长相同且无 delay，两页互相"抢戏"（rise 一上一下对穿、fade 中点灰蒙）。
+  - **越界机理确认**：`::view-transition-old/new()` 是根级覆盖层（UA z-index 极高）里的位图，
+    只按视口裁剪。① 给它加 `overflow: clip` **实测不生效**（计算值为 clip 但不参与绘制裁剪）；
+    ② 给实时元素加 `clip-path: inset(0)` / `overflow: clip` 也管不到已捕获的快照；
+    ③ 冻结帧像素证据：`cover` 的 `translateX(100%)`＝960px 整幅横穿侧边栏，`rise` 的
+    `translateY(40px)` 把内容顶进标签栏（黑色内容条上移、红顶栏被吃掉一截）。
+  - **唯一有效兜底**：组盒 `::view-transition-group(main-content) { overflow: clip }`，
+    实测顶栏/侧边栏零污染（旧方案的所有候选逐个对照后仅此一项生效）。
+- **改动**（`react/src/styles/route-transitions.css` 为主，Vue 同源副本同步）：
+  - 位移/缩放收敛到"出不了盒"：纵向 ≤ 10px（rise 40→10 / glide 横向 22%→5% 且改小）、
+    `zoom` 外扩 1.08→1.02；**`cover` 的整幅横向平移改为盒内 `clip-path` 擦除**
+    （保留 iOS push 观感 + 按 `--rt-dir-x` 反转擦除方向）；`blur` 去掉缩放只留虚化。
+  - 进出场分时：新增 `--rt-exit`(0.6×) / `--rt-enter`(0.65×) / `--rt-stagger`(0.35×)，
+    新页 `animation-delay: var(--rt-stagger)`，**总时长仍等于基准 `--rt-duration`（420ms）**；
+    `fade` / `reveal` / `circle` 按语义保持不分时；reduced-motion 分支同步补新变量。
+  - 组盒兜底 `overflow: clip`；预设 id / 文案 / 偏好契约**均未改动**（`themes/route-transitions.ts` 未改）。
+- **验证**：
+  - 时序回归（CDP 读 `effect.getTiming()`）：glide / rise / zoom / blur = old 252ms+delay0 /
+    new 273ms+delay147（147+273=420）；fade / reveal / cover / circle = 420ms+0。**全部符合设计值**。
+  - 组盒裁切对照实验：`overflow: clip` 组盒的越界帧数为 0（其余候选与基线均有越界）。
+  - `pnpm run lint`（0 error，仅 4 条既有 `no-console` warning）+ Prettier 通过。
+  - **未完成/已知限制**：本机 Chrome/Edge 的 `Page.captureScreenshot` 会把 VT 覆盖层拍成终态
+    （暂停帧与真实时钟两种口径都试过），因此"过渡中的实际观感"未能在自动化里截图取证，
+    需人工在浏览器里逐预设目视确认一次（机制与像素级机理证据见 `docs/mechanisms.md` §0）。
+- **影响面**：仅动画表现层；未触及路由编排（`keep-alive-outlet.tsx`）、主题切换 VT、偏好存储与 API。
+- **顺带说明**：本次为验证曾临时启动本地 Nest（3000）与两个验证用 Vite 实例（3010 / 4173，
+  `VITE_API_BASE_URL` 指向 3000，因 CORS 白名单只含 `localhost:5173/5174/4173`），
+  未修改任何 env 文件；验证脚本与产物在 `.tmp-vt-verify/`（已清理）。
+
+### Vue M4 收尾：文档校正 + 本地冒烟，修复 4 项对齐缺陷（2026-09-11）
+
+- **范围**：按 `vue-plan.md` §M4 执行「文档收尾 + 本地冒烟」；**不含 Vercel 部署与线上冒烟**（由用户手动执行，待办见末段）。
+- **冒烟环境**：本地 Nest（`PORT=3100`——3000 被本机无关 Nuxt 应用占用）+ Vue dev（5173，`VITE_API_BASE_URL` 指向 3100）+ Edge headless CDP 驱动脚本（自建专属 tab、按 `aria-label`/文本驱动交互、逐页收集 console 异常与 ≥400 网络响应）。
+- **冒烟结果（全通过）**：
+  - 登录闭环 4/4：表单渲染 / 提交 / 离开登录页 / 主界面挂载。
+  - API 读端点 17/17：认证、用户、角色、权限、菜单（含 tree）、字典、日志、组织（含 tree）、岗位、通讯录、公告（含 mine）、站内信（含未读数）、账户资料；分页信封 `{ data, pagination: { page, pageSize, total } }` 全量核对。
+  - 全页走查 21/21：21 条路由逐一冷启动加载 + 网络监控，零 4xx、零应用级 console 异常、文档标题全量正确（含 `/exception/*` 与 `/403` `/404` `/500`）。
+  - M3 专项 8 项：用户列表数据渲染（5 条）/ 列设置面板 / 偏好设置抽屉 9 项 / 深色切换生效并持久化 / 恢复浅色 / 命令面板（Ctrl+K + 菜单分组 + 主题组）/ 应用内导航 + 多标签页新增 / 路由 VT 编排（`document.startViewTransition` 实测调用 1 次、`html[data-route-vt]` 置位 1 次）。
+  - 非登录态守卫 7 项：`/settings/users`、`/account`、`/exception/404`、catch-all 均带 `redirect` 跳登录。
+- **发现并修复 4 项缺陷**：
+  1. **`GET /roles//menus` 404**：`RolesPage` 的授权抽屉常驻挂载（`role=null` → `roleId=""`），`useGrantTree` 的 `roleMenusQuery` 缺 `enabled` 门控，页面加载即发空 id 请求 → 补 `enabled: computed(() => roleId() !== "")`（React 端抽屉按需挂载，无此问题；机制见 mechanisms §16.1）。
+  2. **独立错误页文档标题缺失**：`ROUTE_TITLE_KEYS` 无 `/403` `/404` `/500` → 标题回退裸品牌名；补 `errors.forbidden.title` / `errors.notFound.title` / `errors.serverError.title`（与 React `staticData.titleKey` 同键）。
+  3. **公告详情标题 / 面包屑 / 标签标题缺失**：标题映射只做精确匹配，动态路由 `/org/notices/:noticeId` 命中不到 → 新增 `ROUTE_TITLE_PREFIX_KEYS` + `resolveRouteTitleKey()`（精确优先、最长前缀兜底），文档标题（guards）/ 面包屑（AdminLayout）/ 标签标题（TagsBar）三处统一改用（机制见 mechanisms §16.2）。
+  4. **命令面板顶部渲染原始键名** `dashboardSearch.title` / `dashboardSearch.description`：`@nuxt/ui` 4.11.0 的 locale 包（zh_cn / en）该分组只有 `theme` 键，组件 `props.title || t('dashboardSearch.title')` 回退即露出键名 → `UDashboardSearch` 显式传 `title` / `description`（`layout.command.palette` / `layout.command.search`，机制见 mechanisms §16.3）。
+  - **顺带清理既有 lint error**：`progress-bridge.vue` 的空注释模板（`vue/valid-template-root`，M3 条目已记录「HEAD 已存在、未处理」）改为 `<slot />` 透传，`pnpm lint` 恢复 **0 error**（机制见 mechanisms §16.4）。
+- **未对齐项（已记录、未擅自修改，待用户拍板）**：React（路由 `beforeLoad`）与 Next（`proxy.ts`）对 `/403` `/404` `/500` 均要求登录（未登录 307 → `/sign-in?redirect=`），Vue 端这三条路径登记在 `PUBLIC_PATHS` 中匿名放行。统一需拆开 `PUBLIC_PATHS` 的双重职责（守卫放行 + 不进 AdminLayout 的全屏页判定），当前已在 `feature-matrix.md` 错误页行标注 `⚠️`。
+- **验证**：`pnpm lint`（0 error / 5 既有 warning）、`vue-tsc --noEmit`、`vitest`（82/82）、`vite build` **四绿**。
+- **文档**：`feature-matrix.md` 统计口径按行校正（基础设施实为 10 行，**23 项 → 27 项**，四端完成率重算：React / Next / Vue 各 26 项完成）+ 错误页行标注未对齐项；`mechanisms.md` 增补 §16（Vue 端 4 条机制结论）；`vue-plan.md` M4 标记完成（部署除外）；`AGENTS.md` §19 阶段指针同步。
+- **部署待办（用户手动执行）**：Vercel Root Directory = `vue`、`VITE_API_BASE_URL=https://nest.baiwumm.com/api`、Nest CORS 增加 `https://vue.baiwumm.com`；随后根 version → `pnpm sync-versions` → 单提交 `chore: release vX.Y.Z` → tag。
+- **环境备注（非应用问题，供后续排障参考）**：① Vite dev server 在 Windows 上编辑 `.vue` 时可能因文件监听 `EBUSY`（原子写临时目录被锁）整体退出，重启即可，HMR 日志可确认改动已应用；② 本机 Chrome `--remote-debugging-port` 不生效（Edge 可用），且 Edge 内置扩展会注入 `chrome-extension://` 与 `edge://` target——CDP 冒烟必须自建专属 tab，取「第一个 page」会连到无关页面；headless 关闭最后一个 tab 会自行退出；③ 工作区存在另一会话的并行改动（未跟踪目录 `.tmp-vt-verify/` 与 `react/src/styles/route-transitions.css`），本次未触碰。
+
+---
+
 ### Next 端路由过渡动画落地（React ViewTransition 方案）（2026-09-11）
 
 - **背景**：Next 端偏好抽屉的「路由动画 9 预设 / 速度」此前只写 `data-route-transition` / `data-rt-speed` 属性而无任何 CSS 消费（KeepAlive 放弃时未跟进），选项形同虚设；功能矩阵「偏好设置抽屉」行描述与实际不符。方案参考旧项目 better-next 的 layout 级 `<ViewTransition>` 用法（其 Next 16.0.10 + `import { ViewTransition } from 'react'` 靠 ignoreBuildErrors 绕过类型缺失）。
