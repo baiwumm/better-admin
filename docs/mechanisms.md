@@ -665,6 +665,32 @@ props 上的业务 id 在关闭态是空值；任何以该 id 为参数的 `useQ
 - **判定原则**：新增「全屏但需登录」的页面（如未来的独立结果页 / 授权回调页）时，
   只加入 `FULLSCREEN_PATHS`，**不要**加入 `PUBLIC_PATHS`。
 
+## 17. Vue 端命令式浏览器 API 收敛 VueUse + 进度条状态机响应式化（Vue 端，2026-09-12）
+
+**结论：「注册即忘」类监听（fullscreenchange / window keydown / ResizeObserver）一律用
+VueUse composable 托管，禁止手写 onMounted 注册 + onUnmounted 摘除对；非组件上下文
+（api-client / 路由守卫）与组件的通信一律「组件订阅响应式状态」，不做「组件向模块注入
+命令式引用」。**
+
+- **VueUse 三处等价替换的关键语义**（替换前已核对已安装 `@vueuse/core@14` 源码）：
+  - `useFullscreen()` 不传 target 默认作用于 `document.documentElement`，
+    内部 `tryOnMounted` 挂载时同步一次全屏态（等效原 onMounted 手动 sync）；
+  - `useEventListener(window, 'keydown', fn)` 注册随 setup 作用域自动摘除；
+  - `useResizeObserver([el1, el2], cb)` 支持数组 target（template ref 挂载后注册、
+    卸载自动断开）；ResizeObserver 规范保证 observe 后必派发一次初始回调，
+    等效原 onMounted 的手动首调，无需再显式初始化。
+- **进度条状态机（`lib/progress.ts`）响应式化**：原 React 平移的 `bindProgress()` 命令式
+  桥接（组件向模块注入 start/stop 引用 + 时序参数）改为——状态（`pendingCount` /
+  `routePending` / `active`）全部 ref 化，api-client / 路由守卫直接改状态；组件侧
+  progress-bridge.vue 只 `watchProgress()` 订阅展示态边沿驱动 bprogress。时序参数收敛为
+  状态机内常量（Vue 版 useProgress 不暴露 Provider 的时序 props，单一来源只能有一处）。
+- **边沿 delay 必须同步判定，不能放进 watch 回调**：watch 回调异步（flush 批处理），
+  若在回调里现算 delay，同 tick 内「路由触发后又来请求」会把路由场景 0ms 误判成请求
+  场景 200ms。故 `sync()` 在边沿时刻同步把 delay 写入 `activeStartDelay`，订阅侧只读取。
+- **冷启动窗口语义保持**：首屏导航在 `app.use(router)` 即触发，先于 Provider 内 bridge
+  挂载；期间置位的 `routePending` 不补发 start——与原 `bindProgress` 不回放 sync 的行为
+  一致（bprogress 冷启动首屏本就不出条）。
+
 
 ---
 

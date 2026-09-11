@@ -2,6 +2,15 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Vue 端「Vue 化」收敛：三处命令式 API 迁移 VueUse + 进度条状态机响应式化（2026-09-12）
+
+- **背景**：功能与 React 端对齐后的内部实现收敛评估（经用户拍板执行）。逐模块排查「React 移植痕迹」——手动事件监听 / Observer / DOM API / 命令式桥接——共 4 项可替换点；路由过渡 VT vs Vue 内置 `<Transition>` 经评估**维持现状**（VT 快照动画质量 + 与 React 端同源，机制见 `docs/mechanisms.md` §15）。全部改动为行为等价替换、UX 零变化，feature-matrix 不涉及。
+- **VueUse 三处**（API 先查 `vueuse-functions` Skill + 已安装源码核对）：FullscreenButton 手动 fullscreenchange → `useFullscreen`（无参默认 documentElement + 挂载同步）；DataTableBulkActions 手动 window keydown → `useEventListener`；TagsBar 手动 ResizeObserver（容器+内容双观察）→ `useResizeObserver` 数组 target（observe 初始派发等效原手动初始化）。净删 39 行生命周期样板。
+- **progress.ts 响应式化**：去除 `bindProgress` 命令式桥接——状态 ref 化、时序参数收敛为状态机常量、progress-bridge 改 `watchProgress` 订阅展示态边沿；关键点为边沿 delay 同步判定（watch 回调异步不能现算）与冷启动窗口不补发语义保持，详见 `docs/mechanisms.md` §17。
+- **验证**：`lint`（0 error，5 条存量 warning）/ `type-check` / `test`（85 用例）/ `build` 四绿。
+- **无需同步**：数据库 / OpenAPI 契约不涉及；React / Next / NestJS 端为各自技术栈惯用机制，无对应改动。
+- **挂起项**：4 处 localStorage 手动读写 → `useStorage` 挂起（跨标签页同步属行为新增，待需求出现再做）。
+
 ### 多标签页拖拽排序：React + Next 双端落地（2026-09-12）
 
 - **功能**：普通标签支持拖拽排序（控制台恒首位不可拖），标签上按住拖 = 排序、空白区按住拖 = 平移滚动、右键 / 中键关闭不受影响；拖起视觉 = 微放大 + 轻透明 + 高阴影。排序仅改展示序，sessionStorage 持久化与刷新恢复自动跟随。
