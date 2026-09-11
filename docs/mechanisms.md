@@ -608,3 +608,29 @@ props 上的业务 id 在关闭态是空值；任何以该 id 为参数的 `useQ
 - **注意**：`<slot />` 会把组件变成「透传默认插槽」，若误传内容会被渲染；
   真正的「零输出」语义需靠调用方不提供插槽内容维持，故该类组件应保留「无渲染」注释说明。
 
+### 16.5 「是否要求登录」与「是否全屏」是两个维度：`PUBLIC_PATHS` 不可两用（Vue 端）
+
+**结论：路由集合按职责拆分——`PUBLIC_PATHS` 只表达「无需登录」（仅登录页），
+`FULLSCREEN_PATHS` 表达「不套 AdminLayout」（登录页 + 独立错误页）。两者此前由同一个
+数组兼任，使「错误页匿名可访问」这一与 React / Next 不一致的行为被固化。**
+
+- **历史成因**：`PUBLIC_PATHS = ["/sign-in", "/403", "/404", "/500"]` 同时被
+  `isPublicPath()`（守卫放行）与 `isAdminLayoutRoute()`（布局分支 + VT 编排）消费。
+  要让错误页要求登录时，直接删元素会连带把错误页判成「认证态页面」→ 套上
+  AdminLayout（带侧边栏的错误页），与「全屏错误页」语义冲突。
+- **正确拆法**：`isAdminLayoutRoute()` 判据改为 `!isFullscreenPath(path)`；守卫的
+  `isPublicPath()` 随之只剩登录页——错误页自然落到「① 登录拦截」分支，未登录即
+  `/sign-in?redirect=<原路径>`（对齐 React `beforeLoad` / Next `proxy.ts`）。
+  catch-all 404 仍由路由 name（`/[...all]`）单独判定，不进 `FULLSCREEN_PATHS`。
+- **验证口径**（2026-09-11 实测，后端可用时取得）：
+  - 匿名访问 `/403` `/404` `/500` `/exception/403` `/settings/users` / catch-all
+    → 全部跳 `/sign-in?redirect=…`；
+  - 已登录访问 `/403` `/404` `/500` → 全屏渲染（正文仅错误页内容，无侧边栏 / Header），
+    文档标题为 `errors.*.title`；
+  - 已登录访问 `/exception/403` → 仍套 AdminLayout（异常页菜单语义不受影响）。
+- **连带影响面**：`isAdminLayoutRoute` 同被 `AppShell`（布局分支）与 `KeepAliveOutlet`
+  （路由过渡编排：仅布局内页面切换才播放）消费——拆分后错误页不再参与主体区 VT，
+  与 React（VT 挂在 admin-shell 的 `<main>` 上、全屏页不在其中）口径一致。
+- **判定原则**：新增「全屏但需登录」的页面（如未来的独立结果页 / 授权回调页）时，
+  只加入 `FULLSCREEN_PATHS`，**不要**加入 `PUBLIC_PATHS`。
+

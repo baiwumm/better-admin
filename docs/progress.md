@@ -2,6 +2,21 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Vue 端错误页登录要求对齐 React / Next（2026-09-11）
+
+- **需求**：用户确认 `/403` `/404` `/500` 在 Vue 端也要求登录，与 React 端保持一致。
+- **根因**：`vue/src/lib/route-access.ts` 的 `PUBLIC_PATHS` 一个数组兼任两个维度——`isPublicPath()`（守卫放行）与 `isAdminLayoutRoute()`（布局分支 + VT 编排）；直接删元素会让错误页被判成认证态页面、套上 AdminLayout（带侧边栏的错误页），故此前只做了记录而未被对齐。
+- **改动**：
+  - `PUBLIC_PATHS` 收敛为 `["/sign-in"]`（语义＝无需登录）；
+  - 新增 `FULLSCREEN_PATHS = ["/sign-in", "/403", "/404", "/500"]` + `isFullscreenPath()`（语义＝不套 AdminLayout）；
+  - `isAdminLayoutRoute()` 判据由 `!isPublicPath` 改为 `!isFullscreenPath`（`AppShell` 布局分支与 `KeepAliveOutlet` VT 编排同步受益：错误页不再参与主体区过渡）；
+  - `router/guards.ts` 注释同步；`lib/__tests__/route-access.test.ts` 重写用例（7 → 10 条，覆盖两个集合的职责边界与 `/exception/403` 反例）。
+- **验证（后端可用时实测）**：匿名访问 `/403` `/404` `/500` `/exception/403` `/settings/users` / catch-all → **6/6 全部跳 `/sign-in?redirect=…`**（与 Next 端 307 行为一致）；已登录访问 `/403` `/404` `/500` → 全屏渲染（正文无侧边栏 / Header，文档标题 `errors.*.title`）；已登录访问 `/exception/403` → 仍套 AdminLayout；全页走查 **21/21**。四绿：`lint`（0 error）/ `vue-tsc` / `vitest`（**85/85**）/ `vite build`。
+- **未完成的验证（环境阻塞，非代码问题）**：带 `redirect` 参数的登录回跳链路本应一并复验，但本地后端进入故障态（Nest `POST /api/auth/login` 超时 / 500，日志为 `users` 表查询 `Failed query`；同期 Next 实例登录曾正常、随后 3001 停止），且 3100 端口被另一个无关项目（`theme-switch-animation` 的 Nuxt dev `--port 3100`）抢占，无法取得干净环境。**该回跳属登录页既有逻辑（本次未改动）**；改动后「回跳落点 ＝ 已登录访问 `/403`」的终态已单独验证通过（见上），据此判断不破坏该链路。**建议后端恢复后补一次端到端复验**，并留意排查 Nest 侧 `users` 表查询失败（同库的 Next 实例正常，指向 Nest 连接 / schema 层而非数据库本身）。
+- **机制沉淀**：mechanisms §16.5。
+
+---
+
 ### React 路由过渡动画优化：位移收敛 + 进出场分时（React 端，Vue 同源副本同步）（2026-09-11）
 
 - **背景（用户报障）**：页面切换时"退出与进入同时执行"，且动画范围会盖到标签栏 / 顶栏 / 侧边栏。

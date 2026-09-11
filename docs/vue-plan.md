@@ -197,9 +197,26 @@ vue/src/pages/
 
 ### M4 — 部署与文档收尾
 
-- Vercel 部署 `vue.baiwumm.com`（Root Directory = `vue`，`VITE_API_BASE_URL` 指向 `https://nest.baiwumm.com`，Nest CORS 增加该域名）；根 version 同步 + `pnpm sync-versions` + tag。
-- 文档：feature-matrix Vue 列全量更新（Dashboard 保持 ❌）；mechanisms.md 增补 Vue KeepAlive 简化条目；progress.md 置顶各阶段条目。
-- 验收：线上冒烟（登录 → 模块走查 → 暗色/英文）；统计与实际一致。
+> **进度（2026-09-11）**：**文档收尾 ✅**（feature-matrix 统计口径按行校正为 27 项 + 错误页行标注未对齐项 / mechanisms §16 四条机制结论 / progress.md 置顶条目 / AGENTS §19 指针）、**本地冒烟 ✅**（登录闭环 + API 17 端点 + 21 路由走查含网络监控 + M3 专项 8 项；发现并修复 4 项对齐缺陷，另清理 1 项既有 lint error；`lint` / `type-check` / `test` / `build` 四绿）。**Vercel 部署与线上冒烟未执行**——按用户指示由用户手动完成。
+
+- **部署（待用户手动执行）**：Vercel Root Directory = `vue`、`VITE_API_BASE_URL` 指向 `https://nest.baiwumm.com/api`、Nest CORS 增加 `https://vue.baiwumm.com`；随后根 version 同步 + `pnpm sync-versions` + 单提交 `chore: release vX.Y.Z` + tag。
+- 文档 ✅：feature-matrix Vue 列全量更新（Dashboard 保持 ❌）；mechanisms.md 增补 Vue 机制条目（**§16**：常驻挂载查询 enabled 门控 / 动态路由标题前缀匹配 / Nuxt UI locale 缺键 / 无渲染组件模板）；progress.md 置顶 M4 条目。
+- 验收：线上冒烟（登录 → 模块走查 → 暗色 / 英文）← **待用户手动**；统计与实际一致 ✅（27 项口径，Vue 26 项完成）。
+
+### M4 冒烟修复清单（2026-09-11）
+
+| # | 缺陷 | 根因 | 修复 |
+| --- | --- | --- | --- |
+| 1 | `GET /roles//menus` 404 | 授权抽屉常驻挂载（`role=null` → `roleId=""`），`roleMenusQuery` 无 `enabled` 门控 | `enabled: computed(() => roleId() !== "")` |
+| 2 | `/403` `/404` `/500` 文档标题缺失 | `ROUTE_TITLE_KEYS` 无错误页条目 | 补 `errors.*.title` 三条（与 React `staticData.titleKey` 同键） |
+| 3 | 公告详情标题 / 面包屑 / 标签标题缺失 | 标题映射仅精确匹配，动态路由命中不到 | 新增 `ROUTE_TITLE_PREFIX_KEYS` + `resolveRouteTitleKey()`，三处消费点统一 |
+| 4 | 命令面板显示原始键名 `dashboardSearch.title` | `@nuxt/ui` 4.11.0 locale 包该分组只有 `theme` 键 | `UDashboardSearch` 显式传 `title` / `description` |
+| 5 | `pnpm lint` 1 error | `progress-bridge.vue` 空注释模板（既有，M3 已记录） | 改 `<slot />` 透传 |
+| 6 | `/403` `/404` `/500` 匿名可访问（与 React / Next 不一致） | `PUBLIC_PATHS` 单数组兼任「无需登录」与「不套 AdminLayout」两个维度 | 拆为 `PUBLIC_PATHS`（仅 `/sign-in`）+ `FULLSCREEN_PATHS`（含错误页），`isAdminLayoutRoute` 改用后者（用户 2026-09-11 确认对齐 React） |
+
+**已对齐（原「待用户拍板」项）**：React / Next 对独立错误页要求登录，Vue 端匿名放行——用户 2026-09-11 确认统一为「要求登录」，本次按上表第 6 项完成，`PUBLIC_PATHS` 双重职责已拆分（机制见 `mechanisms.md` §16.5）。
+
+**M4 遗留**：带 `redirect` 的登录回跳链路因本地后端故障（Nest `users` 表查询失败 / 端口被无关项目占用）未能在本次复验，建议后端恢复后补一次端到端验证（详见 `docs/progress.md` 置顶条目）。
 
 ### 范围外
 

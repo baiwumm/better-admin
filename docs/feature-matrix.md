@@ -54,7 +54,7 @@
 | 多标签页              | ✅     | ✅       | ✅   | ❌    | Vue M3（2026-09-11）落地并 GUI 冒烟通过：tabs-model 纯函数与 32 用例原样平移、Pinia tabs-store（sessionStorage 持久化 + 标题快照）；TagsBar（固定控制台 / 关闭热区 / 中键关闭 / UContextMenu 六动作 / 横向滚动 mask+chevron+滚轮+拖拽 / 进场动画）；KeepAliveOutlet = 原生 `<KeepAlive :include :max=10>`，include = 已打开标签 ∩ 菜单 keepAlive（关闭即销毁），刷新 = key 序号重挂载 + include 摘一拍清旧缓存；显隐开关已接偏好；页面切换 VT 编排（2026-09-11）已落地：beforeResolve/afterEach 编排（真旧帧 → 提交 → 新帧）、data-route-vt 门控、按菜单层级深度的导航方向感知（data-rt-direction 反转位移类动画）、标签刷新复用同套 VT |
 | DataTable 列设置        | ✅     | ✅       | ✅   | ❌    | 可见性勾选 + 拖拽排序（`column-setting:{userId}:{routePath}` 持久化，两端互读）；Vue M3（2026-09-11）回收并 GUI 冒烟通过：DataTableViewOptions（UPopover + useSortable 手柄拖拽）+ column-setting 纯函数（v1 旧格式兼容，9 用例）、页面级 table 实例 columnVisibility/columnOrder 经 DataTable v-model 桥接 UTable；10 个列表页全量接入（MenusPage 影子实例模式） |
 | 命令面板              | ✅     | ✅       | ✅   | ❌    | Vue M0 接 UDashboardSearch；M3（2026-09-11）对齐 React 端 command-menu：菜单树按顶层分组拍平（多级显示「父级 › 页面」）+ searchText 键（祖先链/分组名可被搜索）+ 快捷链接组 + 自建主题组（走 design-theme-store 带揭示动画，关闭内置 colorMode 组） |
-| 错误页（403/404/500）  | ✅     | ✅       | ✅   | ❌    | 四端统一跳转独立全屏页（React 2026-09-09 回滚直显改造对齐 Next/Vue，机制各自、行为一致）；Vue M0：全屏错误页 + catch-all 404；2026-09-09 Vue 同步 React Result 风格（ant-design 插画 + ResultPage 结构，替代纯文本大数字壳） |
+| 错误页（403/404/500）  | ✅     | ✅       | ✅   | ❌    | 四端统一跳转独立全屏页（React 2026-09-09 回滚直显改造对齐 Next/Vue）；Vue M0：全屏错误页 + catch-all 404；2026-09-09 Vue 同步 React Result 风格（ant-design 插画 + ResultPage 结构，替代纯文本大数字壳）。**四端登录要求已统一（2026-09-11）**：`/403` `/404` `/500` 均要求登录（未登录 → `/sign-in?redirect=<原路径>`），Vue 端此前登记在 `PUBLIC_PATHS` 中匿名放行、本次按 React `beforeLoad` / Next `proxy.ts` 口径对齐——`PUBLIC_PATHS` 收敛为仅登录页，另立 `FULLSCREEN_PATHS`（登录页 + 错误页）承担「不套 AdminLayout」判定，两个维度解耦（机制见 `mechanisms.md` §16.5）；Vue 端文档标题补齐（`errors.*.title`，与 React `staticData.titleKey` 同键） |
 | 异常页菜单（/exception/*） | ✅     | ✅       | ✅   | ❌    | 错误页 Result 风格的菜单化展示（embedded 撑满主体区，FULL_WIDTH 白名单），菜单数据配置于 sys_menus（超管免授权可见）；Vue 2026-09-09 已对齐（(authenticated)/exception/* 三页 + AdminLayout 全宽白名单 + 文档标题键） |
 | 路由权限守卫            | ✅     | ✅       | ✅   | ❌    | React: KeepAlive / Next: proxy.ts / Vue M0: 全局 beforeEach 三层；M1 冒烟验收通过 |
 | 路由过渡动画            | ✅     | ✅       | ✅   | ❌    | 9 预设 + 3 档速度 + 方向反转 + reduced-motion 降级，偏好设置驱动（route-transition/rt-speed）。React：手动 startViewTransition + displayedPath 双缓冲（main-content 具名组 + data-route-vt 门控）；Next（2026-09-11 落地）：React `<ViewTransition>`（experimental.viewTransition）包 admin-shell 的 `<main>`，导航即 Transition 自动触发 update，class 选择器 `.rt rt-<id>` 消费，`lib/route-direction.ts` 在 6 个导航入口写方向标记，标签刷新经 startTransition 重播，主体区滚动回顶；Vue：lib/route-vt + KeepAliveOutlet 编排。浏览器前进/后退按钮无方向信号为三端一致的已知边界 |
@@ -72,12 +72,12 @@
 
 | 技术栈     | 已完成 | 未完成 | 完成率 |
 | ------- | --- | --- | --- |
-| React   | 22  | 1   | 96% |
-| Next.js | 22  | 1   | 96% |
-| Vue     | 21  | 2   | 91% |
-| Nuxt    | 0   | 23  | 0%  |
+| React   | 26  | 1   | 96% |
+| Next.js | 26  | 1   | 96% |
+| Vue     | 26  | 1   | 96% |
+| Nuxt    | 0   | 27  | 0%  |
 
-> 统计口径（2026-09-08 按行修正）：核心业务模块 9 项 + 组织中心 8 项 + 基础设施 6 项 = **23 项**（Dashboard 计入核心业务模块）。
+> 统计口径（2026-09-11 按行校正）：核心业务模块 9 项 + 组织中心 8 项 + 基础设施 10 项（含「路由过渡动画」行）= **27 项**（Dashboard 计入核心业务模块）。此前"23 项"的表述与表格实际行数不符（基础设施实为 10 行而非 6 行），本次按行修正，各端完成率随之重算。
 > 上表不含"已知架构差异"行。
-> Vue 端：M0（2026-09-05）工程基建与骨架；M1（2026-09-06）六模块 RBAC 冒烟验收通过；M2（2026-09-08）组织中心 8 项全量落地（2026-09-09 GUI 冒烟验收全部通过）；M3（2026-09-11）全部落地并 GUI 冒烟通过：偏好设置补齐 / 多标签页 + 页面切换 VT / DataTable 列设置 / 我的账户 / 命令面板对齐；仅剩「Dashboard」（各端均未实现，P3）。方案见 `docs/vue-plan.md`。
+> Vue 端：M0（2026-09-05）工程基建与骨架；M1（2026-09-06）六模块 RBAC 冒烟验收通过；M2（2026-09-08）组织中心 8 项全量落地（2026-09-09 GUI 冒烟验收全部通过）；M3（2026-09-11）偏好设置补齐 / 多标签页 + 页面切换 VT / DataTable 列设置 / 我的账户 / 命令面板对齐；M4（2026-09-11）文档收尾 + 本地冒烟通过——27 项中 26 项完成、仅剩 Dashboard；**Vercel 部署与线上冒烟由用户手动执行**。M4 冒烟另发现并修复 4 项缺陷，清单与根因见 `docs/progress.md` 置顶条目。方案见 `docs/vue-plan.md`。
 
