@@ -25,7 +25,7 @@
 
 两个 Gate 均达成后，按 **Phase 0 演示上线准备 → Phase C Dashboard → Phase A → Phase B Playground** 顺序推进；每个 Phase 完成后按 `AGENTS.md` §10 提交并更新 `progress.md`。
 
-> Phase 0 排在 Dashboard 之前的原因：Dashboard 的趋势图与 KPI 环比依赖有时间分布的日志 / 用户数据，用 faker 数据集开发才看得到真实效果。Phase 0 中的重置脚本可在 Gate 达成前先行开发验证（本地与线上共用同一 Supabase 库，脚本验证即一次真实重置，跑完可继续开发，Gate 后再洗一次），但**开启 `DEMO_MODE` 切入演示模式一律在 Gate 之后**。
+> Phase 0 排在 Dashboard 之前的原因：Dashboard 的趋势图与 KPI 环比依赖有时间分布的日志 / 用户数据，用 faker 数据集开发才看得到真实效果。**Phase 0 全部工作（含 faker 重置脚本的开发与验证）一律在 Gate 达成后启动**；本地与线上共用同一 Supabase 库，脚本验证即一次真实重置，跑完可继续开发，Gate 后再洗一次并开启 `DEMO_MODE`。
 
 ---
 
@@ -91,7 +91,7 @@
 
 ### 3.6 实施顺序
 
-1. [ ] faker 重置脚本（含头像转存）验证通过：本地与线上共用同一 Supabase 库，验证即一次真实重置，跑完可继续开发，上线前再洗一次（可先于 Gate）
+1. [ ] faker 重置脚本（含头像转存）开发并在共用库验证通过：验证即一次真实重置，跑完可继续开发，Gate 后上线前再洗一次
 2. [ ] OpenAPI v1.9.0（demo-login + `DEMO_READONLY`）
 3. [ ] Nest：`DemoReadonlyGuard` + `@DemoAllowed` + 过滤器排除 + 拦截器 GET 跳过 + demo-login + cleanup 跳过 seed + 超管双保险
 4. [ ] React / Vue：登录页两按钮 + 拦截器 toast + i18n
