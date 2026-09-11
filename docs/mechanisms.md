@@ -25,7 +25,7 @@
   实测可完全消除顶栏/侧边栏污染，且对忽略该属性的内核会退化为原行为、无害。
 - **落地**：`react/src/styles/route-transitions.css`（提交 `c0dd121`）与 Vue 端同源副本
   （规则层已逐条对齐，仅差 Vue 特有的 `.route-vt-main` 承载规则）；
-  **Next 端尚未同步，见本节 §0.1。**
+  **Next 端已于 2026-09-11 同步，选择器形态不同但关键帧/变量语义逐字一致，见本节 §0.1。**
 
 **结论二：View Transition 的旧/新快照默认同时起跑同时收尾（`startViewTransition` 的模型），
 可用 `animation-delay` + `fill-mode: both` 拆成"旧页先行、新页压后"，且**总时长不变**。**
@@ -43,29 +43,34 @@
   （暂停帧与真实时钟两种口径都试过），因此"过渡中帧"不能用它验证；用冻结帧 + 逐像素读取
   或用 `getComputedStyle(el, '::view-transition-…')` 读关键帧值更可靠。
 
-### 0.1 待同步：Next 端 `route-transitions.css` 仍是旧参数（2026-09-11 标记，按指示暂不动）
+### 0.1 Next 端同步落地（2026-09-11，原「待同步」清单已全部执行）
 
-**结论：上面的修复目前只在 React（`c0dd121`）与 Vue（同源副本，规则层已对齐）落地；
-`next/src/styles/route-transitions.css` 仍是旧参数——动画偏大、无分时、`reveal`/`circle` 多 60ms
-尾巴。按用户指示本轮不修改 Next，仅在此登记，后续同步时按下列清单逐条比对。**
+**结论：`next/src/styles/route-transitions.css` 已按 React 端同源参数对齐「位移收敛 + 进出场分时」；
+仅选择器形态因编排机制不同而不同，关键帧与 CSS 变量语义三端逐字一致。**
 
-- **Next 待同步差异点（对齐 React 的核对清单）**：
-  1. `:root` 补 `--rt-exit` / `--rt-enter` / `--rt-stagger` 三个派生变量；
+- **Why 选择器不同**：Next 端编排由 React `<ViewTransition update="rt rt-<id>">` 承担，组名由 React
+  自动分配、无法静态书写，故只能按**共用类** `::view-transition-old/new(.rt-<id>)` 命中
+  （`.rt` 只在路由 VT 期间挂到 `<main>`，第三方 VT（toast / 主题切换）无从命中，天然不需要门控）；
+  React / Vue 用手动 `startViewTransition` + `view-transition-name: main-content`，故用
+  `::view-transition-old/new(main-content)` + `html[data-route-vt]` 门控。
+- **Next 已落地（对齐核对清单）**：
+  1. `:root` 补 `--rt-exit`（0.6×基准）/ `--rt-enter`（0.65×基准）/ `--rt-stagger`（0.35×基准）；
   2. `glide` / `rise` / `zoom` / `blur` 改为**分时**：old 用 `var(--rt-exit)`、
-     new 用 `var(--rt-enter) … var(--rt-stagger)`；
+     new 用 `var(--rt-enter) … var(--rt-stagger)`（总时长 = `--rt-duration` 不变）；
   3. `reveal` / `circle` 去掉 `calc(var(--rt-duration) + 60ms)` 尾巴，回归 `var(--rt-duration)`；
   4. 幅度收敛：`glide` 横向 14% / 22% → 4% / 5%；`rise` 位移 -20px / 40px → -6px / 10px；
      `zoom` 1.08 / 0.94 → 1.02 / 0.99；`blur` 去掉 `scale`、blur 10px → 8px；
   5. `cover` 由整幅横向平移改为**盒内 `clip-path` 擦除**（`rt-cover-in` 换成
-     `inset(0 0 0 100%) → inset(0 0 0 0)`），并新增 `rt-cover-in-reverse` 与
-     `html[data-rt-direction="back"] ::view-transition-new(.rt-cover) { animation-name: … }`；
-  6. 组盒兜底 `overflow: clip`——Next 端组名由 React 自动分配、无法静态书写，用
-     `::view-transition-group(.rt)` 形式并收在 `@media (prefers-reduced-motion: no-preference)` 内，
-     避免波及第三方 VT；reduced-motion 分支同时补上上面三个变量归零。
-- **选择器形态差异（同步时注意，关键帧与变量语义必须逐字一致）**：
-  Next 用 `::view-transition-old/new(.rt-<id>)` 类选择器（依赖
-  `<ViewTransition update="rt rt-<id>">` 写入的 `view-transition-class`），
-  React / Vue 用 `::view-transition-old/new(main-content)` + `html[data-route-vt]` 门控。
+     `inset(0 0 0 100%) → inset(0 0 0 0)`），新增 `rt-cover-in-reverse` 与
+     `html[data-rt-direction="back"]::view-transition-new(.rt-cover) { animation-name: rt-cover-in-reverse }`；
+  6. 组盒兜底 `overflow: clip`——用 `::view-transition-group(.rt)` 形式并收在
+     `@media (prefers-reduced-motion: no-preference)` 内（无动画时不生效，也不波及第三方 VT）；
+     reduced-motion 分支补上面三个变量归零。
+- **保持不分时的预设**：`fade`（语义即交叉淡化，全程重叠）、`reveal` / `circle`（本就是
+  「旧页静止被覆盖」）——与 React 端一致。
+- **验证**：经项目真实 CSS 管线（Tailwind v4 `@tailwindcss/postcss`）编译 `globals.css` 通过；
+  产物中确认反向擦除规则、组盒兜底、`var(--rt-stagger)` 分时均在位，旧参数
+  （`scale(1.08)` / `translateX(22%)`）已消失；`prettier --check` 通过。
 
 ---
 

@@ -2,6 +2,31 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 路由过渡动画：Next 端同步 React 的「位移收敛 + 进出场分时」两条硬约束（2026-09-11）
+
+- **背景**：`docs/mechanisms.md` §0.1 登记的 6 条 Next 待同步差异点，本轮按 React 端同源参数逐条对齐
+  （React 是 Source of Truth；Vue 早已同源）。
+- **改动（仅 `next/src/styles/route-transitions.css`，无 TS/JSX 变动）**：
+  - **位移/缩放收敛到"出不了盒"**：`glide` 横向 14% / 22% → 4% / 5%；`rise` -20px / 40px → -6px / 10px；
+    `zoom` 1.08 / 0.94 → 1.02 / 0.99；`blur` 去掉 `scale` 且 blur 10px → 8px；
+  - **`cover` 由整幅横向平移（`translateX(100%)`，会整幅横穿侧边栏）改为盒内 `clip-path` 擦除**，
+    新增 `rt-cover-in-reverse` + `html[data-rt-direction="back"]::view-transition-new(.rt-cover)`
+    反转擦除方向（保留 iOS push 观感）；
+  - **进出场分时**：`:root` 补 `--rt-exit`(0.6×) / `--rt-enter`(0.65×) / `--rt-stagger`(0.35×)，
+    `glide` / `rise` / `zoom` / `blur` 新页加 `animation-delay: var(--rt-stagger)`，
+    **总时长仍 = 基准 `--rt-duration`（420ms）**；`fade` / `reveal` / `circle` 按语义保持不分时；
+  - `reveal` / `circle` 去掉多出的 `+60ms` 尾巴，回归 `var(--rt-duration)`；
+  - 组盒兜底 `::view-transition-group(.rt) { overflow: clip }`，收在
+    `@media (prefers-reduced-motion: no-preference)` 内；reduced-motion 分支补三个新变量归零。
+  - **保留选择器形态差异**：Next 走 `::view-transition-old/new(.rt-<id>)` 类选择器
+    （React `<ViewTransition update="rt rt-<id>">` 写入 `view-transition-class`），
+    与 React / Vue 的 `main-content` 具名组 + `data-route-vt` 门控不同，**关键帧与变量语义逐字一致**。
+  - 预设 id / 文案 / 偏好契约未动（`themes/route-transitions.ts` 未改）。
+- **验证**：经项目真实 CSS 管线（Tailwind v4 `@tailwindcss/postcss`）编译 `globals.css` 通过；
+  产物中确认反向擦除规则、组盒兜底、`var(--rt-stagger)` 分时均在位，旧参数（`scale(1.08)` / `translateX(22%)`）已消失；
+  `prettier --check` 通过。**未运行 `next build`，也未在浏览器逐预设目视确认——建议人工复核一次观感**（本机截图口径对 VT 覆盖层不可靠，见 §0 排查提醒）。
+- **文档**：`docs/mechanisms.md` §0.1 由「待同步」改为「已同步」；`docs/feature-matrix.md` 路由过渡行动画参数备注同步。
+
 ### 路由过渡动画：Next 端暂不同步（仅登记）+ reveal 语义确认（2026-09-11）
 
 - **用户反馈**：`reveal` 观感"有点怪"——新页扫入覆盖完成后旧页才消失；随后决定「就这样」，但要求
@@ -20,6 +45,8 @@
   - 待同步差异点（6 条：派生变量 / 四个预设分时 / reveal+circle 去 60ms 尾巴 / 幅度收敛 /
     cover 改盒内擦除 + 反向擦除 / 组盒 `overflow: clip` 的 Next 写法）**逐条登记在
     `docs/mechanisms.md` §0.1**，后续同步时直接照单比对即可。
+- **后续（2026-09-11 晚些时候）**：上述 6 条差异点已在 Next 端全部落地，
+  见上方「Next 端同步 React 的…」条目；`mechanisms.md` §0.1 已由「待同步」改为「已同步」。
 
 ---
 

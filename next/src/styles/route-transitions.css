@@ -18,10 +18,28 @@
  * 过渡只作用于主体内容——侧边栏 / 顶栏等布局区域不参与（root 组保持
  * theme-transition.css 的 animation: none，瞬间切换）。
  *
- * 设计原则（与 React 版一致）：
+ * ── 2026-09-11 与 React 端同步修订：位移量收敛 + 进出场分时 ──
+ *
+ * 1) **位移/缩放幅度必须"画在自己盒子里"**。View Transition 快照是挂在
+ *    `::view-transition` 覆盖层（只按视口裁剪）里的位图，`overflow: clip`
+ *    加在 `::view-transition-old/new()` 上在 Chromium 实测不生效；位移多少
+ *    快照就真的会越过主体区边界压到标签栏 / 顶栏 / 侧边栏上。故：
+ *    - 横向位移全部取消（`cover` 改为盒内 `clip-path` 擦除）；
+ *    - 纵向位移收敛到 ≤ 10px；`zoom` 离场缩放由 1.08 → 1.02；
+ *    - 兜底：组盒 `overflow: clip`（对支持的内核可夹住越界，不支持也无害）。
+ * 2) **进出场分时**：`--rt-exit` / `--rt-enter` + `animation-delay: var(--rt-stagger)`
+ *    让旧页先行、新页压后进场（fill-mode both 保证延迟期间新页停在首帧，
+ *    不提前露脸），**总时长仍等于基准 `--rt-duration`**，不改变用户感知的
+ *    过渡长度；`fade` 语义就是交叉淡化、`reveal` / `circle` 本就是「旧页静止
+ *    被覆盖」，按语义保持不分时。
+ *
+ * 详细背景与实测记录见 React 端同源文件与 docs/mechanisms.md §0。
+ *
+ * 设计原则：
  * - 新旧双侧协同运动：旧页「离场」+ 新页「进场」各有关键帧，动效完整；
- * - 幅度足够可感知（位移 / 缩放比例加大），曲线统一 easeOut 减速，收尾自然；
- * - reveal 为「新页覆盖揭示」，新页全程不透明，避免叠层穿帮。
+ * - 位移克制但方向清晰，曲线统一 easeOut 减速，收尾自然；
+ * - 覆盖类（cover / reveal / circle）新页全程不透明，靠 clip-path 揭示，
+ *   杜绝叠层穿帮，也天然不会越界。
  */
 
 :root {
@@ -31,8 +49,13 @@
   --rt-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   /* 导航方向系数：前进 1 / 后退 -1（html[data-rt-direction="back"]，由
      lib/route-direction.ts 在导航发起时按菜单层级深度判定），用于反转
-     位移类动画方向。 */
+     位移 / 擦除方向。 */
   --rt-dir-x: 1;
+
+  /* 离场段 / 进场段时长 + 分时间隔（三者之和 = --rt-duration，总时长不变） */
+  --rt-exit: calc(var(--rt-duration) * 0.6);
+  --rt-enter: calc(var(--rt-duration) * 0.65);
+  --rt-stagger: calc(var(--rt-duration) * 0.35);
 }
 
 html[data-rt-speed="slow"] {
@@ -47,7 +70,19 @@ html[data-rt-direction="back"] {
   --rt-dir-x: -1;
 }
 
-/* ── fade：柔和淡化（交叉淡化，最克制） ── */
+/* 组盒兜底裁切：把命名组的绘制内容夹在主体区的盒子里。
+   Next 的组名由 React 自动分配（view-transition-name 自动生成，无法静态书写），
+   故按共用类 `.rt` 命中：`.rt` 只在路由 VT 期间挂到 <main>，第三方 VT 无从命中，
+   不波及 toast / 主题切换。收在 prefers-reduced-motion: no-preference 内，只在
+   会真正播放动画时生效；对支持的内核可彻底夹住越界，忽略该属性的内核退化为
+   原行为、无害。 */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(.rt) {
+    overflow: clip;
+  }
+}
+
+/* ── fade：柔和淡化（交叉淡化，最克制；保持全程重叠，不分时） ── */
 ::view-transition-old(.rt-fade) {
   animation: rt-fade-out var(--rt-duration) var(--rt-ease) both;
 }
@@ -55,39 +90,41 @@ html[data-rt-direction="back"] {
   animation: rt-fade-in var(--rt-duration) var(--rt-ease) both;
 }
 
-/* ── glide：视差推滑（旧页浅移淡出，新页深位跟进，Material shared-axis 风格） ── */
+/* ── glide：视差推滑（旧页轻移淡出，新页自侧位跟进；位移 ≤ 5% 不出盒） ── */
 ::view-transition-old(.rt-glide) {
-  animation: rt-glide-out var(--rt-duration) var(--rt-ease) both;
+  animation: rt-glide-out var(--rt-exit) var(--rt-ease) both;
 }
 ::view-transition-new(.rt-glide) {
-  animation: rt-glide-in var(--rt-duration) var(--rt-ease) both;
+  animation: rt-glide-in var(--rt-enter) var(--rt-ease) var(--rt-stagger) both;
 }
 
-/* ── rise：浮现上升（旧页上飘离场，新页自下方浮升进入） ── */
+/* ── rise：浮现上升（旧页上浮离场，新页自下方浮升进入；位移收敛到 10px） ── */
 ::view-transition-old(.rt-rise) {
-  animation: rt-rise-out var(--rt-duration) var(--rt-ease) both;
+  animation: rt-rise-out var(--rt-exit) var(--rt-ease) both;
 }
 ::view-transition-new(.rt-rise) {
-  animation: rt-rise-in var(--rt-duration) var(--rt-ease) both;
+  animation: rt-rise-in var(--rt-enter) var(--rt-ease) var(--rt-stagger) both;
 }
 
-/* ── zoom：纵深缩放（旧页向镜头推进消失，新页自深处放大浮出，iOS push 风） ── */
+/* ── zoom：纵深缩放（旧页轻推向镜头，新页自略深处浮出；外扩 ≤ 1.02） ── */
 ::view-transition-old(.rt-zoom) {
-  animation: rt-zoom-out var(--rt-duration) var(--rt-ease) both;
+  animation: rt-zoom-out var(--rt-exit) var(--rt-ease) both;
 }
 ::view-transition-new(.rt-zoom) {
-  animation: rt-zoom-in var(--rt-duration) var(--rt-ease) both;
+  animation: rt-zoom-in var(--rt-enter) var(--rt-ease) var(--rt-stagger) both;
 }
 
 /* ── reveal：揭示展开（新页自左向右扫入覆盖；全程不透明，旧页静止被遮盖） ── */
 ::view-transition-old(.rt-reveal) {
-  animation: rt-reveal-dim calc(var(--rt-duration) + 60ms) var(--rt-ease) both;
+  animation: rt-reveal-dim var(--rt-duration) var(--rt-ease) both;
 }
 ::view-transition-new(.rt-reveal) {
-  animation: rt-reveal-in calc(var(--rt-duration) + 60ms) var(--rt-ease) both;
+  animation: rt-reveal-in var(--rt-duration) var(--rt-ease) both;
 }
 
-/* ── cover：覆盖推入（iOS push 风：新页整屏自右滑入覆盖，旧页静止微缩退让） ── */
+/* ── cover：覆盖揭示（iOS push 语义：旧页静止微暗，新页自导航方向擦入覆盖）
+ *    原实现用 translateX(100%) 整幅横穿侧边栏，已改为盒内 clip-path 擦除——
+ *    保留"推入"观感，但快照永不离开主体区的盒子。 ── */
 ::view-transition-old(.rt-cover) {
   animation: rt-cover-out var(--rt-duration) var(--rt-ease) both;
 }
@@ -95,20 +132,25 @@ html[data-rt-direction="back"] {
   animation: rt-cover-in var(--rt-duration) var(--rt-ease) both;
 }
 
-/* ── circle：圆形揭示（新页以光圈自中心展开覆盖；全程不透明避免穿帮） ── */
-::view-transition-old(.rt-circle) {
-  animation: rt-reveal-dim calc(var(--rt-duration) + 60ms) var(--rt-ease) both;
-}
-::view-transition-new(.rt-circle) {
-  animation: rt-circle-in calc(var(--rt-duration) + 60ms) var(--rt-ease) both;
+/* 后退时擦除方向反转（内容自左向右擦入） */
+html[data-rt-direction="back"]::view-transition-new(.rt-cover) {
+  animation-name: rt-cover-in-reverse;
 }
 
-/* ── blur：景深聚焦（旧页虚化退场，新页由虚到实对焦进入） ── */
+/* ── circle：圆形揭示（新页以光圈自中心展开覆盖；全程不透明避免穿帮） ── */
+::view-transition-old(.rt-circle) {
+  animation: rt-reveal-dim var(--rt-duration) var(--rt-ease) both;
+}
+::view-transition-new(.rt-circle) {
+  animation: rt-circle-in var(--rt-duration) var(--rt-ease) both;
+}
+
+/* ── blur：景深聚焦（旧页虚化退场，新页由虚到实对焦进入；无位移无缩放） ── */
 ::view-transition-old(.rt-blur) {
-  animation: rt-blur-out var(--rt-duration) var(--rt-ease) both;
+  animation: rt-blur-out var(--rt-exit) var(--rt-ease) both;
 }
 ::view-transition-new(.rt-blur) {
-  animation: rt-blur-in var(--rt-duration) var(--rt-ease) both;
+  animation: rt-blur-in var(--rt-enter) var(--rt-ease) var(--rt-stagger) both;
 }
 
 /* ══ 关键帧 ══ */
@@ -131,6 +173,8 @@ html[data-rt-direction="back"] {
   }
 }
 
+/* 位移类统一上限：横向 5%（窄屏自动收敛），移动感主要来自内容明暗变化
+   而非大范围平移，避免快照越过主体区边界。 */
 @keyframes rt-glide-out {
   from {
     opacity: 1;
@@ -138,14 +182,14 @@ html[data-rt-direction="back"] {
   }
   to {
     opacity: 0;
-    transform: translateX(calc(-14% * var(--rt-dir-x)));
+    transform: translateX(calc(-4% * var(--rt-dir-x)));
   }
 }
 
 @keyframes rt-glide-in {
   from {
-    opacity: 0.4;
-    transform: translateX(calc(22% * var(--rt-dir-x)));
+    opacity: 0.3;
+    transform: translateX(calc(5% * var(--rt-dir-x)));
   }
   to {
     opacity: 1;
@@ -160,14 +204,14 @@ html[data-rt-direction="back"] {
   }
   to {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-6px);
   }
 }
 
 @keyframes rt-rise-in {
   from {
     opacity: 0;
-    transform: translateY(40px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -182,14 +226,14 @@ html[data-rt-direction="back"] {
   }
   to {
     opacity: 0;
-    transform: scale(1.08);
+    transform: scale(1.02);
   }
 }
 
 @keyframes rt-zoom-in {
   from {
     opacity: 0;
-    transform: scale(0.94);
+    transform: scale(0.99);
   }
   to {
     opacity: 1;
@@ -215,25 +259,31 @@ html[data-rt-direction="back"] {
   }
 }
 
+/* cover：旧页静止微暗退让（不位移不出盒），新页按导航方向擦入 */
 @keyframes rt-cover-out {
   from {
     opacity: 1;
-    transform: scale(1);
   }
   to {
-    opacity: 0.55;
-    transform: scale(0.98);
+    opacity: 0.6;
   }
 }
 
 @keyframes rt-cover-in {
   from {
-    opacity: 1;
-    transform: translateX(calc(100% * var(--rt-dir-x)));
+    clip-path: inset(0 0 0 100%);
   }
   to {
-    opacity: 1;
-    transform: translateX(0);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes rt-cover-in-reverse {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
   }
 }
 
@@ -252,19 +302,17 @@ html[data-rt-direction="back"] {
   from {
     opacity: 1;
     filter: blur(0);
-    transform: scale(1);
   }
   to {
     opacity: 0;
-    filter: blur(10px);
-    transform: scale(1.02);
+    filter: blur(8px);
   }
 }
 
 @keyframes rt-blur-in {
   from {
     opacity: 0;
-    filter: blur(10px);
+    filter: blur(8px);
   }
   to {
     opacity: 1;
@@ -281,6 +329,9 @@ html[data-rt-direction="back"] {
   html[data-rt-speed="slow"],
   html[data-rt-speed="fast"] {
     --rt-duration: 0.01ms;
+    --rt-exit: 0.01ms;
+    --rt-enter: 0.01ms;
+    --rt-stagger: 0ms;
   }
   ::view-transition-old(.rt),
   ::view-transition-new(.rt) {
