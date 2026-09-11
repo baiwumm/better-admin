@@ -1,14 +1,7 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  useTemplateRef,
-  watch,
-} from "vue";
+import { computed, nextTick, ref, useTemplateRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useResizeObserver } from "@vueuse/core";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import type { ContextMenuItem } from "@nuxt/ui";
@@ -149,7 +142,6 @@ const shadow = ref<ShadowState>("none");
 // 最近一次指针手势是否发生了拖拽平移（吞掉其后的 click，防误切换标签）
 let dragMoved = false;
 let drag: { startX: number; startScroll: number } | null = null;
-let resizeObserver: ResizeObserver | null = null;
 
 /** 由横向剩余滚动量推导 chevron 禁用态与渐隐阴影状态。 */
 function updateShadow() {
@@ -224,23 +216,11 @@ function onClickCapture(event: MouseEvent) {
   dragMoved = false;
 }
 
-onMounted(() => {
-  const el = scrollEl.value;
-
-  if (!el) return;
-
-  updateShadow();
-  // 可见性自管理：隐藏原生滚动条后没有滚动条出现改变布局的信号，且新增
-  // 标签只增加内容宽度、不改变容器尺寸，需同时观察容器与内容元素
-  resizeObserver = new ResizeObserver(updateShadow);
-  resizeObserver.observe(el);
-  if (listEl.value) resizeObserver.observe(listEl.value);
-});
-
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect();
-  resizeObserver = null;
-});
+// 可见性自管理：隐藏原生滚动条后没有滚动条出现改变布局的信号，且新增
+// 标签只增加内容宽度、不改变容器尺寸，需同时观察容器与内容元素。
+// useResizeObserver 支持数组 target（元素挂载后注册、随组件作用域自动断开），
+// observe 即会派发一次初始回调，等效原 onMounted 的手动初始化。
+useResizeObserver([scrollEl, listEl], updateShadow);
 
 // 激活标签自动滚动进可视区
 watch(

@@ -2,8 +2,9 @@
 import type { RowData } from "@tanstack/vue-table";
 
 import type { AppTable } from "./table-types";
-import { computed, onMounted, onUnmounted, useSlots } from "vue";
+import { computed, useSlots } from "vue";
 import { useI18n } from "vue-i18n";
+import { useEventListener } from "@vueuse/core";
 
 /**
  * 底部浮动批量操作条（布局对齐 React 端 data-table-bulk-actions 胶囊形）：
@@ -29,8 +30,7 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 
-onMounted(() => window.addEventListener("keydown", onKeydown));
-onUnmounted(() => window.removeEventListener("keydown", onKeydown));
+useEventListener(window, "keydown", onKeydown);
 </script>
 
 <template>
