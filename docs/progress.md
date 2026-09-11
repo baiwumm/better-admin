@@ -49,9 +49,14 @@
   `draggable: 'li:not([data-tab-pinned])'`（固定标签不可拖、不参与 sortable 索引与落点交换，
   数据层 clamp 另有兜底）、`filter: '[data-tab-close]'`（关闭热区 pointerdown 已 stop，filter
   双保险）、`ghostClass` 占位 + `chosenClass` 拖起浮起（scale-105 + 轻透明 + 高阴影）；
+  曾尝试 `forceFallback`（JS 模拟拖拽规避原生 DnD 虚影、`direction` 限制方向）但实测
+  体验不及 native 模式，经用户确认已回退（拖拽轨迹随鼠标为 sortablejs 能力边界，保持现状）；
   平移手势 pointerdown 排除 `[data-tab-item]`（标签上拖 = 排序、空白区拖 = 平移，对齐 React 端）。
-- **关键差异点——索引补偿**：sortablejs 的 `oldIndex/newIndex` 相对 `draggable` 选择器集合
-  （不含固定标签），而 store 的 `paths` 首位为固定标签，`onUpdate` 里索引 +1 后调 `moveTab`。
+- **关键认知——索引语义（首版曾搞反，实测复现后修正）**：sortablejs 的 `oldIndex/newIndex`
+  相对**容器全部子元素**（`index(el)` 不带 selector，含首位固定标签的占位下标），与 store 的
+  `paths` 下标**天然 1:1 对齐**，`onUpdate` 直接 `moveTab(paths[oldIndex], newIndex)` 即可；
+  `oldDraggableIndex / newDraggableIndex` 才是相对 `draggable` 选择器过滤后的索引。首版误把
+  全量索引当成 draggable 索引做了 +1 补偿，导致拖拽后顺序错位一项。
 - **与 React 端实现差异（无需对齐项）**：React 端 react-aria 的捕获阶段 Sensor 适配
   （`TabPointerSensor` / `onPressStart=continuePropagation` / `sortMovedRef`）在 Vue 端不需要——
   Vue 原生事件绑定 + sortablejs 原生监听，不存在 RAC 合成层 stopPropagation 问题；拖拽后的

@@ -8,6 +8,7 @@ import {
   closeRightTabPaths,
   closeTabPaths,
   ensureHomeTab,
+  moveTabPath,
   parseStoredTabs,
   pruneTabPaths,
   type TabMetaSnapshot,
@@ -68,6 +69,13 @@ export const useTabsStore = defineStore("tabs", () => {
   /** 打开标签（去重追加 + 数量治理 + 控制台首位保证）。 */
   function openPath(path: string, currentPath: string): void {
     const next = ensureHomeTab(withOpenedPath(paths.value, path, currentPath));
+
+    if (next !== paths.value) paths.value = next;
+  }
+
+  /** 拖拽排序：将标签移动到目标下标（固定标签不可移动、首位不可被占据）。 */
+  function moveTab(path: string, targetIndex: number): void {
+    const next = moveTabPath(paths.value, path, targetIndex);
 
     if (next !== paths.value) paths.value = next;
   }
@@ -162,6 +170,7 @@ export const useTabsStore = defineStore("tabs", () => {
     meta,
     refreshSeq,
     openPath,
+    moveTab,
     closePath,
     closeOthers,
     closeLeft,

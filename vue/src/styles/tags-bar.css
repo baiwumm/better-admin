@@ -56,3 +56,23 @@
     animation: none;
   }
 }
+
+/* 拖拽排序（sortablejs）动效类
+ *
+ * chosenClass / ghostClass 必须是单一类名（sortablejs 经 classList 写入，
+ * token 含空格会抛 InvalidCharacterError），故浮起 / 占位效果写在此处而非
+ * 内联 Tailwind 原子类。
+ * - .tab-sort-chosen：拖动本体浮起（scale 为独立属性，不与 sortablejs
+ *   写入的 transform 位移冲突）；
+ * - .tab-sort-ghost：原位占位影子。
+ */
+.tab-sort-chosen {
+  opacity: 0.8;
+  scale: 1.05;
+  box-shadow: 0 8px 16px rgb(0 0 0 / 0.25);
+  cursor: grabbing;
+}
+
+.tab-sort-ghost {
+  opacity: 0.5;
+}

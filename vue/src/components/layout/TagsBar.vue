@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, useTemplateRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useResizeObserver } from "@vueuse/core";
+import { useSortable } from "@vueuse/integrations/useSortable";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import type { ContextMenuItem } from "@nuxt/ui";
@@ -21,10 +22,20 @@ import { useTabsStore } from "@/stores/tabs-store";
 /**
  * 多标签页栏（TagsView，对齐 React 端 tags-bar）：置于顶栏下方的 UDashboardToolbar
  * 内，记录路由访问轨迹。
- * - 控制台为固定标签：恒在首位、不可关闭（ensureHomeTab 保证至少一个标签），
+ * - 控制台为固定标签：恒在首位、不可关闭（ensureHomeTab 保证至少一个标签）、
+ *   不可拖拽移动（sortable draggable 选择器排除 + moveTabPath clamp 双层防护），
  *   结构为「菜单图标 名称 Pin 图标」；普通标签尾部为关闭热区；
  * - 标签主体为 UButton（激活 primary subtle / 未激活 neutral outline），
  *   关闭热区为 Button 内的 span（阻止冒泡避免误触发切换）；中键关闭；
+ * - 普通标签支持拖拽排序（@vueuse/integrations useSortable = sortablejs，
+ *   与列设置 / 组织树同源方案）：整个标签可拖（无手柄），draggable 选择器
+ *   排除固定标签使其不可拖、不可被拖越；关闭热区 pointerdown 已 stop
+ *   （事件到不了列表容器）+ filter 双保险排除；sortablejs 拖拽结束自动
+ *   抑制其后的 click（防误切换）；onUpdate 的 oldIndex/newIndex 相对全部
+ *   子元素、与 paths 下标天然对齐，直接调 store.moveTab；
+ *   已知差异：sortablejs 无键盘排序（React / Next 端 dnd-kit 有键盘传感器）；
+ * - 手势分工：标签上按住拖动 = 排序；标签间空隙 / 空白区按住拖动 = 平移滚动
+ *   （平移手势 pointerdown 时排除 [data-tab-item]）；
  * - 标签过多时横向滚动（mask 渐隐 + chevron + 滚轮横滚 + 鼠标按住拖拽平移，
  *   隐藏原生滚动条），激活标签自动滚动进可视区；新标签带进场动画（styles/tags-bar.css）；
  * - 右键菜单：UContextMenu 包裹标签列表，capture 阶段记录目标标签
@@ -175,9 +186,17 @@ function onWheel(event: WheelEvent) {
 }
 
 // 按住拖拽平移（仅鼠标左键）：位移超过阈值判定为拖动并捕获指针，
-// 拖动中阻止选中文本；结束后的 click 一律吞掉防止误触发点击
+// 拖动中阻止选中文本；结束后的 click 一律吞掉防止误触发点击。
+// 标签上的按下让位给拖拽排序手势——平移仅保留给标签间空隙 / 空白区。
 function onPointerDown(event: PointerEvent) {
   if (event.pointerType !== "mouse" || event.button !== 0) return;
+
+  if (
+    event.target instanceof Element &&
+    event.target.closest("[data-tab-item]")
+  ) {
+    return;
+  }
 
   drag = {
     startX: event.clientX,
@@ -251,7 +270,42 @@ function scrollByStep(direction: -1 | 1) {
 
 // ── 标签交互 ──
 
-/** 点击标签切换路由（刚发生拖拽平移时忽略，防误触）。 */
+// ── 拖拽排序（useSortable = sortablejs，与列设置 / 组织树同源方案）──
+// draggable 选择器排除固定标签：控制台不可被拖起、不参与 sortable 索引与
+// 落点交换（数据层 moveTabPath 另有固定标签守卫与 clamp 兜底）；
+// filter 排除关闭热区（其 pointerdown 已 stop，此处为语义双保险）；
+// ghostClass / chosenClass 必须是单一类名（sortablejs 经 classList 写入，
+// token 含空格会抛 InvalidCharacterError 中断拖拽初始化），浮起 / 占位
+// 样式见 styles/tags-bar.css 的 .tab-sort-chosen / .tab-sort-ghost。
+useSortable(listEl, paths, {
+  animation: 150,
+  draggable: "li:not([data-tab-pinned])",
+  filter: "[data-tab-close]",
+  ghostClass: "tab-sort-ghost",
+  chosenClass: "tab-sort-chosen",
+  onUpdate: (event) => {
+    const { oldIndex, newIndex } = event;
+
+    if (
+      oldIndex === undefined ||
+      newIndex === undefined ||
+      oldIndex === newIndex
+    ) {
+      return;
+    }
+
+    // sortablejs 的 oldIndex/newIndex 相对容器全部子元素（含首位固定标签），
+    // 与 paths 的下标天然 1:1 对齐，直接使用（勿与 oldDraggableIndex 混淆——
+    // 那才是相对 draggable 选择器过滤后的索引）；sortablejs 已搬动 DOM 至
+    // 新序，store 更新后 Vue diff 按新序收敛（key 复用，insertBefore 幂等）。
+    const path = paths.value[oldIndex];
+
+    if (path) tabsStore.moveTab(path, newIndex);
+  },
+});
+
+/** 点击标签切换路由（刚发生拖拽平移时忽略，防误触；排序拖拽后的 click
+ * 由 sortablejs 自行抑制）。 */
 function handleSelect(path: string) {
   if (dragMoved || path === route.path) return;
 
@@ -441,11 +495,15 @@ const ctxItems = computed<ContextMenuItem[][]>(() => {
             :key="tab.path"
             class="flex shrink-0 items-center"
             data-tab-enter="true"
+            data-tab-item="true"
+            :data-tab-pinned="tab.pinned ? 'true' : undefined"
           >
-            <!-- UButton 作为标签主体：图标 名称 尾部标识全部在 Button 内 -->
+            <!-- UButton 作为标签主体：图标 名称 尾部标识全部在 Button 内；
+                 普通标签 cursor-grab 提示可拖拽排序（固定标签不参与） -->
             <UButton
               :aria-current="tab.active ? 'page' : undefined"
               class="h-7 max-w-44 min-w-0 gap-1.5 px-3"
+              :class="tab.pinned ? '' : 'cursor-grab'"
               :color="tab.active ? 'primary' : 'neutral'"
               :data-tab-active="tab.active"
               :data-tab-path="tab.path"
@@ -471,11 +529,13 @@ const ctxItems = computed<ContextMenuItem[][]>(() => {
                 name="i-lucide-pin"
                 class="size-3.5 shrink-0 text-muted"
               />
-              <!-- 关闭热区：阻止指针 / 点击冒泡，避免触发标签自身的切换 -->
+              <!-- 关闭热区：阻止指针 / 点击冒泡，避免触发标签自身的切换；
+                   data-tab-close 供 sortable filter 二次排除 -->
               <span
                 v-else-if="tab.title !== null"
                 :aria-label="t('layout.tags.closeNamed', { title: tab.title })"
                 class="-mr-1 flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-50 transition-opacity hover:bg-accented hover:opacity-100"
+                data-tab-close="true"
                 role="button"
                 tabindex="-1"
                 @click.stop.prevent="handleClose(tab.path)"
