@@ -10,20 +10,22 @@ import { useI18n } from "vue-i18n";
  * 左侧范围统计 + 中间页码（Nuxt UI UPagination，首末页自适应）+ 右侧 pageSize
  * 下拉（10/20/30/40/50，切页大小回第 1 页由列表 store 负责）。
  * 注意：UPagination 的总条数属性是 total（无 itemCount，勿用 HeroUI 命名）。
+ *
+ * 页码状态与 React 端同构，直接读 table 实例（table.getState().pagination）：
+ * 各列表页 state.pagination 均为列表 store 驱动的 getter，经 vue-table
+ * mergeProxy 转发访问时读取响应式 store，此处 computed 具备响应性
+ * （setPageIndex → onStateChange → store.setPage → getter 重读）。
  */
 const props = defineProps<{
   table: AppTable<TData>;
+  /** 服务端分页总数 */
   total: number;
-  /** 当前页（从 1 开始；受控——页面列表 store 为真源） */
-  pageIndex: number;
-  /** 每页条数（受控） */
-  pageSize: number;
 }>();
 
 const { t } = useI18n();
 
-const pageSize = computed(() => props.pageSize);
-const pageIndex = computed(() => props.pageIndex);
+const pageIndex = computed(() => props.table.getState().pagination.pageIndex);
+const pageSize = computed(() => props.table.getState().pagination.pageSize);
 
 // computed 包裹保证 i18n 切换语言时下拉文案实时更新（t 依赖 locale 响应式）
 const pageSizeOptions = computed(() =>

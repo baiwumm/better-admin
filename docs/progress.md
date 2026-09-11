@@ -2,6 +2,30 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Vue 端 DataTable 内聚错误态与分页条：页面模板三段式收敛为单组件（2026-09-11）
+
+- **背景**：Vue 六个列表页此前各自维护「ErrorContent `v-if` / DataTable `v-else` / DataTablePagination
+  无条件渲染」三段模板，且错误态下分页条仍持 stale total 渲染（React 基准为隐藏）。对齐 React
+  `data-table.tsx`（isError 强制清空行 + renderEmptyState 错误占位 + Footer 分页、isError 时隐藏分页），
+  经用户确认后执行。
+- **`DataTable.vue` 扩展（向后兼容）**：新增 `isError` / `total` props 与 `retry` 事件——isError 时
+  `:data` 强制清空行（vue-query 失败仍持旧数据，同 React 的 `isError ? [] : rows`），经 `#empty` 槽
+  条件渲染 `ErrorContent`（`common.loadError` / `common.retry` 文案内聚，复用既有 UAlert 形态，
+  §21 不刻意仿 React 居中占位式）与原 `UEmpty` 空态；`total` 传入时在表格下方内聚渲染
+  `DataTablePagination`，isError 时隐藏。
+- **`DataTablePagination.vue` API 收敛为 `table + total`**（对齐 React，改造后唯一消费者为
+  DataTable.vue）：页码不再由页面显式传 props，改读 `table.getState().pagination`——已核实
+  `@tanstack/vue-table@8.21.3` 的 `options.state` 为 mergeProxy 转发读取（不快照值），六页列表的
+  `state.pagination` 均为列表 store 驱动的 getter，computed 求值时读取响应式 store，Vue 响应性成立。
+- **六个页面模板简化**（users / logs / roles / posts / notices / directory）：三段收敛为单个
+  `<DataTable :is-error :loading :refreshing :table :total @retry>`，各页净减约 20 行。**范围界定**：
+  menus（树表直渲染 UTable）与 dicts / depts / permissions（React 基准同样不传 isError/total）不动。
+- **验证**：`lint`（0 error，5 条存量 warning）/ `type-check` / `test`（85 用例）/ `build` 四绿；
+  本地 5174 dev server + admin 账号浏览器实测——六页分页条均由 DataTable 内聚渲染且统计文案正确
+  （岗位空数据页「第 0 - 0 条，共 0 条」）；fetch 拦截构造 /users 失败后表头保留、空态区渲染
+  「数据加载失败 + 重试」、分页条隐藏，恢复网络点重试后数据与分页条完整恢复。
+- **无需同步**：数据库 / OpenAPI 契约不涉及；React / Next / NestJS 端无对应改动。
+
 ### M4 遗留补验：登录回跳链路端到端通过 + 已登录访问登录页口径对齐（2026-09-11）
 
 - **背景**：Vue M4 冒烟时因本地后端故障未能复验的「带 `redirect` 的登录回跳链路」，Nest 恢复

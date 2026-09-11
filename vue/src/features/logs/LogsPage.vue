@@ -30,11 +30,9 @@ import {
 import LogDetailDrawer from "./LogDetailDrawer.vue";
 
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
-import ErrorContent from "@/components/common/ErrorContent.vue";
 import UserInfo from "@/components/common/UserInfo.vue";
 import DataTable from "@/components/data-table/DataTable.vue";
 import DataTableBulkActions from "@/components/data-table/DataTableBulkActions.vue";
-import DataTablePagination from "@/components/data-table/DataTablePagination.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
 import { useColumnSettingKey } from "@/composables/use-column-setting-key";
@@ -411,24 +409,13 @@ async function confirmBatchDelete() {
       />
     </DataTableToolbar>
 
-    <ErrorContent
-      v-if="isError"
-      :retry-label="t('common.retry')"
-      :title="t('common.loadError')"
-      @retry="refetch()"
-    />
     <DataTable
-      v-else
+      :is-error="isError"
       :loading="isLoading"
       :refreshing="isFetching && !isLoading"
       :table="table"
-    />
-
-    <DataTablePagination
-      :page-index="store.page - 1"
-      :page-size="store.pageSize"
-      :table="table"
       :total="pagination.total"
+      @retry="refetch()"
     />
 
     <DataTableBulkActions :table="table">

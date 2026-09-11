@@ -29,7 +29,6 @@ import {
 import NoticeDetailDrawer from "./NoticeDetailDrawer.vue";
 
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
-import ErrorContent from "@/components/common/ErrorContent.vue";
 import UserInfo from "@/components/common/UserInfo.vue";
 import Spinner from "@/components/ui/spinner/index.vue";
 import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "@/features/org/dept-api";
@@ -599,24 +598,13 @@ export default { name: "NoticesPage" };
       />
     </DataTableToolbar>
 
-    <ErrorContent
-      v-if="isError"
-      :retry-label="t('common.retry')"
-      :title="t('common.loadError')"
-      @retry="refetch()"
-    />
     <DataTable
-      v-else
+      :is-error="isError"
       :loading="isLoading"
       :refreshing="isFetching && !isLoading"
       :table="table"
-    />
-
-    <DataTablePagination
-      :page-index="store.page - 1"
-      :page-size="store.pageSize"
-      :table="table"
       :total="pagination.total"
+      @retry="refetch()"
     />
 
     <NoticeFormDialog
