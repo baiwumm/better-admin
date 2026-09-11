@@ -400,7 +400,8 @@ Phase 7  统一测试 → 部署全部版本
 
 > 阶段性进度记录已全部移至 [`docs/progress.md`](docs/progress.md)（按时间倒序），本节只保留当前快照；阶段由用户明确安排后再推进。
 
-- **当前阶段**：React + NestJS 全栈已完成，Next.js 全栈版已上线；`website/` 官方文档站已落地（Next 16 + Fumadocs，ogimg 黑白风格，内容由 `docs/` 真源自动同步，详见 progress.md，待 Vercel 部署绑 docs.baiwumm.com）。Vue / Nuxt 尚未启动。
+- **当前阶段**：React + NestJS 全栈已完成，Next.js 全栈版已上线；`website/` 官方文档站已落地（Next 16 + Fumadocs，ogimg 黑白风格，内容由 `docs/` 真源自动同步，详见 progress.md，待 Vercel 部署绑 docs.baiwumm.com）。Vue 端 M0-M3 已完成（偏好设置 / 多标签页 + 路由 VT / 列设置 / 我的账户 / 命令面板，2026-09-11 GUI 冒烟通过），待 M4 部署收尾；Nuxt 尚未启动。
+- **Vue 端已完成模块**：登录认证 / 全站国际化 / 偏好设置（9 项 + 路由过渡 VT 编排与导航方向感知）/ 多标签页 + KeepAlive / 命令面板 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）/ DataTable 列设置。
 - **React 端已完成模块**：登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）。
 - **Next.js 端已完成模块**：与 React 端对齐（认证 / Admin 布局 / 用户 / 角色 / 菜单 / 字典 / 日志 / 我的账户 / 组织中心全套）。
 - **当前待办**：演示上线准备 + Dashboard 概览页 + Playground 演示场（计划清单见 [`docs/plan-dashboard-playground.md`](docs/plan-dashboard-playground.md)：整体排在 Vue 全功能对齐 + 冒烟测试通过之后，顺序 Phase 0 演示上线准备（faker 数据重置 / 只读守卫 / 快捷登录 / 日志降噪）→ Phase C Dashboard → Phase A/B Playground；图表库已定 Recharts）；Next.js Vercel 部署 + CI 挂接；`docs/mechanisms.md` 沉淀 Next 期机制结论。Vue / Nuxt 后续实现时直接跟上最新契约版本（详见 progress.md 各阶段条目）。

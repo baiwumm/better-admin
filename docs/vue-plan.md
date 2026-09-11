@@ -189,18 +189,11 @@ vue/src/pages/
 
 ### M3 — 偏好设置补齐 + 我的账户 + 多标签页 + 列设置 + 收尾
 
-> **进度（2026-09-11）**：偏好设置补齐 ✅（`08c173d`）、多标签页 ✅（`a10f9eb`，含 showTabs 显隐开关；页面切换 VT 编排与导航方向感知顺延至下一子项）；列设置 / 我的账户 / 命令面板核对未开始。机制结论见 `docs/progress.md` M3 条目。
+> **进度（2026-09-11，M3 完成）**：偏好设置补齐 ✅（`08c173d`）、多标签页 ✅（`a10f9eb`，含 showTabs 显隐开关）；页面切换 VT 编排 + 导航方向感知 ✅、列设置 ✅、我的账户 ✅、命令面板核对 ✅（均于 2026-09-11 落地并 GUI 冒烟通过）。机制结论见 `docs/progress.md` M3 条目。
 
 - 顺序：偏好设置补齐（store + 抽屉全项）→ 多标签页（KeepAlive include/max + 关闭即销毁）→ 页面切换动画 + 多标签页显隐开关 → 列设置（DataTable 组合件）→ 我的账户（双 Tab + 头像裁剪上传闭环）→ 命令面板接入菜单/路由数据。
 - 验收：偏好全项即时生效 + 刷新持久 + 重置复原（带揭示动画）；主题色 / 圆角与 React 数值不要求一致（两端组件库标度不同，见下）；标签页保活行为对照 React；列设置持久化与重置行为对照 React；头像上传后全局刷新；Cmd/Ctrl+K 唤起。
-- **列设置（M1 延后决策回收；React 端 `data-table-view-options` 已全量实现，延后理由消失）**：可见性勾选 + 拖拽排序面板，参与列 = 可隐藏列（行选择 / 操作等功能列固定首尾不进面板）；持久化 key `column-setting:{userId}:{routePath}`（不含查询参数，与 React 对齐），存 `{ hidden, order }`；重置按钮恢复默认；拖拽用 **vue-draggable-plus**（M2 组织树已在用，纵向限制不出容器），不引 dnd-kit 类新依赖。
-- **偏好设置实现指引（2026-09-10 评审定稿；M3 实现完成后删除本条）**：
-  - 目标口径：对齐 React 端 `theme-settings-drawer` 全部 9 项（主题色 / 主题模式 / 色彩模式 / 动画方向 / 路由动画 / 路由速度 / 圆角 / 多标签页显隐 / 重置），实现以 Vue 机制为主；其中主题色与圆角两项不照搬 React 数值方案，定制如下：
-  - **主题色（参考 better-nuxt `app/components/theme/ThemePickerPrimaryColor.vue`）**：纯 Vite + `vue-plugin` 模式下无 Nuxt colors 插件、不可改 `appConfig.ui.colors`——改为运行时覆盖 `<html>` 上 `--ui-color-primary-{50..950}` 共 11 个 shade 变量（`--ui-primary → var(--ui-color-primary-*)` 间接链自动跟随；亮色取 500、暗色取 400 的分档自动正确）；色板集合与色点预览用 `tailwindcss/colors`；色名**硬编码英文首字母大写（Black / Red / …），不走 i18n**（§3 i18n 键冻结规则的例外项）；**Black 档 = blackAsPrimary**（better-nuxt 模式）：清除 shade 覆盖、改覆盖 `--ui-primary = dark ? 'white' : 'black'`，选中色板时反向清除该覆盖（双向互斥），跟随 isDark 变化重算；随机换色排除当前激活项（React 端已有交互）。
-  - **圆角（参考 better-nuxt `ThemePickerRadius.vue`，改 4 档）**：覆盖 `--ui-radius`；档位文案对齐 React（直角 / 小圆角 / 中圆角 / 大圆角），数值按 Nuxt UI 标度重定：0 / 0.125 / 0.25（默认）/ 0.5rem——React（HeroUI）基准 `--radius` 为 0.5rem，照搬其数值会整体偏大一倍；默认档不写 DOM、不落存储（对齐 React 语义）；`rounded-full` 圆形件不受档位影响，两端一致。
-  - **其余项平移 React 机制（Vue 机制实现）**：pinia design-theme-store 单一真源 + localStorage 持久化（`@vueuse/core` useStorage；SPA 无 SSR，不需要 better-nuxt 的 cookie 方案）；色彩模式 = `html[data-color-vision]` + CSS filter 直接平移（框架无关）；动画方向 / 路由动画 / 速度 = 原生 `document.startViewTransition` + React 三个样式文件（theme-transition / route-transitions / color-vision）平移；路由 VT 编排层与多标签页 KeepAlive 容器同层（对齐 React `KeepAliveOutlet` 的编排位置），VT 回调需等待异步组件加载与新页 DOM 提交；Nuxt UI toast 走 Vue Transition 不起根级 VT，React 的 `data-route-vt` 防误触发门控可评估简化（实现时验证）；主题模式并入 store 真源（store 写 `useColorMode().value`，避免两处状态）；重置按钮在一次揭示动画内原子重置全部偏好，动画结束后再弹成功 toast。
-  - **恢复时序**：全部偏好在 `main.ts` 的 `app.mount()` 之前同步应用（localStorage 同步读），否则首帧闪默认主题。
-  - i18n 全部走既有 `layout.prefs.*` 键（已随 sync-locales 到位，无需新增）；颜色名硬编码（见主题色条）。
+- **列设置（M1 延后决策回收；React 端 `data-table-view-options` 已全量实现，延后理由消失）**：可见性勾选 + 拖拽排序面板，参与列 = 可隐藏列（行选择 / 操作等功能列固定首尾不进面板）；持久化 key `column-setting:{userId}:{routePath}`（不含查询参数，与 React 对齐），存 `{ hidden, order }`；重置按钮恢复默认；拖拽用 **@vueuse/integrations useSortable**（sortablejs；M2 组织树已在用同一方案，`vue-draggable-plus` 依赖未使用，实现时统一到了既有用法）。
 
 ### M4 — 部署与文档收尾
 

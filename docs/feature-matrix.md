@@ -22,7 +22,7 @@
 | 模块                | React | Next.js | Vue | Nuxt | NestJS API | 备注                                        |
 | ----------------- | ----- | ------- | --- | ---- | ---------- | ----------------------------------------- |
 | 认证（登录/登出/刷新/me）   | ✅     | ✅       | ✅   | ❌    | ✅          | Next.js 用 httpOnly Cookie，其余 Bearer Token；Vue M1 冒烟验收通过（登录/守卫/会话恢复/401 刷新/整页跳转） |
-| 我的账户（资料/邮箱/密码/头像） | ✅     | ✅       | ❌   | ❌    | ✅          | 含头像裁剪、Supabase Storage 中转；**契约 v1.8.0 密码策略**（8-20 位 / 字母+数字 / 禁空白 / 不含用户名 / 不与原密码相同报错）NestJS + React + Next 已对齐                 |
+| 我的账户（资料/邮箱/密码/头像） | ✅     | ✅       | ✅   | ❌    | ✅          | 含头像裁剪、Supabase Storage 中转；**契约 v1.8.0 密码策略**（8-20 位 / 字母+数字 / 禁空白 / 不含用户名 / 不与原密码相同报错）四端 + NestJS 已对齐；Vue M3（2026-09-11）落地并 GUI 冒烟通过：双 Tab（账号/安全）+ 6 卡、vue-advanced-cropper 裁剪 256×256 WebP 上传闭环（改资料/头像后 auth-store 快照同步侧边栏）、改密卡走 lib/password-validation 预检 + PASSWORD_SAME_AS_OLD 后端兜底、改密成功清会话跳登录 |
 | 用户管理              | ✅     | ✅       | ✅   | ❌    | ✅          | CRUD + 状态 + 重置密码 + 批量删除；Vue M1 已落地并冒烟验收通过（列表三态/epoch/写保护/表单/授权表单含组织关联）；**契约 v1.8.0 密码策略**（新建初始密码 / 重置密码同「我的账户」口径）NestJS + React + Next + Vue 已对齐；v1.7.3 表单长度约束 + 字数统计三端已对齐  |
 | 角色管理              | ✅     | ✅       | ✅   | ❌    | ✅          | CRUD + 菜单授权 + super\_admin 保护；Vue M1 已落地并冒烟验收通过（code 锁定 / 授权抽屉勾选模型） |
 | 权限管理（只读）          | ✅     | ✅       | ✅   | ❌    | ✅          | 位掩码枚举字典；Vue M1 已落地并冒烟验收通过（前端过滤只读列表）                   |
@@ -51,9 +51,9 @@
 | 全站 i18n（zh-CN/en） | ✅     | ✅       | ✅   | ❌    | Vue M0：vue-i18n（messageResolver 扁平键）+ 复用 react locales；M1 冒烟验收通过 |
 | 主题系统（明暗模式）        | ✅     | ✅       | ✅   | ❌    | Vue M0：Nuxt UI 默认 Design Tokens + @vueuse/core useColorMode；M1 冒烟验收通过 |
 | 偏好设置抽屉             | ✅     | ✅       | ✅   | ❌    | 9 项：主题色（含随机换色 + Black 黑白主题）/ 模式 / 色彩模式（正常/灰色/色弱）/ 动画方向 / 路由动画（9 预设）/ 速度 / 圆角 4 档 / 多标签页显隐 / 重置；Vue M3（2026-09-10）全项补齐并 GUI 冒烟通过：主题色 = Tailwind 17 色板运行时覆盖 `--ui-color-primary-*` + Black 覆盖 `--ui-primary`（随明暗重算）、圆角按 Nuxt UI 标度 0/0.125/0.25/0.5rem、design-theme-store 单一真源 + `app.mount` 前恢复；路由动画 / 多标签页开关的实际编排接入见对应行 |
-| 多标签页              | ✅     | ✅       | ✅   | ❌    | Vue M3（2026-09-11）落地并 GUI 冒烟通过：tabs-model 纯函数与 32 用例原样平移、Pinia tabs-store（sessionStorage 持久化 + 标题快照）；TagsBar（固定控制台 / 关闭热区 / 中键关闭 / UContextMenu 六动作 / 横向滚动 mask+chevron+滚轮+拖拽 / 进场动画）；KeepAliveOutlet = 原生 `<KeepAlive :include :max=10>`，include = 已打开标签 ∩ 菜单 keepAlive（关闭即销毁），刷新 = key 序号重挂载 + include 摘一拍清旧缓存；显隐开关已接偏好；**页面切换 VT 编排待 M3 下一子项** |
-| DataTable 列设置        | ✅     | ✅       | ❌   | ❌    | 可见性勾选 + 拖拽排序（`column-setting:{userId}:{routePath}` 持久化）；Vue M1 延后，M3 回收（拖拽复用 vue-draggable-plus） |
-| 命令面板              | ✅     | ✅       | ✅   | ❌    | Vue M0：UDashboardSearch 接菜单导航（Cmd+K 内置） |
+| 多标签页              | ✅     | ✅       | ✅   | ❌    | Vue M3（2026-09-11）落地并 GUI 冒烟通过：tabs-model 纯函数与 32 用例原样平移、Pinia tabs-store（sessionStorage 持久化 + 标题快照）；TagsBar（固定控制台 / 关闭热区 / 中键关闭 / UContextMenu 六动作 / 横向滚动 mask+chevron+滚轮+拖拽 / 进场动画）；KeepAliveOutlet = 原生 `<KeepAlive :include :max=10>`，include = 已打开标签 ∩ 菜单 keepAlive（关闭即销毁），刷新 = key 序号重挂载 + include 摘一拍清旧缓存；显隐开关已接偏好；页面切换 VT 编排（2026-09-11）已落地：beforeResolve/afterEach 编排（真旧帧 → 提交 → 新帧）、data-route-vt 门控、按菜单层级深度的导航方向感知（data-rt-direction 反转位移类动画）、标签刷新复用同套 VT |
+| DataTable 列设置        | ✅     | ✅       | ✅   | ❌    | 可见性勾选 + 拖拽排序（`column-setting:{userId}:{routePath}` 持久化，两端互读）；Vue M3（2026-09-11）回收并 GUI 冒烟通过：DataTableViewOptions（UPopover + useSortable 手柄拖拽）+ column-setting 纯函数（v1 旧格式兼容，9 用例）、页面级 table 实例 columnVisibility/columnOrder 经 DataTable v-model 桥接 UTable；10 个列表页全量接入（MenusPage 影子实例模式） |
+| 命令面板              | ✅     | ✅       | ✅   | ❌    | Vue M0 接 UDashboardSearch；M3（2026-09-11）对齐 React 端 command-menu：菜单树按顶层分组拍平（多级显示「父级 › 页面」）+ searchText 键（祖先链/分组名可被搜索）+ 快捷链接组 + 自建主题组（走 design-theme-store 带揭示动画，关闭内置 colorMode 组） |
 | 错误页（403/404/500）  | ✅     | ✅       | ✅   | ❌    | 四端统一跳转独立全屏页（React 2026-09-09 回滚直显改造对齐 Next/Vue，机制各自、行为一致）；Vue M0：全屏错误页 + catch-all 404；2026-09-09 Vue 同步 React Result 风格（ant-design 插画 + ResultPage 结构，替代纯文本大数字壳） |
 | 异常页菜单（/exception/*） | ✅     | ✅       | ✅   | ❌    | 错误页 Result 风格的菜单化展示（embedded 撑满主体区，FULL_WIDTH 白名单），菜单数据配置于 sys_menus（超管免授权可见）；Vue 2026-09-09 已对齐（(authenticated)/exception/* 三页 + AdminLayout 全宽白名单 + 文档标题键） |
 | 路由权限守卫            | ✅     | ✅       | ✅   | ❌    | React: KeepAlive / Next: proxy.ts / Vue M0: 全局 beforeEach 三层；M1 冒烟验收通过 |
@@ -78,5 +78,5 @@
 
 > 统计口径（2026-09-08 按行修正）：核心业务模块 9 项 + 组织中心 8 项 + 基础设施 6 项 = **23 项**（Dashboard 计入核心业务模块）。
 > 上表不含"已知架构差异"行。
-> Vue 端：M0（2026-09-05）工程基建与骨架；M1（2026-09-06）六模块 RBAC 冒烟验收通过；M2（2026-09-08）组织中心 8 项全量落地（2026-09-09 GUI 冒烟验收全部通过）；M3 进行中：偏好设置补齐（2026-09-10）与多标签页（2026-09-11）已落地；剩余「我的账户」（M3）与「Dashboard」（各端均未实现，P3）。方案见 `docs/vue-plan.md`。
+> Vue 端：M0（2026-09-05）工程基建与骨架；M1（2026-09-06）六模块 RBAC 冒烟验收通过；M2（2026-09-08）组织中心 8 项全量落地（2026-09-09 GUI 冒烟验收全部通过）；M3（2026-09-11）全部落地并 GUI 冒烟通过：偏好设置补齐 / 多标签页 + 页面切换 VT / DataTable 列设置 / 我的账户 / 命令面板对齐；仅剩「Dashboard」（各端均未实现，P3）。方案见 `docs/vue-plan.md`。
 

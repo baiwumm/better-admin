@@ -447,6 +447,39 @@ URL 参数一律用 `useSearch({ strict: false })` / `useParams({ strict: false 
 
 ---
 
+## 15. Vue 端路由过渡 VT 编排：守卫内启动 + afterEach 放行（Vue 端，M3）
+
+**结论：Vue Router 没有 React 端 `displayedPath` 双缓冲的等价物，路由过渡在导航
+流程内编排——`beforeResolve` 里启动 ViewTransition（此时浏览器捕获真实旧帧），
+`await` 快照回调被调用后再放行导航；导航提交、RouterView 渲染新页并在
+`nextTick` 落到 DOM 后 resolve 回调的 Promise，浏览器据此捕获新帧并播放 CSS 预设。**
+
+- **为什么不在 KeepAliveOutlet 里自管呈现路径**：RouterView 作用域插槽的 VNode 由
+  内部 `matchedRouteRef` 驱动，pending 期间继续渲染旧 VNode 需要克隆并与其内部
+  状态博弈；Nuxt `experimental.viewTransition` 验证过的守卫编排更稳。Vue 端
+  `router.beforeResolve/afterEach` 在 KeepAliveOutlet `setup` 内注册、
+  `onUnmounted` 注销——登录页等布局外场景天然无路由动画（React 端为整树替换语义）。
+- **回调放行链**：`beforeResolve` 创建两个 promise——`ready`（VT 快照回调被调用时
+  resolve，放行导航）与 `rendered`（`afterEach` 后 `nextTick` resolve，表示新页
+  DOM 已提交）。回调返回 `Promise.race([rendered, 2s 超时])`，超时兜底防极端情况下
+  页面被快照层冻结。快速连续导航：新导航覆盖 `pendingNavigation` 时先放行旧回调，
+  旧 VT 随新 `startViewTransition` 自动 skip；`afterEach` 按 `to` 引用匹配仅处理
+  本次登记（守卫与 afterEach 收到同一 `toLocation` 引用），被取消的导航无论成败都
+  放行避免回调悬挂。
+- **主体区命名**：UDashboardPanel 的 body（滚动容器）经 `:ui="{ body: 'route-vt-main' }"`
+  绑定 `.route-vt-main { view-transition-name: main-content }`——不能用 React 端的
+  `data-vt-name` 属性方案（无法给组件内部元素加属性），主题切换摘名规则同步改为
+  `html[data-theme-transition] .route-vt-main`。React 端曾在
+  `05f5cff` 全宽布局改造时误删 `<main>` 上的 `[view-transition-name:main-content]`
+  类（仅剩 data-vt-name 标记，main-content 快照组不存在、路由动画静默失效），
+  `3939abe` 已补回——Vue 端实现 UI 组件 `:ui` 无法附加属性时的 class 等价方案。
+- **门控与 toast**：`lib/route-vt.ts` 的 `startRouteVt` 在 VT 期间设
+  `html[data-route-vt]`，route-transitions.css 的动画选择器要求该标记与常驻
+  `data-route-transition` 同时存在；已核实 Nuxt UI / Reka UI 的 toast 走 CSS
+  transition 不启动根级 VT，门控为纯防御。标签「刷新」复用同套门控：已应用序号
+  （`appliedRefreshSeq`）与 store 分离，VT 回调内提交序号 + include 摘一拍。
+
+
 ## 14. UInputDate 与字符串日期字段桥接：writable computed，state 语义不变（Vue 端）
 
 - **`UInputDate`/`UCalendar` 的模型是 `DateValue`（`CalendarDate`）对象**，而项目
