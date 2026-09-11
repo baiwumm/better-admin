@@ -6,6 +6,7 @@ import { useToast } from "@nuxt/ui/composables";
 import type { DropdownMenuItem } from "@nuxt/ui";
 
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
+import { buildProfileLinks, openExternalLink } from "@/lib/profile-links";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** 侧边栏用户菜单（对齐 React 端 NavUser：头像 + 名称 + 邮箱 + 菜单）。 */
@@ -49,6 +50,16 @@ const displayName = computed(() => auth.user?.displayName ?? "");
 const email = computed(() => auth.user?.email ?? "");
 const initials = computed(() => displayName.value.slice(0, 1).toUpperCase());
 
+/** 个人链接（契约 v1.5.3）：三个字段都未填写时整个子菜单不显示（对齐 React 端）。 */
+const profileLinks = computed(() => buildProfileLinks(auth.user ?? {}));
+
+/** 个人链接图标：主页走 lucide，GitHub / X 品牌图形走 Simple Icons（同用户列表链接列）。 */
+const PROFILE_LINK_ICONS: Record<string, string> = {
+  website: "i-lucide-house",
+  github: "i-logos-github-icon",
+  x: "i-logos-x",
+};
+
 const items = computed<DropdownMenuItem[][]>(() => [
   [
     {
@@ -76,6 +87,20 @@ const items = computed<DropdownMenuItem[][]>(() => [
         router.push("/my-notices");
       },
     },
+    // 个人链接子菜单：AuthUser 三个链接字段全空时整体隐藏（children 即子菜单）
+    ...(profileLinks.value.length > 0
+      ? [
+          {
+            label: t("layout.user.myLinks"),
+            icon: "i-lucide-link-2",
+            children: profileLinks.value.map((link) => ({
+              label: t(link.labelKey),
+              icon: PROFILE_LINK_ICONS[link.key],
+              onSelect: () => openExternalLink(link.url),
+            })),
+          },
+        ]
+      : []),
   ],
   [
     {

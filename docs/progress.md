@@ -2,6 +2,42 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Vue 端五项体验对齐调整：个人链接子菜单 / 列设置重置动画 / 标签栏载体 / 标签输入 / 菜单失败回退（2026-09-11）
+
+- **背景**：Vue 端 M4 冒烟后的体验收口，五项由用户提出，逐项对照 React 基准处理（不涉及架构级改动，
+  §18 的冲突升级未触发）。
+- **① 头像下拉补「个人链接」子菜单**（`components/layout/UserMenu.vue`）：复用 `lib/profile-links.ts`
+  的 `buildProfileLinks`，用 Nuxt UI `DropdownMenuItem.children` 渲染子菜单，子项为主页 / GitHub / X
+  （图标同用户列表链接列：`i-lucide-house` / `i-logos-github-icon` / `i-logos-x`），新窗口打开；
+  三个字段全空时整项隐藏（同 React `sidebar-user`）。此前 Vue 端缺该子菜单。
+- **② 列设置重置 FLIP 动画**（`components/data-table/DataTableViewOptions.vue`）：评估结论为
+  **可用 Vue 内置 `TransitionGroup`**（其 move class 即 FLIP 机制）；为对齐 React「拖拽重排交给
+  sortablejs、仅程序性重排播 FLIP」的策略，用容器 `.flip-anim` 类做门控——只有 `resetColumns()`
+  打开它时 CSS 才给 `.flip-move` 声明 `transform 0.2s ease-out`（`prefers-reduced-motion` 关闭），
+  等价 React 端 `useFlipReorder`（同为 200ms）。未新增依赖。
+- **③ TagsBar 适配 UDashboardToolbar**（`layouts/AdminLayout.vue` / `components/layout/TagsBar.vue`）：
+  nav 去掉与 toolbar 重复的底边框 / 背景，toolbar 经 `:ui` 覆盖默认 `min-h-[49px]` 与 `px-4`，
+  栏高回到 40px（对齐 React）；`v-if="showTabs"` 提到 toolbar 上，避免关闭标签栏时残留一条空 toolbar。
+- **④ 账户个人标签改用 Nuxt UI 内置 UInputTags**（`features/account/TagInput.vue`）：按 §21 组件
+  优先级用内置组件替换原自定义拼装（React 端因 HeroUI 无对应组件仍自建），对外接口不变
+  （`v-model` / label / placeholder / disabled，`ProfileFormCard` 无需改）；`max=10` /
+  `max-length=20` / `convert-value` 去首尾空格 / `@invalid` 区分「已存在」与「超上限」内联提示。
+  **已知行为差异**：单项超长由原生 maxlength 截断（`tags.tooLong` 不再触发，i18n key 保留未删）；
+  内置组件无「+」按钮，回车即添加（placeholder 文案本就如此）；删除按钮可访问名由 reka-ui 的
+  `aria-labelledby` 固定为标签文本（无法从外部改写为 React 端「删除标签 X」语义，评估后记为已知差异）。
+- **⑤ 菜单加载失败回退控制台**（`layouts/AdminLayout.vue`）：侧边栏 `error` 时 items 回退
+  `[CONSOLE_MENU_NODE]` 照常渲染（不再被错误内容顶掉，对齐 React `app-sidebar`）；同时按 React
+  结构把失败提示与重试移到主体区覆盖层（`ErrorOverlay` 语义），用 `v-show` + `display:contents`
+  包裹 KeepAliveOutlet，保证覆盖期间保活实例池与路由 VT 守卫保持挂载、恢复后原页面状态无损。
+- **验证**：`lint`（0 error，5 条存量 warning）/ `type-check` / `test`（85 用例）/ `build`（vite +
+  vue-tsc）全绿；本地 5174 dev server + admin 账号浏览器实测五项——下拉「个人链接」子菜单项完整、
+  列设置重置采样到 FLIP 全过程（3 行 `transition: transform 0.2s`，位移 64px 逐帧归零；拖拽重排
+  0 个 move class 即不播放）且重置已清 localStorage、标签添加 / 重复提示 / 保存落库均通过
+  （测试数据已删回原状）、注入 `/menus` 500 后侧边栏仅剩「控制台」且主体区出现失败提示、
+  点重试完整恢复菜单。
+- **无需同步**：数据库 / OpenAPI 契约 / Schema 不涉及（纯前端体验调整）；React / Next / NestJS
+  端无对应改动。
+
 ### 非菜单路由标签页图标兜底：Next / Vue 两端同步 React（2026-09-11）
 
 - **背景**：承接「React：非菜单路由标签页图标兜底」条目（/account、/my-notices 标签页补图标），

@@ -12,6 +12,7 @@ import type {
 import type { MenuNode } from "@/lib/api-types";
 import { useAuthSync } from "@/composables/use-auth-sync";
 import { MENUS_QUERY_KEY, useMenus } from "@/composables/use-menus";
+import { CONSOLE_MENU_NODE } from "@/lib/menu-fetch";
 import { filterHiddenMenus } from "@/lib/permission";
 import { findActivePath } from "@/lib/menu-utils";
 import { resolveRouteTitleKey } from "@/lib/route-access";
@@ -74,11 +75,14 @@ function toNavLeaf(node: MenuNode): NavLeaf {
  * - 仅做 hideInMenu 过滤（权限过滤由后端 GET /menus 完成，见 menu-fetch.ts）
  * - 保持一维数组结构，利用 children 属性嵌套，与 React 端 MenuNode[] 结构一致。
  * - UNavigationMenu 会自动处理 children 渲染和路由高亮。
+ * - 接口加载失败时回退为仅「控制台」：该节点为前端固定注入（登录即可见，
+ *   不依赖后端下发），不应因 /menus 失败而连控制台入口一起消失
+ *   （对齐 React 端 app-sidebar；失败提示与重试放在主体区覆盖层）。
  */
 const sidebarItems = computed<NavLeaf[]>(() => {
-  const visible = filterHiddenMenus(menus.value ?? []);
+  const source = error.value ? [CONSOLE_MENU_NODE] : (menus.value ?? []);
 
-  return visible.map(toNavLeaf);
+  return filterHiddenMenus(source).map(toNavLeaf);
 });
 
 /** 菜单区底部快捷链接（对齐 React 端 SIDEBAR_LINKS，新窗口跳转）。 */
@@ -285,24 +289,7 @@ function retryMenus() {
           </div>
         </div>
 
-        <!-- 菜单加载失败：提示 + 重试（不误跳 403） -->
-        <UAlert
-          v-else-if="error"
-          class="mt-2"
-          color="error"
-          variant="outline"
-          icon="i-lucide-triangle-alert"
-          :title="t('layout.overlay.permissionCheckFailed')"
-          :actions="[
-            {
-              label: t('common.retry'),
-              icon: 'i-lucide-refresh-cw',
-              color: 'error',
-              onClick: retryMenus,
-            },
-          ]"
-        />
-
+        <!-- 菜单：加载失败时 sidebarItems 已回退为仅「控制台」，照常渲染 -->
         <UNavigationMenu
           v-else
           :collapsed="collapsed"
@@ -373,12 +360,52 @@ function retryMenus() {
           </template>
         </UDashboardNavbar>
 
-        <!-- 多标签页栏：偏好设置可隐藏（关闭仅隐藏 UI，不清空已打开标签） -->
-        <TagsBar v-if="designTheme.showTabs" />
+        <!-- 多标签页栏：置于 UDashboardToolbar 内，边框由 toolbar 提供；覆盖其
+             默认 min-h-[49px] / px-4 让高度与内边距由 TagsBar 自身决定（h-10 +
+             px-2，对齐 React 端 40px 栏高）。偏好设置可隐藏（关闭仅隐藏 UI，
+             不清空已打开标签）。 -->
+        <UDashboardToolbar
+          v-if="designTheme.showTabs"
+          :ui="{ root: 'min-h-0 px-0 sm:px-0' }"
+        >
+          <TagsBar />
+        </UDashboardToolbar>
       </template>
 
       <template #body>
-        <KeepAliveOutlet />
+        <!-- 菜单加载失败：主体区错误覆盖层（对齐 React 端 ErrorOverlay），
+             不误跳 403；重试即重新拉取 /menus -->
+        <div
+          v-if="error"
+          class="flex h-full min-h-[50vh] flex-col items-center justify-center gap-2 rounded-2xl border border-default bg-elevated/50 text-muted"
+        >
+          <UIcon
+            aria-hidden
+            class="size-10 text-error"
+            name="i-lucide-triangle-alert"
+          />
+          <p class="font-medium text-default">
+            {{ t("layout.overlay.permissionCheckFailed") }}
+          </p>
+          <p class="max-w-80 text-center text-sm">
+            {{ t("layout.overlay.permissionCheckFailedDesc") }}
+          </p>
+          <UButton
+            class="mt-2"
+            :label="t('common.retry')"
+            color="neutral"
+            size="sm"
+            variant="outline"
+            @click="retryMenus"
+          />
+        </div>
+
+        <!-- display:contents 包裹层：覆盖层显示期间以 v-show 隐藏而非卸载，
+             KeepAliveOutlet 的保活实例池与路由 VT 守卫保持挂载，恢复后原页面
+             状态无损（同 React 端 overlay 语义） -->
+        <div v-show="!error" class="contents">
+          <KeepAliveOutlet />
+        </div>
       </template>
     </UDashboardPanel>
   </UDashboardGroup>

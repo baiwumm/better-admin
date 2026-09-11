@@ -9,7 +9,7 @@ import {
   moveArrayElement,
   useSortable,
 } from "@vueuse/integrations/useSortable";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 
 import type { AppTableLike } from "./table-types";
@@ -148,9 +148,16 @@ function setVisible(columnId: string, visible: boolean) {
 }
 
 function resetColumns() {
+  // 打开 FLIP 门控：本次顺序变化（还原默认顺序）由 TransitionGroup 播放位移过渡
+  flipEnabled.value = true;
   orderIds.value = [...defaultOrderIds];
   props.table.setColumnVisibility({});
   props.table.setColumnOrder([]);
+
+  clearTimeout(flipTimer);
+  flipTimer = setTimeout(() => {
+    flipEnabled.value = false;
+  }, FLIP_DURATION_MS);
 }
 
 /**
@@ -176,6 +183,20 @@ function columnLabel(id: string): string {
 
   return typeof rendered === "string" ? rendered : id;
 }
+
+// ── 重排动画（对齐 React 端 useFlipReorder）──
+/** FLIP 过渡时长（与 <style> 中 .flip-anim .flip-move 的 transition 保持一致）。 */
+const FLIP_DURATION_MS = 200;
+
+/**
+ * 重排 FLIP 门控：仅「重置」时置真。TransitionGroup 的 move class 只有在容器
+ * 同时带 .flip-anim 时才有 transform 过渡（见 <style>），故门控由该 class 承担；
+ * 拖拽重排不打开门控，交给 sortablejs 自身 animation，避免落下后又滑动一次。
+ */
+const flipEnabled = ref(false);
+let flipTimer: ReturnType<typeof setTimeout> | undefined;
+
+onBeforeUnmount(() => clearTimeout(flipTimer));
 
 // ── 拖拽排序：列表随 Popover 打开懒渲染，watchElement 跟随元素挂载 / 卸载初始化 ──
 const listEl = ref<HTMLElement | null>(null);
@@ -232,32 +253,55 @@ useSortable(listEl, orderIds, {
         <p class="pb-2 text-xs text-muted">
           {{ t("common.datatable.columnOrderHint") }}
         </p>
-        <div ref="listEl" class="flex max-h-80 flex-col gap-1 overflow-y-auto">
-          <div
-            v-for="id in orderIds"
-            :key="id"
-            class="flex items-center gap-1 rounded-md bg-default"
-          >
-            <UButton
-              :aria-label="
-                t('common.datatable.columnDrag', { column: columnLabel(id) })
-              "
-              class="column-drag-handle cursor-grab touch-none"
-              color="neutral"
-              icon="i-lucide-grip-vertical"
-              size="sm"
-              variant="ghost"
-            />
-            <UCheckbox
-              :aria-label="columnLabel(id)"
-              :disabled="!canToggle(id)"
-              :model-value="isVisible(id)"
-              @update:model-value="(value) => setVisible(id, value === true)"
-            />
-            <span class="flex-1 truncate text-sm">{{ columnLabel(id) }}</span>
-          </div>
+        <div
+          ref="listEl"
+          class="flex max-h-80 flex-col gap-1 overflow-y-auto"
+          :class="flipEnabled ? 'flip-anim' : ''"
+        >
+          <!-- TransitionGroup 承担「重置」时的行重排 FLIP（.flip-move 位移过渡）；
+               拖拽重排不打开 .flip-anim，交由 sortablejs 自身 animation -->
+          <TransitionGroup name="flip">
+            <div
+              v-for="id in orderIds"
+              :key="id"
+              class="flex items-center gap-1 rounded-md bg-default"
+            >
+              <UButton
+                :aria-label="
+                  t('common.datatable.columnDrag', { column: columnLabel(id) })
+                "
+                class="column-drag-handle cursor-grab touch-none"
+                color="neutral"
+                icon="i-lucide-grip-vertical"
+                size="sm"
+                variant="ghost"
+              />
+              <UCheckbox
+                :aria-label="columnLabel(id)"
+                :disabled="!canToggle(id)"
+                :model-value="isVisible(id)"
+                @update:model-value="(value) => setVisible(id, value === true)"
+              />
+              <span class="flex-1 truncate text-sm">{{ columnLabel(id) }}</span>
+            </div>
+          </TransitionGroup>
         </div>
       </div>
     </template>
   </UPopover>
 </template>
+
+<style scoped>
+/* 列面板行重排 FLIP：位移过渡由 TransitionGroup 的 move class（.flip-move）承担，
+   仅在容器带 .flip-anim（重置时由脚本临时打开）时声明，等价 React 端 useFlipReorder
+   的「仅程序性重排播放、拖拽交给 sortablejs」策略；尊重系统减弱动态效果偏好。 */
+.flip-anim .flip-move {
+  transition: transform 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-anim .flip-move {
+    transition: none;
+  }
+}
+</style>

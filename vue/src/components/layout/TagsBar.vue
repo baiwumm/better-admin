@@ -26,7 +26,8 @@ import { isPinnedTab } from "@/lib/tabs-model";
 import { useTabsStore } from "@/stores/tabs-store";
 
 /**
- * 多标签页栏（TagsView，对齐 React 端 tags-bar）：置于顶栏下方，记录路由访问轨迹。
+ * 多标签页栏（TagsView，对齐 React 端 tags-bar）：置于顶栏下方的 UDashboardToolbar
+ * 内，记录路由访问轨迹。
  * - 控制台为固定标签：恒在首位、不可关闭（ensureHomeTab 保证至少一个标签），
  *   结构为「菜单图标 名称 Pin 图标」；普通标签尾部为关闭热区；
  * - 标签主体为 UButton（激活 primary subtle / 未激活 neutral outline），
@@ -423,9 +424,9 @@ const ctxItems = computed<ContextMenuItem[][]>(() => {
 </script>
 
 <template>
-  <nav
-    class="flex h-10 shrink-0 items-center gap-1 border-b border-default bg-default px-2"
-  >
+  <!-- 根 nav 置于 AdminLayout 的 UDashboardToolbar 内：底边框由 toolbar 提供、
+       背景继承面板，此处只定高度与左右内边距（h-10 + px-2，对齐 React 端） -->
+  <nav class="flex h-10 w-full shrink-0 items-center gap-1 px-2">
     <!-- 左侧 chevron：仅当左方仍有未展示内容时可用 -->
     <UButton
       :aria-label="t('layout.tags.scrollLeft')"

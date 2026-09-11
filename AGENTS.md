@@ -400,7 +400,7 @@ Phase 7  统一测试 → 部署全部版本
 
 > 阶段性进度记录已全部移至 [`docs/progress.md`](docs/progress.md)（按时间倒序），本节只保留当前快照；阶段由用户明确安排后再推进。
 
-- **当前阶段**：React + NestJS 全栈已完成，Next.js 全栈版已上线；`website/` 官方文档站已落地（Next 16 + Fumadocs，ogimg 黑白风格，内容由 `docs/` 真源自动同步，详见 progress.md，待 Vercel 部署绑 docs.baiwumm.com）。**Vue 端 M0-M4 已完成**：M4 文档收尾 + 本地冒烟通过（发现并修复 4 项与 React 基准的对齐缺陷、清理 1 项既有 lint error；`lint` / `type-check` / `test` / `build` 四绿），**仅剩 Vercel 部署与线上冒烟，按用户指示由用户手动执行**。**Nuxt 端已立项**：可行性计划见 [`docs/nuxt-plan.md`](docs/nuxt-plan.md)（功能对齐清单、Next/Vue 三源复用地图、技术选型、6 项待确认决策、M0-M5 路线），待评审拍板后启动。
+- **当前阶段**：React + NestJS 全栈已完成，Next.js 全栈版已上线；`website/` 官方文档站已落地（Next 16 + Fumadocs，ogimg 黑白风格，内容由 `docs/` 真源自动同步，详见 progress.md，待 Vercel 部署绑 docs.baiwumm.com）。**Vue 端 M0-M4 已完成**：M4 文档收尾 + 本地冒烟通过（发现并修复 4 项与 React 基准的对齐缺陷、清理 1 项既有 lint error；`lint` / `type-check` / `test` / `build` 四绿），M4 后另按用户反馈完成 5 项体验对齐（个人链接子菜单 / 列设置重置 FLIP 动画 / 标签栏适配 UDashboardToolbar / 个人标签改用 UInputTags / 菜单加载失败回退控制台，见 progress.md 置顶条目），**仅剩 Vercel 部署与线上冒烟，按用户指示由用户手动执行**。**Nuxt 端已立项**：可行性计划见 [`docs/nuxt-plan.md`](docs/nuxt-plan.md)（功能对齐清单、Next/Vue 三源复用地图、技术选型、6 项待确认决策、M0-M5 路线），待评审拍板后启动。
 - **Vue 端已完成模块**：登录认证 / 全站国际化 / 偏好设置（9 项 + 路由过渡 VT 编排与导航方向感知）/ 多标签页 + KeepAlive / 命令面板 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）/ DataTable 列设置。
 - **React 端已完成模块**：登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）。
 - **Next.js 端已完成模块**：与 React 端对齐（认证 / Admin 布局 / 用户 / 角色 / 菜单 / 字典 / 日志 / 我的账户 / 组织中心全套）。
