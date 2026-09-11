@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useLocation, useRouter } from "@tanstack/react-router";
 import {
   Breadcrumbs,
@@ -18,6 +18,7 @@ import { SearchTrigger } from "./search-trigger";
 import { ThemeSettingsDrawer } from "./theme-settings-drawer";
 
 import { useMenus } from "@/hooks/use-menus";
+import { useEventListener } from "@/hooks/use-event-listener";
 import { useTranslation } from "@/i18n";
 import { getMenuLabel } from "@/lib/menu-i18n";
 import { filterHiddenMenus } from "@/lib/permission";
@@ -64,18 +65,17 @@ export function AppHeader({ collapsed, onToggle }: AppHeaderProps) {
   const mobileMenu = useOverlayState();
 
   // 全局快捷键 ⌘K / Ctrl+K 开关命令面板（仅登录后布局挂载期间生效）
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         searchSetOpen(!searchState.isOpen);
       }
-    };
+    },
+    [searchSetOpen, searchState.isOpen],
+  );
 
-    document.addEventListener("keydown", onKeyDown);
-
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [searchSetOpen, searchState.isOpen]);
+  useEventListener(document, "keydown", onKeyDown);
 
   // 路由标题兜底映射与菜单数据无关，仅在路由器实例变化时重建。
   const router = useRouter();

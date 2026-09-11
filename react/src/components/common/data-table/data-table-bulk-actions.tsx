@@ -3,10 +3,11 @@ import type { ReactNode } from "react";
 import type { AppTable } from "./table-types";
 
 import { Button, Chip, Separator, cn } from "@heroui/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
 import { useTranslation } from "@/i18n";
+import { useEventListener } from "@/hooks/use-event-listener";
 
 export interface DataTableBulkActionsProps<TData extends RowData> {
   table: AppTable<TData>;
@@ -54,18 +55,17 @@ export function DataTableBulkActions<TData extends RowData>({
     return () => window.clearTimeout(exitTimer.current);
   }, [selectedCount]);
 
-  useEffect(() => {
-    if (selectedCount === 0) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         table.resetRowSelection();
       }
-    };
+    },
+    [table],
+  );
 
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedCount, table]);
+  // 未选中行时不订阅（Esc 监听条件生效）
+  useEventListener(window, "keydown", selectedCount > 0 ? handleKeyDown : null);
 
   if (!mounted) return null;
 

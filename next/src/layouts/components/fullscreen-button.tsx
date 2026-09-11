@@ -5,6 +5,7 @@ import { Maximize, Minimize } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { useTranslation } from "@/i18n";
+import { useEventListener } from "@/hooks/use-event-listener";
 
 /**
  * 全屏切换按钮：点击进入 / 退出浏览器全屏。
@@ -17,19 +18,16 @@ import { useTranslation } from "@/i18n";
 export function FullscreenButton() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  useEffect(() => {
-    const sync = () => {
-      setIsFullscreen(document.fullscreenElement != null);
-    };
-
-    sync();
-
-    document.addEventListener("fullscreenchange", sync);
-
-    return () => {
-      document.removeEventListener("fullscreenchange", sync);
-    };
+  const sync = useCallback(() => {
+    setIsFullscreen(document.fullscreenElement != null);
   }, []);
+
+  // 挂载后立即校正（SSR 初始 false；document 仅在客户端 effect 访问）
+  useEffect(() => {
+    sync();
+  }, [sync]);
+
+  useEventListener(document, "fullscreenchange", sync);
 
   const { t } = useTranslation();
 

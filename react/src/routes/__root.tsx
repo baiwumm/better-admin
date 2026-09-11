@@ -14,8 +14,8 @@ import { useProgress } from "@bprogress/react";
 import { GeneralErrorPage } from "@/components/common/error-pages/general-error";
 import { NotFoundErrorPage } from "@/components/common/error-pages/not-found-error";
 import { useRouteProgress } from "@/hooks/use-route-progress";
-import { bindProgress } from "@/lib/progress";
 import { useDocumentTitle } from "@/lib/use-document-title";
+import { watchProgress } from "@/lib/progress";
 
 function RootComponent() {
   // 全局同步浏览器标签页标题：`${页面标题} - ${品牌名}`
@@ -24,16 +24,11 @@ function RootComponent() {
   // 路由导航进度条
   useRouteProgress();
 
-  // 将 useProgress 的 start/stop 注入非 React 模块（api-client / 路由进度），
-  // 时序配置（startPosition / delay / stopDelay）同步下发，保证单一来源
-  const { start, stop, startPosition, delay, stopDelay } = useProgress();
+  // 订阅进度条状态机展示态边沿驱动 bprogress（api-client / 路由进度直改
+  // progress.ts 响应式状态；时序配置收敛在 progress.ts 内）
+  const { start, stop } = useProgress();
 
-  useEffect(() => {
-    bindProgress(
-      { start, stop },
-      { startPosition, startDelayMs: delay, stopDelayMs: stopDelay },
-    );
-  }, [start, stop, startPosition, delay, stopDelay]);
+  useEffect(() => watchProgress({ start, stop }), [start, stop]);
 
   return (
     <>

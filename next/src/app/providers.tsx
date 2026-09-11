@@ -11,7 +11,7 @@ import { useProgress } from "@bprogress/next";
 import { createI18nInstance, i18n as sessionI18n, initI18n } from "@/i18n";
 import { initDesignTheme } from "@/stores/design-theme-store";
 import { queryClient } from "@/lib/query-client";
-import { bindProgress, progressRouteBegin } from "@/lib/progress";
+import { progressRouteBegin, watchProgress } from "@/lib/progress";
 
 export interface ProvidersProps {
   /** 启动语言（根 layout 从语言 Cookie 读出，缺省简体中文） */
@@ -20,7 +20,8 @@ export interface ProvidersProps {
 }
 
 /**
- * 将 useProgress 的 start/stop 注入非 React 模块（api-client），
+ * 订阅进度条状态机展示态边沿驱动 bprogress（api-client 直改 progress.ts
+ * 响应式状态；时序配置收敛在 progress.ts 内），
  * 并监听 pathname 驱动「路由过渡段」。必须在 AppProgressProvider 子树内调用。
  *
  * 路由过渡与请求计数共用同一状态机（lib/progress）：@bprogress/next 在
@@ -28,32 +29,14 @@ export interface ProvidersProps {
  * 期间由状态机经 disableAutoStop 拦截自动收尾，全部结束后统一 stop。
  */
 function ProgressBinder() {
-  const {
-    start,
-    stop,
-    startPosition,
-    delay,
-    stopDelay,
-    disableAutoStop,
-    enableAutoStop,
-  } = useProgress();
+  const { start, stop, disableAutoStop, enableAutoStop } = useProgress();
   const pathname = usePathname();
   const prevPathnameRef = useRef(pathname);
 
-  useEffect(() => {
-    bindProgress(
-      { start, stop, disableAutoStop, enableAutoStop },
-      { startPosition, startDelayMs: delay, stopDelayMs: stopDelay },
-    );
-  }, [
-    start,
-    stop,
-    startPosition,
-    delay,
-    stopDelay,
-    disableAutoStop,
-    enableAutoStop,
-  ]);
+  useEffect(
+    () => watchProgress({ start, stop, disableAutoStop, enableAutoStop }),
+    [start, stop, disableAutoStop, enableAutoStop],
+  );
 
   useEffect(() => {
     if (pathname !== prevPathnameRef.current) {

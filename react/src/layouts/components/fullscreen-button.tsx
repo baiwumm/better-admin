@@ -1,8 +1,9 @@
 import { Button } from "@heroui/react";
 import { Maximize, Minimize } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { useTranslation } from "@/i18n";
+import { useEventListener } from "@/hooks/use-event-listener";
 
 /**
  * 全屏切换按钮：点击进入 / 退出浏览器全屏。
@@ -14,17 +15,11 @@ export function FullscreenButton() {
     () => document.fullscreenElement != null,
   );
 
-  useEffect(() => {
-    const sync = () => {
-      setIsFullscreen(document.fullscreenElement != null);
-    };
-
-    document.addEventListener("fullscreenchange", sync);
-
-    return () => {
-      document.removeEventListener("fullscreenchange", sync);
-    };
+  const sync = useCallback(() => {
+    setIsFullscreen(document.fullscreenElement != null);
   }, []);
+
+  useEventListener(document, "fullscreenchange", sync);
 
   const { t } = useTranslation();
 

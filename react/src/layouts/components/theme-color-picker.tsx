@@ -1,9 +1,10 @@
 import { Button, ColorSwatchPicker, parseColor } from "@heroui/react";
 import { Shuffle } from "lucide-react";
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 
 import { PickerLabel } from "./picker-label";
 
+import { useEventListener } from "@/hooks/use-event-listener";
 import { THEME_PALETTES } from "@/themes/color-palettes";
 import { useTranslation } from "@/i18n";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
@@ -29,17 +30,16 @@ export function ThemeColorPicker() {
   const { t } = useTranslation();
 
   // 监听跨标签页的主题色变化（StorageEvent 只在其他标签页触发）
-  useEffect(() => {
-    const handler = (e: StorageEvent) => {
+  const handleStorage = useCallback(
+    (e: StorageEvent) => {
       if (e.key === "better-admin-design-theme" && e.newValue) {
         setDesignTheme(e.newValue);
       }
-    };
+    },
+    [setDesignTheme],
+  );
 
-    window.addEventListener("storage", handler);
-
-    return () => window.removeEventListener("storage", handler);
-  }, [setDesignTheme]);
+  useEventListener(window, "storage", handleStorage);
 
   // ColorSwatchPicker 的 value 需要是 parseColor(Color) 对象
   const swatchValue = parseColor(

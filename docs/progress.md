@@ -2,6 +2,28 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### React / Next 端内部收敛：进度条状态机 zustand 化 + useEventListener 收敛（2026-09-12）
+
+- **背景**：React 端优化扫描（经用户拍板，行为零改动）落地两项——① 进度条状态机响应式化
+  （Vue 端同款重构的 React/Next 收尾，跨端机制一致）；② 手动事件监听收敛项目级 hook。
+- **progress.ts zustand 化（双端）**：状态机展示态 `active` 收进小 zustand store，api-client /
+  use-route-progress（next 为 ProgressBinder）直接调 `progressStart/Stop/RouteBegin` 改状态；
+  桥接组件由 `bindProgress` 命令式注入改为 `watchProgress` 订阅边沿（react 在 `__root.tsx`、
+  next 在 providers 的 ProgressBinder）。**行为零改动的关键**：zustand subscribe 在 setState 时
+  **同步**触发，边沿时序与原直接调用完全一致。时序常量（0.3 / 200 / 0）收敛进状态机（与两端
+  Provider props 取值一致，那三个 props 仅影响未启用的锚点场景）。
+- **next 特有保留点**：`progressStart` 首个飞行请求的 `disableAutoStop()` 必须同步发生
+  （早于库在宏任务里检查 isAutoStopDisabled）——`watchProgress` 登记模块级 `boundActions`
+  供模块同步调用，stop / enableAutoStop 走订阅；退订时清理登记。
+- **useEventListener hook（双端各一份）**：新建 `hooks/use-event-listener.ts`（target / type /
+  listener 变化时重订阅，listener 传 null 表达条件监听），各迁移 4 处手动「注册 + 清理」对——
+  bulk-actions Esc（未选中不订阅语义以 null listener 保留）、app-header ⌘K、fullscreen-button
+  （next 保留挂载即校正）、theme-color-picker 跨标签页 storage。**tags-bar 两端的手动监听有意
+  不动**（拖拽编排核心 + 拖拽排序在途迭代）。
+- **验证**：react `eslint` / `test`（93 用例）/ `build`（tsc + vite）全绿；next `eslint` /
+  `build`（含 TS 全量检查）通过。UX 零变化，feature-matrix 不涉及。
+- **无需同步**：数据库 / OpenAPI 契约不涉及；Vue 端已在既有重构中完成同语义收敛。
+
 ### 页面标题随语言切换即时刷新：Next sign-in + Vue 全站对齐 React 语义（2026-09-12）
 
 - **背景**：generateMetadata 落地后用户实测反馈——登录后页面（admin-shell 内）切语言标题即时更新，

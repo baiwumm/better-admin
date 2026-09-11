@@ -760,3 +760,30 @@ titleKey 与 React 端 TanStack Router 的 `staticData.titleKey` 一字不差（
   `composables/use-document-title.ts`（App.vue 挂载，watch「route.path + locale」，
   React `use-document-title` 的等价物）， afterEach 删除避免双源——afterEach 只随导航
   触发，切语言不导航标题即滞留旧语言。
+
+---
+
+## 19. React / Next 端进度条状态机 zustand 化 + useEventListener 收敛（React / Next 端，2026-09-12）
+
+**结论：非组件上下文（api-client / 路由进度钩子）与组件的通信，React/Next 端的惯用解是
+「模块内 zustand store + 组件侧订阅」；「注册即忘」类事件监听收敛到项目级
+`hooks/use-event-listener.ts`。与 Vue 端 §17 同语义的 React/Next 收尾。**
+
+- **行为零改动的关键论据**：zustand 的 `subscribe` 在 `setState` 时**同步**触发——
+  原 `sync()` 里「边沿判定 → 直接调 actions.start/stop」的时序，改为
+  「边沿判定 → setState → 订阅回调同步执行」后逐调用点等价（含快速连点下
+  `pendingNavigation` 式覆盖语义由边沿判定天然保证）。
+- **next 端同步动作不能走订阅**：`progressStart` 首个飞行请求的 `disableAutoStop()`
+  必须在当拍同步发生（早于 @bprogress/next 在宏任务里检查 isAutoStopDisabled），
+  与展示态边沿无关——故 `watchProgress` 登记模块级 `boundActions` 供模块同步调用，
+  stop / enableAutoStop 才走订阅；退订时按引用相等清理登记。
+- **时序常量收敛**：startPosition=0.3 / delay=200 / stopDelay=0 收进 progress.ts
+  （取值与两端 Provider props 一致；那三个 props 仅影响未启用的锚点进度场景）。
+  组件侧订阅经 `useEffect(() => watchProgress({...}), [actions])` 挂载，退订函数
+  即 effect 清理，StrictMode 重复挂载安全。
+- **`useEventListener` 约定**：target / type / listener / options 变化即重订阅；
+  listener 传 `null` 表达「条件生效」监听（bulk-actions 未选中行不订阅 Esc 的
+  原语义以此保留）；options 传对象需调用方记忆化。两端各一份（无共享包，允许
+  各自演进）。
+- **有意保留的手动监听**：tags-bar（React / Next）的 pointer / wheel / scroll
+  监听群是拖拽编排核心且拖拽排序在途迭代，不纳入本次收敛。

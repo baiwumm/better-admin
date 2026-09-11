@@ -1,9 +1,13 @@
+import { create } from "zustand";
+
 /**
- * 全局进度条控制器（非 React 模块安全读写）。
+ * 全局进度条状态机（zustand 响应式状态驱动）。
  *
- * api-client.ts 是纯函数模块，无法直接调用 useProgress() hook。
- * 本模块通过 bindProgress() 接受 React 侧注入的 useProgress 引用，
- * 供 api-client（请求进度）与 providers 的 ProgressBinder（路由过渡）调用。
+ * api-client.ts 是纯函数模块，无法直接调用 useProgress() hook；
+ * api-client 与 providers 的 ProgressBinder（路由过渡）直接调用本模块的
+ * progressStart / progressStop / progressRouteBegin 改写状态，展示态
+ * active 的变化由组件侧经 watchProgress() 订阅并驱动 bprogress
+ * （useProgress 需组件上下文，无法在非 React 模块直接调用）。
  *
  * 并发模型（统一状态机，修复「路由 + 并发请求」竞态）：
  * - 展示态 = 「飞行中业务请求数 > 0」或「路由切换过渡未结束」，任一活跃即展示；
@@ -13,8 +17,8 @@
  *   拦截库的自动收尾，收尾权移交本状态机，全部结束后 stop + enableAutoStop()。
  * - start：仅「无路由导航的独立请求」由状态机补发（轮询 / 懒加载等）；
  *   导航场景的 start 由 @bprogress/next 的路由监听负责，重复 start 会重置进度。
- * - start 带 Provider 下发的 delay（默认 200ms）：短导航 / 快速接口全程
- *   不闪进度条；delay 期间收到 stop 会取消未触发的 start，无残留。
+ * - start 带 delay（200ms）：短导航 / 快速接口全程不闪进度条；delay 期间
+ *   收到 stop 会取消未触发的 start，无残留。
  */
 
 type ProgressActions = {
@@ -29,18 +33,26 @@ type ProgressActions = {
   enableAutoStop: () => void;
 };
 
-/** 由 React 侧注入的 useProgress 引用与时序配置 */
-let actions: ProgressActions | null = null;
-let startPosition = 0;
-let startDelayMs = 0;
-let stopDelayMs = 0;
+// ── 时序配置（单一来源；取值与 app/providers.tsx 的 ProgressProvider
+//    startPosition / delay / stopDelay 一致——Provider 的这三个 props 仅影响
+//    锚点点击场景，手动 start / stop 的时序以这里为准）──
+
+/** start 起始位置 */
+const START_POSITION = 0.3;
+/** start delay：短导航 / 快速接口全程不闪进度条 */
+const START_DELAY_MS = 200;
+/** stop 延迟：立即收尾 */
+const STOP_DELAY_MS = 0;
+
+/** 进度条展示态（状态机输出，边沿由 watchProgress 订阅） */
+const useProgressStore = create<{ active: boolean }>()(() => ({
+  active: false,
+}));
 
 /** 飞行中的业务请求数（api-client progressStart/Stop 引用计数） */
 let pendingCount = 0;
 /** 路由切换过渡是否未结束（ProgressBinder 监听 pathname 触发） */
 let routePending = false;
-/** 进度条当前展示态（状态机上次输出，避免重复 start/stop） */
-let active = false;
 
 /** 路由过渡的收尾定时器（rAF + 延迟；重复触发时先取消旧的） */
 let routeRafId: number | null = null;
@@ -49,40 +61,47 @@ let routeEndTimerId: ReturnType<typeof setTimeout> | null = null;
 /** 路由过渡收尾延迟：等新页面完成渲染 */
 const ROUTE_SETTLE_DELAY_MS = 50;
 
+/**
+ * watchProgress 登记的组件侧 actions：progressStart 首个飞行请求需
+ * 「同步」disableAutoStop（早于库在宏任务里检查 isAutoStopDisabled 的时机），
+ * 不能等订阅回调。
+ */
+let boundActions: ProgressActions | null = null;
+
 function sync() {
   const next = pendingCount > 0 || routePending;
 
-  if (next === active) return;
-  active = next;
+  if (next === useProgressStore.getState().active) return;
 
-  if (next) {
-    // 导航过渡（routePending）时 start 由 @bprogress/next 负责，不重复 start
-    if (!routePending) {
-      actions?.start(startPosition, startDelayMs);
-    }
-  } else {
-    actions?.enableAutoStop();
-    actions?.stop(stopDelayMs);
-  }
+  // zustand subscribe 在 setState 时同步触发，订阅侧此刻即拿到新展示态
+  useProgressStore.setState({ active: next });
 }
 
 /**
- * 由 React 侧调用一次，注入 useProgress 的 start/stop 与时序配置。
- * start/stop/disableAutoStop/enableAutoStop 引用稳定（useCallback），
- * 重复 bind 为幂等更新。
+ * 订阅进度条展示态边沿，驱动 bprogress start/stop / 自动收尾拦截
+ * （组件侧调用一次；返回的退订函数交由 effect 清理）。
  */
-export function bindProgress(
-  a: ProgressActions,
-  timing: {
-    startPosition?: number;
-    startDelayMs?: number;
-    stopDelayMs?: number;
-  } = {},
-) {
-  actions = a;
-  startPosition = timing.startPosition ?? 0;
-  startDelayMs = timing.startDelayMs ?? 0;
-  stopDelayMs = timing.stopDelayMs ?? 0;
+export function watchProgress(actions: ProgressActions): () => void {
+  boundActions = actions;
+
+  const unsubscribe = useProgressStore.subscribe((state, prev) => {
+    if (state.active === prev.active) return;
+
+    if (state.active) {
+      // 导航过渡（routePending）时 start 由 @bprogress/next 负责，不重复 start
+      if (!routePending) {
+        actions.start(START_POSITION, START_DELAY_MS);
+      }
+    } else {
+      actions.enableAutoStop();
+      actions.stop(STOP_DELAY_MS);
+    }
+  });
+
+  return () => {
+    if (boundActions === actions) boundActions = null;
+    unsubscribe();
+  };
 }
 
 /** 业务请求开始（api-client 调用；引用计数，并发安全）。 */
@@ -91,7 +110,7 @@ export function progressStart() {
   if (pendingCount === 1) {
     // 首个飞行请求拦截库的 pathname 变化自动 stop（同步置 ref，
     // 早于库在宏任务里检查 isAutoStopDisabled 的时机）
-    actions?.disableAutoStop();
+    boundActions?.disableAutoStop();
   }
   sync();
 }

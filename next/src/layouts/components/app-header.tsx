@@ -2,7 +2,7 @@
 
 import type { AuthUser, MenuNode } from "@/lib/api-types";
 
-import { useEffect } from "react";
+import { useCallback } from "react";
 import { usePathname } from "next/navigation";
 import {
   Breadcrumbs,
@@ -21,6 +21,7 @@ import { NoticeBell } from "./notice-bell";
 import { SearchTrigger } from "./search-trigger";
 import { ThemeSettingsDrawer } from "./theme-settings-drawer";
 
+import { useEventListener } from "@/hooks/use-event-listener";
 import { useTranslation } from "@/i18n";
 import { getMenuLabel } from "@/lib/menu-i18n";
 import { filterHiddenMenus } from "@/lib/permission";
@@ -69,18 +70,17 @@ export function AppHeader({
   const mobileMenu = useOverlayState();
 
   // 全局快捷键 ⌘K / Ctrl+K 开关命令面板（仅登录后布局挂载期间生效）
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
+  const onKeyDown = useCallback(
+    (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         searchSetOpen(!searchState.isOpen);
       }
-    };
+    },
+    [searchSetOpen, searchState.isOpen],
+  );
 
-    document.addEventListener("keydown", onKeyDown);
-
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [searchSetOpen, searchState.isOpen]);
+  useEventListener(document, "keydown", onKeyDown);
 
   // 从可见菜单树解析出当前路由对应的面包屑节点链（含图标与名称）；
   // 非菜单路由（如登录白名单页 /account、通知详情）在菜单树中无匹配，回退为
