@@ -25,6 +25,7 @@ import DataTable from "@/components/data-table/DataTable.vue";
 import DataTablePagination from "@/components/data-table/DataTablePagination.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
+import { useColumnSettingKey } from "@/composables/use-column-setting-key";
 import { useMenuPermissions } from "@/composables/use-permissions";
 import { useListQuery } from "@/composables/use-list-query";
 import { createListStore } from "@/lib/list-store";
@@ -307,6 +308,8 @@ const columns = computed<AppColumnDef<Post>[]>(() => [
   },
 ]);
 
+const columnSettingKey = useColumnSettingKey("/org/posts");
+
 const table: AppTable<Post> = useVueTable({
   get data() {
     return data.value;
@@ -365,7 +368,7 @@ export default { name: "PostsPage" };
 
 <template>
   <div class="flex w-full flex-col gap-4">
-    <DataTableToolbar>
+    <DataTableToolbar :column-setting-key="columnSettingKey" :table="table">
       <div class="w-56">
         <DeptTreeSelect
           :aria-label="t('features.posts.filter.dept')"

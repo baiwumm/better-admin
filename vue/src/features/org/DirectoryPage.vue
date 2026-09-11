@@ -31,6 +31,7 @@ import DataTable from "@/components/data-table/DataTable.vue";
 import DataTablePagination from "@/components/data-table/DataTablePagination.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
+import { useColumnSettingKey } from "@/composables/use-column-setting-key";
 import { useMenuPermissions } from "@/composables/use-permissions";
 import { useListQuery } from "@/composables/use-list-query";
 import { createListStore } from "@/lib/list-store";
@@ -295,6 +296,8 @@ const columns = computed<AppColumnDef<DirectoryEntry>[]>(() => [
   },
 ]);
 
+const columnSettingKey = useColumnSettingKey("/org/directory");
+
 const table: AppTable<DirectoryEntry> = useVueTable({
   get data() {
     return data.value;
@@ -374,7 +377,7 @@ export default { name: "DirectoryPage" };
 
       <!-- 右栏：人员列表 -->
       <div class="flex min-w-0 flex-col gap-4">
-        <DataTableToolbar>
+        <DataTableToolbar :column-setting-key="columnSettingKey" :table="table">
           <UInput
             v-model="searchInput"
             :aria-label="t('features.directory.search.placeholder')"

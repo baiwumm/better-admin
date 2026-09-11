@@ -1,5 +1,10 @@
 <script setup lang="ts" generic="TData extends RowData">
-import type { RowData, RowSelectionState } from "@tanstack/vue-table";
+import type {
+  ColumnOrderState,
+  RowData,
+  RowSelectionState,
+  VisibilityState,
+} from "@tanstack/vue-table";
 import type { AppTableLike } from "./table-types";
 import LoadingContent from "@/components/ui/loading-content/index.vue";
 import { computed } from "vue";
@@ -10,11 +15,12 @@ import { useI18n } from "vue-i18n";
  * 实例提取原始 data / columns 交给 UTable 渲染。排序 / 空态 / 加载态由
  * UTable 内置管理。
  *
- * 行选择桥接（关键）：UTable 内部自建一个 TanStack 实例渲染单元格，select
+ * 状态桥接（关键）：UTable 内部自建一个 TanStack 实例渲染单元格，select
  * 列的勾选写的是 UTable 内部实例的 rowSelection；若不桥接，页面级 table
  * 实例（DataTableBulkActions / getSelectedRowModel 的真源）永远为空。
- * 这里以 v-model:row-selection 双向转发到页面实例，并转发 getRowId 保证
- * 两边行 ID 一致。
+ * 这里以 v-model 双向转发 rowSelection / columnVisibility / columnOrder 到
+ * 页面实例（后两者由 DataTableViewOptions 列设置写入页面实例、经此生效到
+ * 渲染层），并转发 getRowId 保证两边行 ID 一致。
  *
  * 后台刷新对齐 React 端 data-table：保留当前数据 + 半透明遮罩 + Spinner。
  * 样式对齐 better-nuxt 参考项目（border-separate + 表头圆角描边 + 行分隔）。
@@ -40,12 +46,24 @@ const rowSelection = computed<RowSelectionState>({
   get: () => props.table.getState().rowSelection,
   set: (value) => props.table.setRowSelection(value),
 });
+
+/** 列可见性 / 列顺序桥接（UTable 仅在初值非 undefined 时注册 onChange，页面实例默认 {} / []） */
+const columnVisibility = computed<VisibilityState>({
+  get: () => props.table.getState().columnVisibility,
+  set: (value) => props.table.setColumnVisibility(value),
+});
+const columnOrder = computed<ColumnOrderState>({
+  get: () => props.table.getState().columnOrder,
+  set: (value) => props.table.setColumnOrder(value),
+});
 </script>
 
 <template>
   <div class="relative">
     <UTable
       v-model:row-selection="rowSelection"
+      v-model:column-visibility="columnVisibility"
+      v-model:column-order="columnOrder"
       sticky
       :loading="refreshing"
       :data

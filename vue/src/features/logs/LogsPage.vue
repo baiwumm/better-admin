@@ -37,6 +37,7 @@ import DataTableBulkActions from "@/components/data-table/DataTableBulkActions.v
 import DataTablePagination from "@/components/data-table/DataTablePagination.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
+import { useColumnSettingKey } from "@/composables/use-column-setting-key";
 import { type AppTable } from "@/components/data-table/table-types";
 import { dictItemsQueryKey, fetchDictItems } from "@/features/dicts/dict-api";
 import { useMenuPermissions } from "@/composables/use-permissions";
@@ -279,6 +280,8 @@ const columns = computed<AppColumnDef<Log>[]>(() => [
   },
 ]);
 
+const columnSettingKey = useColumnSettingKey("/settings/logs");
+
 const table: AppTable<Log> = useVueTable({
   get data() {
     return data.value;
@@ -376,7 +379,7 @@ async function confirmBatchDelete() {
 
 <template>
   <div class="flex w-full flex-col gap-4">
-    <DataTableToolbar>
+    <DataTableToolbar :column-setting-key="columnSettingKey" :table="table">
       <UInput
         v-model="searchInput"
         :aria-label="t('features.logs.searchPlaceholder')"

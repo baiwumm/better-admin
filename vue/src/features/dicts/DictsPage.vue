@@ -34,6 +34,7 @@ import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import DataTable from "@/components/data-table/DataTable.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
+import { useColumnSettingKey } from "@/composables/use-column-setting-key";
 import { type AppTable } from "@/components/data-table/table-types";
 import { useMenuPermissions } from "@/composables/use-permissions";
 import { useDictStore } from "@/stores/dict-store";
@@ -340,6 +341,8 @@ const columns = computed<AppColumnDef<DictItem>[]>(() => [
   },
 ]);
 
+const columnSettingKey = useColumnSettingKey("/settings/dicts");
+
 const table: AppTable<DictItem> = useVueTable({
   get data() {
     return filteredItems.value;
@@ -427,7 +430,10 @@ const table: AppTable<DictItem> = useVueTable({
       <!-- 右栏：选中类型的字典项 -->
       <div class="flex min-w-0 flex-col gap-4">
         <UCard>
-          <DataTableToolbar>
+          <DataTableToolbar
+            :column-setting-key="columnSettingKey"
+            :table="table"
+          >
             <UInput
               v-model="itemSearchInput"
               :aria-label="t('features.dicts.item.searchPlaceholder')"

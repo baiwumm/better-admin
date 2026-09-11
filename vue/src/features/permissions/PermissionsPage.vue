@@ -10,6 +10,7 @@ import { getCoreRowModel } from "@tanstack/vue-table";
 import DataTable from "@/components/data-table/DataTable.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
+import { useColumnSettingKey } from "@/composables/use-column-setting-key";
 import { type AppRow } from "@/components/data-table/table-types";
 import { usePermissions } from "@/composables/use-permissions";
 
@@ -104,6 +105,8 @@ const columns = computed<AppColumnDef<PermissionRow>[]>(() => [
   },
 ]);
 
+const columnSettingKey = useColumnSettingKey("/settings/permissions");
+
 const table = useVueTable({
   get data() {
     return filtered.value;
@@ -123,7 +126,7 @@ const UIcon = resolveComponent("UIcon");
 
 <template>
   <div class="flex w-full flex-col gap-4">
-    <DataTableToolbar>
+    <DataTableToolbar :column-setting-key="columnSettingKey" :table="table">
       <UInput
         v-model="searchInput"
         :aria-label="t('common.datatable.searchLabel')"

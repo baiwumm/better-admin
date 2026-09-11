@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import type { MenuNode, PermissionItem } from "@/lib/api-types";
-import type { AppColumnDef } from "@/components/data-table/table-types";
+import type {
+  AppColumnDef,
+  AppTable,
+} from "@/components/data-table/table-types";
+import type { ColumnOrderState, VisibilityState } from "@tanstack/vue-table";
 
 import { computed, h, ref, resolveComponent } from "vue";
 import { useI18n } from "vue-i18n";
 import { useQuery, useQueryClient } from "@tanstack/vue-query";
+import { getCoreRowModel, useVueTable } from "@tanstack/vue-table";
 import { useToast } from "@nuxt/ui/composables";
 
 const UBadge = resolveComponent("UBadge");
@@ -24,6 +29,7 @@ import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
 import LoadingContent from "@/components/ui/loading-content/index.vue";
+import { useColumnSettingKey } from "@/composables/use-column-setting-key";
 import { MENUS_QUERY_KEY } from "@/composables/use-menus";
 import {
   useMenuPermissions,
@@ -346,11 +352,37 @@ const columns = computed<AppColumnDef<MenuNode>[]>(() => [
 function menuSubRows(row: MenuNode): MenuNode[] | undefined {
   return row.children;
 }
+
+// ---------------- 列设置（页面级 table 实例 ↔ UTable 内部实例桥接） ----------------
+// 树形表格直接由 UTable 渲染（内部自建 TanStack 实例），此实例只承载列元信息与
+// 列可见性 / 列顺序状态供 DataTableViewOptions 读写，再经 v-model 桥接到 UTable
+// （做法同 DataTable.vue 的 rowSelection 桥接）
+const columnSettingKey = useColumnSettingKey("/settings/menus");
+
+const table: AppTable<MenuNode> = useVueTable({
+  get data() {
+    return data.value ?? [];
+  },
+  get columns() {
+    return columns.value;
+  },
+  getCoreRowModel: getCoreRowModel(),
+  getRowId: (row: MenuNode) => row.id,
+});
+
+const columnVisibility = computed<VisibilityState>({
+  get: () => table.getState().columnVisibility,
+  set: (value) => table.setColumnVisibility(value),
+});
+const columnOrder = computed<ColumnOrderState>({
+  get: () => table.getState().columnOrder,
+  set: (value) => table.setColumnOrder(value),
+});
 </script>
 
 <template>
   <div class="flex w-full flex-col gap-4">
-    <DataTableToolbar>
+    <DataTableToolbar :column-setting-key="columnSettingKey" :table="table">
       <UInput
         v-model="searchInput"
         :aria-label="t('features.menus.searchPlaceholder')"
@@ -377,6 +409,8 @@ function menuSubRows(row: MenuNode): MenuNode[] | undefined {
     <div class="relative">
       <LoadingContent v-if="isFetching || isLoading" />
       <UTable
+        v-model:column-visibility="columnVisibility"
+        v-model:column-order="columnOrder"
         sticky
         :loading="isFetching || isLoading"
         :data="data ?? []"

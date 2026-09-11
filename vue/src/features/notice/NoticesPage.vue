@@ -34,6 +34,7 @@ import UserInfo from "@/components/common/UserInfo.vue";
 import Spinner from "@/components/ui/spinner/index.vue";
 import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "@/features/org/dept-api";
 import { dictItemsQueryKey, fetchDictItems } from "@/features/dicts/dict-api";
+import { useColumnSettingKey } from "@/composables/use-column-setting-key";
 import { useMenuPermissions } from "@/composables/use-permissions";
 import { useListQuery } from "@/composables/use-list-query";
 import { createListStore } from "@/lib/list-store";
@@ -487,6 +488,8 @@ const columns = computed<AppColumnDef<Notice>[]>(() => [
   },
 ]);
 
+const columnSettingKey = useColumnSettingKey("/org/notices");
+
 const table: AppTable<Notice> = useVueTable({
   get data() {
     return data.value;
@@ -556,7 +559,7 @@ export default { name: "NoticesPage" };
 
 <template>
   <div class="flex w-full flex-col gap-4">
-    <DataTableToolbar>
+    <DataTableToolbar :column-setting-key="columnSettingKey" :table="table">
       <USelectMenu
         :aria-label="t('features.notices.filter.status')"
         :items="statusOptions"

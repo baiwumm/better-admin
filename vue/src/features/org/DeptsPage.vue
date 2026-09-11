@@ -22,7 +22,9 @@ import DeptTreePanel from "./DeptTreePanel.vue";
 
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import DataTable from "@/components/data-table/DataTable.vue";
+import DataTableViewOptions from "@/components/data-table/DataTableViewOptions.vue";
 import { type AppTable } from "@/components/data-table/table-types";
+import { useColumnSettingKey } from "@/composables/use-column-setting-key";
 import { useMenuPermissions } from "@/composables/use-permissions";
 
 /**
@@ -299,6 +301,8 @@ const columns = computed<AppColumnDef<DeptTreeNode>[]>(() => [
   },
 ]);
 
+const columnSettingKey = useColumnSettingKey("/org/depts");
+
 const table: AppTable<DeptTreeNode> = useVueTable({
   get data() {
     return childNodes.value;
@@ -411,6 +415,11 @@ const deleteDescription = computed(() =>
                 <UIcon class="size-4" name="i-lucide-trash-2" />
                 {{ t("common.delete") }}
               </UButton>
+              <DataTableViewOptions
+                :storage-key="columnSettingKey"
+                :table="table"
+                size="sm"
+              />
             </div>
           </div>
           <div class="text-muted flex flex-wrap gap-x-6 gap-y-1 text-sm">

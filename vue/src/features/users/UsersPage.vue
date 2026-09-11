@@ -36,6 +36,7 @@ import DataTableBulkActions from "@/components/data-table/DataTableBulkActions.v
 import DataTablePagination from "@/components/data-table/DataTablePagination.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
+import { useColumnSettingKey } from "@/composables/use-column-setting-key";
 import { useMenuPermissions } from "@/composables/use-permissions";
 import { useListQuery } from "@/composables/use-list-query";
 import { createListStore } from "@/lib/list-store";
@@ -66,6 +67,7 @@ const queryClient = useQueryClient();
 const auth = useAuthStore();
 
 const currentUserId = computed(() => auth.user?.id);
+const columnSettingKey = useColumnSettingKey("/settings/users");
 const currentUserIsSuperAdmin = computed(
   () => auth.user?.roles.includes("super_admin") ?? false,
 );
@@ -469,7 +471,7 @@ const selectedUsers = computed(() =>
 
 <template>
   <div class="flex w-full flex-col gap-4">
-    <DataTableToolbar>
+    <DataTableToolbar :column-setting-key="columnSettingKey" :table="table">
       <UInput
         v-model="searchInput"
         :aria-label="t('features.users.searchPlaceholder')"

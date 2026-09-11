@@ -25,6 +25,7 @@ import DataTable from "@/components/data-table/DataTable.vue";
 import DataTablePagination from "@/components/data-table/DataTablePagination.vue";
 import DataTableSearchReset from "@/components/data-table/DataTableSearchReset.vue";
 import DataTableToolbar from "@/components/data-table/DataTableToolbar.vue";
+import { useColumnSettingKey } from "@/composables/use-column-setting-key";
 import { type AppTable } from "@/components/data-table/table-types";
 import Spinner from "@/components/ui/spinner/index.vue";
 import { MENUS_QUERY_KEY } from "@/composables/use-menus";
@@ -283,6 +284,8 @@ const columns = computed<AppColumnDef<Role>[]>(() => [
   },
 ]);
 
+const columnSettingKey = useColumnSettingKey("/settings/roles");
+
 const table: AppTable<Role> = useVueTable({
   get data() {
     return data.value;
@@ -327,7 +330,7 @@ const UBadge = resolveComponent("UBadge");
 
 <template>
   <div class="flex w-full flex-col gap-4">
-    <DataTableToolbar>
+    <DataTableToolbar :column-setting-key="columnSettingKey" :table="table">
       <UInput
         v-model="searchInput"
         :aria-label="t('features.roles.searchPlaceholder')"
