@@ -114,6 +114,57 @@ export interface UserRoleSummary {
   code: string;
 }
 
+/** 我的账户详情（GET /account/profile，契约 v1.5.x；与 React 端同构） */
+export interface AccountProfile {
+  id: string;
+  username: string;
+  email: string;
+  displayName: string;
+  avatar: string | null;
+  phone: string | null;
+  /** 个人标签（自助维护，最多 10 个、每个 ≤20 字符，服务端去重） */
+  tags: string[];
+  /** 个人网站裸域名（契约 v1.5.2，如 baiwumm.com，不带协议；展示前缀由前端拼接） */
+  website: string | null;
+  /** GitHub 用户名裸值（契约 v1.5.2；展示前缀 https://github.com/ 由前端拼接） */
+  githubUsername: string | null;
+  /** X（Twitter）用户名裸值（契约 v1.5.2；展示前缀 https://x.com/ 由前端拼接） */
+  xUsername: string | null;
+  status: UserStatus;
+  roles: UserRoleSummary[];
+  createdAt: string;
+  updatedAt: string;
+  /** 最近一次登录成功时间（从未登录为 null） */
+  lastLoginAt: string | null;
+}
+
+/** PUT /account/profile 请求体（字段缺省表示不修改） */
+export interface UpdateAccountProfileInput {
+  displayName?: string;
+  /** null 表示清空 */
+  phone?: string | null;
+  /** 全量替换（空数组清空） */
+  tags?: string[];
+  /** 个人网站裸域名（null 清空；提交时服务端自动剥 http(s):// 前缀） */
+  website?: string | null;
+  /** GitHub 用户名裸值（null 清空；服务端自动剥主页前缀） */
+  githubUsername?: string | null;
+  /** X 用户名裸值（null 清空；服务端自动剥主页前缀） */
+  xUsername?: string | null;
+}
+
+/** PUT /account/email 请求体（需当前密码确认） */
+export interface UpdateAccountEmailInput {
+  email: string;
+  currentPassword: string;
+}
+
+/** PUT /account/password 请求体（成功后全端强制下线，需重新登录） */
+export interface UpdateAccountPasswordInput {
+  currentPassword: string;
+  newPassword: string;
+}
+
 /** 在职状态（契约 v1.6.0；存量 NULL 按 employed 输出） */
 export type EmploymentStatus = "employed" | "resigned";
 

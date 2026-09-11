@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import PlaceholderPage from "@/components/PlaceholderPage.vue";
+import AccountPage from "@/features/account/AccountPage.vue";
 </script>
 
 <template>
-  <PlaceholderPage
-    icon="i-lucide-user-cog"
-    title-key="menu.pageTitle.account"
-  />
+  <AccountPage />
 </template>
