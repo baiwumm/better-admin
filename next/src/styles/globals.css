@@ -13,6 +13,9 @@
 /* 主题切换 View Transition（clip-path 揭示动画） */
 @import './theme-transition.css';
 
+/* 路由过渡动画（页面切换预设，React <ViewTransition> 编排） */
+@import './route-transitions.css';
+
 /* 色彩模式（正常 / 灰色 / 色弱）滤镜 */
 @import './color-vision.css';
 

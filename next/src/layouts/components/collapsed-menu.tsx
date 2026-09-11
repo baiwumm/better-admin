@@ -18,6 +18,7 @@ import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import { type MenuNode } from "@/lib/api-types";
 import { getMenuLabel } from "@/lib/menu-i18n";
 import { findActivePath } from "@/lib/menu-utils";
+import { markRouteDirection } from "@/lib/route-direction";
 import { useTranslation } from "@/i18n";
 
 type CollapsedMenuProps = {
@@ -47,6 +48,8 @@ export function CollapsedMenu({ items, onNavigate }: CollapsedMenuProps) {
           pathname={pathname}
           onNavigate={(to) => {
             if (to) {
+              // 方向标记须先于 router.push（VT 快照生成前 CSS 变量需已生效）
+              markRouteDirection(to);
               router.push(to);
               onNavigate?.();
             }

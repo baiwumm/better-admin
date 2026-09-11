@@ -17,6 +17,7 @@ import { DynamicIcon, type IconName } from "lucide-react/dynamic";
 import { type MenuNode } from "@/lib/api-types";
 import { getMenuLabel, type Translate } from "@/lib/menu-i18n";
 import { useTranslation } from "@/i18n";
+import { markRouteDirection } from "@/lib/route-direction";
 import { filterHiddenMenus } from "@/lib/permission";
 import { useThemeModeTransition } from "@/themes/use-theme-mode-transition";
 
@@ -239,7 +240,11 @@ function CommandMenuBody({
 
       const to = entryRoutes.get(id);
 
-      if (to) router.push(to);
+      if (to) {
+        // 方向标记须先于 router.push（VT 快照生成前 CSS 变量需已生效）
+        markRouteDirection(to);
+        router.push(to);
+      }
     },
     [entryRoutes, router, onClose, switchThemeMode],
   );

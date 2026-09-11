@@ -2,7 +2,7 @@
 
 import type { Key, MouseEvent as ReactMouseEvent } from "react";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "@bprogress/next/app";
 import {
@@ -31,6 +31,7 @@ import { getMenuLabel } from "@/lib/menu-i18n";
 import { type MenuNode } from "@/lib/api-types";
 import { collectMenuPaths, flattenLeafMenus } from "@/lib/menu-utils";
 import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
+import { markRouteDirection } from "@/lib/route-direction";
 import { routeTitleKeyByPath } from "@/lib/route-title";
 import { isPinnedTab } from "@/lib/tabs-model";
 import { useTabsStore } from "@/stores/tabs-store";
@@ -377,8 +378,13 @@ export function TagsBar({ menuTree }: TagsBarProps) {
 
     switch (key as TabMenuAction) {
       case "refresh":
-        // 刷新 = 重取当前路由的服务端数据（RSC），等价 React 版实例重挂载
-        router.refresh();
+        // 刷新 = 重取当前路由的服务端数据（RSC），等价 React 版实例重挂载。
+        // 包在 startTransition 内使 React 以 Transition 提交，激活主体区
+        // <ViewTransition> 的 update——静态页刷新也有「重切一遍」动画反馈
+        // （对齐 React 版刷新 VT 编排；无动画偏好/不支持时行为退化为原样）。
+        startTransition(() => {
+          router.refresh();
+        });
 
         break;
       case "close":
@@ -403,13 +409,18 @@ export function TagsBar({ menuTree }: TagsBarProps) {
         break;
     }
 
-    if (redirect) router.push(redirect);
+    if (redirect) {
+      markRouteDirection(redirect);
+      router.push(redirect);
+    }
   };
 
   /** 点击标签切换路由（刚发生拖拽平移时忽略，防误触）。 */
   const handleSelect = (path: string) => {
     if (dragMovedRef.current || path === pathname) return;
 
+    // 方向标记须先于 router.push（VT 快照生成前 CSS 变量需已生效）
+    markRouteDirection(path);
     router.push(path);
   };
 
@@ -417,7 +428,10 @@ export function TagsBar({ menuTree }: TagsBarProps) {
   const handleClose = (path: string) => {
     const redirect = closePathAction(path, pathname);
 
-    if (redirect) router.push(redirect);
+    if (redirect) {
+      markRouteDirection(redirect);
+      router.push(redirect);
+    }
   };
 
   return (

@@ -30,6 +30,7 @@ import { GithubIcon, XIcon } from "@/lib/brand-icons";
 import { UserInfo } from "@/components/common/user-info/user-info";
 import { useTranslation } from "@/i18n";
 import { buildProfileLinks, openExternalLink } from "@/lib/profile-links";
+import { markRouteDirection } from "@/lib/route-direction";
 import { useAuthStore } from "@/stores/auth-store";
 
 type SidebarUserProps = {
@@ -69,9 +70,11 @@ export function SidebarUser({ collapsed, user }: SidebarUserProps) {
   const handleAction = (key: Key) => {
     switch (key) {
       case "account":
+        markRouteDirection("/account");
         router.push("/account");
         break;
       case "my-notices":
+        markRouteDirection("/my-notices");
         router.push("/my-notices");
         break;
       case "logout":

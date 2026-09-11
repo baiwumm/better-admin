@@ -34,6 +34,7 @@ import {
 } from "@/features/notice/notification-api";
 import { useTranslation } from "@/i18n";
 import { formatRelativeTime } from "@/lib/format-date";
+import { markRouteDirection } from "@/lib/route-direction";
 
 type NoticeBellTab = "unread" | "all";
 
@@ -111,6 +112,7 @@ export function NoticeBell() {
       // 标记已读后跳转（跳转即可读，失败静默）
       readOneMutation.mutate(id);
       bellState.close();
+      markRouteDirection(link);
       void router.push(link);
     },
     [readOneMutation, bellState, router],
@@ -123,6 +125,7 @@ export function NoticeBell() {
 
   const openMyNotices = useCallback(() => {
     bellState.close();
+    markRouteDirection("/my-notices");
     router.push("/my-notices");
   }, [bellState, router]);
 

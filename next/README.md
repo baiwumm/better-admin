@@ -41,5 +41,6 @@ pnpm check-locales  # 语言包与 react/src/i18n/locales 一致性检查（CI �
 ## 已知差异（相对 React 版，均为已确认决策）
 
 - KeepAlive 放弃（App Router 无等价机制）；标签「刷新」仅对当前激活标签生效
+- 路由过渡动画用 React `<ViewTransition>` 实现（`experimental.viewTransition`，`admin-shell` 的 `<main>` 级 VT 边界 + `styles/route-transitions.css`），非 React 版的手动 `startViewTransition` + displayedPath 双缓冲；方向感知经 `lib/route-direction.ts` 在导航发起点写 `data-rt-direction`（浏览器前进/后退按钮无方向，与 React 版一致）
 - 令牌存储层为 httpOnly Cookie（React 为 localStorage + Bearer）；API 内部仍兼容 Bearer 解析
 - 菜单权限过滤在服务端完成（React 在客户端）；日志清理载体为 GitHub Actions cron（Nest 为进程内 schedule）

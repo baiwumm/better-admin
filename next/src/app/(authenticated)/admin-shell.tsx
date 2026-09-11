@@ -2,7 +2,7 @@
 
 import type { AuthUser, MenuNode } from "@/lib/api-types";
 
-import { useEffect, useState } from "react";
+import { ViewTransition, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@heroui/react";
 
@@ -53,6 +53,7 @@ export function AdminShell({ menuTree, user, children }: AdminShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const showTabs = useDesignThemeStore((s) => s.showTabs);
+  const routeTransition = useDesignThemeStore((s) => s.routeTransition);
 
   // 当前用户快照同步：把 RSC 注入的服务端权威 user 覆盖进客户端 store，
   // 使管理员修改角色授权后「刷新页面生效」（等价 React 版 useAuthSync）。
@@ -82,6 +83,15 @@ export function AdminShell({ menuTree, user, children }: AdminShellProps) {
   useEffect(() => {
     openPath(pathname, pathname);
   }, [pathname, openPath]);
+
+  // 主体区滚动回顶：滚动由 <main> 承担（内部滚动容器，Next 默认的
+  // window 级滚动恢复对它无效），页面切换后显式复位到顶部（对齐
+  // React 版 KeepAliveOutlet 的 resetMainScroll 语义）。
+  useEffect(() => {
+    const main = document.querySelector<HTMLElement>("main");
+
+    if (main) main.scrollTop = 0;
+  }, [pathname]);
 
   useEffect(() => {
     // 登录可达路径（精确白名单 + 通知消费前缀，见 route-access.ts）不参与
@@ -121,16 +131,31 @@ export function AdminShell({ menuTree, user, children }: AdminShellProps) {
         {/* 多标签页栏（偏好设置可关；仅隐藏 UI，标签数据照常维护） */}
         {showTabs && <TagsBar menuTree={menuTree} />}
         {/* 主体内容：滚动统一由本容器承担（滚动条贴合主体区边缘）。
-            React 版的 view-transition-name/KeepAlive 实例池随 KeepAlive
-            一并放弃（已知差异），页面切换为普通提交渲染。 */}
-        <main
-          className={cn(
-            "min-h-0 flex-1 overflow-y-auto",
-            isFullWidthPage ? "" : "p-4 md:p-6",
-          )}
+            路由过渡动画由 React <ViewTransition> 承担，机制与 React 版
+            （手动 startViewTransition + displayedPath 双缓冲）不同：Next 路由
+            导航本身是 React Transition，本 layout 级 VT 边界跨导航持久存在，
+            导航时内部 children 被替换即触发 update；React 仅在自己发起的 VT
+            期间临时给 <main> 挂 view-transition-class（偏好预设 → rt-<id>），
+            动画 CSS 见 styles/route-transitions.css；default="none" 关闭
+            enter / exit / share 等其余触发器。第三方 VT（HeroUI toast、主题
+            切换）期间 <main> 没有独立快照组，天然不会误播页面切换动画。
+            KeepAlive 实例池仍为已知差异（App Router 无等价机制），children
+            为普通提交渲染。 */}
+        <ViewTransition
+          default="none"
+          update={
+            routeTransition === "none" ? "none" : `rt rt-${routeTransition}`
+          }
         >
-          {children}
-        </main>
+          <main
+            className={cn(
+              "min-h-0 flex-1 overflow-y-auto",
+              isFullWidthPage ? "" : "p-4 md:p-6",
+            )}
+          >
+            {children}
+          </main>
+        </ViewTransition>
       </div>
     </div>
   );
