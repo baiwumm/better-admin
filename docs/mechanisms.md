@@ -753,3 +753,10 @@ titleKey 与 React 端 TanStack Router 的 `staticData.titleKey` 一字不差（
   「用户登录 - Better Admin」；带 `better-admin-language=en` → 「Sign In - Better Admin」
   （语言感知生效）；全屏错误页未登录被 proxy 重定向，属 §16.5 既有语义。
   叶子路由全部编译为动态渲染（ƒ），与根 layout 读 Cookie 的既有形态一致。
+- **语言切换即时刷新的分工（2026-09-12 补）**：metadata 只在请求时计算，客户端切语言不会
+  重跑——运行期刷新由订阅语言的客户端逻辑承担：管理区是 admin-shell 的 `usePageTitle`；
+  sign-in 页在 admin-shell 之外，组件内新增 effect 订阅语言 store 重写标题（key 与 layout
+  的 metadata 同源，终态一致）。Vue 端同问题同解：标题从 `router.afterEach` 迁至根级
+  `composables/use-document-title.ts`（App.vue 挂载，watch「route.path + locale」，
+  React `use-document-title` 的等价物）， afterEach 删除避免双源——afterEach 只随导航
+  触发，切语言不导航标题即滞留旧语言。

@@ -1,7 +1,5 @@
 import type { Router } from "vue-router";
 
-import { ENV } from "@/lib/env";
-import { i18n } from "@/i18n";
 import { MENUS_QUERY_KEY } from "@/composables/use-menus";
 import { queryClient } from "@/lib/query-client";
 import type { MenuNode } from "@/lib/api-types";
@@ -11,7 +9,6 @@ import {
   isLoginRequiredPath,
   isMenuRequiredPath,
   isPublicPath,
-  resolveRouteTitleKey,
 } from "@/lib/route-access";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -68,12 +65,6 @@ export function setupRouterGuards(router: Router) {
     return true;
   });
 
-  // 文档标题：路径 → menu.pageTitle.* i18n 键（React route titleKey 等价物；
-  // 动态路由经 resolveRouteTitleKey 前缀匹配，如公告详情复用列表页标题）
-  router.afterEach((to) => {
-    const titleKey = resolveRouteTitleKey(to.path);
-    const title = titleKey ? i18n.global.t(titleKey) : "";
-
-    document.title = title ? `${title} - ${ENV.appName}` : ENV.appName;
-  });
+  // 文档标题已迁至根级 useDocumentTitle（App.vue）：订阅路由 + 语言，
+  // 切换语言不导航也即时刷新（原 afterEach 只在导航时设置，切语言不更新）。
 }

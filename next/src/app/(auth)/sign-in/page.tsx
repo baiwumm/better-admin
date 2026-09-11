@@ -18,10 +18,12 @@ import {
   Surface,
 } from "@heroui/react";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useTranslation } from "@/i18n";
+import { ENV } from "@/lib/env";
 import { useAuthStore } from "@/stores/auth-store";
+import { useLanguageStore } from "@/stores/language-store";
 
 /**
  * 第三方登录图标（lucide-react v1.x 不内置品牌图标，inline SVG 自绘以避免引入新依赖）。
@@ -89,6 +91,15 @@ export default function SignInPage() {
   const login = useAuthStore((s) => s.login);
   const isLoading = useAuthStore((s) => s.isLoading);
   const { t } = useTranslation();
+
+  // 浏览器标签页标题：语言切换即时刷新（服务端 metadata 只在请求时计算，
+  // 本页在 admin-shell 之外不经 usePageTitle）。key 与 sign-in layout 的
+  // generateMetadata 同源，终态字符串一致。
+  const language = useLanguageStore((s) => s.language);
+
+  useEffect(() => {
+    document.title = `${t("auth.signIn.title")} - ${ENV.appName}`;
+  }, [t, language]);
 
   // 本地 UI 态：密码显隐 + 记住我（记住我将随登录提交，控制长短会话 Cookie 档位）
   const [showPassword, setShowPassword] = useState(false);

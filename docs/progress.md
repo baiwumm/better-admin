@@ -2,7 +2,23 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
-### Next 端路由标题服务端化：generateMetadata 进初始 HTML（2026-09-12，待审核未提交）
+### 页面标题随语言切换即时刷新：Next sign-in + Vue 全站对齐 React 语义（2026-09-12）
+
+- **背景**：generateMetadata 落地后用户实测反馈——登录后页面（admin-shell 内）切语言标题即时更新，
+  但 sign-in 页要刷新才变；Vue 端存在同样问题（全站），React 端正常（根路由 `useDocumentTitle`
+  订阅「titleKey + 语言」两来源）。
+- **Next**：sign-in 页（admin-shell 之外、唯一带语言切换器的非管理区页面）组件内新增 effect 订阅
+  语言 store，切语言即时重写 `document.title`；key 与 sign-in layout 的 generateMetadata 同源，
+  终态字符串一致无闪烁。
+- **Vue**：标题原在 `router.afterEach` 设置（只随导航更新，切语言不导航即滞留）——新建根级
+  `composables/use-document-title.ts`（React 同名文件的 Vue 等价物）挂在 App.vue，watch
+  「route.path + locale」即时刷新；guards.ts 的 afterEach 删除（标题逻辑单一来源），签名未变。
+  全站受益（管理区页面此前同样受影响，不止 sign-in）。
+- **验证**：Vue `lint`（0 error）/ `type-check` / `test`（92 用例）/ `build` 四绿；Next
+  `eslint` / `next build` 通过。逻辑与 React 端 use-document-title 同构（路径 + 语言 → 标题）。
+- **无需同步**：React 端本就正常；feature-matrix 无功能变化。
+
+### Next 端路由标题服务端化：generateMetadata 进初始 HTML（2026-09-12，提交 113dc2c）
 
 - **背景**：Next 端「平台化」评估的落地项（经用户拍板只做本项）。此前页面标题由 admin-shell 的
   `usePageTitle` 客户端 effect 写入，刷新 / 直链 / 分享场景首帧标题为应用名、菜单加载后才被改写。
@@ -42,8 +58,17 @@
   click 由 sortablejs 自行抑制，`handleSelect` 仅保留平移的 `dragMoved` 检查。
 - **已知差异**：sortablejs 无键盘排序（React / Next 端 dnd-kit KeyboardSensor 支持
   空格拾起 + 方向键移动），记入 feature-matrix。
+- **关键坑——chosenClass 多类名导致「拖拽完全不生效」**：sortablejs 的 `toggleClass` 用
+  `classList.add(name)` 写入，token 含空格（如 "scale-105 opacity-80 shadow-lg"）直接抛
+  `InvalidCharacterError`——异常发生在 `_prepareDragStart` 内部（choose 派发之后的最后一句），
+  模块级 `dragEl` / `lastDownEl` 残留，此后所有 `_onTapStart` 在 `if (dragEl) return` /
+  `if (lastDownEl === target) return` 早退，任何标签都无法再拖。修复：chosenClass / ghostClass
+  一律单一类名，浮起样式写 `styles/tags-bar.css`（`.tab-sort-chosen` / `.tab-sort-ghost`）。
+  **教训：sortablejs 的类名类选项（ghostClass / chosenClass / dragClass / fallbackClass）
+  禁止 Tailwind 多原子类拼接**。
 - **验证**：`type-check` / `lint`（0 error）/ `test`（92 用例，含新增 7 个）全绿；浏览器实测
-  （5174，admin 账号）：store → 视图 → sessionStorage 持久化链路、点击导航、中键关闭回归通过。
+  （5174，admin 账号）：修复后干净状态下 mousedown → choose 派发 → chosen 类写入无异常，
+  store → 视图 → sessionStorage 持久化链路、点击导航、中键关闭回归通过。
   **自动化边界说明**：sortablejs 在 Chromium 上走原生 HTML5 DnD（`nativeDraggable`），
   `dispatchEvent` 合成事件无法驱动 UA 级拖拽启动、IAB CUA drag 亦超时，物理拖拽的最终
   冒烟以用户真实鼠标为准（同管线列设置 / 组织树已生产验证）。
