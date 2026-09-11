@@ -216,7 +216,7 @@ vue/src/pages/
 
 **已对齐（原「待用户拍板」项）**：React / Next 对独立错误页要求登录，Vue 端匿名放行——用户 2026-09-11 确认统一为「要求登录」，本次按上表第 6 项完成，`PUBLIC_PATHS` 双重职责已拆分（机制见 `mechanisms.md` §16.5）。
 
-**M4 遗留**：带 `redirect` 的登录回跳链路因本地后端故障（Nest `users` 表查询失败 / 端口被无关项目占用）未能在本次复验，建议后端恢复后补一次端到端验证（详见 `docs/progress.md` 置顶条目）。
+**M4 遗留（已解决 2026-09-11）**：带 `redirect` 的登录回跳链路已补端到端验证通过（匿名拦截 → 登录 → 回跳原目标页）；补验中顺带发现「已登录访问 /sign-in 读 redirect 且未过 isSafeRedirect」的守卫偏差，已对齐 React / Next（固定回 `/`）修复，详见 `docs/progress.md` 置顶条目。
 
 ### 范围外
 

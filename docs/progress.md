@@ -2,6 +2,27 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### M4 遗留补验：登录回跳链路端到端通过 + 已登录访问登录页口径对齐（2026-09-11）
+
+- **背景**：Vue M4 冒烟时因本地后端故障未能复验的「带 `redirect` 的登录回跳链路」，Nest 恢复
+  （本地 3000）后于 Vue dev（5174）补验，admin 账号实测。
+- **链路实测通过（M4 遗留销项）**：匿名访问 `/settings/users` / `/settings/roles` → 均跳
+  `/sign-in?redirect=<fullPath>`（参数正确）；登录成功（rememberMe 勾选）→ 回跳原目标页
+  （页面标题「用户管理 / 角色管理」正确），`auth-storage` 写入
+  `user/accessToken/isAuthenticated/rememberMe/refreshToken`（长短会话分档符合契约 v1.2）。
+- **回跳耗时 2-7s 为本地环境固有延迟，非代码问题**：实测 Nest 连远程 Supabase 的接口耗时
+  `login` 1.6s、`/auth/me` 4.3s、`/menus` 1.3s，回跳路径上无多余串行等待；Vercel 部署后无此延迟。
+- **顺带发现并修复一处守卫偏差**（`vue/src/router/guards.ts`）：「已登录访问 `/sign-in`」分支
+  原实现读 `redirect` 参数直接跳转且未过 `isSafeRedirect` 校验（`?redirect=//evil.com` 会落
+  站内 404 而非首页）；React `(auth)` beforeLoad 与 Next proxy 同场景均为固定回 `/`。已对齐两端
+  改为 `{ path: "/" }` 并删除守卫层 `readRedirectTarget`（`redirect` 参数只由登录页提交后消费，
+  该处有 `isSafeRedirect` 保护）。vue-router 为 SPA 内部导航、不构成开放重定向，属口径一致性修复。
+- **复验**：已登录访问 `/sign-in?redirect=//evil.com` 与 `?redirect=/settings/logs` 均落 `/`
+  （控制台）；完整链路重跑通过；`lint`（0 error，5 条存量 warning）/ `type-check` / `test`
+  （85 用例）/ `build` 四绿。
+- **无需同步**：数据库 / OpenAPI 契约不涉及；React / Next 端本就是「固定回 `/`」的基准实现，
+  无改动。
+
 ### Vue 端五项体验对齐调整：个人链接子菜单 / 列设置重置动画 / 标签栏载体 / 标签输入 / 菜单失败回退（2026-09-11）
 
 - **背景**：Vue 端 M4 冒烟后的体验收口，五项由用户提出，逐项对照 React 基准处理（不涉及架构级改动，

@@ -19,7 +19,8 @@ import { useAuthStore } from "@/stores/auth-store";
  * 全局前置守卫三层（语义对齐 React 端 beforeLoad + useMenuRouteGuard）：
  *
  * ① 登录拦截：非公共页无 token → /sign-in?redirect=<原目标>；
- *    已登录访问 /sign-in → 回跳 redirect 或首页。
+ *    已登录访问 /sign-in → 直接回首页（同 React (auth) beforeLoad /
+ *    Next proxy 反向守卫；redirect 参数只由登录页提交后消费）。
  * ② 会话保障：已登录但内存态为空（F5 刷新）→ ensureSession 恢复
  *    user（/auth/me 快照同步）与菜单缓存。
  * ③ 菜单权限：菜单管理路径按「后端菜单树派生权限」校验；
@@ -34,12 +35,14 @@ export function setupRouterGuards(router: Router) {
     const auth = useAuthStore();
     const pathname = to.path;
 
-    // 公共页（仅登录页）放行；已登录访问登录页 → 回跳。
+    // 公共页（仅登录页）放行；已登录访问登录页 → 直接回首页。
+    // 不消费 redirect 参数：与 React (auth) beforeLoad / Next proxy 一致，
+    // 且避免守卫层绕过登录页的 isSafeRedirect 校验。
     // 独立错误页（/403 /404 /500）不在此列——它们要求登录，未登录会落到下方 ①，
     // 与 React 端 beforeLoad / Next 端 proxy.ts 行为一致。
     if (isPublicPath(pathname)) {
       if (pathname === "/sign-in" && auth.isAuthenticated) {
-        return { path: readRedirectTarget(to) ?? "/" };
+        return { path: "/" };
       }
 
       return true;
@@ -73,13 +76,4 @@ export function setupRouterGuards(router: Router) {
 
     document.title = title ? `${title} - ${ENV.appName}` : ENV.appName;
   });
-}
-
-/** 读取 redirect query（仅接受站内安全路径，登录页跳转前再做 isSafeRedirect 校验）。 */
-function readRedirectTarget(to: {
-  query: Record<string, unknown>;
-}): string | undefined {
-  const redirect = to.query.redirect;
-
-  return typeof redirect === "string" ? redirect : undefined;
 }
