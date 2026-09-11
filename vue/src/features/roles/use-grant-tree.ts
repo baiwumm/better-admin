@@ -78,6 +78,9 @@ export function useGrantTree(roleId: () => string, roleCode: () => string) {
   const roleMenusQuery = useQuery({
     queryKey: computed(() => ["roles", roleId(), "menus"] as const),
     queryFn: () => fetchRoleMenus(roleId()),
+    // 抽屉常驻挂载（role=null 时 roleId 为空串），未选中角色必须闸住查询：
+    // 否则角色页加载即发起 GET /roles//menus → 404（React 端抽屉按需挂载，无此问题）。
+    enabled: computed(() => roleId() !== ""),
   });
 
   /** 服务端已授权集合（menuId → permissions 位）。「有记录」= 可见。 */

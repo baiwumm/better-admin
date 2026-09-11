@@ -14,7 +14,7 @@ import { useAuthSync } from "@/composables/use-auth-sync";
 import { MENUS_QUERY_KEY, useMenus } from "@/composables/use-menus";
 import { filterHiddenMenus } from "@/lib/permission";
 import { findActivePath } from "@/lib/menu-utils";
-import { ROUTE_TITLE_KEYS } from "@/lib/route-access";
+import { resolveRouteTitleKey } from "@/lib/route-access";
 import ConfigDrawer from "@/components/layout/ConfigDrawer.vue";
 import FullscreenButton from "@/components/layout/FullscreenButton.vue";
 import KeepAliveOutlet from "@/components/layout/KeepAliveOutlet.vue";
@@ -112,7 +112,7 @@ const crumbs = computed(() => {
     }));
   }
 
-  const titleKey = ROUTE_TITLE_KEYS[route.path];
+  const titleKey = resolveRouteTitleKey(route.path);
 
   return titleKey ? [{ label: t(titleKey) }] : [];
 });
@@ -330,11 +330,16 @@ function retryMenus() {
     </UDashboardSidebar>
 
     <!-- 命令面板（Cmd/Ctrl+K）：分组数据见 searchGroups；fuse 追加 searchText 键
-         使祖先链 / 分组名 / 主题英文关键字可被搜索；主题组自建（关闭内置 colorMode 组） -->
+         使祖先链 / 分组名 / 主题英文关键字可被搜索；主题组自建（关闭内置 colorMode 组）。
+         title / description 必须显式传入：Nuxt UI 4.11.0 的 locale 包（zh_cn / en）
+         该分组只提供 theme 键，组件回退 `t('dashboardSearch.title')` 会把原始键名
+         直接渲染到面板顶部（上游缺键，非应用文案问题）。 -->
     <UDashboardSearch
       :color-mode="false"
       :fuse="{ fuseOptions: { keys: ['label', 'suffix', 'searchText'] } }"
       :groups="searchGroups"
+      :title="t('layout.command.palette')"
+      :description="t('layout.command.search')"
       :placeholder="t('layout.command.placeholder')"
     />
 

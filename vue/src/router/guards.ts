@@ -11,7 +11,7 @@ import {
   isLoginRequiredPath,
   isMenuRequiredPath,
   isPublicPath,
-  ROUTE_TITLE_KEYS,
+  resolveRouteTitleKey,
 } from "@/lib/route-access";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -34,7 +34,9 @@ export function setupRouterGuards(router: Router) {
     const auth = useAuthStore();
     const pathname = to.path;
 
-    // 公共页（登录页 / 错误页）放行；已登录访问登录页 → 回跳
+    // 公共页（仅登录页）放行；已登录访问登录页 → 回跳。
+    // 独立错误页（/403 /404 /500）不在此列——它们要求登录，未登录会落到下方 ①，
+    // 与 React 端 beforeLoad / Next 端 proxy.ts 行为一致。
     if (isPublicPath(pathname)) {
       if (pathname === "/sign-in" && auth.isAuthenticated) {
         return { path: readRedirectTarget(to) ?? "/" };
@@ -63,9 +65,10 @@ export function setupRouterGuards(router: Router) {
     return true;
   });
 
-  // 文档标题：路径 → menu.pageTitle.* i18n 键（React route titleKey 等价物）
+  // 文档标题：路径 → menu.pageTitle.* i18n 键（React route titleKey 等价物；
+  // 动态路由经 resolveRouteTitleKey 前缀匹配，如公告详情复用列表页标题）
   router.afterEach((to) => {
-    const titleKey = ROUTE_TITLE_KEYS[to.path];
+    const titleKey = resolveRouteTitleKey(to.path);
     const title = titleKey ? i18n.global.t(titleKey) : "";
 
     document.title = title ? `${title} - ${ENV.appName}` : ENV.appName;

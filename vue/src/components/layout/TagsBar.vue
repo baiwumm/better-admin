@@ -19,7 +19,7 @@ import { collectMenuPaths, flattenLeafMenus } from "@/lib/menu-utils";
 import {
   LOGIN_REQUIRED_PATHS,
   LOGIN_REQUIRED_PREFIXES,
-  ROUTE_TITLE_KEYS,
+  resolveRouteTitleKey,
 } from "@/lib/route-access";
 import { isPinnedTab } from "@/lib/tabs-model";
 import { useTabsStore } from "@/stores/tabs-store";
@@ -114,7 +114,7 @@ const tabs = computed(() =>
   paths.value.map((path) => {
     const live = liveMetaByPath.value.get(path);
     const cached = cachedMeta.value[path];
-    const routeTitleKey = ROUTE_TITLE_KEYS[path];
+    const routeTitleKey = resolveRouteTitleKey(path);
     const title =
       live?.title ??
       cached?.title ??

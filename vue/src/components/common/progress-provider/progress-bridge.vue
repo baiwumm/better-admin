@@ -34,5 +34,7 @@ bindProgress(
 </script>
 
 <template>
-  <!-- 桥接组件不渲染任何内容 -->
+  <!-- 无渲染桥接组件：默认插槽为空即不产出任何节点。
+       不使用「仅有注释」的空模板（eslint-plugin-vue 的 valid-template-root 报错）。 -->
+  <slot />
 </template>
