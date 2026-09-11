@@ -55,7 +55,7 @@ function clipFrom(direction: TransitionDirection): string {
  * 1. 临时移除 data-route-transition，避免路由过渡预设的 main-content 动画被
  *    主题 VT 误触发（必须在 startViewTransition 之前移除）；
  * 2. 设置 html[data-theme-transition="<direction>"] 激活 CSS 揭示动画，并经
- *    `html[data-theme-transition] [data-vt-name]` 规则临时摘掉带独立
+ *    `html[data-theme-transition] .route-vt-main` 规则临时摘掉带独立
  *    view-transition-name 的区域（主体区 main-content），统一并入单组 root 揭示；
  * 3. 快照回调内先同步执行 mutate，再 `await nextTick()`：Vue 的响应式 DOM 更新
  *    （组件重渲染、@vueuse useColorMode 的 post-flush class 写入）是异步批处理的，

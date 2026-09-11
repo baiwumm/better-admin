@@ -8,7 +8,7 @@ import { useI18n } from "vue-i18n";
 import { useToast } from "@nuxt/ui/composables";
 
 import { getUserErrorMessage, resetUserPassword } from "./user-api";
-import PasswordField from "./PasswordField.vue";
+import PasswordField from "@/components/common/PasswordField.vue";
 
 import Spinner from "@/components/ui/spinner/index.vue";
 import { getPasswordError } from "@/lib/password-validation";

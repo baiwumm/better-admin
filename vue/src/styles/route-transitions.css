@@ -1,22 +1,27 @@
 /* 路由过渡动画（页面切换，平移自 React 端 route-transitions.css）
  *
  * 通过 `html[data-route-transition="<id>"]` 激活对应预设（预设表见
- * themes/route-transitions.ts，编排见 AdminLayout 主体区 KeepAlive 容器）。
- * 同时要求 `html[data-route-vt]`（路由/刷新 VT 期间由 startRouteVt 设置）：
- * 其他根级 VT（如主题切换）若无此门控会误命中下方选择器，
+ * themes/route-transitions.ts，编排见 components/layout/KeepAliveOutlet.vue）。
+ * 同时要求 `html[data-route-vt]`（路由/刷新 VT 期间由 lib/route-vt.ts 的
+ * startRouteVt 设置）：其他根级 VT（如主题切换）若无此门控会误命中下方选择器，
  * 把页面切换动画对着静止页面重放（主题 VT 在 runViewTransition 里
  * 临时摘 data-route-transition，同样不会命中）。
  *
- * 作用范围：AdminLayout 的 <main> 主体区域（view-transition-name: main-content）。
- * 浏览器为命名元素单独生成 ViewTransition 快照组，路由过渡只作用于主体
- * 内容——侧边栏 / 顶栏等布局区域不参与（root 组保持 theme-transition.css 的
- * animation: none，瞬间切换）。
+ * 作用范围：AdminLayout 面板 body 主体区域（.route-vt-main →
+ * view-transition-name: main-content）。浏览器为命名元素单独生成 ViewTransition
+ * 快照组，路由过渡只作用于主体内容——侧边栏 / 顶栏等布局区域不参与（root 组保持
+ * theme-transition.css 的 animation: none，瞬间切换）。
  *
  * 设计原则（与旧版单侧入场不同）：
  * - 新旧双侧协同运动：旧页「离场」+ 新页「进场」各有关键帧，动效完整；
  * - 幅度足够可感知（位移 / 缩放比例加大），曲线统一 easeOut 减速，收尾自然；
  * - reveal 为「新页覆盖揭示」，新页全程不透明，避免叠层穿帮。
  */
+
+/* 主体区快照组：绑定在面板 body（滚动容器）上，快照随视口裁剪、不含滚出部分 */
+.route-vt-main {
+  view-transition-name: main-content;
+}
 
 :root {
   /* 基准时长 × 速度倍率（html[data-rt-speed] 由偏好设置驱动） */

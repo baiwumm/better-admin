@@ -19,7 +19,7 @@ import {
   getUserErrorMessage,
   updateUser,
 } from "./user-api";
-import PasswordField from "./PasswordField.vue";
+import PasswordField from "@/components/common/PasswordField.vue";
 
 import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "@/features/org/dept-api";
 import { fetchPosts } from "@/features/org/post-api";

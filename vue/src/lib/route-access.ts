@@ -81,6 +81,18 @@ export function isAuthLayoutPath(pathname: string): boolean {
   return (AUTH_LAYOUT_PATHS as readonly string[]).includes(pathname);
 }
 
+/**
+ * 认证态布局（AdminLayout）判定：非公共页且非 catch-all 404（对应 React 端
+ * _authenticated 路由组）。AppShell 布局分支与路由过渡编排（仅布局内的页面切换
+ * 才播放主体区动画）共用同一口径。
+ */
+export function isAdminLayoutRoute(route: {
+  path: string;
+  name?: unknown;
+}): boolean {
+  return !isPublicPath(route.path) && route.name !== "/[...all]";
+}
+
 /** 登录可达判定：精确白名单路径，或命中动态前缀（通知消费路由）。 */
 export function isLoginRequiredPath(pathname: string): boolean {
   return (
