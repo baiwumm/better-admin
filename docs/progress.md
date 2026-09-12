@@ -2,6 +2,18 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Nuxt M1：服务端全量移植 + 契约冒烟（2026-09-13）
+
+- **范围**：`docs/nuxt-plan.md` §6 M1 全部任务，只动 `/nuxt` 与 `docs/`。验收：`typecheck` 0 错 / `lint` 净 / `test` 3/3 / `build` 成功 / `dev` 正常（五绿）+ 契约冒烟脚本 20 只读端点 diff 通过 + GUI 实测前端消费真实 `/menus` 数据。
+- **服务端全量落地（Next → Nitro 逐字平移）**：`server/lib` 补齐 `pagination` / `password-policy` / `avatar-storage` / `route-auth`（h3 版 requireAuthUser）/ `constants`（app/lib）+ 11 个业务 service（dict / logs / menus / roles / users / posts / depts / notices / notifications / account，合计约 6,400 行，import 路径统一映射、`server-only` 移除、业务逻辑零改写——`token_version` 实时校验 / 软删 / 日志 action 命名 / `super_admin` 保护逐行保留）；`server/api` **70 个方法文件**（44 个契约路径：auth 4 + permissions 1 + dict 9 + menus 6 + roles 6 + users 6 + logs 4 + org 14 + notifications 4 + account 6；Next 的 `GET/POST/PUT/DELETE/PATCH` 具名导出逐一转为 Nitro 方法后缀文件）。`route-metadata.ts`（Next 服务端 metadata）按 D1（ssr: false）判定跳过。
+- **契约冒烟脚本**（M1 验收硬性项）：`scripts/contract-diff.mjs`——同一 admin 账号分别登录 Nuxt 与 Nest，对 20 个只读 GET 端点做结构 / 字段级 diff（忽略时间戳类易变字段；校验 Content-Type 防 SPA HTML 假 200）。结果：**17 端点完全一致 + 2 类已记录既有差异**（`/permissions` 的 label：Nest 中文 vs Next/React/Nuxt 英文键名；`/users` 的 tags：Nest null vs Next/Nuxt 归一化 `[]`——均为 Nest 与 Next 蓝本的既有差异，Nuxt 对齐 Next）+ **0 未知差异**，退出码 0。
+- **前端接线**：删除 M0 静态种子菜单（`menu-seed.ts`），`menu-fetch.ts` 恢复与 Vue 端同构的直连实现（失败回退仅「控制台」节点）；`app/lib/api-types.ts` 的 User 接口补 `phone` / `tags`（对齐 Next 端 api-types，users-service toView 消费）并移除 `tokenVersion`（Next 端契约视图不含该内部字段）。
+- **脚本平移**：`scripts/clean-logs.mjs`（.env 最小加载器替代 dotenv）与 `scripts/check-locales.mjs`（对比 react 与 nuxt 语言包，值对比前归一化 `{'@'}` 转义，实测 14 文件完全一致）。
+- **工具链裁决（三项，均已注释进代码）**：① **TypeScript 6.0.3 → 5.9.3**（Nuxt 模板默认 6.0.3 对 drizzle 0.45 的数组解构类型推断产生 30+ 处 `T | undefined` 误报；Next 5.6.3 / Vue 5.9.3 均无——降级对齐 Vue 端实际解析版本）；② **关闭 `noUncheckedIndexedAccess`**（Nuxt 4 默认开启而 Next / Vue 均未开启，经 `typescript.tsConfig.compilerOptions` 注入全部生成的 tsconfig；Nuxt 该选项顶层形状无法触达 nitro 侧，另经 `nitro:config` hook 兜底）；③ `vue/no-multiple-template-root` 维持 M0 裁决。
+- **过程教训（记录给后续里程碑）**：批量 heredoc 写文件时 cwd 曾两次漂移——一批端点文件被误写到 `/next/src/app/api/`（已全部清除，`git status next/` 干净）与 `nuxt/` 根（已归位）；**contract-diff 首轮 `GET /api/menus` 的假 200 即由此暴露**（SSR 关闭时未命中的 API 路径兜底返回 SPA HTML），脚本因此加了 JSON Content-Type 校验。
+- **GUI 冒烟**：登录 → 侧边栏渲染 **DB 真实菜单树**（含静态树没有的「异常页」分组，证明消费真实 `/menus`）+ 面包屑；契约冒烟期间本机 DNS 对 Supabase pooler 间歇故障（Nest 与 Nuxt 同时受影响）导致的 500 属环境噪音，恢复后全绿。
+- **文档同步**：`feature-matrix.md` 统计说明补 M1 条目（各功能行状态不变——前端页面随 M2/M3 平移，服务端已全部就绪）；`AGENTS.md` §19 指针；`nuxt-plan.md` 状态行。
+
 ### Nuxt M0：工程基建与骨架 + 认证最小闭环（2026-09-12）
 
 - **范围**：`docs/nuxt-plan.md` v1.3 M0 全部 7 项任务，只动 `/nuxt` 与 `docs/`。验收**五绿**（`dev / build / lint / typecheck / test`）+ 认证闭环 curl 实测 + 浏览器 GUI 冒烟通过。

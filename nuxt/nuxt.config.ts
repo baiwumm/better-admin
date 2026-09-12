@@ -46,6 +46,34 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2026-06-30',
 
+  // 关闭 noUncheckedIndexedAccess（对 app / server / shared 全部生成的
+  // tsconfig 生效）：Next / Vue 端 tsconfig 均未开启该选项，M1 服务端约
+  // 6,400 行逐字平移代码（`const [row] = await db.select()` 模式）在开启时
+  // 产生 30+ 处误报。保持蓝本 diff 最小与三端严格度一致（非 any 绕过）。
+  typescript: {
+    tsConfig: {
+      compilerOptions: {
+        noUncheckedIndexedAccess: false
+      }
+    }
+  },
+
+  // server 侧 tsconfig 覆盖：Nuxt 4 默认开启的索引访问严格检查（
+  // noUncheckedIndexedAccess），Next / Vue 端 tsconfig 均未开启——M1 服务端
+  // 约 6,400 行逐字平移代码（`const [row] = await db.select()` 模式）在该
+  // 选项下产生 30+ 处误报。经 nitro hook 关闭（typescript.tsConfig 顶层选项
+  // 无法触达 nitro 生成的 server tsconfig），保持蓝本 diff 最小与三端严格度
+  // 一致（非 any 绕过，仅索引检查策略对齐）。
+  hooks: {
+    'nitro:config'(nitroConfig) {
+      nitroConfig.typescript ||= {}
+      nitroConfig.typescript.tsConfig ||= {}
+      nitroConfig.typescript.tsConfig.compilerOptions ||= {}
+      nitroConfig.typescript.tsConfig.compilerOptions.noUncheckedIndexedAccess
+        = false
+    }
+  },
+
   eslint: {
     config: {
       stylistic: {

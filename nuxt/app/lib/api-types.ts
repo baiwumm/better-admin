@@ -191,8 +191,11 @@ export interface User {
   email: string
   displayName: string
   avatar: string | null
+  /** 电话（契约 v1.5.0；对齐 Next 端 api-types，users-service toView 消费） */
+  phone: string | null
+  /** 个人标签（契约 v1.5.0；对齐 Next 端 api-types） */
+  tags: string[]
   status: UserStatus
-  tokenVersion: number
   roles: UserRoleSummary[]
   createdAt: string
   updatedAt: string

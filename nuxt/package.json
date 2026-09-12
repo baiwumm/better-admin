@@ -22,6 +22,7 @@
     "@nuxt/ui": "^4.11.0",
     "@nuxtjs/i18n": "^10.6.0",
     "@pinia/nuxt": "^1.0.2",
+    "@supabase/supabase-js": "^2.116.0",
     "@tanstack/vue-query": "^5.102.8",
     "@vueuse/core": "^14.4.0",
     "@vueuse/nuxt": "^14.4.0",
@@ -39,7 +40,7 @@
     "@nuxt/test-utils": "^4.3.2",
     "@types/node": "^22.20.2",
     "eslint": "^10.10.0",
-    "typescript": "^6.0.3",
+    "typescript": "^5.9.3",
     "vitest": "^4.1.11",
     "vue-tsc": "^3.3.11"
   },
