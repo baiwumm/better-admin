@@ -11,6 +11,7 @@ import {
   ilike,
   inArray,
   isNull,
+  ne,
   or,
   sql,
 } from "drizzle-orm";
@@ -672,6 +673,56 @@ export async function updateUser(
 
   try {
     await db.transaction(async (tx) => {
+      // v1.9.0 super_admin 绑定不变量：移除绑定前锁定 super_admin 角色行
+      // （串行化并发摘绑，关断校验 TOCTOU），校验除目标外仍有启用中的超管
+      // 绑定——超管归零后所有加绑请求均被权限守卫拒绝、无自助恢复手段。
+      // 停用用户不计入：无法登录即不具备超管能力（防「停用最后一个其他
+      // 超管后自摘」绕过）。最后一个活跃超管必然是操作者本人，而本人
+      // 删/停/重置已被 assertTargetOperable 规则 1 拦死，归零不可达
+      if (dto.roleIds !== undefined) {
+        const hasSuperAdminInNew = await roleContainsSuperAdmin(dto.roleIds);
+        const boundRows = await tx
+          .select({ userId: userRoles.userId })
+          .from(userRoles)
+          .innerJoin(roles, eq(userRoles.roleId, roles.id))
+          .where(
+            and(
+              eq(userRoles.userId, id),
+              eq(roles.code, SUPER_ADMIN_ROLE_CODE),
+            ),
+          );
+
+        if (boundRows.length > 0 && !hasSuperAdminInNew) {
+          await tx
+            .select({ id: roles.id })
+            .from(roles)
+            .where(eq(roles.code, SUPER_ADMIN_ROLE_CODE))
+            .for("update");
+
+          const activeOthers = await tx
+            .select({ userId: userRoles.userId })
+            .from(userRoles)
+            .innerJoin(roles, eq(userRoles.roleId, roles.id))
+            .innerJoin(users, eq(userRoles.userId, users.id))
+            .where(
+              and(
+                eq(roles.code, SUPER_ADMIN_ROLE_CODE),
+                eq(users.status, "active"),
+                isNull(users.deletedAt),
+                ne(userRoles.userId, id),
+              ),
+            );
+
+          if (activeOthers.length === 0) {
+            throw new ServerApiError(
+              403,
+              "SUPER_ADMIN_LAST_PROTECTED",
+              "系统至少保留一个启用中的超级管理员绑定",
+            );
+          }
+        }
+      }
+
       await tx
         .update(users)
         .set({

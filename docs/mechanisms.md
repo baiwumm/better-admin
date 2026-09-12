@@ -253,7 +253,8 @@ SUPER_ADMIN_USER_PROTECTED）；前端只做入口隐藏止损，后端为契约
   两套判据并存是有意为之：接口鉴权回答「能不能做」，保护规则回答「对谁不能做」。
 - **豁免安全性**：操作者自身绑定 super_admin 时可操作其他 super_admin 用户
   （`assertTargetOperable` 内二次查询操作者绑定）。豁免不会锁死系统——admin 用户
-  受规则 2 绝对保护删不掉，超管账号数量不可能归零。前端以
+  受规则 2 绝对保护删不掉，**用户级操作**（删 / 停 / 重置）不可能使超管归零
+  （绑定层归零风险由 v1.9.0 不变量守卫关闭，见末条）。前端以
   `AuthUser.roles.includes('super_admin')` 同口径对齐（登录响应 roles 为角色 code
   列表，`auth.service.ts`）。
 - **启用不受保护约束**：三层规则仅在「危险方向」生效——停用（`updateStatus` 仅
@@ -267,9 +268,19 @@ SUPER_ADMIN_USER_PROTECTED）；前端只做入口隐藏止损，后端为契约
 - **super_admin 角色绑定变更已拦截**：`POST /users` 与 `PUT /users/{id}` 的
   `roleIds`（含全量替换）经 `assertValidRoleBindingChange` 校验——非超管操作者
   移除或添加 super_admin 绑定一律 403 `SUPER_ADMIN_ROLE_BINDING_PROTECTED`，
-  操作者自身绑定 super_admin 时豁免（超管间互操作不锁死系统）。
-  组合场景口径（如「先摘后挂」分两次请求的中间态、并发授权竞态）待评审，
-  当前以「单请求内最终 roleIds 集合」为判定粒度。
+  操作者自身绑定 super_admin 时豁免（超管间互操作不锁死系统），
+  判定粒度为「单请求内最终 roleIds 集合」。
+  组合场景口径已随**契约 v1.9.0** 评审落地（2026-09-12，Nest 与 Next server 同构实现）：
+  ① **不变量守卫**——`PUT /users/{id}` 移除 super_admin 绑定时，事务内先对
+  super_admin 角色行 `FOR UPDATE`（串行化并发摘绑，关断校验 TOCTOU），再校验
+  除目标外仍有「`status=active` 且未删除」的超管绑定，否则 403
+  `SUPER_ADMIN_LAST_PROTECTED`；停用用户不计入活跃数——无法登录即不具备超管
+  能力，防「停用最后一个其他超管后自摘」绕过。`POST /users` 仅添加绑定，
+  不涉及本守卫；② **归零不可达**——最后一个活跃超管必然是操作者本人，本人
+  删 / 停 / 重置已被 `assertTargetOperable` 规则 1 拦死；「先摘后挂」式转移
+  按「先挂后摘」顺序执行（先为承接人加绑、再自摘），摘除方向的中间态不再可能
+  触达归零；③ **并发编辑**——roleIds 全量替换按 PUT last-write-wins 语义接受
+  （丢更新影响极低，不引入乐观锁，记录在案）。
 
 ## 6. 前端权限快照与同步机制：登录快照 + 挂载时 /auth/me（React 端）
 

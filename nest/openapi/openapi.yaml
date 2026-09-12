@@ -136,7 +136,16 @@ info:
     由「允许 + 前缀与数字、空格、短横线，4-20 位」改为 ^1[3-9]\d{9}$（maxLength 20 → 11），
     仍可传 null 清空；格式不符 400 VALIDATION_ERROR。存量宽松格式值读取不受影响，
     下次保存时须改为标准格式方可提交。
-  version: 1.8.1
+    v1.9.0 super_admin 绑定不变量（组合场景口径评审落地，mechanisms §5）：PUT /users/{id}
+    的 roleIds 全量替换涉及移除 super_admin 绑定时，若除目标用户外不存在其他
+    「启用中且未删除」的超管绑定，返回 403 SUPER_ADMIN_LAST_PROTECTED（超管归零后
+    所有加绑请求均被 SUPER_ADMIN_ROLE_BINDING_PROTECTED 拒绝、无自助恢复手段；
+    停用用户不计入活跃数）。事务内以 super_admin 角色行 FOR UPDATE 串行化并发摘绑。
+    不变量成立后超管绑定归零不可达：最后一个活跃超管必然是操作者本人，本人
+    删/停/重置已被 SELF_OPERATION_FORBIDDEN 拦死。转移超管按「先挂后摘」顺序执行
+    （先为承接人添加绑定，再自摘）；roleIds 并发编辑按 PUT 全量替换 last-write-wins
+    语义接受（记录在案）。POST /users 仅添加绑定，不涉及本守卫。
+  version: 1.9.0
 
 servers:
   - url: https://nest.baiwumm.com/api
@@ -2330,7 +2339,10 @@ paths:
           description: |
             请求停用受保护用户（v1.4.6；status 非 disabled 不受影响）；
             或 roleIds 变更涉及移除/添加 super_admin 角色绑定且操作者非超管
-            （SUPER_ADMIN_ROLE_BINDING_PROTECTED，操作者自身绑定 super_admin 时豁免）。
+            （SUPER_ADMIN_ROLE_BINDING_PROTECTED，操作者自身绑定 super_admin 时豁免）；
+            或移除 super_admin 绑定将使系统超管归零
+            （SUPER_ADMIN_LAST_PROTECTED，v1.9.0：除目标用户外不存在其他
+            「启用中且未删除」的超管绑定；转移超管按「先挂后摘」顺序执行）。
           content:
             application/json:
               schema:
@@ -2348,6 +2360,10 @@ paths:
                   value:
                     code: SUPER_ADMIN_ROLE_BINDING_PROTECTED
                     message: 不能变更超级管理员角色绑定
+                superAdminLastProtected:
+                  value:
+                    code: SUPER_ADMIN_LAST_PROTECTED
+                    message: 系统至少保留一个启用中的超级管理员绑定
         '404':
           $ref: '#/components/responses/NotFound'
     delete:

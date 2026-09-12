@@ -86,7 +86,7 @@
 
 ### 3.5 契约与环境变量
 
-- **OpenAPI v1.8.0 → v1.9.0**：新增 `POST /auth/demo-login`；通用错误响应登记 `DEMO_READONLY`（403）。Dashboard 的 `stats` 契约顺延为 v1.10.0（§4.3）。
+- **OpenAPI 新 minor 版本**（v1.9.0 已被 super_admin 绑定不变量守卫占用，2026-09-12）：新增 `POST /auth/demo-login`；通用错误响应登记 `DEMO_READONLY`（403）。Dashboard 的 `stats` 契约顺延为再下一个 minor 版本（§4.3）。
 - **环境变量**：`DEMO_MODE`（默认 false）、`LOG_API_SKIP_GET`（默认 false）、`LOG_RETENTION_DAYS`（已有）；各端 `.env.example` 登记（`AGENTS.md` §9）。
 
 ### 3.6 实施顺序

@@ -2,6 +2,16 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 契约 v1.9.0：super_admin 绑定不变量守卫（组合场景口径评审落地，2026-09-12）
+
+- **背景**：mechanisms §5 挂着「组合场景口径待评审」。评审结论：绑定守卫只校验操作者权限，超管操作者豁免范围内存在锁死路径——可摘掉 admin 用户的 super_admin 绑定（admin 保护不覆盖绑定变更）或自摘，两超管先后摘绑可使绑定归零，此后所有加绑请求均被 `SUPER_ADMIN_ROLE_BINDING_PROTECTED` 拒绝、无自助恢复手段；且既有校验在事务外，并发摘绑存在 TOCTOU。
+- **方案（经用户拍板，方案 A：最小不变量守卫 + 行锁）**：新增 403 `SUPER_ADMIN_LAST_PROTECTED`——`PUT /users/{id}` 移除 super_admin 绑定时，事务内先对 super_admin 角色行 `FOR UPDATE` 串行化（顺带关断 TOCTOU），再校验除目标外仍有「`status=active` 且未删除」的超管绑定。停用用户不计入活跃数（无法登录即不具备超管能力，防「停用最后一个其他超管后自摘」绕过）。归零不可达论证：最后一个活跃超管必然是操作者本人，本人删/停/重置已被 `assertTargetOperable` 规则 1 拦死。被否方案：原子转移 API / 乐观锁（过度设计，转移按「先挂后摘」天然安全；roleIds 并发丢更新按 PUT 语义接受并记录在案）。
+- **实现**：`nest/src/modules/users/users.service.ts` 与 `next/src/lib/server/users-service.ts` 同构——update 事务内读目标当前绑定 → 命中移除方向则锁角色行 + 计活跃他人 → 归零抛 403；`POST /users` 仅添加绑定不涉及守卫。契约 `nest/openapi/openapi.yaml` 升 **v1.9.0**（PUT /users/{id} 补 403 响应示例 + 版本注记写明不变量、先挂后摘顺序、并发口径）。
+- **前端三端**：`features/users/user-api.ts` 的 `getUserErrorMessage` 新增 `SUPER_ADMIN_LAST_PROTECTED` 映射；`errors.users.superAdminLastProtected` 双语键六份 locales 同步（react / vue / next × zh-CN / en）。
+- **测试口径**：nest 无既有测试基建（与三层规则、绑定守卫等既有保护一致），服务端行为以集成冒烟验证——用例清单：自摘被拦（无其他活跃超管）/ 自摘放行（存在其他活跃超管）/ 已停用绑定不计入 / 并发摘绑串行化。
+- **文档**：mechanisms §5 组合场景口径闭环（含「用户级操作不归零」论断的适用范围修正）；feature-matrix 用户管理行补 v1.9.0 备注。
+- **无需同步**：Vue / Nuxt 端零改动（错误映射属消费端已覆盖）；数据库 schema 不涉及（守卫为查询级）。
+
 ### 键盘可达性批次：code-review-backlog #1 / #2 / #4 落地（2026-09-12）
 
 - **背景**：docs 盘点后经用户拍板，按「code-review-backlog 最佳建议方案」执行一批行为级修复（backlog 原则「交互变更需单独决策」的首批落地）。

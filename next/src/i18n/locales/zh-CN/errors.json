@@ -67,6 +67,7 @@
   "errors.users.selfOperationForbidden": "不能操作当前登录用户",
   "errors.users.superAdminProtected": "该用户绑定了超级管理员角色，不可操作",
   "errors.users.superAdminRoleBindingProtected": "不可移除或添加超级管理员角色绑定",
+  "errors.users.superAdminLastProtected": "系统至少保留一个启用中的超级管理员绑定",
   "errors.users.usernameExists": "用户名已被占用",
   "errors.users.validation": "请求参数不合法，请检查表单后重试"
 }

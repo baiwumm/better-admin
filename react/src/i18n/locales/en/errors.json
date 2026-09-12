@@ -67,6 +67,7 @@
   "errors.users.selfOperationForbidden": "Cannot operate on current user",
   "errors.users.superAdminProtected": "This user is bound to super_admin role and cannot be operated",
   "errors.users.superAdminRoleBindingProtected": "Cannot remove or assign the super_admin role binding",
+  "errors.users.superAdminLastProtected": "At least one active super admin binding must remain",
   "errors.users.usernameExists": "Username already exists",
   "errors.users.validation": "Invalid request, please check the form and retry"
 }

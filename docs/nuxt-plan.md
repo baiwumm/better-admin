@@ -3,7 +3,7 @@
 > 本文档是 Nuxt 端（Phase 6：Nuxt 全栈）的可行性评估与开发计划：功能对齐清单、代码复用地图、技术选型、待确认决策、MVP 路线与风险评估。
 > **状态：模板已初始化，业务开发未启动**。官方启动模板已入库（`e8f71cd`，仅脚手架无业务代码）；§5 六项决策（D1-D6）拍板后按 §6 里程碑推进 M0。
 > 基准三方：**React = UI / 交互 / 页面结构 Source of Truth**（`ui-spec.md` §1）；**Vue = 组件实现与代码形态的平移蓝本**（同 Nuxt UI + Pinia + vue-query）；**Next = 服务端实现蓝本**（同为独立全栈、共用同一 PostgreSQL）。
-> 契约真源：`nest/openapi/openapi.yaml`（v1.8.0）。组件库规则见 `AGENTS.md` §21 与 `nuxt-ui-guide.md`。
+> 契约真源：`nest/openapi/openapi.yaml`（v1.9.0）。组件库规则见 `AGENTS.md` §21 与 `nuxt-ui-guide.md`。
 
 ## 修订记录
 
@@ -202,7 +202,7 @@
 ### M1 — 服务端全量移植（Nuxt 特有主战场）
 
 - 顺序：`route-helpers` h3 等价层 → 业务 service 逐文件平移（`permissions` → `dict` → `menus` → `roles` → `users` → `logs` → `posts` → `depts` → `notices` → `notifications` → `account`）→ 对应 `server/api/**` 端点 → `password-policy` → `avatar-storage` → 脚本（`clean-logs` / `check-locales`）。
-- 逐端点核对 `nest/openapi/openapi.yaml`（v1.8.0）：路径、方法、信封、错误码、分页结构。
+- 逐端点核对 `nest/openapi/openapi.yaml`（v1.9.0）：路径、方法、信封、错误码、分页结构。
 - 不回改业务规则：`token_version` 实时校验、软删、日志 action 命名、`super_admin` 保护（`PUT /roles/{id}/menus`、`DELETE /roles/{id}` → 403 `SUPER_ADMIN_ROLE_PROTECTED`）逐行比对移植。
 - 中间件按 D1 决策接线（客户端守卫必需；Nitro server middleware 视 SSR 决策）。
 
@@ -278,7 +278,7 @@
 ## 9. 验收标准（整体）
 
 1. **功能**：§2 清单 27 项中 26 项与 React 对齐（Dashboard 保持占位 ❌）；`docs/feature-matrix.md` Nuxt 列如实更新。
-2. **契约**：44 个端点与 `openapi.yaml` v1.8.0 逐字一致；契约冒烟脚本差异为零或已记录。
+2. **契约**：44 个端点与 `openapi.yaml` v1.9.0 逐字一致；契约冒烟脚本差异为零或已记录。
 3. **UI**：与 React 并排走查（页面结构 / 布局骨架 / 交互顺序 / 响应式 / 明暗 / Loading-Empty-Error 三态）；组件视觉为 Nuxt UI 默认风格。
 4. **工程**：`pnpm dev / build / lint / type-check / test` 全绿；无 `any` 绕过；ESLint 无 error。
 5. **部署**：`nuxt.baiwumm.com` 线上冒烟通过；环境变量不泄漏密钥。
