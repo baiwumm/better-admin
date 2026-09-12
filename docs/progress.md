@@ -2,6 +2,13 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### nuxt-plan v1.3：按用户指令对齐实际项目 + Nuxt Modules 优先（2026-09-12）
+
+- 六项指令落地：① §2 新增 **§2.4 行为级对齐补充**（键盘可达性 / DataTable 首屏骨架 / 公告详情 syncMeta / locales 一致性测试 / 进度条状态机，共 7 项）；② 选型翻转为 **Nuxt Modules / 内置机制优先**——主题明暗改 `@nuxtjs/color-mode`（Nuxt UI module 内置）、页面标题改内置 `useHead`、富文本改 Nuxt UI 内置 `UEditor`、拖拽走 `@vueuse/nuxt`，**明确不用 `NuxtLoadingIndicator`**（仅路由进度、无法承载 api-client 请求驱动，行为不一致）；③ §1 新增 **llms-full.txt 开发规则**（https://nuxt.com/llms-full.txt 全文指南，动手前查证）；④ M0 改为基于既有模板（实测 Nuxt 4.5.2 / @nuxt/ui 4.11 / @nuxt/eslint，模板清理与工程化补齐入 M0）；⑤ §5 决策重排——**D3 推荐翻转为 @nuxtjs/i18n v10**（已查证支持 Nuxt 4，`strategy: 'no_prefix'` + 扁平键 resolver）、D5 改「平移代码导入风格」（推荐保留显式导入）、D6 改「工程化口径」（推荐沿用模板 stylistic 不引 Prettier），目录结构由模板确定移出决策表；⑥ 核实 `@bprogress/nuxt` 存在但动手前仍需核对版本可用性。
+- 文件：`docs/nuxt-plan.md`（v1.2 → v1.3，修订记录见文档）。
+- **同日拍板与补充**：D1-D6 六项均按推荐方案（选项 A）执行；进度条口径定稿——**路由切换进度用 Nuxt 内置 `NuxtLoadingIndicator`，接口请求进度用 `@bprogress/vue`**（BProgress 无 nuxt 子包），双指示器呈现属已确认口径；llms-full.txt 规则升格为 `AGENTS.md` §18 第 8 条硬性规则（跨会话持久生效）。状态：M0 待开工指令。
+- **图标选型细化**：`@nuxt/icon` 内置的是解析机制非图标数据——SPA 模式无本地 collection 会回退 Iconify API 运行时请求。定稿：保留 lucide、**补装 logos**（品牌图标 11 处，Vue 蓝本同款，simple-icons 无法替代多色 logo）、**卸载 simple-icons**（Vue 蓝本零使用），M0 配 `icon.clientBundle` 实现运行时零外部依赖（nuxt-plan §4 / M0 已同步）。
+
 ### 文档整合批次：requirements 对齐实际业务 + 多源收敛（2026-09-12）
 
 - **背景**：docs/ 全量评估（合并 / 删除 / 简化 / requirements 时效）后经用户拍板执行；目标为「单一职责、规则只在一处」，消除状态类信息多源漂移（评估中已实际发现 react.md 状态严重过时等实例）。

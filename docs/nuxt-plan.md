@@ -1,7 +1,7 @@
-# Better Admin — Nuxt 端开发方案（v1.2 可行性计划）
+# Better Admin — Nuxt 端开发方案（v1.3 可行性计划）
 
 > 本文档是 Nuxt 端（Phase 6：Nuxt 全栈）的可行性评估与开发计划：功能对齐清单、代码复用地图、技术选型、待确认决策、MVP 路线与风险评估。
-> **状态：模板已初始化，业务开发未启动**。官方启动模板已入库（`e8f71cd`，仅脚手架无业务代码）；§5 六项决策（D1-D6）拍板后按 §6 里程碑推进 M0。
+> **状态：决策已拍板（2026-09-12，六项均按 §5 推荐方案），待开工指令**。模板已初始化（Nuxt 4.5.2 + `@nuxt/ui` 4.11 + `@nuxt/eslint`），M0 可随时启动。
 > 基准三方：**React = UI / 交互 / 页面结构 Source of Truth**（`ui-spec.md` §1）；**Vue = 组件实现与代码形态的平移蓝本**（同 Nuxt UI + Pinia + vue-query）；**Next = 服务端实现蓝本**（同为独立全栈、共用同一 PostgreSQL）。
 > 契约真源：`nest/openapi/openapi.yaml`（v1.9.0）。组件库规则见 `AGENTS.md` §21 与 `nuxt-ui-guide.md`。
 
@@ -12,6 +12,7 @@
 | v1.0 | 2026-09-11 | 初版可行性计划：功能对齐清单（26 项）、三源复用地图、技术选型、6 项待确认决策、M0-M5 路线、风险评估 |
 | v1.1 | 2026-09-11 | 与 `feature-matrix.md` 校正后的行数对齐：清单 **26 项 → 27 项**（新增「路由过渡动画」行，Vue 端 M4 已实测生效）；「统计口径漂移」顺带修正项已由 Vue M4 文档收尾完成 |
 | v1.2 | 2026-09-12 | 状态同步（文档指针清理）：`nuxt/` 官方启动模板已初始化（`e8f71cd`），D1-D6 决策仍待拍板，M0 业务代码未开始 |
+| v1.3 | 2026-09-12 | 按用户指令对齐实际项目：① §2 新增 **§2.4 行为级对齐补充**（键盘可达性 / 首屏骨架 / syncMeta 等 2026-09-12+ Vue 端新增）；② 技术选型翻转为 **Nuxt Modules / 内置机制优先**（color-mode 内置 / useHead / @nuxtjs/i18n 推荐 / 不用 NuxtLoadingIndicator）；③ §1 新增 **llms-full.txt 开发规则**；④ M0 改为基于既有模板（不再脚手架）；⑤ D3 推荐翻转、D5 改导入风格口径、D6 改工程化口径（目录结构已由模板确定，移出决策表） |
 
 ---
 
@@ -42,6 +43,8 @@
 - **主题策略**：直接使用 Nuxt UI 默认 Design Tokens 与 Color System；**不移植** React `theme.css`、不建 `--ui-*` 映射层（§21）。
 - **只动 `/nuxt` 与 `docs/`**：不修改 NestJS、React、Next、Vue 各端代码。
 - **代码生成前置检查**：任何 Nuxt / Nuxt UI 代码产出前必须执行 `nuxt-ui-guide.md` §2 前置检查（Skill 可用性 + 官方文档核对），**禁止凭记忆使用 Nuxt UI API**。
+- **Nuxt 开发规则**：Nuxt 相关开发必须遵循来自 **https://nuxt.com/llms-full.txt** 的完整 Nuxt 指南（硬性规则单点维护在 `AGENTS.md` §18 第 8 条）。
+- **Nuxt Modules / 内置机制优先**：某项能力存在官方 Nuxt Module 或框架内置机制（auto-imports / `useHead` / route middleware / `useCookie` / `error.vue` / Nitro server routes 等）时，**优先采用**，不强制实现方式与 Vue 端逐字一致；但**行为必须保持不变**（与 React 基准、Vue 端既有效果对齐）。内置机制无法覆盖行为时（如进度条的请求驱动），不用内置替代品硬凑，按 §4 选型。
 
 ---
 
@@ -91,6 +94,20 @@
 | 架构图谱 | ✅ | ✅ | `@vue-flow/core` + 手写树布局（懒加载 chunk）；`org-chart-layout.ts` 框架无关直接平移 | P2 |
 | 通讯录 Excel 导出 | ✅ | ✅ | `write-excel-file` 串行分页导出 + 企业级样式；`directory-export.ts` 平移（机制 §7.3 适用） | P2 |
 
+### 2.4 行为级对齐补充（2026-09-12 后 Vue 端新增，随所属里程碑落地）
+
+> 功能矩阵 27 行之外的行为级对齐项（进度详见 `docs/progress.md` 2026-09-12 各条目）。
+
+| 行为 | React | Vue | Nuxt 实现要点 | 优先级 |
+| --- | --- | --- | --- | --- |
+| 键盘可达性：标签关闭热区（Tab 聚焦 + Enter / Space 关闭 + 焦点环） | ✅ | ✅ | 随 TagsBar 平移（span `tabindex` + keydown + 焦点环，行为同 Vue） | P2 |
+| 键盘可达性：Shift+F10 打开标签菜单 | ✅ | ✅ | Vue 端为合成派发 contextmenu（reka ContextMenu 无受控 open）——同构平移，浏览器冒烟确认 | P2 |
+| 键盘拖拽：标签排序 / 组织树（dnd-kit KeyboardSensor） | ✅ | ❌ | **已知差异（沿用 Vue 口径）**：Vue / Nuxt 用 sortablejs（无键盘能力），不另行实现 | P3 |
+| DataTable 首屏骨架行（表头 + 6 行骨架，非遮罩） | ✅ | ✅ | 随 DataTable.vue 平移（假行 + cell 渲染器覆盖方案，对齐 ui-spec §14.2 三端口径） | P2 |
+| 公告详情 tabs meta（标签显示公告标题 + 面包屑两级） | ✅ | ✅ | 随 notice-detail-page 平移（`syncMeta` 调用 + 面包屑 meta 回退分支） | P2 |
+| i18n locales 键集合一致性测试（zh/en 逐域 + 非空 + 前缀） | ✅ | ✅ | 随 vitest 接线平移（`i18n/__tests__/locales.test.ts`） | P1 |
+| 进度条状态机响应式化 + 事件监听收敛（VueUse） | ✅（zustand） | ✅ | `lib/progress.ts` 响应式状态机平移；`@bprogress` 桥接按 §4 选型 | P1 |
+
 ---
 
 ## 3. 代码复用地图（三源）
@@ -137,67 +154,78 @@
 
 ---
 
-## 4. 技术选型方案
+## 4. 技术选型方案（Nuxt Modules / 内置机制优先）
+
+> 选型原则（2026-09-12 用户指令）：存在官方 Nuxt Module 或框架内置机制的能力**一律优先采用**，不强制与 Vue 端实现方式逐字一致；内置机制无法覆盖既有行为时（如请求驱动进度条）不硬凑，选型如下表并标注理由。
 
 | 能力 | Vue 端（基准） | **Nuxt 端选型** | 说明 |
 | --- | --- | --- | --- |
-| 框架 | Vue 3.5 + Vite 8（纯 SPA） | **Nuxt 4.x**（Nitro 全栈，`srcDir = app/`） | 与 Next 同构的独立全栈；`server/` 在根 |
-| UI 库 | `@nuxt/ui` 4.11（Vite 插件 + `vue-plugin`） | **`@nuxt/ui` 4.x（Nuxt module）** | 同版本；module 自动注册组件 / composable / 样式，无需手动 `auto-imports.d.ts` |
+| 框架 | Vue 3.5 + Vite 8（纯 SPA） | **Nuxt 4.5（模板已就位）** | 与 Next 同构的独立全栈；`server/` 在根 |
+| UI 库 | `@nuxt/ui` 4.11（Vite 插件） | **`@nuxt/ui` 4.11（Nuxt module，模板已接）** | 同版本；module 自动注册组件 / composable / 样式 |
 | 布局 | Dashboard 套件 | **同**（Dashboard 套件） | 组件用法不变 |
-| 路由 | vue-router + unplugin-vue-router（`src/pages/`） | **Nuxt 文件式路由**（`app/pages/`） | URL 结构一一对应；`definePageMeta` |
-| 守卫 | 全局 `beforeEach` 三层 | **全局 route middleware**（`auth.global.ts`）+ **Nitro API 鉴权**（权威） | 逻辑照抄，不改语义 |
-| 状态 | Pinia 4 | **`@pinia/nuxt` + Pinia**（同版本） | store 平移 |
-| 数据请求 | `@tanstack/vue-query` + fetch 版 api-client | **同**（baseURL 改同源 `/api`） | Nuxt plugin 注入 `QueryClient` |
-| 表单 | `UForm` + zod（Standard Schema） | **同** | 注意：Vue 端**实际未引入 vee-validate**（`vue-plan.md` 表述与实现有漂移，以代码为准） |
-| 表格 | `@tanstack/vue-table` 8 + `UTable` | **同（版本对齐 8.x）** | v9 与 UTable 不兼容（`vue-plan.md` §2 结论适用） |
-| i18n | `vue-i18n` 11 + 扁平键 `messageResolver` | **待决策 D3**（推荐直用 `vue-i18n`） | 复用 locales JSON 与 sync 脚本 |
+| 路由 | vue-router + unplugin-vue-router（`src/pages/`） | **Nuxt 文件式路由**（内置，`app/pages/`） | URL 结构一一对应；`definePageMeta` |
+| 守卫 | 全局 `beforeEach` 三层 | **全局 route middleware**（内置，`auth.global.ts`）+ **Nitro API 鉴权**（权威） | 逻辑照抄，不改语义 |
+| 状态 | Pinia 4（显式注册） | **`@pinia/nuxt` module（auto-imports）** | store 平移后免手动注册 |
+| 数据请求 | `@tanstack/vue-query` + fetch 版 api-client | **同**（baseURL 改同源 `/api`） | 无官方 Nuxt module，属 Vue 库——**刻意不用内置 `useFetch` 替代**：缓存 / refetch / epoch 语义会重写，违反「行为不变」；vue-query 经 Nuxt plugin 注入 `QueryClient` |
+| 表单 | `UForm` + zod（Standard Schema） | **同** | Vue 端实际未引入 vee-validate（以代码为准） |
+| 表格 | `@tanstack/vue-table` 8 + `UTable` | **同（版本对齐 8.x）** | v9 与 UTable 不兼容 |
+| i18n | `vue-i18n` 11 + 扁平键 `messageResolver` | **待决策 D3**（推荐 `@nuxtjs/i18n` v10，支持 Nuxt 4） | Modules 优先：`strategy: 'no_prefix'` + `vueI18n.messageResolver` 扁平键；locales JSON / sync 脚本复用；备选直用 vue-i18n plugin（与 Vue 100% 同构） |
+| 主题明暗 | `@vueuse/core` `useColorMode` + 防闪烁脚本 | **`@nuxtjs/color-mode`（Nuxt UI module 内置集成，内置机制）** | 三态 light / dark / system + class 策略对齐 Vue 行为；防闪烁由模块接管，删除自研脚本 |
+| 页面标题 | `composables/use-document-title`（watch 路径 + locale） | **`useHead` / `useSeoMeta`（Nuxt 内置）** | 「路径 + 语言 → 标题」语义收进响应式 computed；服务端直出标题属 Nuxt 内置能力（对齐 Next generateMetadata 体验，M5 评估） |
 | 服务端 DB | — | **drizzle-orm 0.45 + postgres.js**（同 Next） | `AGENTS.md` §18.7：动手前查 `drizzle-orm` Skill |
 | 认证/鉴权 | Bearer + localStorage | **待决策 D2**（推荐服务端双源 + 前端 Bearer） | `jose` + `bcryptjs` |
-| 存储 | — | **`@supabase/supabase-js`**（头像中转，服务端持密钥） | 框架无关 |
-| 富文本 | `@tiptap/vue-3` + starter-kit | **同** | SSR 下需 `ClientOnly` |
-| 图谱 | `@vue-flow/core` + background + controls | **同** | 懒加载 chunk |
-| 拖拽 | `@vueuse/integrations` `useSortable`（sortablejs） | **同** | 组织树 / 列设置 |
+| 存储 | — | **`@supabase/supabase-js`**（头像中转，服务端持密钥） | 框架无关，无需 module |
+| 富文本 | `@tiptap/vue-3` + starter-kit（Vue 端自装） | **`UEditor`（Nuxt UI 内置 Tiptap）** | 内置机制：免自装依赖，工具栏用 `UEditorToolbar`（Vue 端已用同款 API，平移成本低） |
+| 图谱 | `@vue-flow/core` + background + controls | **同** | 懒加载 chunk；SSR 下 `ClientOnly` |
+| 拖拽 | `@vueuse/integrations` `useSortable` | **`@vueuse/nuxt` module（auto-imports）** | 组织树 / 列设置 / 标签排序同源 |
 | 裁剪 | `vue-advanced-cropper` | **同** | 头像 |
 | Excel | `write-excel-file` 4.1.1 | **同**（锁版本） | 框架无关 |
-| 图标 | `@iconify-json/lucide` 走 `UIcon` | **同** | `i-lucide-*` |
+| 图标 | `@iconify-json/lucide` + `logos` 走 `UIcon` | **`@nuxt/icon`（Nuxt UI 内置解析）+ 本地 collection `lucide` / `logos`** | collection 是 @nuxt/icon 的本地数据源（内置的是解析机制非数据）；**补装 `logos`**（品牌下拉 / 个人链接 / OAuth 共 11 处，Vue 蓝本同款）；**删模板自带的 `simple-icons`**（Vue 蓝本零使用）。SPA 模式（D1）必须配 `icon.clientBundle`（collections: lucide / logos）——否则回退 Iconify API 运行时网络请求，离线 / 网络受限即缺图标；菜单图标为 DB 动态名（`i-lucide-${icon}`），整包 collection 是唯一稳妥兜底 |
 | Toast | `useToast()`（`UApp`） | **同** | — |
-| 进度条 | `@bprogress/vue` | **`@bprogress/nuxt` 或保留 `@bprogress/vue`** | 动手前核对 Nuxt 官方模块可用性 |
+| 进度条 | `@bprogress/vue` + 响应式状态机 | **双轨（2026-09-12 拍板）**：路由切换进度 = Nuxt 内置 **`NuxtLoadingIndicator`**；接口请求进度 = **`@bprogress/vue`**（BProgress 无 nuxt 子包）经 `lib/progress.ts` 状态机驱动 | 呈现层与 Vue 单条进度条存在差异（路由 / 请求双指示器），属已确认口径；请求驱动不用 `NuxtLoadingIndicator` 硬凑（无法承载 api-client 事件） |
 | 保活 | 原生 `<KeepAlive>` + 宿主组件 | **`<NuxtPage keepalive>` + 宿主机制** | §2.1 多标签页行 |
 | 测试 | vitest + `@vue/test-utils` | **vitest + `@nuxt/test-utils`** | 纯函数用例直接复用 |
 | 部署 | Vercel（静态 SPA） | **Vercel（Nitro node preset）** | ⚠️ 不可用 edge preset（`postgres` / `bcryptjs` 需 Node 运行时） |
 
+> **自动导入口径（对应 D5）**：新写代码（`server/` / plugins / middleware / 新 composables）使用 Nuxt 自动导入惯例；从 Vue 平移的存量代码保留显式导入，降低蓝本 diff、聚焦行为审查。
+
 ---
 
-## 5. 待确认决策（动工前必须拍板）
+## 5. 待确认决策（已拍板）
+
+> **2026-09-12 用户确认：六项均按推荐方案（选项 A）执行。**目录结构原 D6（Nuxt 4 默认 `app/`）已由官方模板确定，移出决策表；D3 按用户「Modules 优先」指令翻转推荐、D5 / D6 为本次新增口径。
 
 | # | 决策点 | 选项 A（推荐） | 选项 B | 影响 |
 | --- | --- | --- | --- | --- |
 | **D1** | **渲染模式** | **`ssr: false`（SPA 模式）**：与 Vue / React 行为完全一致；localStorage 持久化 store、`useColorMode`、Tiptap、VT 编排**零改造**；守卫走客户端 route middleware；Nitro 仍提供全部 server API | `ssr: true`（universal）：首屏 SSR + 服务端守门（对齐 Next 的 proxy.ts 体验）；但 auth-store / tabs-store / design-theme-store 的 localStorage 持久化、`vue-query` 水合、Tiptap、路由 VT 编排均需 client-only 化，前端改造量 +20% 且水合不一致风险上升 | **最大分叉点**。Next 端虽是 SSR 应用，但其页面数据全在客户端取，SSR 收益主要集中在「首屏 HTML + 服务端重定向」 |
 | **D2** | **认证传输层** | **服务端双源（Bearer 优先 + Cookie 回退，照抄 Next `request-auth.ts`）+ 前端沿用 Vue 的 Bearer/localStorage** → 前端 `auth-store` / `api-client` **零改造**；Cookie 仍在登录/刷新时下发，为将来开启 SSR 留路 | 纯 httpOnly Cookie（对齐 Next 前端语义）：需改造 `api-client`（去 Bearer、加 `credentials`）与 `auth-store` 持久化逻辑 | 推荐方案等同于 Next 服务端**已实现**的双源能力，纯收益 |
-| **D3** | **i18n 方案** | **直用 `vue-i18n` 11 + `messageResolver`**（Nuxt plugin 方式）：与 Vue 端实现 100% 一致，locales / sync 脚本 / 纯函数全部复用 | `@nuxtjs/i18n`：Nuxt 生态惯例、SEO/hreflang 集成更好；但需重新配置（底层仍是 vue-i18n），且本项目路由无 locale 前缀、四端均为客户端切换，SEO 收益有限 | 影响 i18n 层改造量与「与 Vue 一致性」 |
+| **D3** | **i18n 方案** | **`@nuxtjs/i18n` v10（Modules 优先，2026-09-12 指令翻转）**：`strategy: 'no_prefix'`（无 locale 前缀路由，行为与三端一致）+ `vueI18n.messageResolver` 扁平键；locales JSON / sync 脚本全部复用；hreflang / SEO 能力顺带就位 | 直用 `vue-i18n` 11（Nuxt plugin 方式）：与 Vue 端实现 100% 同构、少一层模块抽象；SEO/hreflang 不需要（四端均客户端切换） | i18n 接线方式与模块依赖面 |
 | **D4** | **Drizzle schema 来源** | **逐字复制 Next 的 `schema.ts` / `relations.ts`**（同构副本）：保证与 Next 读取行为完全一致，零漂移风险 | 独立执行 `drizzle-kit pull` + `sync-pulled-schema.mjs`（同 Next 脚本） | 推荐方案与 `password-validation` 等既有「同构副本」惯例一致 |
-| **D5** | **前端复用方式** | **从 Vue 整体平移 + 适配层**（复制后按 §3.2 改造点调整）：复用率最高、与 Vue 视觉/交互天然一致 | 借 Vue 代码重新组织为 Nuxt 惯用结构（composables / 自动导入风格） | 影响工期与后续双端同步成本 |
-| **D6** | **目录结构** | **Nuxt 4 默认**：`app/`（pages / components / layouts / stores / composables / assets）+ 根 `server/` | 自定义 `srcDir` 贴合 Vue 的 `src/` 布局 | 默认结构更符合官方约定与 Skill 文档 |
+| **D5** | **平移代码的导入风格** | **保留 Vue 显式导入**：蓝本 diff 最小、代码审查聚焦行为差异；新写代码（`server/` / plugins / middleware / 新 composables）用 Nuxt 自动导入惯例 | 全面改写为 Nuxt auto-import 风格（更贴官方惯例，但蓝本 diff 大、后续与 Vue 双端同步成本上升） | 平移效率与长期双端同步成本 |
+| **D6** | **工程化口径** | **沿用模板 `@nuxt/eslint`（stylistic 承担格式化，不引入 Prettier）**——Nuxt 官方约定；补 `test` 脚本（vitest + `@nuxt/test-utils`），验收链为 `dev / build / lint / typecheck / test` | 引入 Prettier 与 react / vue / next 三端工具链完全对齐 | 工具链一致性 vs Nuxt 官方约定（模板已按 A 配置） |
 
-> 以上 6 项均属架构级选择，按 `AGENTS.md` §18「需求优先级」规定：**不静默决策、不自选方案继续开发**，等待确认后动工。
+> 以上 6 项均属架构级选择，按 `AGENTS.md` §18「需求优先级」规定：**不静默决策、不自选方案继续开发**。✅ **已拍板（2026-09-12）：六项均执行选项 A**。
+> 模板自带资产处置（M0 内执行，不需单独决策）：演示内容（`index.vue` / `TemplateMenu.vue`）移除；`.github/workflows/ci.yml` 与 `renovate.json` 停用或按项目口径改写；`pnpm-workspace.yaml` 仅保留 allowBuilds 配置。
 
 ---
 
 ## 6. MVP 开发路线
 
-原则：每个里程碑独立可验收、可构建（`pnpm dev / build / lint / type-check / test` 全绿）；结束即更新 `docs/feature-matrix.md`（Nuxt 列）与 `docs/progress.md`（置顶）并按 §10 提交。提交前缀 `nuxt(Mn):`。**只动 `/nuxt` + `docs/`**。
+原则：每个里程碑独立可验收、可构建（`pnpm dev / build / lint / typecheck / test` 全绿）；结束即更新 `docs/feature-matrix.md`（Nuxt 列）与 `docs/progress.md`（置顶）并按 §10 提交。提交前缀 `nuxt(Mn):`。**只动 `/nuxt` + `docs/`**。
 
-### M0 — 工程基建与骨架
+### M0 — 工程基建与骨架（基于既有模板，不再脚手架）
 
-1. Nuxt 4 脚手架（TS strict）+ ESLint 9（flat + `eslint-plugin-vue`）+ Prettier + vitest（`@nuxt/test-utils`）。
-2. `@nuxt/ui` module 接入 + `main.css`（`@import "tailwindcss"; @import "@nuxt/ui";`）+ `app.vue`（`UApp` 包裹）+ 默认 Design Tokens。
+模板已有资产（实测核对）：Nuxt **4.5.2** + `@nuxt/ui` **4.11**（module 已接，`compatibilityDate: 2026-06-30`）+ `@nuxt/eslint`（stylistic）+ `app/` 默认结构 + `main.css` + 演示页（`index.vue` / `TemplateMenu.vue`）+ `typecheck` 脚本（`nuxt typecheck`）。
+
+1. **模板清理**：移除演示内容（`app/pages/index.vue` 占位业务化、删 `TemplateMenu.vue`）；处置模板自带 `.github/workflows/ci.yml` 与 `renovate.json`（停用或按项目口径改写）；`pnpm-workspace.yaml` 仅保留 allowBuilds；**图标 collection 调整**——卸载 `@iconify-json/simple-icons`（零使用）、安装 `@iconify-json/logos`（品牌图标，Vue 蓝本同款），并在 `nuxt.config.ts` 配 `icon.clientBundle`（lucide / logos，SPA 模式运行时零外部网络依赖，§4 图标行）。
+2. 工程化补齐：vitest（`@nuxt/test-utils`）+ `test` 脚本；`.env.example`（含 `NUXT_PUBLIC_*` 与服务端密钥占位）。
 3. **Dashboard 套件布局骨架**：`UDashboardGroup` + `UDashboardSidebar`（菜单 items 注入）+ `UDashboardPanel` + `UDashboardNavbar` + `UDashboardSearch`；折叠 / 移动端抽屉 / `⌘B` 由套件内置。
-4. 文件式路由骨架（`app/pages/` 覆盖全部 24 个 URL）+ 三层守卫（`middleware/auth.global.ts`）+ 403/404/500 + Dashboard 占位。
-5. i18n 接线（按 D3）+ `scripts/sync-locales.mjs` 从 Vue 平移；语言切换生效。
-6. **认证最小闭环**（服务端地基 + 4 端点）：`db/client` + `schema` + `lib/server/{route-helpers,auth/*}` + `/api/auth/{login,logout,refresh,me}`；前端 `auth-store` + `api-client` + 登录页（`isSafeRedirect` / rememberMe）。
-7. 主题（明暗 + 防闪烁脚本）+ Header 操作区（Search / ThemeSwitch / LanguageSwitch / UserMenu）。
+4. 文件式路由骨架（`app/pages/` 覆盖全部 24 个 URL）+ 三层守卫（`app/middleware/auth.global.ts`）+ 403/404/500 + Dashboard 占位。
+5. i18n 接线（按 D3）+ `scripts/sync-locales.mjs` 从 Vue 平移（含裸 `@` → `{'@'}` 幂等转义）；语言切换生效；locales 一致性测试（§2.4）。
+6. **认证最小闭环**（服务端地基 + 4 端点）：`db/client` + `schema`（按 D4）+ `server/utils/{route-helpers,auth/*}` + `/api/auth/{login,logout,refresh,me}`；前端 `auth-store` + `api-client` + 登录页（`isSafeRedirect` / rememberMe）；进度条接线（`NuxtLoadingIndicator` 路由 + `@bprogress/vue` 请求驱动，§4）。
+7. 主题（`@nuxtjs/color-mode` 三态 + 防闪烁由模块接管）+ Header 操作区（Search / ThemeSwitch / LanguageSwitch / UserMenu）。
 
-**验收**：脚手架可运行；Nuxt UI + Tailwind v4 工作；布局为 Dashboard 套件；登录 → 守卫 → 会话恢复 → 401 refresh → 登出闭环；i18n 中英切换（含 `@` 转义场景）；错误页跳转正确；`dev / build / lint / type-check / test` 全绿。
+**验收**：模板清理后可运行；Nuxt UI + Tailwind v4 工作；布局为 Dashboard 套件；登录 → 守卫 → 会话恢复 → 401 refresh → 登出闭环；i18n 中英切换（含 `@` 转义场景）；错误页跳转正确；`dev / build / lint / typecheck / test` 全绿。
 
 ### M1 — 服务端全量移植（Nuxt 特有主战场）
 
@@ -224,10 +252,11 @@
 ### M4 — 增强特性与收尾
 
 - 偏好设置 9 项全量（`design-theme-store` 单一真源 + 揭示动画）。
-- 多标签页（Nuxt 保活宿主机制）+ 标签「刷新」+ 页面切换 VT 编排 + 导航方向感知。
-- DataTable 列设置全量接入（10 个列表页）。
+- 多标签页（Nuxt 保活宿主机制）+ 标签「刷新」+ 拖拽排序（useSortable）+ 页面切换 VT 编排 + 导航方向感知。
+- DataTable 列设置全量接入（10 个列表页）+ **首屏骨架行**（§2.4）。
 - 命令面板对齐 React `collectMenuSections` 语义（分组拍平 + `searchText` + 自建主题组）。
-- **验收**：偏好全项即时生效 + 刷新持久 + 重置复原；标签保活 / 关闭销毁 / 刷新重建；列设置持久与重置；`⌘K` 唤起。
+- **行为级对齐收尾（§2.4）**：键盘可达性（标签关闭热区 Enter / Space、Shift+F10 菜单——合成派发链路浏览器冒烟）、公告详情 `syncMeta`（标签具体标题 + 面包屑两级）。
+- **验收**：偏好全项即时生效 + 刷新持久 + 重置复原；标签保活 / 关闭销毁 / 刷新重建 / 键盘可达；列设置持久与重置；`⌘K` 唤起。
 
 ### M5 — 部署与文档收尾
 
@@ -271,15 +300,15 @@
 1. **Dashboard 概览页实现**——各端均未实现，按 `plan-dashboard-playground.md` 统一立项（图表库已定 Recharts，四端色值对齐方案需共同评审）。
 2. **Playground 演示场**——同上，统一立项后排期。
 3. **任何 NestJS / Nuxt 之外的契约或 Schema 变更**——契约变更须先行评审。
-4. **React / Next / Vue 三端的修改**——包括 `progress.md`（Vue M3）记录的 React 端既有回归（架构图谱全宽改造误删 `view-transition-name:main-content`，路由过渡动画失效），仅在本文档记录、不擅自修复。
+4. **React / Next / Vue 三端的修改**——契约或行为对齐问题先在本文档登记，经评审后由对应端处理。（原登记的 React 架构图谱 `view-transition-name` 回归已在 `3939abe` 修复，2026-09-12 核对闭环。）
 
 ---
 
 ## 9. 验收标准（整体）
 
-1. **功能**：§2 清单 27 项中 26 项与 React 对齐（Dashboard 保持占位 ❌）；`docs/feature-matrix.md` Nuxt 列如实更新。
-2. **契约**：44 个端点与 `openapi.yaml` v1.9.0 逐字一致；契约冒烟脚本差异为零或已记录。
+1. **功能**：§2 清单 27 项中 26 项与 React 对齐（Dashboard 保持占位 ❌），且 **§2.4 行为级对齐项随所属里程碑落地**；`docs/feature-matrix.md` Nuxt 列如实更新。
+2. **契约**：44 个端点与 `openapi.yaml` v1.9.0 逐字一致（含 v1.9.0 `SUPER_ADMIN_LAST_PROTECTED` 守卫语义）；契约冒烟脚本差异为零或已记录。
 3. **UI**：与 React 并排走查（页面结构 / 布局骨架 / 交互顺序 / 响应式 / 明暗 / Loading-Empty-Error 三态）；组件视觉为 Nuxt UI 默认风格。
-4. **工程**：`pnpm dev / build / lint / type-check / test` 全绿；无 `any` 绕过；ESLint 无 error。
+4. **工程**：`pnpm dev / build / lint / typecheck / test` 全绿；无 `any` 绕过；ESLint 无 error；Nuxt API 用法经 llms-full.txt 指南查证（§1）。
 5. **部署**：`nuxt.baiwumm.com` 线上冒烟通过；环境变量不泄漏密钥。
 6. **一致性**：与 Nest / Next / Vue 共用同一数据库，四端数据行为一致（写操作行级规则逐项验证）。
