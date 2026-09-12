@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { NoticeDetail } from "@/lib/api-types";
 
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useQuery } from "@tanstack/vue-query";
@@ -12,6 +12,7 @@ import ErrorContent from "@/components/common/ErrorContent.vue";
 import { useMenus } from "@/composables/use-menus";
 import { collectMenuPaths } from "@/lib/menu-utils";
 import { formatDateTime } from "@/lib/format-date";
+import { useTabsStore } from "@/stores/tabs-store";
 
 /**
  * 公告详情页（全员消费端，契约 v1.7.0 GET /notices/:id，对应 React 端
@@ -21,8 +22,9 @@ import { formatDateTime } from "@/lib/format-date";
  *
  * 版式（对齐 SaaS 后台惯例）：Card 主容器承载返回入口 / 类型标签 / 大标题 /
  * 元信息 / 分隔线 / 正文卡片 / 底部已读状态。
- * 差异说明：React 端会把公告标题写入 tabs meta（多标签页），Vue 端
- * 多标签页随 M3 落地，届时补齐 syncMeta。
+ * 动态标题（对齐 React 端 notice-detail-page）：公告标题写入 tabs meta 快照，
+ * 多标签页据此显示具体标题，面包屑渲染「公告详情 › 标题」两级结构；
+ * locale 入依赖：语言切换清空快照后重新写回（对应 React 端 effect 的 t 依赖）。
  */
 const { t, locale } = useI18n();
 const route = useRoute();
@@ -53,6 +55,27 @@ const notice = computed<NoticeDetail | undefined>(() => detailQuery.data.value);
 // 正文 DOMPurify 消毒按内容 computed：详情区任意重渲染不重复全文解析
 const sanitizedContent = computed(() =>
   sanitizeNoticeHtml(notice.value?.content ?? ""),
+);
+
+const tabsStore = useTabsStore();
+
+// 动态路由标题：把公告标题写入标签页元数据快照（tabs meta），
+// 标签页据此显示具体标题，面包屑渲染「公告详情 › 标题」两级结构；
+// 快照随 tabs 持久化，刷新后仍可恢复，关闭标签时随治理清理。
+// immediate：vue-query 缓存命中时挂载即有数据，也需补写快照。
+watch(
+  [notice, () => route.path, locale],
+  ([detail, path]) => {
+    if (!detail) return;
+
+    tabsStore.syncMeta({
+      [path]: {
+        title: detail.title,
+        parentTitle: t("features.notices.detail.titleFallback"),
+      },
+    });
+  },
+  { immediate: true },
 );
 
 const publisherText = computed(() =>

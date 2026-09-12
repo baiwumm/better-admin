@@ -28,6 +28,7 @@ import {
   type ThemeMode,
   useDesignThemeStore,
 } from "@/stores/design-theme-store";
+import { useTabsStore } from "@/stores/tabs-store";
 
 /**
  * Admin 双栏布局（Nuxt UI Dashboard 套件，结构对齐 React 端 admin-layout）：
@@ -45,6 +46,7 @@ const { t } = useI18n();
 const route = useRoute();
 const queryClient = useQueryClient();
 const designTheme = useDesignThemeStore();
+const tabsStore = useTabsStore();
 
 const { data: menus, isLoading, error } = useMenus();
 
@@ -103,7 +105,11 @@ const quickLinks = computed<NavigationMenuItem[][]>(() => [
   ],
 ]);
 
-/** 面包屑：当前路由在可见菜单树中的「分组 → 页面」链；非菜单路由回退标题键。 */
+/**
+ * 面包屑：当前路由在可见菜单树中的「分组 → 页面」链；非菜单路由依次回退
+ * 页面写入的 tabs meta 快照（动态详情页两级「父级 › 标题」，对齐 React
+ * 端 app-header 的 tabsMeta 分支）与路由静态标题键。
+ */
 const crumbs = computed(() => {
   const chain = findActivePath(
     filterHiddenMenus(menus.value ?? []),
@@ -114,6 +120,14 @@ const crumbs = computed(() => {
     return chain.map((node) => ({
       label: node.i18nKey ? t(node.i18nKey) : node.label,
     }));
+  }
+
+  const liveMeta = tabsStore.meta[route.path];
+
+  if (liveMeta?.title) {
+    return liveMeta.parentTitle
+      ? [{ label: liveMeta.parentTitle }, { label: liveMeta.title }]
+      : [{ label: liveMeta.title }];
   }
 
   const titleKey = resolveRouteTitleKey(route.path);
