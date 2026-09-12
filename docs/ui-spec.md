@@ -486,7 +486,7 @@ Sidebar
 
 ### 14.2 Better Admin Loading 规范
 
-1. 列表页加载：表格区域显示骨架（表头 + 6 行 `Skeleton`，`DataTable` 内置，React / Next 两端一致；有数据时的 refetch 仍用 Spinner 遮罩保留旧数据）。
+1. 列表页加载：表格区域显示骨架（表头 + 6 行 `Skeleton`，`DataTable` 内置，React / Next / Vue 三端一致；有数据时的 refetch 仍用 Spinner 遮罩保留旧数据）。
 2. Dashboard 加载：统计卡片与图表区域分别显示骨架卡片。
 3. 按钮加载：提交/保存中显示 spinner（lucide `LoaderCircle` 旋转）+ 禁用，文案保持动作含义。
 4. 路由切换保留顶部进度条；`refetchOnWindowFocus` 生产开启。

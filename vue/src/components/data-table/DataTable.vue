@@ -9,7 +9,8 @@ import type { AppTableLike } from "./table-types";
 import LoadingContent from "@/components/ui/loading-content/index.vue";
 import ErrorContent from "@/components/common/ErrorContent.vue";
 import DataTablePagination from "./DataTablePagination.vue";
-import { computed } from "vue";
+import type { AppColumnDef } from "./table-types";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 
 /**
@@ -28,6 +29,11 @@ import { useI18n } from "vue-i18n";
  * 经 #empty 槽渲染错误占位（重试按钮走 emit('retry')，页面接 refetch），
  * 此时隐藏分页条（旧 total 已不可信）；total 传入时在表格下方渲染分页条，
  * 页面无需自行拼装 ErrorContent / DataTable / 分页条三段模板。
+ *
+ * 首屏骨架对齐 React 端 data-table（ui-spec §14.2）：首载无数据且非错误态时
+ * 渲染真实表头 + 6 行脉动骨架条（首列 55% / 其余 78% 宽），此时不出遮罩。
+ * 骨架期以假行驱动行数、所有单元格渲染器被覆盖为骨架条（业务 cell 不执行，
+ * 避免对空行对象取字段），select 列等真实 checkbox 均不出现。
  *
  * 后台刷新对齐 React 端 data-table：保留当前数据 + 半透明遮罩 + Spinner。
  * 样式对齐 better-nuxt 参考项目（border-separate + 表头圆角描边 + 行分隔）。
@@ -58,6 +64,43 @@ const getRowId = computed(() => props.table.options?.getRowId);
  * 以触发 #empty 槽展示错误占位（同 React 端 data-table 的 isError 分支） */
 const tableData = computed(() => (props.isError ? [] : data.value));
 
+/** 骨架行数（ui-spec §14.2：表头 + 6 行骨架，对齐 React 端 DataTable）。 */
+const SKELETON_ROWS = 6;
+
+/** 首屏骨架（对齐 React 端 showSkeleton）：首载无数据且非错误态；错误态仍走 ErrorContent。 */
+const showSkeleton = computed(
+  () => props.loading && !props.isError && data.value.length === 0,
+);
+
+/** 骨架期假行：仅驱动行数与真实表头列对齐，单元格由 renderColumns 覆盖为骨架条。 */
+const renderData = computed(() =>
+  showSkeleton.value
+    ? (Array.from({ length: SKELETON_ROWS }, () => ({})) as TData[])
+    : tableData.value,
+);
+
+/** 骨架期覆盖所有单元格渲染器为脉动条（USkeleton 同款类名，首列 55% / 其余 78% 宽，
+ * 对齐 React 端宽度规则），表头保持真实定义，业务 cell 不执行。 */
+const renderColumns = computed(() => {
+  if (!showSkeleton.value) {
+    return columns.value;
+  }
+
+  // AppColumnDef 断言：恢复 columns（never[]）被收窄抹掉的列定义类型供 spread；
+  // 结果断言回 never[]，与原 :columns 绑定同型，避免泛型 SFC 模板推断问题
+  return (columns.value as AppColumnDef<TData>[]).map((col, index) => {
+    const barClass = [
+      "h-4 animate-pulse rounded-full bg-elevated",
+      index === 0 ? "w-[55%]" : "w-[78%]",
+    ];
+
+    return {
+      ...col,
+      cell: () => h("div", { class: barClass }),
+    };
+  }) as never[];
+});
+
 /** UTable 内部实例勾选状态 ↔ 页面 table 实例 rowSelection 双向桥接 */
 const rowSelection = computed<RowSelectionState>({
   get: () => props.table.getState().rowSelection,
@@ -83,9 +126,9 @@ const columnOrder = computed<ColumnOrderState>({
       v-model:column-order="columnOrder"
       sticky
       :loading="refreshing"
-      :data="tableData"
-      :columns="columns"
-      :get-row-id="getRowId"
+      :data="renderData"
+      :columns="renderColumns"
+      :get-row-id="showSkeleton ? undefined : getRowId"
       :ui="{
         thead: '[&>tr]:bg-elevated/50 [&>tr]:after:content-none',
         tr: 'group',
@@ -118,7 +161,8 @@ const columnOrder = computed<ColumnOrderState>({
       :total="total"
     />
 
-    <!-- 后台刷新遮罩（对齐 React 端：旧数据保留 + 半透明模糊 + 居中 Spinner） -->
-    <LoadingContent v-if="refreshing || loading" />
+    <!-- 后台刷新遮罩（对齐 React 端：旧数据保留 + 半透明模糊 + 居中 Spinner）；
+         首屏骨架期不出遮罩（同 React 端 isLoading && !showSkeleton 语义） -->
+    <LoadingContent v-if="refreshing" />
   </div>
 </template>
