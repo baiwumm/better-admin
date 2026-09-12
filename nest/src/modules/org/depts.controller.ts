@@ -6,9 +6,9 @@ import { DeptCreateDto } from './dto/dept-create.dto';
 import { DeptUpdateDto } from './dto/dept-update.dto';
 import { DeptQueryDto } from './dto/dept-query.dto';
 import { DeptSortDto } from './dto/dept-sort.dto';
-import { Permissions } from '../../auth/decorators/permissions.decorator';
-import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { AuthUser } from '../../auth/auth.service';
+import { Permissions } from '@/auth/decorators/permissions.decorator';
+import { PermissionsGuard } from '@/auth/guards/permissions.guard';
+import { AuthUser } from '@/auth/auth.service';
 
 /**
  * 组织管理（契约 v1.6.0）。

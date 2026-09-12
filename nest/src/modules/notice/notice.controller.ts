@@ -8,9 +8,9 @@ import {
   NoticeQueryDto,
   NoticeReadStatsQueryDto,
 } from './dto/notice-query.dto';
-import { Permissions } from '../../auth/decorators/permissions.decorator';
-import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { AuthUser } from '../../auth/auth.service';
+import { Permissions } from '@/auth/decorators/permissions.decorator';
+import { PermissionsGuard } from '@/auth/guards/permissions.guard';
+import { AuthUser } from '@/auth/auth.service';
 
 /**
  * 公告管理（契约 v1.7.0）。

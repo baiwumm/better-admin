@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { and, asc, count, desc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
-import { db } from '../../db/client';
+import { db } from '@/db/client';
 import {
   users,
   userRoles,
@@ -16,18 +16,18 @@ import {
   userPosts,
   posts,
   depts,
-} from '../../db/schema';
+} from '@/db/schema';
 import {
   SUPER_ADMIN_ROLE_CODE,
-} from '../../db/schema/permissions.enum';
+} from '@/db/schema/permissions.enum';
 import {
   assertValidDeptId,
   assertValidPostIds,
-} from '../org/org-views';
+} from '@/modules/org/org-views';
 import {
   assertPasswordNotContainingUsername,
   assertPasswordNotSameAsCurrent,
-} from '../../common/validators/password-policy';
+} from '@/common/validators/password-policy';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/user-create.dto';
 import { UpdateUserDto } from './dto/user-update.dto';

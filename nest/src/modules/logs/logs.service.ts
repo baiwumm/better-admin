@@ -4,8 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
-import { db } from '../../db/client';
-import { logs, users } from '../../db/schema';
+import { db } from '@/db/client';
+import { logs, users } from '@/db/schema';
 import { LogQueryDto } from './dto/log-query.dto';
 
 /** 联表查询行（logs 列 + users 摘要列，list / findOne 共用） */

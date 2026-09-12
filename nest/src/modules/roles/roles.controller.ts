@@ -6,9 +6,9 @@ import { CreateRoleDto } from './dto/role-create.dto';
 import { UpdateRoleDto } from './dto/role-update.dto';
 import { RoleMenusUpdateDto } from './dto/role-menus.dto';
 import { RoleQueryDto } from './dto/role-query.dto';
-import { Permissions } from '../../auth/decorators/permissions.decorator';
-import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { AuthUser } from '../../auth/auth.service';
+import { Permissions } from '@/auth/decorators/permissions.decorator';
+import { PermissionsGuard } from '@/auth/guards/permissions.guard';
+import { AuthUser } from '@/auth/auth.service';
 
 @Controller('roles')
 @UseGuards(AuthGuard('jwt'), PermissionsGuard)

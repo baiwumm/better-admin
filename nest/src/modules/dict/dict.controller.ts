@@ -6,9 +6,9 @@ import { DictTypeCreateDto } from './dto/dict-type-create.dto';
 import { DictTypeUpdateDto } from './dto/dict-type-update.dto';
 import { DictItemCreateDto } from './dto/dict-item-create.dto';
 import { DictItemUpdateDto } from './dto/dict-item-update.dto';
-import { Permissions } from '../../auth/decorators/permissions.decorator';
-import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { AuthUser } from '../../auth/auth.service';
+import { Permissions } from '@/auth/decorators/permissions.decorator';
+import { PermissionsGuard } from '@/auth/guards/permissions.guard';
+import { AuthUser } from '@/auth/auth.service';
 
 @Controller('dict')
 @UseGuards(AuthGuard('jwt'), PermissionsGuard)

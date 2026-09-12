@@ -7,8 +7,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { db } from '../../db/client';
-import { logs } from '../../db/schema';
+import { db } from '@/db/client';
+import { logs } from '@/db/schema';
 
 /**
  * 全局异常过滤器。

@@ -4,8 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { asc, count, desc, eq } from 'drizzle-orm';
-import { db } from '../../db/client';
-import { dictTypes, dictItems, logs } from '../../db/schema';
+import { db } from '@/db/client';
+import { dictTypes, dictItems, logs } from '@/db/schema';
 import { DictTypeCreateDto } from './dto/dict-type-create.dto';
 import { DictTypeUpdateDto } from './dto/dict-type-update.dto';
 import { DictItemCreateDto } from './dto/dict-item-create.dto';

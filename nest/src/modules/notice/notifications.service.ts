@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
-import { db } from '../../db/client';
-import { notifications } from '../../db/schema';
+import { db } from '@/db/client';
+import { notifications } from '@/db/schema';
 
 /** 站内信通知视图（与 openapi.yaml Notification 对齐） */
 export type NotificationView = {

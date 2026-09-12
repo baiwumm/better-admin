@@ -3,7 +3,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { NotificationsService } from './notifications.service';
 import { NotificationQueryDto } from './dto/notification-query.dto';
-import { AuthUser } from '../../auth/auth.service';
+import { AuthUser } from '@/auth/auth.service';
 
 /**
  * 站内信铃铛（契约 v1.7.0）：仅登录态（无权限位），数据严格限定当前用户。

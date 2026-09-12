@@ -15,7 +15,7 @@
     "url": "https://github.com/baiwumm/better-admin/issues"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",

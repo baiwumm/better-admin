@@ -5,18 +5,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
-import { db } from '../../db/client';
-import { menus, roleMenus, userRoles, roles, logs } from '../../db/schema';
+import { db } from '@/db/client';
+import { menus, roleMenus, userRoles, roles, logs } from '@/db/schema';
 import {
   normalizePermissionBits,
   Permissions,
   SUPER_ADMIN_BITS,
   SUPER_ADMIN_BITS_POSITIVE,
-} from '../../db/schema/permissions.enum';
+} from '@/db/schema/permissions.enum';
 import { CreateMenuDto } from './dto/menu-create.dto';
 import { UpdateMenuDto } from './dto/menu-update.dto';
 import { AddChildDto } from './dto/menu-add-child.dto';
-import { AuthUser } from '../../auth/auth.service';
+import { AuthUser } from '@/auth/auth.service';
 
 export type MenuNode = {
   id: string;

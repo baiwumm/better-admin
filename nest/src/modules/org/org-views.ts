@@ -6,8 +6,8 @@ import {
   isNull,
   sql,
 } from 'drizzle-orm';
-import { db } from '../../db/client';
-import { depts, users, userPosts, posts } from '../../db/schema';
+import { db } from '@/db/client';
+import { depts, users, userPosts, posts } from '@/db/schema';
 
 /**
  * 组织与权限中心共享视图 helper（岗位列表 / 通讯录 / 岗位成员穿透共用）。

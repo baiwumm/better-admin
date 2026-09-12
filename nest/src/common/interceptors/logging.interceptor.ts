@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { Request, Response } from 'express';
-import { LogsService } from '../../modules/logs/logs.service';
+import { LogsService } from '@/modules/logs/logs.service';
 
 /**
  * 全局 API 日志拦截器（type=api）。

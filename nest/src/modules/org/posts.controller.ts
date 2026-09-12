@@ -5,9 +5,9 @@ import { PostsService, PostView } from './posts.service';
 import { PostCreateDto } from './dto/post-create.dto';
 import { PostUpdateDto } from './dto/post-update.dto';
 import { PostMembersQueryDto, PostQueryDto } from './dto/post-query.dto';
-import { Permissions } from '../../auth/decorators/permissions.decorator';
-import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { AuthUser } from '../../auth/auth.service';
+import { Permissions } from '@/auth/decorators/permissions.decorator';
+import { PermissionsGuard } from '@/auth/guards/permissions.guard';
+import { AuthUser } from '@/auth/auth.service';
 
 /** 岗位管理（契约 v1.6.0）：岗位仅作组织数据，不参与权限聚合 */
 @Controller('org/posts')

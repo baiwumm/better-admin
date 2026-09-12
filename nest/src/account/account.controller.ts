@@ -21,7 +21,7 @@ import {
   UpdateAccountPasswordDto,
   UpdateAccountProfileDto,
 } from './dto/account.dto';
-import { AuthUser } from '../auth/auth.service';
+import { AuthUser } from '@/auth/auth.service';
 
 /**
  * 我的账户（v1.5.0 自助模块）：仅挂 AuthGuard('jwt')，不走 PermissionsGuard ——

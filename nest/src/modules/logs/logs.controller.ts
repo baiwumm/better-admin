@@ -12,9 +12,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { LogsService } from './logs.service';
 import { LogQueryDto } from './dto/log-query.dto';
-import { Permissions } from '../../auth/decorators/permissions.decorator';
-import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { AuthUser } from '../../auth/auth.service';
+import { Permissions } from '@/auth/decorators/permissions.decorator';
+import { PermissionsGuard } from '@/auth/guards/permissions.guard';
+import { AuthUser } from '@/auth/auth.service';
 
 @Controller('logs')
 @UseGuards(AuthGuard('jwt'), PermissionsGuard)

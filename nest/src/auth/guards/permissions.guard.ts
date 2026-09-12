@@ -6,9 +6,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Permissions as PermissionsEnum, SUPER_ADMIN_BITS_POSITIVE, hasPermission } from '../../db/schema/permissions.enum';
-import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
-import { AuthUser } from '../auth.service';
+import { Permissions as PermissionsEnum, SUPER_ADMIN_BITS_POSITIVE, hasPermission } from '@/db/schema/permissions.enum';
+import { PERMISSIONS_KEY } from '@/auth/decorators/permissions.decorator';
+import { AuthUser } from '@/auth/auth.service';
 
 /**
  * 权限守卫。

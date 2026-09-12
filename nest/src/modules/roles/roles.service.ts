@@ -6,15 +6,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
-import { db } from '../../db/client';
-import { roles, roleMenus, userRoles, menus, logs } from '../../db/schema';
+import { db } from '@/db/client';
+import { roles, roleMenus, userRoles, menus, logs } from '@/db/schema';
 import {
   Permissions,
   SUPER_ADMIN_BITS,
   SUPER_ADMIN_BITS_POSITIVE,
   SUPER_ADMIN_ROLE_CODE,
   normalizePermissionBits,
-} from '../../db/schema/permissions.enum';
+} from '@/db/schema/permissions.enum';
 import { CreateRoleDto } from './dto/role-create.dto';
 import { UpdateRoleDto } from './dto/role-update.dto';
 import { RoleMenusUpdateDto } from './dto/role-menus.dto';

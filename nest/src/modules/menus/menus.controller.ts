@@ -5,9 +5,9 @@ import { MenusService, MenuNode } from './menus.service';
 import { CreateMenuDto } from './dto/menu-create.dto';
 import { UpdateMenuDto } from './dto/menu-update.dto';
 import { AddChildDto } from './dto/menu-add-child.dto';
-import { Permissions } from '../../auth/decorators/permissions.decorator';
-import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { AuthUser } from '../../auth/auth.service';
+import { Permissions } from '@/auth/decorators/permissions.decorator';
+import { PermissionsGuard } from '@/auth/guards/permissions.guard';
+import { AuthUser } from '@/auth/auth.service';
 
 @Controller('menus')
 @UseGuards(AuthGuard('jwt'), PermissionsGuard)

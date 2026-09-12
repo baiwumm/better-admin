@@ -1,5 +1,5 @@
 import { IsString } from 'class-validator';
-import { IsPolicyPassword } from '../../../common/validators/password-policy';
+import { IsPolicyPassword } from '@/common/validators/password-policy';
 
 /** POST /api/users/:id/reset-password 请求体 */
 export class ResetPasswordDto {

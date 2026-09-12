@@ -16,8 +16,8 @@ import {
   or,
   sql,
 } from 'drizzle-orm';
-import { db } from '../../db/client';
-import { depts, users, posts, logs } from '../../db/schema';
+import { db } from '@/db/client';
+import { depts, users, posts, logs } from '@/db/schema';
 import { DeptCreateDto } from './dto/dept-create.dto';
 import { DeptUpdateDto } from './dto/dept-update.dto';
 import { DeptQueryDto } from './dto/dept-query.dto';

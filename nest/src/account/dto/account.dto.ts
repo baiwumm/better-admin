@@ -10,7 +10,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { type TransformFnParams, Transform } from 'class-transformer';
-import { IsPolicyPassword } from '../../common/validators/password-policy';
+import { IsPolicyPassword } from '@/common/validators/password-policy';
 
 /** 剥离可选协议与平台主页前缀，trim 后返回剩余裸值；空串归一为 null（语义 = 清空） */
 function stripPrefix(pattern: RegExp) {

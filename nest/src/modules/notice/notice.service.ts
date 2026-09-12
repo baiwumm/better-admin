@@ -15,7 +15,7 @@ import {
   lte,
   sql,
 } from 'drizzle-orm';
-import { db } from '../../db/client';
+import { db } from '@/db/client';
 import {
   notices,
   noticeScopes,
@@ -27,7 +27,7 @@ import {
   users,
   logs,
   userPosts,
-} from '../../db/schema';
+} from '@/db/schema';
 import {
   assertScopeTargets,
   buildDeptPathMap,
@@ -35,8 +35,8 @@ import {
   DbOrTx,
   resolveScopeUserIds,
   toDirectoryEntryView,
-} from '../org/org-views';
-import { AuthUser } from '../../auth/auth.service';
+} from '@/modules/org/org-views';
+import { AuthUser } from '@/auth/auth.service';
 import { NoticeCreateDto } from './dto/notice.dto';
 import { NoticeUpdateDto } from './dto/notice.dto';
 import { NoticeQueryDto } from './dto/notice-query.dto';

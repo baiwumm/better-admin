@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Permissions as PermissionsEnum } from '../../db/schema/permissions.enum';
+import { Permissions as PermissionsEnum } from '@/db/schema/permissions.enum';
 
 /** 返回给前端的权限点项结构（与 openapi.yaml PermissionItem 一致） */
 export interface PermissionItem {

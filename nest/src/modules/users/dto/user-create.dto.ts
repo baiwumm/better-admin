@@ -10,7 +10,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { type TransformFnParams, Transform } from 'class-transformer';
-import { IsPolicyPassword } from '../../../common/validators/password-policy';
+import { IsPolicyPassword } from '@/common/validators/password-policy';
 
 /** trim 后入库：与前端 zod .trim() 口径一致，空格参与唯一索引/保护比较属于脏数据 */
 const trimTransform = ({ value }: TransformFnParams): unknown =>

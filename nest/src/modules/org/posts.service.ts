@@ -13,8 +13,8 @@ import {
   isNull,
   sql,
 } from 'drizzle-orm';
-import { db } from '../../db/client';
-import { posts, users, userPosts, logs } from '../../db/schema';
+import { db } from '@/db/client';
+import { posts, users, userPosts, logs } from '@/db/schema';
 import {
   DirectoryEntryView,
   assertValidDeptId,

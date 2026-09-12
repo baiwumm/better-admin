@@ -7,9 +7,9 @@ import { UpdateUserDto } from './dto/user-update.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { StatusUpdateDto } from './dto/status-update.dto';
 import { UserQueryDto } from './dto/user-query.dto';
-import { Permissions } from '../../auth/decorators/permissions.decorator';
-import { PermissionsGuard } from '../../auth/guards/permissions.guard';
-import { AuthUser } from '../../auth/auth.service';
+import { Permissions } from '@/auth/decorators/permissions.decorator';
+import { PermissionsGuard } from '@/auth/guards/permissions.guard';
+import { AuthUser } from '@/auth/auth.service';
 
 @Controller('users')
 @UseGuards(AuthGuard('jwt'), PermissionsGuard)

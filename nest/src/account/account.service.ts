@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common';
 import { desc, eq, isNull, and, asc } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
-import { db } from '../db/client';
-import { logs, refreshTokens, roles, userRoles, users } from '../db/schema';
+import { db } from '@/db/client';
+import { logs, refreshTokens, roles, userRoles, users } from '@/db/schema';
 import {
   assertPasswordNotContainingUsername,
   assertPasswordNotSameAsCurrent,
-} from '../common/validators/password-policy';
+} from '@/common/validators/password-policy';
 import { AvatarStorageService } from './avatar-storage.service';
 import {
   UpdateAccountEmailDto,

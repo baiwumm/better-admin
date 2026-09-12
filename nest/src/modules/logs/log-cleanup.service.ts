@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { inArray, lt } from 'drizzle-orm';
-import { db } from '../../db/client';
-import { logs } from '../../db/schema';
+import { db } from '@/db/client';
+import { logs } from '@/db/schema';
 
 /**
  * 日志定时清理（type=api/error/login/operation 统一保留 30 天，评审确认）。
