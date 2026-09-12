@@ -57,7 +57,7 @@ import { type MenuNode } from "@/lib/api-types";
 import { collectMenuPaths, flattenLeafMenus } from "@/lib/menu-utils";
 import { LOGIN_REQUIRED_PATHS } from "@/lib/route-access";
 import { markRouteDirection } from "@/lib/route-direction";
-import { routeStaticMetaByPath } from "@/lib/route-title";
+import { findRouteStaticMeta } from "@/lib/route-title";
 import { isPinnedTab } from "@/lib/tabs-model";
 import { useTabsStore } from "@/stores/tabs-store";
 
@@ -612,7 +612,7 @@ export function TagsBar({ menuTree }: TagsBarProps) {
               {paths.map((path) => {
                 const live = liveMetaByPath.get(path);
                 const cached = cachedMeta[path];
-                const routeStatic = routeStaticMetaByPath.get(path);
+                const routeStatic = findRouteStaticMeta(path);
                 const title =
                   live?.title ??
                   cached?.title ??

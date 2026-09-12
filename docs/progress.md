@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Next 公告详情页标题 metadata 对齐（2026-09-12）
+
+- **背景**：Next 端路由标题服务端化（见 2026-09-12 置顶条目）时 `/org/notices/[noticeId]` 详情页**未加** metadata——动态路由在 `routeStaticMetaByPath` 精确映射中无键，静态加了也会被客户端 hook 水合后回退应用名，登记为「与 React 的既有差异待后续单独对齐」。
+- **实现**：① `next/src/lib/route-title.ts` 登记动态路由模板键 `/org/notices/[noticeId]`（titleKey 与列表页 / React 端详情路由 staticData 同源），新增 `findRouteStaticMeta(path)` 做「精确 → 动态段模板匹配」（单段 `[param]` 匹配任意非空段，对齐 React 端 `findRouteStaticMeta` + `matchRoutePattern` 语义），`getRouteTitleKey` / `getRouteStaticMeta` 委托之——客户端 `usePageTitle` 与面包屑（app-header 回退分支）自动受益，水合后标题稳定为「公告管理 - 应用名」不再退化；② 详情页 `page.tsx`（本就是服务端薄壳）导出 `generateMetadata`，初始 HTML 标题按语言渲染；③ `tags-bar` 的标题回退由 `routeStaticMetaByPath.get`（仅精确）切换为 `findRouteStaticMeta`。
+- **连带确认**：Next 详情页本就写入 tabs meta（`syncMeta`，React 平移）——面包屑「公告详情 › 标题」两级与标签标题不受本改动影响；模板匹配仅补「无快照时的回退链」。React / Vue 端无对应改动（React 靠路由 staticData 天然支持，Vue `resolveRouteTitleKey` 已有前缀键）。
+- **验证**：`next lint`（0 error，21 条存量 warning）/ `next build`（含 TS 全量检查）通过。带登录态的页面标题 / 面包屑走查随统一线上冒烟（匿名访问会被 proxy 重定向，无法离线 curl 实测渲染标题）。
+- **无需同步**：数据库 / OpenAPI 契约、React / Vue / NestJS 端均不涉及。
+
 ### 契约 v1.9.0：super_admin 绑定不变量守卫（组合场景口径评审落地，2026-09-12）
 
 - **背景**：mechanisms §5 挂着「组合场景口径待评审」。评审结论：绑定守卫只校验操作者权限，超管操作者豁免范围内存在锁死路径——可摘掉 admin 用户的 super_admin 绑定（admin 保护不覆盖绑定变更）或自摘，两超管先后摘绑可使绑定归零，此后所有加绑请求均被 `SUPER_ADMIN_ROLE_BINDING_PROTECTED` 拒绝、无自助恢复手段；且既有校验在事务外，并发摘绑存在 TOCTOU。

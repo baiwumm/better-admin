@@ -38,18 +38,52 @@ const ROUTE_STATIC_META_BY_PATH: Record<string, RouteStaticMeta> = {
   "/exception/500": {
     titleKey: "menu.exception.500",
   },
+  // 动态路由：键为 App Router 模板路径，查询经 findRouteStaticMeta 做动态段
+  // 模板匹配（对齐 React 端 TanStack 路由 staticData 的匹配语义）。/org/notices
+  // 是登录可达的消费路由（不走菜单权限），详情页与列表页同 titleKey
+  "/org/notices/[noticeId]": {
+    titleKey: "menu.pageTitle.notices",
+  },
 };
+
+/** 单段模板匹配：pattern 段为 [param] 时匹配任意非空段，其余段须精确相等。 */
+function matchRouteTemplate(pattern: string, pathname: string): boolean {
+  const patternSegments = pattern.split("/").filter(Boolean);
+  const pathSegments = pathname.split("/").filter(Boolean);
+
+  if (patternSegments.length !== pathSegments.length) return false;
+
+  return patternSegments.every(
+    (segment, index) =>
+      segment.startsWith("[") || segment === pathSegments[index],
+  );
+}
+
+/** 查询路径的兜底元数据：精确命中，未命中按动态段模板匹配
+ * （/org/notices/x → [noticeId]，对齐 React 端 findRouteStaticMeta）。 */
+export function findRouteStaticMeta(path: string): RouteStaticMeta | undefined {
+  const exact = ROUTE_STATIC_META_BY_PATH[path];
+
+  if (exact !== undefined) return exact;
+
+  for (const [pattern, meta] of Object.entries(ROUTE_STATIC_META_BY_PATH)) {
+    if (matchRouteTemplate(pattern, path)) return meta;
+  }
+
+  return undefined;
+}
 
 /** 获取路径的兜底元数据（无登记返回 undefined）。 */
 export function getRouteStaticMeta(path: string): RouteStaticMeta | undefined {
-  return ROUTE_STATIC_META_BY_PATH[path];
+  return findRouteStaticMeta(path);
 }
 
 /** 获取路径的标题 i18n key（无登记返回 undefined）。 */
 export function getRouteTitleKey(path: string): string | undefined {
-  return ROUTE_STATIC_META_BY_PATH[path]?.titleKey;
+  return findRouteStaticMeta(path)?.titleKey;
 }
 
-/** 路径 → 兜底元数据的只读映射（兼容 React 版 Map 消费形态）。 */
+/** 路径 → 兜底元数据的只读映射（兼容 React 版 Map 消费形态；仅精确键，
+ * 动态路由消费方请改用 findRouteStaticMeta）。 */
 export const routeStaticMetaByPath: ReadonlyMap<string, RouteStaticMeta> =
   new Map(Object.entries(ROUTE_STATIC_META_BY_PATH));
