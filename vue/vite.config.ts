@@ -85,4 +85,9 @@ export default defineConfig({
       "@vueuse/core",
     ],
   },
+  // 固定端口 + strictPort：与 react 的 5173 错开，被占时报错而非静默漂移
+  server: {
+    port: 5174,
+    strictPort: true,
+  },
 });
