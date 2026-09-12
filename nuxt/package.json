@@ -3,24 +3,44 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "nuxt dev --port 3001",
+    "predev": "node scripts/sync-locales.mjs",
     "build": "nuxt build",
-    "dev": "nuxt dev",
+    "prebuild": "node scripts/sync-locales.mjs",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run",
+    "pretest": "node scripts/sync-locales.mjs",
+    "sync-locales": "node scripts/sync-locales.mjs"
   },
   "dependencies": {
+    "@bprogress/vue": "^1.1.5",
+    "@iconify-json/logos": "^1.2.14",
     "@iconify-json/lucide": "^1.2.129",
-    "@iconify-json/simple-icons": "^1.2.94",
     "@nuxt/ui": "^4.11.0",
+    "@nuxtjs/i18n": "^10.6.0",
+    "@pinia/nuxt": "^1.0.2",
+    "@tanstack/vue-query": "^5.102.8",
+    "@vueuse/core": "^14.4.0",
+    "@vueuse/nuxt": "^14.4.0",
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "^0.45.2",
+    "jose": "^6.2.12",
+    "nanoid": "^6.0.1",
     "nuxt": "^4.5.2",
+    "pinia": "^4.0.3",
+    "postgres": "^3.4.9",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.17.0",
+    "@nuxt/test-utils": "^4.3.2",
+    "@types/node": "^22.20.2",
     "eslint": "^10.10.0",
     "typescript": "^6.0.3",
+    "vitest": "^4.1.11",
     "vue-tsc": "^3.3.11"
   },
   "packageManager": "pnpm@12.3.4"

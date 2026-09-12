@@ -1,0 +1,32 @@
+<!-- SPA 首屏加载占位（ssr: false，对齐 Vue 端 index.html 的 app-boot-loading）：
+     应用挂载后自动消失，期间展示品牌色居中 spinner -->
+<div class="ba-boot-loading">
+  <style>
+    .ba-boot-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #ffffff;
+    }
+    @media (prefers-color-scheme: dark) {
+      .ba-boot-loading {
+        background: #0a0a0a;
+      }
+    }
+    .ba-boot-loading::after {
+      content: "";
+      width: 32px;
+      height: 32px;
+      border: 3px solid #10b98133;
+      border-top-color: #10b981;
+      border-radius: 9999px;
+      animation: ba-boot-spin 0.8s linear infinite;
+    }
+    @keyframes ba-boot-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</div>

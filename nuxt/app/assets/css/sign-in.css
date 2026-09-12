@@ -1,0 +1,204 @@
+/*
+ * 登录页专属样式（平移自 react/src/styles/sign-in.css，token 换为 Nuxt UI 语义变量）
+ * 设计原则：
+ *  1. 全部颜色派生自 Nuxt UI Design Tokens（--ui-primary / --ui-text / --ui-bg 等），
+ *     不写死任何色值 → 自动适配 light / dark。
+ *  2. 背景统一：40px 格子底纹由 .sign-in-page 在整页范围绘制一次，左右无分界；
+ *     2 个氛围光晕球基于整页绝对定位（左上 + 右下），缓慢呼吸漂移。
+ *  3. 动效克制：入场 fade-up / 卡片缩放浮现；光晕漂移为唯一环境动效（18s 级慢速）。
+ *     全部受 prefers-reduced-motion 控制。
+ *  4. 性能：纯 CSS，无新增图片 / JS bundle；动画只用 transform / opacity，
+ *     不触发布局。
+ */
+
+@layer components {
+
+  /* ============================================================
+     页面级背景：整页统一格子底纹（唯一背景层）
+     ============================================================ */
+  .sign-in-page {
+    isolation: isolate;
+  }
+  .sign-in-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklch, var(--ui-text) 5.5%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--ui-text) 5.5%, transparent) 1px,
+        transparent 1px
+      );
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  /* Dark 主题：网格略增强 */
+  .dark .sign-in-page::before {
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklch, var(--ui-text) 8%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--ui-text) 8%, transparent) 1px,
+        transparent 1px
+      );
+  }
+
+  /* ============================================================
+     氛围光晕：2 个柔光球基于整页绝对定位（左上 / 右下），
+     blur-3xl，缓慢呼吸漂移（唯一环境动效）
+     ============================================================ */
+  .sign-in-glow {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(80px);
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: -1;
+    will-change: transform;
+    animation: sign-in-glow-drift 18s ease-in-out infinite alternate;
+  }
+  /* 左上：呼应品牌区与 Logo */
+  .sign-in-glow--a {
+    top: -7%;
+    left: -9%;
+    width: 420px;
+    height: 420px;
+    background: color-mix(in oklch, var(--ui-primary) 38%, transparent);
+  }
+  /* 右下：呼应表单区与版权行 */
+  .sign-in-glow--b {
+    bottom: -16%;
+    right: -5%;
+    width: 360px;
+    height: 360px;
+    background: color-mix(in oklch, var(--ui-primary) 45%, transparent);
+    animation-duration: 24s;
+    animation-direction: alternate-reverse;
+  }
+
+  @keyframes sign-in-glow-drift {
+    from {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    to {
+      transform: translate3d(5%, -7%, 0) scale(1.16);
+    }
+  }
+
+  /* ============================================================
+     表单卡片：入场缩放浮现
+     ============================================================ */
+  .sign-in-card {
+    position: relative;
+    animation: sign-in-card-in 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  }
+
+  /* 滚动区：允许内部消化溢出内容，但视觉上不出现滚动条 */
+  .sign-in-scroll-area {
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    overscroll-behavior: contain;
+  }
+  .sign-in-scroll-area::-webkit-scrollbar {
+    display: none;
+  }
+
+  @keyframes sign-in-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* ============================================================
+     入场动画：fade-up 380ms（整块区域用，无后续交互态需求可 both）
+     ============================================================ */
+  @keyframes sign-in-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .sign-in-fade-up {
+    animation: sign-in-fade-up 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* ============================================================
+     字段 stagger（与 React 端同节奏）：
+     3 个一组 60ms 间隔（80/140/200ms），第 4 项起 260ms，提交按钮 320ms。
+     UAuthForm 内部渲染的 UFormField 挂不上 class，
+     以 [data-slot="form"]（Nuxt UI 主题契约）直接子元素选择器接管前 3 个字段；
+     提交按钮 / 分隔线 / 第三方按钮在 #submit 插槽内自绘，直接挂 class。
+     ============================================================ */
+  .sign-in-card [data-slot="form"] > :nth-child(-n+3) {
+    animation: sign-in-fade-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .sign-in-card [data-slot="form"] > :nth-child(1) { animation-delay: 80ms; }
+  .sign-in-card [data-slot="form"] > :nth-child(2) { animation-delay: 140ms; }
+  .sign-in-card [data-slot="form"] > :nth-child(3) { animation-delay: 200ms; }
+
+  .sign-in-field {
+    animation: sign-in-fade-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .sign-in-field:nth-child(1) { animation-delay: 80ms; }
+  .sign-in-field:nth-child(2) { animation-delay: 140ms; }
+  .sign-in-field:nth-child(3) { animation-delay: 200ms; }
+  .sign-in-field:nth-child(n+4) { animation-delay: 260ms; }
+
+  /* 主按钮：完全保留 Nuxt UI primary 默认效果，仅接管入场 stagger 延迟 */
+  .sign-in-submit {
+    animation: sign-in-fade-up 420ms cubic-bezier(0.16, 1, 0.3, 1) 320ms backwards;
+  }
+
+  /* 第三方登录按钮：hover 图标轻微放大 */
+  .sign-in-oauth svg {
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (hover: hover) {
+    .sign-in-oauth:hover svg {
+      transform: scale(1.12);
+    }
+  }
+
+  /* ============================================================
+     无障碍：尊重 prefers-reduced-motion（含光晕漂移全关）
+     ============================================================ */
+  @media (prefers-reduced-motion: reduce) {
+    .sign-in-fade-up,
+    .sign-in-field,
+    .sign-in-submit,
+    .sign-in-card,
+    .sign-in-glow {
+      animation: none;
+    }
+    /* 与上方 stagger 声明同特异性，靠源顺序覆盖（animation 简写含 delay） */
+    .sign-in-card [data-slot="form"] > :nth-child(-n+3) {
+      animation: none;
+    }
+    .sign-in-card,
+    .sign-in-submit,
+    .sign-in-oauth svg {
+      transition: none;
+    }
+  }
+}

@@ -1,18 +1,20 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-@theme static {
-  --font-sans: 'Public Sans', sans-serif;
+/* 自托管字体（Maple Mono CN 子集 @font-face，与 React 端同源） */
+@import "./fonts.css";
+/* 认证页（登录 / 后续注册、忘记密码）专属背景与动效 */
+@import "./sign-in.css";
+/* M4 随里程碑引入：tags-bar.css（多标签页）/ theme-transition.css +
+   route-transitions.css（偏好揭示动画与路由 VT）/ color-vision.css */
 
-  --color-green-50: #EFFDF5;
-  --color-green-100: #D9FBE8;
-  --color-green-200: #B3F5D1;
-  --color-green-300: #75EDAE;
-  --color-green-400: #00DC82;
-  --color-green-500: #00C16A;
-  --color-green-600: #00A155;
-  --color-green-700: #007F45;
-  --color-green-800: #016538;
-  --color-green-900: #0A5331;
-  --color-green-950: #052E16;
+/* 全局字体：Maple Mono CN（对齐 React 端 --font-sans）；
+   覆盖 Tailwind v4 默认 --font-sans，body/preflight 自动继承 */
+@theme {
+  --font-sans:
+    "Maple Mono CN", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
+
+/* Nuxt 端直接使用 Nuxt UI 默认 Design Tokens 与 Color System（AGENTS §21）；
+   品牌定制走 app.config.ts 的 ui.colors 配置，禁止在业务代码中硬编码色值。 */

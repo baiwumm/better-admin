@@ -1,7 +1,7 @@
 # Better Admin — Nuxt 端开发方案（v1.3 可行性计划）
 
 > 本文档是 Nuxt 端（Phase 6：Nuxt 全栈）的可行性评估与开发计划：功能对齐清单、代码复用地图、技术选型、待确认决策、MVP 路线与风险评估。
-> **状态：决策已拍板（2026-09-12，六项均按 §5 推荐方案），待开工指令**。模板已初始化（Nuxt 4.5.2 + `@nuxt/ui` 4.11 + `@nuxt/eslint`），M0 可随时启动。
+> **状态：M0 已完成（2026-09-12，工程基建与骨架 + 认证最小闭环，五绿 + GUI 冒烟通过，详见 progress.md 置顶条目），M1（服务端全量移植）待开工指令**。
 > 基准三方：**React = UI / 交互 / 页面结构 Source of Truth**（`ui-spec.md` §1）；**Vue = 组件实现与代码形态的平移蓝本**（同 Nuxt UI + Pinia + vue-query）；**Next = 服务端实现蓝本**（同为独立全栈、共用同一 PostgreSQL）。
 > 契约真源：`nest/openapi/openapi.yaml`（v1.9.0）。组件库规则见 `AGENTS.md` §21 与 `nuxt-ui-guide.md`。
 
