@@ -199,7 +199,7 @@ vue/src/pages/
 
 > **进度（2026-09-11）**：**文档收尾 ✅**（feature-matrix 统计口径按行校正为 27 项 + 错误页行标注未对齐项 / mechanisms §16 四条机制结论 / progress.md 置顶条目 / AGENTS §19 指针）、**本地冒烟 ✅**（登录闭环 + API 17 端点 + 21 路由走查含网络监控 + M3 专项 8 项；发现并修复 4 项对齐缺陷，另清理 1 项既有 lint error；`lint` / `type-check` / `test` / `build` 四绿）。**Vercel 部署与线上冒烟未执行**——随四端统一上线执行（AGENTS §17 上线状态标记，2026-09-12）。
 
-- **部署（随四端统一上线执行，见 AGENTS §17）**：Vercel Root Directory = `vue`、`VITE_API_BASE_URL` 指向 `https://nest.baiwumm.com/api`、Nest CORS 增加 `https://vue.baiwumm.com`；随后根 version 同步 + `pnpm sync-versions` + 单提交 `chore: release vX.Y.Z` + tag。
+- **部署（随四端统一上线执行，平台已定为 Cloudflare Pages，见 AGENTS §17）**：CF Pages Git 集成（Root Directory = `vue`，构建命令 `pnpm build`，输出目录 `dist/`）；环境变量 `VITE_API_BASE_URL` 指向 `https://nest.baiwumm.com/api`；Nest CORS 增加 `https://vue.baiwumm.com`；**SPA 回退验证**（直链 `/users` 等路由刷新——CF Pages 无根 `404.html` 时自动回退 `index.html`，必要时加 `_redirects: /* /index.html 200`）；随后根 version 同步 + `pnpm sync-versions` + 单提交 `chore: release vX.Y.Z` + tag。
 - 文档 ✅：feature-matrix Vue 列全量更新（Dashboard 保持 ❌）；mechanisms.md 增补 Vue 机制条目（**§16**：常驻挂载查询 enabled 门控 / 动态路由标题前缀匹配 / Nuxt UI locale 缺键 / 无渲染组件模板）；progress.md 置顶 M4 条目。
 - 验收：线上冒烟（登录 → 模块走查 → 暗色 / 英文）← **随统一上线执行**；统计与实际一致 ✅（27 项口径，Vue 26 项完成）。
 

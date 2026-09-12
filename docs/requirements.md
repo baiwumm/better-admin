@@ -743,11 +743,12 @@ Supabase PostgreSQL。
 | 官方文档站 | `better-admin.baiwumm.com` | Vercel |
 | Next.js | `next.baiwumm.com` | Vercel |
 | Nuxt | `nuxt.baiwumm.com` | Vercel |
-| React | `react.baiwumm.com` | Vercel |
-| Vue | `vue.baiwumm.com` | Vercel |
+| React | `react.baiwumm.com` | Cloudflare Pages |
+| Vue | `vue.baiwumm.com` | Cloudflare Pages |
 | NestJS API | `nest.baiwumm.com` | Render |
 
 > **上线状态（2026-09-12）**：四端均未部署上线——现域名指向历史旧项目；全部版本开发完成后**统一上线**（详见 `AGENTS.md` §17）。官方文档站待 Vercel 部署绑定。
+> **平台分化（2026-09-12 拍板）**：React / Vue 为纯静态 SPA，部署到 **Cloudflare Pages**（免费静态请求 / 带宽无限，缓解 Vercel Hobby 额度压力）；Next / Nuxt 全栈**必须留 Vercel**——服务端数据层走 `postgres.js` TCP 直连，Cloudflare Workers 运行时不支持（Hyperdrive 需付费且驱动兼容性存疑，重写数据层违反「行为不变」）；NestJS 留 Render。DNS（baiwumm.com zone）已托管于 Cloudflare（实测 NS = `elma / tadeo.ns.cloudflare.com`），CF Pages 绑自定义域前提成立。SPA 在浏览器直连 `nest.baiwumm.com/api`（跨域 XHR），与 SPA 托管平台无关——Nest CORS 白名单按域名维持不变。
 
 ---
 

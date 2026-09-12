@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 部署平台分化拍板：React / Vue → Cloudflare Pages（2026-09-12）
+
+- **背景**：五个站点原规划全部 Vercel（Hobby 免费额度），用户提出额度压力关切。逐站兼容性分析结论：**Next / Nuxt 全栈必须留 Vercel**——服务端数据层走 `postgres.js` TCP 直连，Cloudflare Workers 运行时不支持 raw TCP（Hyperdrive 需付费 + 驱动兼容性存疑；重写数据层违反「行为不变」）；**React / Vue 为纯静态 SPA，迁 CF Pages**（免费静态请求 / 带宽无限）；website 留 Vercel；NestJS 留 Render。
+- **前提实测**：`baiwumm.com` zone 已托管 Cloudflare DNS（公共 DNS 查询 NS = `elma / tadeo.ns.cloudflare.com`；`react.baiwumm.com` 现解析即 CF 代理 IP）——CF Pages 绑自定义域前提成立。
+- **拍板（用户确认）**：React / Vue → CF Pages；website / Next / Nuxt → Vercel；NestJS → Render。Vercel 由五站收敛为三站（静态带宽大头转走），额度压力显著缓解。**Nest 连接不受影响**：SPA 在浏览器直连 `nest.baiwumm.com/api`（跨域 XHR），与 SPA 托管平台无关，域名不变则 Nest CORS 白名单不变。
+- **文档同步**：requirements §13（域名表平台列 + 平台分化说明）、AGENTS §17（部署规范分组）/ §19（待办）、vue-plan §M4（部署清单改 CF Pages：Root Directory / `dist/` / SPA 回退验证 `_redirects` 兜底 / VITE_API_BASE_URL / CORS）。
+- **执行时点**：统一上线环节（M5 / §M4 清单），本次仅文档，无代码改动。
+
 ### nuxt-plan v1.3：按用户指令对齐实际项目 + Nuxt Modules 优先（2026-09-12）
 
 - 六项指令落地：① §2 新增 **§2.4 行为级对齐补充**（键盘可达性 / DataTable 首屏骨架 / 公告详情 syncMeta / locales 一致性测试 / 进度条状态机，共 7 项）；② 选型翻转为 **Nuxt Modules / 内置机制优先**——主题明暗改 `@nuxtjs/color-mode`（Nuxt UI module 内置）、页面标题改内置 `useHead`、富文本改 Nuxt UI 内置 `UEditor`、拖拽走 `@vueuse/nuxt`，**明确不用 `NuxtLoadingIndicator`**（仅路由进度、无法承载 api-client 请求驱动，行为不一致）；③ §1 新增 **llms-full.txt 开发规则**（https://nuxt.com/llms-full.txt 全文指南，动手前查证）；④ M0 改为基于既有模板（实测 Nuxt 4.5.2 / @nuxt/ui 4.11 / @nuxt/eslint，模板清理与工程化补齐入 M0）；⑤ §5 决策重排——**D3 推荐翻转为 @nuxtjs/i18n v10**（已查证支持 Nuxt 4，`strategy: 'no_prefix'` + 扁平键 resolver）、D5 改「平移代码导入风格」（推荐保留显式导入）、D6 改「工程化口径」（推荐沿用模板 stylistic 不引 Prettier），目录结构由模板确定移出决策表；⑥ 核实 `@bprogress/nuxt` 存在但动手前仍需核对版本可用性。

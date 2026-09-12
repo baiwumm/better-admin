@@ -252,13 +252,19 @@ ci: CI 配置变更
 
 ## 17. 部署规范
 
-- **前端**（React / Vue / Next.js / Nuxt）部署到 **Vercel**：
+- **React / Vue**（纯静态 SPA）部署到 **Cloudflare Pages**（免费静态请求 / 带宽无限；`baiwumm.com` zone 已在 Cloudflare DNS，自定义域直接绑定）：
+
+```text
+https://react.baiwumm.com
+https://vue.baiwumm.com
+```
+
+- **Next.js / Nuxt**（全栈，postgres.js TCP 直连数据层——Workers 运行时不支持，**必须留 Vercel**）与 **website 文档站**部署到 **Vercel**：
 
 ```text
 https://next.baiwumm.com
 https://nuxt.baiwumm.com
-https://react.baiwumm.com
-https://vue.baiwumm.com
+https://better-admin.baiwumm.com
 ```
 
 - **NestJS** 部署到 **Render**：
@@ -395,7 +401,7 @@ Phase 7  统一测试 → 部署全部版本
 - **Vue 端已完成模块**：登录认证 / 全站国际化 / 偏好设置（9 项 + 路由过渡 VT 编排与导航方向感知）/ 多标签页 + KeepAlive / 命令面板 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）/ DataTable 列设置。
 - **React 端已完成模块**：登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）。
 - **Next.js 端已完成模块**：与 React 端对齐（认证 / Admin 布局 / 用户 / 角色 / 菜单 / 字典 / 日志 / 我的账户 / 组织中心全套）。
-- **当前待办**：**Nuxt 端 M0 开工**（`docs/nuxt-plan.md` v1.3，D1-D6 已于 2026-09-12 按推荐方案拍板，待开工指令）；演示上线准备 + Dashboard 概览页 + Playground 演示场（计划清单见 [`docs/plan-dashboard-playground.md`](docs/plan-dashboard-playground.md)：整体排在 **Nuxt 端功能全部完成 + 冒烟测试通过**之后，顺序 Phase 0 演示上线准备（faker 数据重置 / 只读守卫 / 快捷登录 / 日志降噪）→ Phase C Dashboard → Phase A/B Playground；图表库已定 Recharts）；CI 挂接（四端 lint / test / build，现有 workflows 仅 check-locales / clean-logs 两个 cron）；**四端统一上线**（§17 上线状态标记：Next / Vue / Nuxt Vercel + Nest Render，Vue 线上冒烟清单见 `docs/vue-plan.md` §M4，均为部署环节执行）。Vue / Nuxt 后续实现时直接跟上最新契约版本（详见 progress.md 各阶段条目）。
+- **当前待办**：**Nuxt 端 M0 开工**（`docs/nuxt-plan.md` v1.3，D1-D6 已于 2026-09-12 按推荐方案拍板，待开工指令）；演示上线准备 + Dashboard 概览页 + Playground 演示场（计划清单见 [`docs/plan-dashboard-playground.md`](docs/plan-dashboard-playground.md)：整体排在 **Nuxt 端功能全部完成 + 冒烟测试通过**之后，顺序 Phase 0 演示上线准备（faker 数据重置 / 只读守卫 / 快捷登录 / 日志降噪）→ Phase C Dashboard → Phase A/B Playground；图表库已定 Recharts）；CI 挂接（四端 lint / test / build，现有 workflows 仅 check-locales / clean-logs 两个 cron）；**四端统一上线**（§17 上线状态标记：React / Vue Cloudflare Pages + Next / Nuxt / website Vercel + Nest Render，Vue 线上冒烟清单见 `docs/vue-plan.md` §M4，均为部署环节执行）。Vue / Nuxt 后续实现时直接跟上最新契约版本（详见 progress.md 各阶段条目）。
 - **TanStack 官方 Agent Skills（已评估、暂缓安装，勿遗忘）**：官方 SKILL.md 内嵌于 npm 包（`skills/<name>/SKILL.md`，随包版本更新，机制见 tanstack.com/intent）；项目已装版本（react-query 5.99 / 5.102.8、table 9.2.x、router 1.168）**尚不含 skills 目录**，须升级依赖才可获得。安排：待三端下次例行升级 react-query / react-table / react-router（含 vue-query / vue-table 对应版本）时随包带入，升级后在 §20 补指路条目；**不要为获取 Skill 而单独发起依赖升级**（§15 锁版本约定）。
 - **super_admin 保护设计依据（重要，勿推翻）**：超管的"全量权限"不是代码身份判定，而是 seed 写入 role_menus 的 -1n 全量位经登录/每请求实时 OR 聚合而来（`auth.service.aggregatePermissions`）；PermissionsGuard 与菜单可见性的"超管免检"分支判据都是聚合值。清空其授权 = 全后台立即 403 且无自助恢复手段，故 `PUT /roles/{id}/menus` 与 `DELETE /roles/{id}` 对 `code === 'super_admin'` 必须返回 403 `SUPER_ADMIN_ROLE_PROTECTED`（详细背景见 progress.md 契约 v1.4.2/v1.4.3 条目）。
 
