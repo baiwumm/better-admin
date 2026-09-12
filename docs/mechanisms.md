@@ -514,6 +514,27 @@ URL 参数一律用 `useSearch({ strict: false })` / `useParams({ strict: false 
 
 ---
 
+## 14. UInputDate 与字符串日期字段桥接：writable computed，state 语义不变（Vue 端）
+
+- **`UInputDate`/`UCalendar` 的模型是 `DateValue`（`CalendarDate`）对象**，而项目
+  API 契约与 UForm zod schema 的日期字段是 `YYYY-MM-DD` 字符串。不要把 schema/state
+  改成对象语义——用 writable computed 桥接：`get` 把 `state.entryDate` 字符串经
+  `parseDate`（`@internationalized/date`，非法抛错 catch 后返回 undefined = 未设置）
+  转为 `CalendarDate`，`set` 用 `toString()` 转回 `YYYY-MM-DD`（`CalendarDate.toString()`
+  即 ISO 扩展格式）。这样 zod 校验（`ENTRY_DATE_RE`）、编辑回显、提交 `|| null` 映射
+  全部零改动，`UCalendar` 弹层与 `UInputDate` 共用同一 computed 即可双向同步。
+- **`UInputDate` 的 `placeholder` prop 是日期不是文本**（Reka DatePickerRoot 的
+  占位 `DateValue`，控制无值时日历聚焦月份），传字符串会 TS 报错；分段输入的空态
+  占位（yyyy/mm/dd）由组件内置渲染，无障碍名用 `aria-label` 提供。
+- **日历弹层结构**：`#trailing` 插槽内 `UPopover :reference="input?.inputsRef.at(-1)?.$el"`
+  把日历锚定到最后一个分段输入（官方示例 `inputsRef[3]` 同义，`.at(-1)` 对粒度变化
+  更稳）；popover 打开后自身也是 `[role=dialog]`（与业务 UModal 同角色），自动化
+  判定弹窗可见性需按内容区分；日期单元格定位用 `div[data-reka-calendar-cell-trigger]`
+  [data-value="YYYY-MM-DD"]（v4 不渲染 `table[role=grid]`）。既有范例：
+  `NoticeFormDialog` 发布日期 / `UserFormDialog` 入职日期。
+
+---
+
 ## 15. Vue 端路由过渡 VT 编排：守卫内启动 + afterEach 放行（Vue 端，M3）
 
 **结论：Vue Router 没有 React 端 `displayedPath` 双缓冲的等价物，路由过渡在导航
@@ -545,26 +566,6 @@ URL 参数一律用 `useSearch({ strict: false })` / `useParams({ strict: false 
   `data-route-transition` 同时存在；已核实 Nuxt UI / Reka UI 的 toast 走 CSS
   transition 不启动根级 VT，门控为纯防御。标签「刷新」复用同套门控：已应用序号
   （`appliedRefreshSeq`）与 store 分离，VT 回调内提交序号 + include 摘一拍。
-
-
-## 14. UInputDate 与字符串日期字段桥接：writable computed，state 语义不变（Vue 端）
-
-- **`UInputDate`/`UCalendar` 的模型是 `DateValue`（`CalendarDate`）对象**，而项目
-  API 契约与 UForm zod schema 的日期字段是 `YYYY-MM-DD` 字符串。不要把 schema/state
-  改成对象语义——用 writable computed 桥接：`get` 把 `state.entryDate` 字符串经
-  `parseDate`（`@internationalized/date`，非法抛错 catch 后返回 undefined = 未设置）
-  转为 `CalendarDate`，`set` 用 `toString()` 转回 `YYYY-MM-DD`（`CalendarDate.toString()`
-  即 ISO 扩展格式）。这样 zod 校验（`ENTRY_DATE_RE`）、编辑回显、提交 `|| null` 映射
-  全部零改动，`UCalendar` 弹层与 `UInputDate` 共用同一 computed 即可双向同步。
-- **`UInputDate` 的 `placeholder` prop 是日期不是文本**（Reka DatePickerRoot 的
-  占位 `DateValue`，控制无值时日历聚焦月份），传字符串会 TS 报错；分段输入的空态
-  占位（yyyy/mm/dd）由组件内置渲染，无障碍名用 `aria-label` 提供。
-- **日历弹层结构**：`#trailing` 插槽内 `UPopover :reference="input?.inputsRef.at(-1)?.$el"`
-  把日历锚定到最后一个分段输入（官方示例 `inputsRef[3]` 同义，`.at(-1)` 对粒度变化
-  更稳）；popover 打开后自身也是 `[role=dialog]`（与业务 UModal 同角色），自动化
-  判定弹窗可见性需按内容区分；日期单元格定位用 `div[data-reka-calendar-cell-trigger]
-  [data-value="YYYY-MM-DD"]`（v4 不渲染 `table[role=grid]`）。既有范例：
-  `NoticeFormDialog` 发布日期 / `UserFormDialog` 入职日期。
 
 ---
 
@@ -691,39 +692,6 @@ VueUse composable 托管，禁止手写 onMounted 注册 + onUnmounted 摘除对
   挂载；期间置位的 `routePending` 不补发 start——与原 `bindProgress` 不回放 sync 的行为
   一致（bprogress 冷启动首屏本就不出条）。
 
-
----
-
-## 10. dnd-kit 拖拽与 react-aria pressable 共存：激活事件必须走 React 捕获阶段（React / Next 端，标签栏拖拽排序）
-
-**结论：当 dnd-kit 的 sortable/draggable 节点内部包含 react-aria pressable（如 HeroUI Button）
-时，PointerSensor 的激活事件应改走 React 捕获阶段（自定义 Sensor 子类把 activator 的
-`eventName` 设为 `onPointerDownCapture`），否则会被 `usePress` 的缺省 `stopPropagation`
-切断，表现为「只能拖一次」或「完全无法拖拽」。**
-
-- **机理**：react-aria `usePress` 的 `onPointerDown` 冒泡 handler 调用 `triggerPressStart`，
-  其返回值 `shouldStopPropagation` **缺省为 `true`**——只有 `onPressStart` 回调里显式
-  `event.continuePropagation()` 才翻为 `false`；`onPressStart` 未传时同样执行
-  `e.stopPropagation()`。React 合成事件的 `stopPropagation` 会同时终止原生传播，
-  挂在外层容器上的 dnd-kit 合成 `onPointerDown` 永远收不到事件。
-- **双层失效链（标签栏实测）**：① 初始态：按下即被 stopPropagation → 完全无法拖拽
-  （`onPressStart=continuePropagation` 可修）；② press 状态机卡死态：拖拽后若吞掉
-  click 的传播，`usePress` 依赖 click 复位 `isPressed` 的路径断裂，后续 pointerdown
-  走「已按下」分支跳过 `triggerPressStart`、缺省 stopPropagation 再次生效 →
-  「只能拖一次」——放行 click 不能完全根治（状态机还有其他错过收尾时机的路径）。
-- **根治**：自定义 Sensor 子类覆盖 `activators`（`eventName: "onPointerDownCapture"`，
-  handler 自查 `isPrimary` / `button` / 排除关闭热区）。React 合成捕获阶段先于冒泡阶段
-  的 `stopPropagation` 分派，结构性免疫；dnd-kit 运行时仅把 eventName 当 listeners 的
-  React prop key，类型上的字面量限制用断言绕过即可。
-- **配套约束**：排序后的 click **不要吞传播**（交给 RAC 收尾状态机），防误导航改为在
-  `onPress` handler 里检查 `sortMovedRef`（onPress 先于 onDragEnd 触发——RAC 的
-  pointerup 在 target 上、dnd-kit 在 document 冒泡——ref 须在 `onDragStart` 置位，
-  `requestAnimationFrame` 兜底复位）；关闭热区（原生捕获截停的 span）加 `data-tab-close`
-  供 capture handler 排除。
-- **落地**：`react/src/layouts/components/tags-bar.tsx` 与 `next/src/layouts/components/tags-bar.tsx`
-  （`TabPointerSensor` + `SortableTabItem`，2026-09-12）；背景与验证详见 `docs/progress.md`
-  对应条目。
-
 ---
 
 ## 18. Next 端路由标题服务端化：generateMetadata + 语言 Cookie，与 usePageTitle 双轨（Next 端，2026-09-12）
@@ -787,3 +755,35 @@ titleKey 与 React 端 TanStack Router 的 `staticData.titleKey` 一字不差（
   各自演进）。
 - **有意保留的手动监听**：tags-bar（React / Next）的 pointer / wheel / scroll
   监听群是拖拽编排核心且拖拽排序在途迭代，不纳入本次收敛。
+
+---
+
+## 20. dnd-kit 拖拽与 react-aria pressable 共存：激活事件必须走 React 捕获阶段（React / Next 端，标签栏拖拽排序）
+
+**结论：当 dnd-kit 的 sortable/draggable 节点内部包含 react-aria pressable（如 HeroUI Button）
+时，PointerSensor 的激活事件应改走 React 捕获阶段（自定义 Sensor 子类把 activator 的
+`eventName` 设为 `onPointerDownCapture`），否则会被 `usePress` 的缺省 `stopPropagation`
+切断，表现为「只能拖一次」或「完全无法拖拽」。**
+
+- **机理**：react-aria `usePress` 的 `onPointerDown` 冒泡 handler 调用 `triggerPressStart`，
+  其返回值 `shouldStopPropagation` **缺省为 `true`**——只有 `onPressStart` 回调里显式
+  `event.continuePropagation()` 才翻为 `false`；`onPressStart` 未传时同样执行
+  `e.stopPropagation()`。React 合成事件的 `stopPropagation` 会同时终止原生传播，
+  挂在外层容器上的 dnd-kit 合成 `onPointerDown` 永远收不到事件。
+- **双层失效链（标签栏实测）**：① 初始态：按下即被 stopPropagation → 完全无法拖拽
+  （`onPressStart=continuePropagation` 可修）；② press 状态机卡死态：拖拽后若吞掉
+  click 的传播，`usePress` 依赖 click 复位 `isPressed` 的路径断裂，后续 pointerdown
+  走「已按下」分支跳过 `triggerPressStart`、缺省 stopPropagation 再次生效 →
+  「只能拖一次」——放行 click 不能完全根治（状态机还有其他错过收尾时机的路径）。
+- **根治**：自定义 Sensor 子类覆盖 `activators`（`eventName: "onPointerDownCapture"`，
+  handler 自查 `isPrimary` / `button` / 排除关闭热区）。React 合成捕获阶段先于冒泡阶段
+  的 `stopPropagation` 分派，结构性免疫；dnd-kit 运行时仅把 eventName 当 listeners 的
+  React prop key，类型上的字面量限制用断言绕过即可。
+- **配套约束**：排序后的 click **不要吞传播**（交给 RAC 收尾状态机），防误导航改为在
+  `onPress` handler 里检查 `sortMovedRef`（onPress 先于 onDragEnd 触发——RAC 的
+  pointerup 在 target 上、dnd-kit 在 document 冒泡——ref 须在 `onDragStart` 置位，
+  `requestAnimationFrame` 兜底复位）；关闭热区（原生捕获截停的 span）加 `data-tab-close`
+  供 capture handler 排除。
+- **落地**：`react/src/layouts/components/tags-bar.tsx` 与 `next/src/layouts/components/tags-bar.tsx`
+  （`TabPointerSensor` + `SortableTabItem`，2026-09-12）；背景与验证详见 `docs/progress.md`
+  对应条目。本文档原编号 §10（与 KeepAlive 池条目撞号），2026-09-12 指针清理时重编为 §20。
