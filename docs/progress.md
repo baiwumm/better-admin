@@ -2,6 +2,13 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Nest 免费托管决策：留 Render + 保活 ping（2026-09-12）
+
+- **背景**：用户询问 Render 是否最优免费托管。免费托管市场核实（2026 政策）：全托管平台免费层**普遍休眠**——Render 15 分钟不活跃休眠（冷启动 30-50s）、Koyeb 同样 scale-to-zero 且打击保活滥用；真正常驻免费的只有 Oracle Always Free VPS（ARM 4C/24G，需绑卡 + 全自运维）；Railway / Fly / Heroku 免费已取消，Glitch 关停；CF Workers / Supabase Edge / Deno Deploy 运行时不兼容（postgres.js TCP + Nest Express 模型）。
+- **决策（用户拍板，写入上线清单标题）**：**Nest 留 Render + 保活 ping**——上线时新增无鉴权 `GET /api/health` 健康端点（当前不存在，已核实；契约补录）+ UptimeRobot / CF Worker Cron 每 5-10 分钟 ping。免费 750 实例小时/月 ≥ 单服务常驻 744h，额度恰好覆盖。Oracle VPS 留作将来升级选项。
+- **落档**：AGENTS §17 改写为「**统一上线清单**」（标题级携带保活决策，含 ① 保活 / ② SPA 回退验证 / ③ CORS 白名单 / ④ 各端冒烟 / ⑤ 项目清理五项）；requirements §13 平台分化注记补保活决策；vue-plan §M4 部署清单加「Nest 保活 ping 联动确认」（SPA 首次调用不撞冷启动）。
+- **无需同步**：本次仅文档；`/api/health` 代码与契约补录在上线环节执行。
+
 ### 部署平台分化拍板：React / Vue → Cloudflare Pages（2026-09-12）
 
 - **背景**：五个站点原规划全部 Vercel（Hobby 免费额度），用户提出额度压力关切。逐站兼容性分析结论：**Next / Nuxt 全栈必须留 Vercel**——服务端数据层走 `postgres.js` TCP 直连，Cloudflare Workers 运行时不支持 raw TCP（Hyperdrive 需付费 + 驱动兼容性存疑；重写数据层违反「行为不变」）；**React / Vue 为纯静态 SPA，迁 CF Pages**（免费静态请求 / 带宽无限）；website 留 Vercel；NestJS 留 Render。

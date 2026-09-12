@@ -276,8 +276,13 @@ https://nest.baiwumm.com
 - **数据库**：Supabase PostgreSQL。
 - 每个子项目应能独立构建、独立部署；环境变量在对应部署平台配置。
 
-> **上线状态（2026-09-12 标记）**：**四端均未部署上线**——现域名（react / next）指向历史旧项目，
-> 其余域名未配置。本节 URL 为规划目标；全部版本开发完成后**统一上线**，各端部署前冒烟按各自 plan 文档执行。
+> **统一上线清单（⚠️ 重要：Nest Render 保活 ping 必做——免费层 15 分钟不活跃即休眠，冷启动 30-50 秒）**
+> ① **Nest 保活（2026-09-12 关键决策）**：上线时**新增无鉴权 `GET /api/health` 健康端点**（无 DB 访问，契约补录）+ 配置 **UptimeRobot / CF Worker Cron 每 5-10 分钟 ping**——Render 免费 750 实例小时/月 ≥ 单服务常驻 744h，免费额度恰好覆盖，冷启动彻底消除。已评估并否决的替代平台：Koyeb（同样休眠）、Oracle Always Free（常驻 VPS 但需绑卡自运维，留作将来升级选项）、Cloud Run / Vercel serverless（需绑卡 / 违背平台分散）。
+> ② React / Vue：CF Pages 绑定 + **SPA 直链回退验证**（`_redirects` 兜底，清单见 `vue-plan.md` §M4）。
+> ③ **Nest CORS 白名单**：逐一加入四端域名。
+> ④ 各端部署前冒烟按各自 plan 文档执行。
+> ⑤ Vercel / CF 侧项目清理（解绑旧域名、暂停不再使用的项目）。
+> 现域名（react / next）当前指向历史旧项目，其余域名未配置；URL 为规划目标。
 
 ---
 
