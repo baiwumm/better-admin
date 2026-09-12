@@ -4,6 +4,7 @@ import type { DeptTreeNode } from "@/lib/api-types";
 
 import {
   DndContext,
+  KeyboardSensor,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -13,6 +14,7 @@ import {
 import {
   SortableContext,
   arrayMove,
+  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
@@ -197,6 +199,11 @@ export function DeptTree({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    // 键盘拖拽：把手聚焦后 Space / Enter 拾起、方向键移动、Space / Enter 落下
+    // （Esc 取消）；与列设置 KeyboardSensor 同款（data-table-view-options）
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   // 扁平映射：id → { parentId, siblings }，供拖拽结束定位 active 所属兄弟组

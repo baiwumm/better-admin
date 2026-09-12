@@ -2,6 +2,17 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 键盘可达性批次：code-review-backlog #1 / #2 / #4 落地（2026-09-12）
+
+- **背景**：docs 盘点后经用户拍板，按「code-review-backlog 最佳建议方案」执行一批行为级修复（backlog 原则「交互变更需单独决策」的首批落地）。
+- **#1 标签关闭热区键盘关闭（三端）**：关闭 span 补 `tabIndex` + Enter / Space 关闭 + focus-visible 焦点环。react / next 在 `TabCloseTrigger`（`stopPropagation` 隔离外层 react-aria Button 键盘 press，防误切页；焦点环 `ring-focus`）；vue 端由 `tabindex="-1"` 改 `0`，`@keydown.enter/space.prevent.stop` + `ring-accented`。
+- **#2 组织树键盘拖拽（react / next）**：dept-tree 把手本就可聚焦且内无子交互元素（与列设置手柄同构），复用 KeyboardSensor 先例（`data-table-view-options`）+ `sortableKeyboardCoordinates`，零冲突接入；把手聚焦 Space / Enter 拾起、方向键移动、Esc 取消。**Vue 端 sortablejs 无键盘能力，与标签键盘排序同性质记已知差异**（不做 Alt+方向键自研，维持标签栏既定口径）。
+- **#4 标签菜单键盘入口 Shift+F10（三端）**：react / next 把 `openContextMenu` 拆出 `openContextMenuAt(x, y, path)`，在标签 Button `onKeyDown` 以元素中心为锚打开（props 新增 `onKeyboardContextMenu`）；vue 端 reka ContextMenu 无受控 open，`openMenuByKeyboard` 以合成 `MouseEvent("contextmenu")` 派发到聚焦标签——走「标签 → 容器 `@contextmenu.capture` 记录目标 → ContextMenuTrigger」同一条原生冒泡链路，坐标用元素中心。**运行时前提为 reka 不校验 isTrusted，浏览器冒烟若发现不弹菜单则回退为记已知差异**（同 sortablejs 物理拖拽的自动化边界先例）。
+- **#5 销项 + 修正既有误判**：核实 vue `AvatarCropDialog` 为 `UModal :dismissible="false"`——禁 Esc + 禁遮罩点击与 react / next 已一致，无需改动。**#3 自绘树 tree 语义维持暂缓**（完整方案需配套方向键漫游，Vue 端 UTree 已合规）；**#6 维持备案**；**进度条 aria 维持待库**——核实 vue 端同为 `@bprogress/vue` 注入 DOM（此前「vue 自研 DOM 可先行」判断有误），三端口径一致。
+- **验证**：react `lint`（0 error）/ `build`（tsc + vite）全绿；next `lint`（0 error，21 条存量 warning）/ `next build` 通过；vue `type-check` / `lint`（0 error，5 条存量 warning）/ `test`（95 用例）/ `build` 四绿。**行为边界**：鼠标 / 触屏交互零变化；新增键盘路径不影响 dnd-kit / sortablejs 既有拖拽编排（#1 的 keydown 在 `data-tab-close` 元素上，与 sortable filter、pointerdown 捕获链路无交集）。
+- **文档**：`code-review-backlog.md` 重写为「已修复 / 暂缓备案 / 销项」三段；`feature-matrix.md` 多标签页行补键盘可达性备注、组织管理行补键盘拖拽备注。
+- **无需同步**：数据库 / OpenAPI 契约不涉及；Nuxt 端待 M0 后随标签栏实现跟进。
+
 ### 文档指针清理：上线状态标记 + 待办去虚 + 机制文档编号修复（2026-09-12）
 
 - **背景**：docs/ 全量扫描（历史遗漏 / 技术债 / 待拍板决策盘点）发现多处文档指针滞后，逐项核实代码现状后统一清理。

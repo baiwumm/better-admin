@@ -330,6 +330,31 @@ function handleAuxClick(event: MouseEvent, path: string, pinned: boolean) {
 // ── 右键菜单：UContextMenu 包裹标签列表，capture 阶段记录目标标签 ──
 const ctxTarget = ref<string | null>(null);
 
+/** Shift+F10：对聚焦标签以元素中心为锚合成 contextmenu 事件打开右键菜单。
+ * reka ContextMenu 仅指针触发、无受控 open；合成事件沿「标签 → 容器
+ * @contextmenu.capture 记录目标 → ContextMenuTrigger」同一条原生冒泡链路走，
+ * 定位用元素中心坐标。若运行时验证 reka 拒绝合成事件（校验 isTrusted），
+ * 回退为记录已知差异（仅 React / Next 提供 Shift+F10）。 */
+function openMenuByKeyboard(event: KeyboardEvent) {
+  const el =
+    event.currentTarget instanceof HTMLElement ? event.currentTarget : null;
+
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+
+  el.dispatchEvent(
+    new MouseEvent("contextmenu", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+      button: 2,
+    }),
+  );
+}
+
 function onContextMenuCapture(event: MouseEvent) {
   const target = (event.target as HTMLElement | null)?.closest<HTMLElement>(
     "[data-tab-path]",
@@ -512,6 +537,7 @@ const ctxItems = computed<ContextMenuItem[][]>(() => {
               :ui="{ base: tab.active ? '' : 'ring-default' }"
               @auxclick="handleAuxClick($event, tab.path, tab.pinned)"
               @click="handleSelect(tab.path)"
+              @keydown.shift.f10.prevent="openMenuByKeyboard($event)"
               @mousedown.middle.prevent
             >
               <UIcon
@@ -530,15 +556,18 @@ const ctxItems = computed<ContextMenuItem[][]>(() => {
                 class="size-3.5 shrink-0 text-muted"
               />
               <!-- 关闭热区：阻止指针 / 点击冒泡，避免触发标签自身的切换；
-                   data-tab-close 供 sortable filter 二次排除 -->
+                   data-tab-close 供 sortable filter 二次排除；
+                   键盘：Tab 可聚焦，Enter / Space 关闭（stop 隔离外层按钮键盘 press） -->
               <span
                 v-else-if="tab.title !== null"
                 :aria-label="t('layout.tags.closeNamed', { title: tab.title })"
-                class="-mr-1 flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-50 transition-opacity hover:bg-accented hover:opacity-100"
+                class="-mr-1 flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-50 transition-opacity hover:bg-accented hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accented"
                 data-tab-close="true"
                 role="button"
-                tabindex="-1"
+                tabindex="0"
                 @click.stop.prevent="handleClose(tab.path)"
+                @keydown.enter.prevent.stop="handleClose(tab.path)"
+                @keydown.space.prevent.stop="handleClose(tab.path)"
                 @pointerdown.stop
               >
                 <UIcon name="i-lucide-x" class="size-3" />

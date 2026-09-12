@@ -27,6 +27,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   Button,
+  cn,
   Dropdown,
   ScrollShadow,
   Separator,
@@ -472,12 +473,17 @@ export function TagsBar() {
       .map(([key]) => key);
   }, [ctxAbility]);
 
+  /** 在指定锚点打开标签菜单：右键（鼠标坐标）与 Shift+F10（聚焦标签中心）共用。 */
+  const openContextMenuAt = (x: number, y: number, path: string) => {
+    setCtxTarget(path);
+    setCtxPos({ x, y });
+    ctxMenu.open();
+  };
+
   /** 打开右键菜单：记录鼠标坐标与目标标签。 */
   const openContextMenu = (event: ReactMouseEvent, path: string) => {
     event.preventDefault();
-    setCtxTarget(path);
-    setCtxPos({ x: event.clientX, y: event.clientY });
-    ctxMenu.open();
+    openContextMenuAt(event.clientX, event.clientY, path);
   };
 
   /** 执行菜单动作：变更标签并按需导航（redirect 由 store 纯函数计算）。 */
@@ -630,6 +636,7 @@ export function TagsBar() {
                     title={title}
                     onClose={handleClose}
                     onContextMenu={openContextMenu}
+                    onKeyboardContextMenu={openContextMenuAt}
                     onSelect={handleSelect}
                   />
                 );
@@ -730,9 +737,22 @@ function TabCloseTrigger({
     <span
       ref={ref}
       aria-label={t("layout.tags.closeNamed", { title })}
-      className="-mr-1 flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-50 transition-opacity hover:bg-default hover:opacity-100"
+      className={cn(
+        "-mr-1 flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-full opacity-50 transition-opacity hover:bg-default hover:opacity-100",
+        "focus-visible:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus",
+      )}
       data-tab-close="true"
       role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        // Enter / Space 键盘关闭：preventDefault 阻止 Space 滚页，
+        // stopPropagation 隔离外层 react-aria Button 的键盘 press（防误切页）
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          event.stopPropagation();
+          onClose();
+        }
+      }}
     >
       <X className="size-3" />
     </span>
@@ -749,6 +769,8 @@ interface SortableTabItemProps {
   onSelect: (path: string) => void;
   onClose: (path: string) => void;
   onContextMenu: (event: ReactMouseEvent, path: string) => void;
+  /** Shift+F10 键盘菜单：以聚焦标签元素中心为锚（键盘用户无法右键）。 */
+  onKeyboardContextMenu: (x: number, y: number, path: string) => void;
 }
 
 /**
@@ -772,6 +794,7 @@ function SortableTabItem({
   onSelect,
   onClose,
   onContextMenu,
+  onKeyboardContextMenu,
 }: SortableTabItemProps) {
   const {
     attributes,
@@ -820,6 +843,21 @@ function SortableTabItem({
           }
         }}
         onContextMenu={(event) => onContextMenu(event, path)}
+        onKeyDown={(event) => {
+          // Shift+F10：对聚焦标签以元素中心为锚打开菜单（键盘用户无法右键）；
+          // preventDefault 阻止浏览器默认行为，stopPropagation 隔离 react-aria
+          if (event.shiftKey && event.key === "F10") {
+            event.preventDefault();
+            event.stopPropagation();
+            const rect = event.currentTarget.getBoundingClientRect();
+
+            onKeyboardContextMenu(
+              rect.left + rect.width / 2,
+              rect.top + rect.height / 2,
+              path,
+            );
+          }
+        }}
         onPress={() => onSelect(path)}
         onPressStart={(event) => event.continuePropagation()}
       >
