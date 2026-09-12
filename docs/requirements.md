@@ -2,6 +2,8 @@
 
 > 基于统一设计与业务逻辑，使用 Next.js、Nuxt、React、Vue、NestJS 等现代 Web 技术栈实现的全栈 Admin 系统。
 
+> **文档性质**：业务需求真源（What），实现细节与状态见各专项文档；本文描述「当前是什么」，阶段性进度见 `progress.md`。
+
 ## 1. 项目概述
 
 ### 1.1 项目名称
@@ -494,6 +496,8 @@ Shadcn UI 复用项目级变量进行适配，最终产品必须看起来像同�
 
 React / Next.js 表单保持 **React Hook Form + Zod**，不因 UI 组件库改变表单校验方案与业务逻辑；UI 控件选择遵循「Hero UI 优先，Shadcn UI 补充」。
 
+Vue / Nuxt 表单统一 **UForm + Zod**（Nuxt UI 表单容器 + zod schema 校验；vee-validate 经评审不引入）。
+
 ### Vue / Nuxt
 
 - Vue / Nuxt 以 **Nuxt UI v4（`@nuxt/ui`）为唯一 UI 组件库**（2026-09 评审决策，替代原 Shadcn UI 策略）。
@@ -557,69 +561,45 @@ DELETE /api/users/:id
 
 # 9. API Contract
 
-不同技术栈之间需要保持统一的数据协议。
+API Contract 的唯一事实来源是 [`nest/openapi/openapi.yaml`](../nest/openapi/openapi.yaml)（Contract-First：先定契约再实现；当前 v1.9.0）。
 
-建议使用 OpenAPI 作为 API Contract。
-
-目标：
-
-```text
-                 OpenAPI
-                    │
-        ┌───────────┼───────────┐
-        ↓           ↓           ↓
-      React        Vue        Other
-        │           │
-        └───── NestJS API ──────┘
-```
-
-Next.js 和 Nuxt.js 虽然采用各自的 Server API，但需要尽量遵循相同的 API 设计规范。
+- 四端（React / Vue / Next.js / Nuxt）与 NestJS 均以该文件为准：路径、方法、信封、错误码、分页结构逐字一致；
+- 业务错误码（大写蛇形）统一登记在契约中，禁止散落各端实现；
+- 修改契约时必须评估四端 + NestJS 的影响并同步（见 `AGENTS.md` §6）。
 
 ---
 
 # 10. 业务功能
 
-第一阶段建议完成一个完整的 Admin 基础系统。
-
-核心模块包括：
+核心业务模块与组织中心。各模块的四端实现状态见 `docs/feature-matrix.md`（Dashboard 为唯一全端未实现项）。
 
 ## 10.1 用户管理
 
-- 用户列表（含用户信息合并展示、最近登录、个人链接图标跳转）
-- 用户详情
-- 创建用户
-- 编辑用户
-- 删除用户
-- 用户状态
-- 用户搜索
-- 用户分页
+- 用户列表：三态（首屏骨架 / 空态 / 错误重试）、信息合并展示、最近登录、个人链接图标跳转
+- 创建用户（初始密码按密码策略）、编辑用户（表单抽屉，含角色授权与组织关联）
+- 删除用户（软删）、批量删除
+- 用户状态（停用 / 启用；写保护三层规则：本人 / 内置 admin / super_admin 绑定用户）
+- 重置密码（按密码策略）
+- 用户搜索、筛选、分页、排序；DataTable 列设置（可见性 + 拖拽排序持久化）
 
 ## 10.2 角色管理
 
-- 角色列表
-- 创建角色
-- 编辑角色
-- 删除角色
-- 角色权限配置
+- 角色列表（三态）、创建角色、编辑角色、删除角色
+- 菜单授权抽屉（GRANT 权限位门控，勾选模型全量替换）
+- super_admin 角色保护：不可删除 / 不可停用 / 授权不可修改；绑定变更仅限超管操作者，并受「最后活跃超管」不变量守卫（契约 v1.9.0，机制见 `docs/mechanisms.md` §5）
 
-## 10.3 权限管理
+## 10.3 权限管理（只读）
 
-- 权限列表
-- 权限创建
-- 权限编辑
-- 权限删除
-- 权限分配
+- 权限点为**只读的位掩码枚举字典**：由代码与契约定义，不在界面创建 / 编辑 / 删除
+- 列表展示位值、名称与说明；新增权限点随契约版本扩展（如 EXPORT / GRANT）
 
 ## 10.4 菜单管理
 
-- 菜单列表
-- 菜单创建
-- 菜单编辑
-- 菜单删除
-- 菜单排序
-- 菜单权限关联
+- 树形菜单 CRUD（含 add-child）、菜单排序
+- 菜单与权限位关联，支持 i18n key、路由地址、图标、keepAlive 等配置
+- 搜索过滤；编辑防环
 
-## 10.5 Dashboard
+## 10.5 Dashboard（规划中）
 
 包含：
 
@@ -630,14 +610,12 @@ Next.js 和 Nuxt.js 虽然采用各自的 Server API，但需要尽量遵循相�
 - 系统状态
 - 快捷操作
 
+（实施排在 Playground Gate 之后，方案见 `docs/plan-dashboard-playground.md`。）
+
 ## 10.6 日志
 
-包含：
-
-- 操作日志
-- 登录日志
-- API 日志
-- 错误日志
+- 操作日志 / API 日志 / 登录日志 / 错误日志（类型以字典 `log_type` 为真源，内置枚举降级）
+- 列表筛选、详情抽屉、批量删除
 
 ## 10.7 我的账户
 
@@ -654,6 +632,22 @@ Next.js 和 Nuxt.js 虽然采用各自的 Server API，但需要尽量遵循相�
 
 - 修改邮箱：需验证当前密码，新邮箱全站唯一
 - 修改密码：需验证当前密码，新密码展示 5 档强度；成功后所有登录会话失效，需重新登录
+
+## 10.8 字典管理
+
+- 字典类型 + 字典项双栏 CRUD
+- 业务字典缓存（保存回填）；业务下拉（用户状态、日志类型等）以字典为真源，字典缺失时内置枚举降级
+
+## 10.9 组织中心
+
+- 组织管理：左树右表、同级拖拽排序（整组重编号）、关键词确认删除、负责人滚动加载选择
+- 岗位管理：CRUD + 在职成员穿透抽屉
+- 人员通讯录：组织树筛选 + 服务端分页 + EXPORT 权限位门控
+- 通讯录 Excel 导出：企业级样式（品牌蓝表头 / 斑马纹 / 状态高亮 / 冻结首行），串行分页批量
+- 公告管理：富文本（Tiptap）+ 三粒度发布范围 + 定时发布 + 撤回 + 催读；已读 / 未读名单
+- 我的公告：左列表右详情（URL 参数驱动选中）、阅读状态筛选、进详情记首次已读
+- 站内信通知：Header 铃铛 + 未读数轮询 + 已读；通知详情为登录可达的消费路由
+- 架构图谱：只读可视化（平移 / 缩放 / Fit View / 折叠展开）
 
 ---
 
@@ -706,43 +700,11 @@ Auth
 
 ## 12.1 前端
 
-所有前端项目使用 Vercel 部署。
-
-### Next.js
-
-```text
-https://next.baiwumm.com
-```
-
-### Nuxt
-
-```text
-https://nuxt.baiwumm.com
-```
-
-### React
-
-```text
-https://react.baiwumm.com
-```
-
-### Vue
-
-```text
-https://vue.baiwumm.com
-```
-
----
+所有前端项目使用 Vercel 部署，域名统一见 §13 域名规划（单一来源）。
 
 ## 12.2 NestJS
 
-NestJS 使用 Render 部署。
-
-建议 API 域名：
-
-```text
-https://nest.baiwumm.com
-```
+NestJS 使用 Render 部署，API 域名见 §13 域名规划。
 
 ---
 
@@ -778,11 +740,14 @@ Supabase PostgreSQL。
 
 | 项目 | 域名 | 平台 |
 | --- | --- | --- |
+| 官方文档站 | `better-admin.baiwumm.com` | Vercel |
 | Next.js | `next.baiwumm.com` | Vercel |
 | Nuxt | `nuxt.baiwumm.com` | Vercel |
 | React | `react.baiwumm.com` | Vercel |
 | Vue | `vue.baiwumm.com` | Vercel |
-| NestJS | `nest.baiwumm.com` | Render |
+| NestJS API | `nest.baiwumm.com` | Render |
+
+> **上线状态（2026-09-12）**：四端均未部署上线——现域名指向历史旧项目；全部版本开发完成后**统一上线**（详见 `AGENTS.md` §17）。官方文档站待 Vercel 部署绑定。
 
 ---
 
@@ -856,6 +821,8 @@ pnpm start:dev
 # 15. 项目开发顺序
 
 不建议四套前端同时开发。
+
+> 当前进度：Phase 1-5 已完成（React / NestJS / Vue / Next.js），Phase 6（Nuxt）已立项待决策——最新状态以 `AGENTS.md` §19 为准。
 
 推荐按照以下顺序：
 
@@ -935,13 +902,7 @@ Better Admin
 不同技术栈实现
 ```
 
-最终通过以下地址提供在线 Demo：
-
-- Next.js：`https://next.baiwumm.com`
-- Nuxt：`https://nuxt.baiwumm.com`
-- React：`https://react.baiwumm.com`
-- Vue：`https://vue.baiwumm.com`
-- API：`https://nest.baiwumm.com`
+最终通过 §13 域名规划中的地址提供在线 Demo（统一上线后生效）。
 
 ---
 
@@ -969,3 +930,10 @@ Better Admin 不仅是一个 Admin 模板，也不是对某个开源模板的简
 - Deployment
 
 通过同一个实际项目，验证和沉淀不同技术栈下的工程实践。
+---
+
+# 18. 修订记录
+
+| 日期 | 说明 |
+| --- | --- |
+| 2026-09-12 | 对齐实际业务：§10 补字典管理与组织中心全套、权限管理改只读口径、用户/角色模块按实际形态修正；§9 改契约事实陈述（openapi.yaml v1.9.0 唯一真源）；§7.3 补 Vue / Nuxt 的 UForm + Zod 方案；域名收敛 §13 单源、补官方文档站与「统一上线」状态标记；§15 补当前进度指针 |

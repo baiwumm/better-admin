@@ -69,7 +69,7 @@ export default function OgImage() {
           display: "flex",
         }}
       >
-        docs.baiwumm.com
+        better-admin.baiwumm.com
       </div>
     </div>,
     size,

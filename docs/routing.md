@@ -247,11 +247,11 @@ useMenus()（GET /api/menus，后端 buildAllowedMenuIds 按角色关联过滤 +
 
 ---
 
-## 10. 当前状态与已知约束
+## 10. 已知约束
 
-- ✅ `pnpm dev` / `pnpm build` / `pnpm lint` 均通过；路由级代码分割（`autoCodeSplitting`）生效。
-- ✅ 登录、菜单、全部业务页均已接入 NestJS 真实后端（无 Mock 残留）。
+> 各端路由的完成状态不在本文件维护（避免多源漂移），统一见 `docs/feature-matrix.md` 与 `AGENTS.md` §19。
+
 - ⚠️ `src/routeTree.gen.ts` 为自动生成文件：勿手改；新增路由后由 Vite 插件自动重建。
 - ℹ️ 管理页详情规范：列表详情一律用 Drawer/Dialog（见 `docs/ui-spec.md` §1.3）；唯一的消费端详情路由是公告详情（登录可达前缀）。
 - ℹ️ Next 端路由与本文档路由表逐页对应（App Router 目录 `next/src/app/(authenticated)/`），差异仅实现层（httpOnly Cookie + `proxy.ts` 门卫，见 `docs/feature-matrix.md`）。
-- ✅ Vue 端（M0）路由表与本文档逐条对齐：文件树见 §2.2；`lib/route-access.ts` 与 React 同构（`PUBLIC_PATHS` / `LOGIN_REQUIRED_PATHS` / `LOGIN_REQUIRED_PREFIXES` / `MENU_REQUIRED_PATHS`）；守卫为全局 `beforeEach`（§2.2）；`pnpm dev` / `build` / `lint` / `test` 均通过。
+- ℹ️ Vue 端路由表与本文档逐条对齐：文件树见 §2.2；`lib/route-access.ts` 与 React 同构（`PUBLIC_PATHS` / `LOGIN_REQUIRED_PATHS` / `LOGIN_REQUIRED_PREFIXES` / `MENU_REQUIRED_PATHS`）；守卫为全局 `beforeEach`（§2.2）。

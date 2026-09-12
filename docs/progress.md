@@ -2,6 +2,17 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 文档整合批次：requirements 对齐实际业务 + 多源收敛（2026-09-12）
+
+- **背景**：docs/ 全量评估（合并 / 删除 / 简化 / requirements 时效）后经用户拍板执行；目标为「单一职责、规则只在一处」，消除状态类信息多源漂移（评估中已实际发现 react.md 状态严重过时等实例）。
+- **requirements.md 对齐实际业务**：§10 重写——**补字典管理（§10.8）与组织中心全套（§10.9，含 8 子模块）**、**权限管理改只读口径**（原文误写「创建/编辑/删除/分配」，实际为位掩码枚举字典）、用户/角色/日志按实际形态修正（三层写保护 / GRANT 位菜单授权 / super_admin 保护 / 字典 log_type 真源）；§9 从「建议使用 OpenAPI」改为事实陈述（`nest/openapi/openapi.yaml` v1.9.0 唯一真源 + 错误码统一登记）；§7.3 补 Vue / Nuxt 的 **UForm + Zod** 口径；**域名收敛 §13 单源**（原 §12.1 / §16 重复列表改为指针），§13 补官方文档站 better-admin.baiwumm.com 与「四端未上线、统一上线」标记；§15 补当前进度指针；文末新增修订记录（§18）。
+- **多源收敛**：① `react.md` §5「当前状态」指针化——原文仍写「用户管理为 Mock 页未完成」（Phase 3 前的旧状态），完成状态统一归 feature-matrix + AGENTS §19；② `routing.md` §10 改「已知约束」（完成类 ✅ 条目指针化，routeTree 勿手改 / Drawer 规范等常驻约束保留）；③ **AGENTS §7.2 收敛为策略级**——组件选择规则 4 条、禁止事项、渐进式调整细则单点归 `ui-spec.md` §18.3（细则已补全），`useOverlayState` 硬规则保留在 AGENTS（编码级、高频适用）；④ AGENTS §13 文档体系表补全（nuxt-ui-guide / code-review-backlog / plan-dashboard-playground / vue-plan / nuxt-plan 五份此前未登记）。
+- **历史迁移**：`ui-spec.md` §19「Phase 1B 落地记录」迁入 progress.md 的 Phase 1B 条目（落地明细附注），spec 文档不再保存落地流水账；变更记录表补 v1.3 行，原 §20 顺延为 §19。
+- **删除项**：无。`vue-plan.md` 生命周期已结束但 §M4 部署清单在统一上线时仍被引用，保留至上线后删除（AGENTS §13 表已注明）。
+- **附带定稿**：官方文档站域名改为 **`better-admin.baiwumm.com`**（原规划 docs.baiwumm.com；历史条目按规范不回改）——同步 website 配置（site.ts / opengraph-image / package.json）、AGENTS §19、requirements §13；根目录 `README.md` 简洁重写对齐现状（旧版停留在契约 v1.4.3 / Vue 未初始化时期）。
+- **保持不动**：mechanisms.md（机制结论密度高，编号刚修）、progress.md（append-only 规范，体量尚可）、feature-matrix.md、nuxt-ui-guide.md、react-performance.md、code-review-backlog.md、plan-dashboard-playground.md。
+- **无需同步**：四端代码与契约均不涉及；`nuxt-plan.md` 按用户指示未纳入本次整理。
+
 ### Next 公告详情页标题 metadata 对齐（2026-09-12）
 
 - **背景**：Next 端路由标题服务端化（见 2026-09-12 置顶条目）时 `/org/notices/[noticeId]` 详情页**未加** metadata——动态路由在 `routeStaticMetaByPath` 精确映射中无键，静态加了也会被客户端 hook 水合后回退应用名，登记为「与 React 的既有差异待后续单独对齐」。
@@ -1268,6 +1279,7 @@
 - 主色保持 Shadcn Admin 默认（slate），按约定待项目完成后再调整。
 - 验证：`pnpm install` / `pnpm dev` / `pnpm build` / `pnpm lint` / `pnpm format:check` 全部通过。
 - 等待下一阶段（Phase 2：NestJS + PostgreSQL，或用户安排的其它阶段）。
+- 落地明细（2026-09-12 自 `ui-spec.md` §19 迁入，原文为 Phase 1B 审查记录）：品牌化涉及 `index.html`、`src/assets/`、`src/styles/theme.css`（站点标题/描述/OG、Logo、favicon、主色与图表色 token）；Sidebar 调整涉及 `sidebar-data.ts`、`app-sidebar.tsx`（TeamSwitcher → AppTitle、菜单按 ui-spec §3.2 规划、清理 Demo 项）；Layout 调整统一 Header 操作区顺序、清理演示导航；页面规划按 ui-spec §1.3 建立业务路由骨架与占位页；规范化收尾为全局颜色/字号/间距按 ui-spec 对齐。
 
 ### Phase 1A：React + Shadcn Admin 基础建设（已完成）
 

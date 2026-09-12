@@ -142,23 +142,9 @@ pnpm preview        # 预览生产构建
 
 ## 5. 当前状态
 
-### 已完成
+React 端功能完成状态与阶段进度不在本文件维护（避免多源漂移），统一见：
 
-- [x] 基于 Hero UI 初始化模板建立 `/react`，作为 UI 迁移目标版本（UI Source of Truth）。
-- [x] Hero UI 为主组件库，布局（双栏 Sidebar + Header）、主题（Dark Mode / Light Mode）、响应式已就绪。
-- [x] Phase 3 联调：真实登录/退出（AlertDialog + useOverlayState）、后端菜单联调、双 Token 刷新、菜单路由权限门卫。
-- [x] 布局级权限门卫：未登录拦截、白名单放行、菜单未就绪全屏 Spinner、无权限渲染 403。
-- [x] TanStack Router 文件式路由 + QueryClient + Zustand auth-store（含 persist）。
-- [x] 角色管理 / 菜单管理 / 字典管理 / 权限管理页已上线，全站国际化（zh-CN / en）完成（进度详见 `docs/progress.md`）。
-- [x] 组件分层：`components/common/`（错误页等通用组件）、`layouts/components/`（布局子组件），按需扩展 `ui/`、`business/`。
-- [x] `pnpm install`、`pnpm dev`、`pnpm build`（含 `tsc`）、`pnpm lint`、`pnpm test` 全部通过。
+- 功能对齐状态：`docs/feature-matrix.md`
+- 阶段进度：`AGENTS.md` §19 与 `docs/progress.md`
 
-### 尚未完成
-
-- [ ] 用户管理（当前 `users-page.tsx` 为 keepAlive 演示 Mock 页，接入真实 API 时替换）。
-- [ ] 日志管理、概览 Dashboard。
-
-### 后端 / 数据库接入状态
-
-- **已接入 NestJS API**（`Browser → React → NestJS`）：认证、菜单、角色、权限、字典等模块走真实接口。
-- **不直接连接数据库**（项目约束，见 AGENTS.md §5）。
+本文件只描述 React 端的技术栈、目录结构与开发命令（§2-§4）。

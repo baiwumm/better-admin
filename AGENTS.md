@@ -101,27 +101,9 @@ better-admin/
 
 - **样式变量**：React / Next.js 以 Hero UI Design System 为参考形成一套项目级 Design Tokens，Hero UI + Shadcn UI + 自定义组件共用（见 §7.3）。
 - **整个项目**：React 仍然是 UI / UX Source of Truth；不同技术栈可以使用不同 UI 组件库，但最终页面必须保持统一的视觉、交互、结构和用户体验。
+- **细则单源**：组件选择规则、选型对照、禁止事项、渐进式调整的完整细则以 [`docs/ui-spec.md`](docs/ui-spec.md) §18.3 为准（本节自 2026-09-12 起只留策略级，避免双源漂移）。
 - **HeroUI 文档**：HeroUI v3 文档索引位于 `./.heroui-docs/react`，任何 HeroUI 组件任务**先查文档再动手**（凭记忆写 HeroUI v3 API 极易出错）；本文档的自动索引块已移除，需要时可用 `heroui agents-md --react --output AGENTS.md` 重新生成。
-
-**组件选择规则（React / Next.js）**：
-
-1. 先检查项目现有组件（`components/`、`components/ui/`、`features/`），不重复创建已存在组件。
-2. Hero UI 已提供满足需求的组件 → **优先使用**（Button / Input / Textarea / Select / Autocomplete / Dropdown / Modal / Drawer / Tabs / Card / Tooltip / Popover / Avatar / Badge / Chip / Switch / Checkbox / Radio / Progress / Spinner / Pagination / Navbar / DatePicker / DateRangePicker / Table 等）。
-3. Hero UI 没有对应组件、或无法满足/不适合当前场景 → 使用 **Shadcn UI**（Command、复杂 Form 组合、Sidebar、DataTable 相关、特殊 Sheet / Drawer、或项目已高度定制并稳定使用的组件）。不要为了使用 Shadcn UI 而主动寻找 Shadcn 方案。
-4. 两者都无法满足 → **项目级自定义组件**（遵循现有 Design Tokens，禁止随意新增颜色 / 圆角 / 阴影 / 字体 / 间距）。
-
-**禁止事项**：
-
-- 禁止同一种基础组件在不同页面随意混用不同组件库（如 A 页 Shadcn Button、B 页 Hero Button、C 页自定义 Button），除非存在被项目规范认可的明确技术原因。
-- 禁止因为熟悉 Shadcn UI 就默认所有组件使用 Shadcn UI；禁止为了「全部 Hero UI 化」强行重写存量 Shadcn UI。
-- 禁止未经确认进行大规模 UI 重构 / 一次性迁移。
 - **浮层开合状态必须用 `useOverlayState`（禁止裸 `useState` 布尔量控制）**：React / Next.js 中所有由布尔值控制的浮层（Modal / AlertDialog / Drawer / Popover / 任意 Overlay 等），其 open 状态**统一使用 Hero UI 导出的 `useOverlayState()` hook 管理**，并严格遵循官方受控写法——`isOpen` / `onOpenChange` 挂在浮层的最外层 Overlay 组件（如 `<AlertDialog.Backdrop isOpen={state.isOpen} onOpenChange={state.setOpen}>`）上，触发用 `state.open()` / `state.close()` / `state.toggle()`。禁止自行用 `useState(true/false)` 把 `isOpen` 挂在 Root/Trigger 上（会导致 react-aria 受控流不匹配、弹窗不显示或控制台报错）。开放状态即「with useOverlayState」，关闭即「禁止裸 useState 布尔量」。
-
-**渐进式调整（不是一次性重构）**：
-
-- 现有成熟能力（Layout / Sidebar / Header / Navigation / Theme / Dark Mode / Responsive / DataTable / Form / Dialog / Drawer / Command / Chart / Hooks / Utils / 页面结构 / 交互逻辑）**继续保留**，不机械迁移。
-- 新增功能优先使用 Hero UI；修改已有组件时按实际收益决定是否迁移。
-- 不破坏现有页面结构、交互逻辑与业务逻辑；不破坏 DataTable、Form 等成熟基础设施；**业务能力优先于组件库替换**。
 
 ### 7.3 样式变量 / Design Tokens 规则
 
@@ -213,8 +195,13 @@ ci: CI 配置变更
 | `docs/requirements.md` | 业务需求真源 |
 | `docs/ui-spec.md` | UI 规范真源（AGENTS.md §7 只留策略级规则） |
 | `docs/feature-matrix.md` | **功能矩阵**：四种前端实现的功能对齐状态（✅/❌），新增功能必须同步更新 |
-| `docs/react.md` / `docs/routing.md` | React 版本说明 / 路由说明 |
+| `docs/react.md` / `docs/routing.md` | React 版本说明 / 路由说明（只描述技术栈 / 结构 / 约束，**不维护完成状态**） |
 | `docs/react-performance.md` | Vercel 官方 React / Next Skills（性能 / 组合模式 / View Transitions）的项目适用政策 |
+| `docs/nuxt-ui-guide.md` | Nuxt UI 组件使用指引（Vue / Nuxt 端操作细则，§21 指向） |
+| `docs/code-review-backlog.md` | 代码审查行为级未修项追踪（已修复 / 暂缓备案 / 销项） |
+| `docs/plan-dashboard-playground.md` | 演示站路线图（Phase 0 演示准备 → Dashboard → Playground，Gate 后启动） |
+| `docs/vue-plan.md` | Vue 端开发方案（M0-M4 已完成，存档；§M4 部署清单在统一上线时使用，上线后可删） |
+| `docs/nuxt-plan.md` | Nuxt 端开发方案（待 D1-D6 决策拍板后推进） |
 | `nest/docs/*` | 后端数据库设计、OpenAPI Contract 设计说明 |
 
 **更新触发**：
@@ -403,7 +390,7 @@ Phase 7  统一测试 → 部署全部版本
 
 > 阶段性进度记录已全部移至 [`docs/progress.md`](docs/progress.md)（按时间倒序），本节只保留当前快照；阶段由用户明确安排后再推进。
 
-- **当前阶段**：React + NestJS 全栈已完成，Next.js 全栈版已完成（**四端均未部署上线**，现域名指向旧项目，统一上线标记见 §17）；`website/` 官方文档站已落地（Next 16 + Fumadocs，ogimg 黑白风格，内容由 `docs/` 真源自动同步，详见 progress.md，待 Vercel 部署绑 docs.baiwumm.com）。**Vue 端 M0-M4 已完成**：M4 文档收尾 + 本地冒烟通过（发现并修复 4 项与 React 基准的对齐缺陷、清理 1 项既有 lint error；`lint` / `type-check` / `test` / `build` 四绿），M4 后另按用户反馈完成 5 项体验对齐（个人链接子菜单 / 列设置重置 FLIP 动画 / 标签栏适配 UDashboardToolbar / 个人标签改用 UInputTags / 菜单加载失败回退控制台，见 progress.md 置顶条目），**仅剩 Vercel 部署与线上冒烟，随四端统一上线执行**。**Nuxt 端已立项**：可行性计划见 [`docs/nuxt-plan.md`](docs/nuxt-plan.md)（功能对齐清单、Next/Vue 三源复用地图、技术选型、6 项待确认决策、M0-M5 路线）；官方启动模板已初始化（`e8f71cd`，尚无业务代码），**D1-D6 决策拍板后推进 M0**。
+- **当前阶段**：React + NestJS 全栈已完成，Next.js 全栈版已完成（**四端均未部署上线**，现域名指向旧项目，统一上线标记见 §17）；`website/` 官方文档站已落地（Next 16 + Fumadocs，ogimg 黑白风格，内容由 `docs/` 真源自动同步，详见 progress.md，待 Vercel 部署绑 better-admin.baiwumm.com）。**Vue 端 M0-M4 已完成**：M4 文档收尾 + 本地冒烟通过（发现并修复 4 项与 React 基准的对齐缺陷、清理 1 项既有 lint error；`lint` / `type-check` / `test` / `build` 四绿），M4 后另按用户反馈完成 5 项体验对齐（个人链接子菜单 / 列设置重置 FLIP 动画 / 标签栏适配 UDashboardToolbar / 个人标签改用 UInputTags / 菜单加载失败回退控制台，见 progress.md 置顶条目），**仅剩 Vercel 部署与线上冒烟，随四端统一上线执行**。**Nuxt 端已立项**：可行性计划见 [`docs/nuxt-plan.md`](docs/nuxt-plan.md)（功能对齐清单、Next/Vue 三源复用地图、技术选型、6 项待确认决策、M0-M5 路线）；官方启动模板已初始化（`e8f71cd`，尚无业务代码），**D1-D6 决策拍板后推进 M0**。
 - **Vue 端已完成模块**：登录认证 / 全站国际化 / 偏好设置（9 项 + 路由过渡 VT 编排与导航方向感知）/ 多标签页 + KeepAlive / 命令面板 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）/ DataTable 列设置。
 - **React 端已完成模块**：登录认证 / 全站国际化 / 权限管理 / 菜单管理 / 字典管理 / 角色管理 / 用户管理 / 日志管理 / 我的账户 / 组织中心全套（组织管理 / 岗位管理 / 通讯录 / 公告管理 / 站内信 / 架构图谱 / 导出）。
 - **Next.js 端已完成模块**：与 React 端对齐（认证 / Admin 布局 / 用户 / 角色 / 菜单 / 字典 / 日志 / 我的账户 / 组织中心全套）。

@@ -2,7 +2,7 @@
   "name": "better-admin-website",
   "version": "0.1.0",
   "private": true,
-  "description": "Better Admin 文档站（独立应用，部署 Vercel docs.baiwumm.com）",
+  "description": "Better Admin 文档站（独立应用，部署 Vercel better-admin.baiwumm.com）",
   "scripts": {
     "sync-docs": "node scripts/sync-docs.mjs",
     "dev": "node scripts/sync-docs.mjs && node scripts/with-memory-cap.mjs dev",
