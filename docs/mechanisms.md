@@ -798,3 +798,88 @@ titleKey 与 React 端 TanStack Router 的 `staticData.titleKey` 一字不差（
 - **落地**：`react/src/layouts/components/tags-bar.tsx` 与 `next/src/layouts/components/tags-bar.tsx`
   （`TabPointerSensor` + `SortableTabItem`，2026-09-12）；背景与验证详见 `docs/progress.md`
   对应条目。本文档原编号 §10（与 KeepAlive 池条目撞号），2026-09-12 指针清理时重编为 §20。
+
+---
+
+## 21. Nuxt 端 KeepAliveOutlet 保活宿主：Vue host 形态失效机理与 NuxtPage 内置 keepalive 重写（Nuxt 端，M4）
+
+**结论：Vue 端「按路径命名宿主组件 + KeepAlive include=path」的保活形态，在 Nuxt 的
+NuxtPage 动态渲染下不可用；必须改用 NuxtPage 内置 `keepalive` prop（include 按**页面
+组件名**匹配），path → 组件名的映射经 `route.matched` 实时记录并随 sessionStorage 持久化。**
+
+- **失效机理（两种形态均实测+取证）**：
+  1. **slot 直通形态**（`<KeepAlive><component :is="host"><slot /></component></KeepAlive>`）：
+     宿主停用期间其渲染 effect 依然活跃，路由变化时 slot 内的 NuxtPage 会跟随新路由
+     重渲——停用的 users 宿主内部被「污染」为 roles 页内容，切回时状态已丢。
+     实证：弹窗探针（users 页开新增弹窗 → 切 roles → 切回）跨导航不保留。
+  2. **冻结 vnode 形态**（Vue 端蓝本：宿主 `h(props.page)` 渲染 NuxtPage 作用域插槽给出的
+     页面 vnode）：缓存 Map（`__v_cache`）里宿主实例确实保留（`__v_cache` keys 含 path、
+     kept=true、include 正确），但页面组件实例 uid 在切走切回后变化（1784 → 4194）——
+     宿主被 KeepAlive 复用后 props/children（slot）仍会随父渲染更新，页面组件被新 vnode 重建。
+- **取证手法**：`el.__vueParentComponent` 向上遍历组件链核对 KeepAlive 的 include 与缓存；
+  KeepAlive 缓存 Map 挂在实例 `__v_cache`；页面实例身份用 `inst.uid` 对比（DOM 节点对比
+  不可靠——UTable 内部 ReusableTemplate 会干扰）。
+- **重写要点（`nuxt/app/components/layout/KeepAliveOutlet.vue`）**：
+  `<NuxtPage :keepalive="{ include: cachedNames, max: 10 }" :page-key="pageKey" />`；
+  include = 已打开标签的**组件名**集合 ∩ 菜单 keepAlive 路径 ∖ 刷新中；组件名从
+  `route.matched[0].components.default.__name` 取（watch matched 记录 + sessionStorage）；
+  刷新 = `pageKey`（path#seq）递增强制重挂载 + include 摘一拍剪除旧缓存。
+- **已知近似**：同名页面组件（控制台 `index.vue` 与 `settings/index.vue` 组件名同为
+  `index`）关闭其一将一并剪除两者缓存——仅损失缓存不影响正确性。
+- **路由 VT 编排不受影响**：beforeResolve 捕旧帧 / afterEach 放行 / 方向感知照 Vue 蓝本
+  挂同一组件（app.vue slot 包装、admin 区外编排条件已过滤）。
+- 落地：`nuxt/app/components/layout/KeepAliveOutlet.vue`；背景与取证过程详见
+  `docs/progress.md` M4 条目（2026-09-13）。
+
+## 22. @nuxtjs/i18n v10 接线三坑：vueI18n 路径 / files 加载绕过归一化 / 非组件取词（Nuxt 端，M0）
+
+**坑一：`i18n.vueI18n` 路径相对于 restructureDir（`<rootDir>/i18n`），不是项目根。**
+配 `vueI18n: 'i18n/vue-i18n.config.ts'` 会静默 WARN "not found, Skipping"（包内源码：
+`findPath(layer.i18n.vueI18n, { cwd: layer.i18nDir })`）——应配 `'vue-i18n.config.ts'`。
+
+**坑二：语言包不走 `locales[].files` 加载。** 语言包沿用 React 端 i18next 双花括号插值
+（`{{status}}`），vue-i18n 用单花括号——Vue 端在 createI18n 前运行时归一化；若走 i18n
+模块的 files 加载会绕过归一化，插值占位符显示为字面量。解法：在 `i18n/vue-i18n.config.ts`
+显式 import 七域 JSON 合并 + 同一份 `normalizeInterpolation`（与 Vue 端同构，源 JSON 与
+React 零漂移）；nuxt.config 的 locales 仅保留 code/language/name 元信息。扁平键 resolver
+照常在该配置声明（`messageResolver` 直接对扁平 map 精确查找）。
+
+**坑三：非组件模块取词。** Vue 端 i18n 是模块级单例（`i18n.global.t`）；Nuxt 端实例由
+@nuxtjs/i18n plugin 创建（`nuxt.$i18n` = `getI18nTarget(i18n)` 即全局 Composer，包内源码
+`Object.defineProperty(nuxt, '$i18n', { get })`）。api-client 等非组件模块经
+`i18n-bridge`（plugin 启动时注入 getErrorMessage / setGlobalLocale，与 bindAuthSnapshot
+同一解耦惯例），语言持久化仍由 language-store 管 localStorage（detectBrowserLanguage 关闭）。
+
+- 落地：`nuxt/i18n/vue-i18n.config.ts`、`nuxt/app/plugins/i18n-bridge.ts`、
+  `nuxt/scripts/sync-locales.mjs`（@ 转义幂等，check-locales 对比前归一化还原）。
+
+## 23. Nuxt 期依赖治理三条：TS 大版本 / 索引严格检查 / 名义类型双实例（Nuxt 端，M0-M2）
+
+**① TypeScript 6.0.3 → 5.9.3**（Nuxt 模板默认 6.0.3，Next 5.6.3 / Vue 5.9.3）：TS 6 对
+drizzle 0.45 的数组解构（`const [row] = await db.select()`）类型推断产生 30+ 处
+`T | undefined` 误报，Next / Vue 同代码无报错——降级对齐 Vue 端实际解析版本。
+
+**② 关闭 `noUncheckedIndexedAccess`**（Nuxt 4 默认开启，Next / Vue 未开启）：同上平移代码
+误报源之一。注入通道：`typescript.tsConfig.compilerOptions` 可达 app tsconfig，但**写不进
+nitro 生成的 server tsconfig**（该选项按顶层键合并）；server 侧需经 `hooks['nitro:config']`
+设 `typescript.tsConfig.compilerOptions.noUncheckedIndexedAccess = false`（defu 深合并）。
+`allowArbitraryExtensions`（Nuxt 4 默认开）会因 @nuxt/ui 的 `.d.vue.ts` 静态 shim 绕过
+Volar SFC 泛型推断产生 UInputDate 误报，但根因是下条的双实例，修复后该选项保持默认。
+
+**③ `@internationalized/date` 双实例**：模板期 lockfile 固化 reka-ui → 3.12.1，`pnpm add`
+装出 3.12.4 根实例；该库类含私有字段（名义类型），跨实例不兼容导致 UInputDate 的
+`CalendarDate` v-model 全部报型不匹配（错误信息 `InputDateModelValue<boolean>` 有误导性）。
+pnpm-workspace overrides 统一到 3.12.4 根治。**教训：往既有 lockfile 的项目装依赖后，
+凡出现「同版本号应兼容的库间类型不兼容」，先查 `.pnpm` 是否存在同名包多实例。**
+
+## 24. 图标运行时零外网：serverBundle.collections 整包 + fallbackToApi:false（Nuxt 端，M0）
+
+**结论：`icon.clientBundle` 没有 collections 选项**（包内类型仅 icons / scan /
+includeCustomCollections / sizeLimitKb——nuxt-plan §4 初稿「clientBundle(collections)」
+表述有误）；SPA 模式的整包集合由 **`icon.serverBundle: { collections: ['lucide', 'logos'] }`**
+承担——本地 collection 打进 Nitro server bundle，运行时经本地 API `/api/_nuxt_icon`
+提供（ssr:false 下 Nitro server 照常运行），配 **`fallbackToApi: false`** 禁止回退
+Iconify CDN，实现运行时零外部网络依赖（DB 动态菜单图标名的唯一稳妥兜底；
+静态写法的图标另经 `clientBundle.scan: true` 进客户端 bundle）。
+
+- 落地：`nuxt/nuxt.config.ts` icon 块；背景见 `docs/progress.md` M0 条目（2026-09-12）。

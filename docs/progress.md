@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Nuxt M5：文档收尾（2026-09-13；部署与线上冒烟随四端统一上线）
+
+- **范围调整（用户指示）**：M5 仅执行文档收尾；Vercel 部署 nuxt.baiwumm.com 与线上冒烟**延后**，随四端统一上线一并执行（§17 统一上线清单）。
+- **mechanisms.md 增补 Nuxt 期机制结论四节（§21-§24）**：§21 KeepAliveOutlet 保活宿主在 NuxtPage 下的失效机理（slot 直通 / 冻结 vnode 两形态实证）与 NuxtPage 内置 keepalive 重写要点（含取证手法：`__vueParentComponent` 组件链 / `__v_cache` / 实例 uid 对比）；§22 @nuxtjs/i18n v10 接线三坑（vueI18n 路径相对 restructureDir / files 加载绕过插值归一化 / 非组件取词 `$i18n` + i18n-bridge）；§23 依赖治理三条（TS 6→5.9.3 降级、noUncheckedIndexedAccess 双通道注入、@internationalized/date 双实例名义类型不兼容）；§24 图标零外网（serverBundle.collections 整包 + fallbackToApi:false，clientBundle 无 collections 选项的包内查证）。
+- **版本同步**：根 `package.json` version 0.1.0 → **0.2.0**（minor：Nuxt 端全栈完成的增量节点），`pnpm sync-versions` 五端一致（react / vue / next / nuxt / nest 均为 0.2.0）。**git tag 留待四端统一上线时打**（release 语义）。
+- **feature-matrix 终核**：Nuxt 列 26/27（96%）与 M0-M4 各条目核对一致，仅剩 Dashboard ❌；AGENTS §19 与 nuxt-plan 状态行同步（M0-M4 完成、部署待统一上线）。
+- **无需处理**：契约 / Schema 零变更（Nuxt 端全程消费既有 openapi v1.9.0）；`nest/docs` 不涉及。
+
 ### Nuxt M4：增强特性与收尾——Nuxt 端功能对齐全部完成（2026-09-13）
 
 - **范围**：`docs/nuxt-plan.md` §6 M4 全部任务，只动 `/nuxt` 与 `docs/`。验收：typecheck 0 错 / lint 净 / test **9 文件 95 用例**全绿 / build 成功 / dev 正常 + GUI 实测（保活 / 关闭销毁 / 偏好九项 / 主题切换持久与重置 / ⌘K / 键盘可达）。
