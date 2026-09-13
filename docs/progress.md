@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Nuxt M3：组织中心 + 我的账户（2026-09-13）
+
+- **范围**：`docs/nuxt-plan.md` §6 M3 全部 8 项——组织管理（左树右表）→ 岗位（成员穿透）→ 通讯录（组织树筛选）→ 公告管理（UEditor 富文本）→ 我的公告 → 站内信 → 架构图谱 → Excel 导出 → 我的账户，只动 `/nuxt` 与 `docs/`。验收：typecheck 0 错 / lint 净 / test 7 文件 46 用例全绿 / build 成功 / dev 正常 + 八页走查通过。
+- **平移内容（39 文件，约 8,100 行，Vue → Nuxt 逐字）**：org 全套（DeptsPage/DeptFormDialog/DeptLeaderSelect/DeptTree/DeptTreePanel、PostsPage/PostFormDialog/PostMembersDrawer、DirectoryPage、OrgChart/OrgChartNode/OrgChartPage + org-chart-layout 纯函数、directory-export 253 行）+ notice 全套（NoticesPage/NoticeFormDialog（**UEditor 即 Nuxt UI 内置 Tiptap，零自装依赖**）/NoticeScopeSelector/NoticeDetailDrawer/NoticeDetailPage/MyNoticesPage/sanitize（DOMPurify）/notification-api）+ account 全套（AccountPage 双 Tab 六卡/AvatarCropDialog（vue-advanced-cropper WebP 256×256）/TagInput（UInputTags）/PasswordStrength/crop-image）+ **NoticeBell 铃铛挂入 AdminLayout Header 首位**（未读数 + 60s 轮询）。依赖补装：@vue-flow 三件套 / dompurify / vue-advanced-cropper / write-excel-file（**锁 4.1.1**）。
+- **蓝本差异备案（2 处）**：① NoticeDetailPage 的 `tabsStore.syncMeta` 公告标题快照写入摘除（tabs-store 属 M4 多标签页，留注释届时恢复；动态详情标题的标签/面包屑两级随 M4）；② TagInput 的 SFC 双块（普通 script 导出常量 + script setup）在合并模块视角触发 import/first（Vue 端规则集未启用），显式 eslint-disable 豁免、块序保持蓝本。
+- **GUI 走查**：八页标题/数据/工具栏全部就位——组织树（阿里巴巴/淘宝等真实节点）、岗位 6 行、通讯录 6 行、公告 6 行 + 分页、图谱 **vue-flow 13 节点 + controls**、账户双 Tab（账号/安全）+ 更换头像/删除头像/保存修改卡、铃铛 **「通知 (6)」真实未读数**、公告详情直链 `/org/notices/:id` 渲染（标题复用列表 titleKey 口径正确）、「导出 Excel」按钮触发 + loading 门控（下载落盘不在无头断言内）。
+- **文档同步**：feature-matrix 组织中心 8 行 + 我的账户转 ✅（**22/27 = 81%**，仅剩 Dashboard ❌ + 多标签页/偏好抽屉/路由过渡动画/命令面板全量 4 项 P2/P3 随 M4）；AGENTS §19 指针（M4 待开工）；nuxt-plan 状态行。
+
 ### Nuxt M2：核心系统管理六模块（2026-09-13）
 
 - **范围**：`docs/nuxt-plan.md` §6 M2——用户（列表范式首立页）→ 角色 → 权限 → 菜单 → 字典 → 日志，只动 `/nuxt` 与 `docs/`。验收：typecheck 0 错 / lint 净 / **test 7 文件 46 用例全绿** / build 成功 / dev 正常 + 六页走查（列表真实数据 / 新建弹窗 13 字段 / 权限门控 / 列设置按钮）。

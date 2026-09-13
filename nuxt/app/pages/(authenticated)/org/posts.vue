@@ -1,10 +1,7 @@
 <script setup lang="ts">
-// 岗位管理：M3 平移（CRUD + 成员穿透 Drawer），当前占位
+import PostsPage from '@/features/org/PostsPage.vue'
 </script>
 
 <template>
-  <PlaceholderPage
-    icon="i-lucide-briefcase"
-    title-key="menu.pageTitle.posts"
-  />
+  <PostsPage />
 </template>

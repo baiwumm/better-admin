@@ -26,11 +26,10 @@ import UserMenu from '@/components/layout/UserMenu.vue'
  * - 侧边栏：品牌下拉（技术栈入口）+ 导航菜单（骨架屏 / 失败重试 / 折叠
  *   tooltip + 悬浮子菜单）+ 底部快捷链接（GitHub / 博客）+ 用户菜单
  * - 顶栏：折叠按钮（leading，移动端为打开抽屉）+ 面包屑 + 右侧
- *   搜索 / 主题 / 语言 / 用户菜单
+ *   站内信铃铛（M3）/ 主题 / 语言 / 用户菜单
  * - 主体：slot（NuxtPage）；
- * M0 暂缺（随里程碑平移）：NoticeBell（M3）/ 多标签页 TagsBar、
- * FullscreenButton、ConfigDrawer 偏好抽屉、主题切换揭示动画（M4）/
- * KeepAliveOutlet 保活与路由 VT（M4）。
+ * M4 待平移：多标签页 TagsBar、FullscreenButton、ConfigDrawer 偏好抽屉、
+ * 主题切换揭示动画 / KeepAliveOutlet 保活与路由 VT。
  */
 useAuthSync()
 
@@ -360,6 +359,8 @@ function retryMenus() {
 
           <template #right>
             <div class="flex items-center gap-2">
+              <!-- 站内信铃铛（M3）：未读数 + 60s 轮询，对齐 Vue AdminLayout 顺序首位 -->
+              <NoticeBell />
               <ThemeSwitch />
               <LanguageSwitch />
             </div>

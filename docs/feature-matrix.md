@@ -22,7 +22,7 @@
 | 模块                | React | Next.js | Vue | Nuxt | NestJS API | 备注                                        |
 | ----------------- | ----- | ------- | --- | ---- | ---------- | ----------------------------------------- |
 | 认证（登录/登出/刷新/me）   | ✅     | ✅       | ✅   | ✅    | ✅          | Next.js 用 httpOnly Cookie，其余 Bearer Token；Vue M1 冒烟验收通过（登录/守卫/会话恢复/401 刷新/整页跳转）；Nuxt M0（2026-09-12）最小闭环冒烟通过：服务端双源鉴权（Bearer 优先 + httpOnly Cookie 回退，照抄 Next `request-auth.ts`）+ `/api/auth/{login,logout,refresh,me}` 四端点（refresh 轮换 / 旧令牌重放 401 / 登出精确撤销均实测），前端沿用 Bearer/localStorage（api-client / auth-store 平移零改造） |
-| 我的账户（资料/邮箱/密码/头像） | ✅     | ✅       | ✅   | ❌    | ✅          | 含头像裁剪、Supabase Storage 中转；**契约 v1.8.0 密码策略**（8-20 位 / 字母+数字 / 禁空白 / 不含用户名 / 不与原密码相同报错）四端 + NestJS 已对齐；Vue M3（2026-09-11）落地并 GUI 冒烟通过：双 Tab（账号/安全）+ 6 卡、vue-advanced-cropper 裁剪 256×256 WebP 上传闭环（改资料/头像后 auth-store 快照同步侧边栏）、改密卡走 lib/password-validation 预检 + PASSWORD_SAME_AS_OLD 后端兜底、改密成功清会话跳登录；个人标签改用 Nuxt UI 内置 UInputTags（2026-09-11）：最多 10 个 / 单项 20 字符（原生 maxlength 截断，`tags.tooLong` 文案不再触发但 key 保留）/ 重复与超限经 `@invalid` 给内联提示，回车即添加（无「+」按钮） |
+| 我的账户（资料/邮箱/密码/头像） | ✅     | ✅       | ✅   | ✅    | ✅          | 含头像裁剪、Supabase Storage 中转；**契约 v1.8.0 密码策略**（8-20 位 / 字母+数字 / 禁空白 / 不含用户名 / 不与原密码相同报错）四端 + NestJS 已对齐；Vue M3（2026-09-11）落地并 GUI 冒烟通过：双 Tab（账号/安全）+ 6 卡、vue-advanced-cropper 裁剪 256×256 WebP 上传闭环（改资料/头像后 auth-store 快照同步侧边栏）、改密卡走 lib/password-validation 预检 + PASSWORD_SAME_AS_OLD 后端兜底、改密成功清会话跳登录；个人标签改用 Nuxt UI 内置 UInputTags（2026-09-11）：最多 10 个 / 单项 20 字符（原生 maxlength 截断，`tags.tooLong` 文案不再触发但 key 保留）/ 重复与超限经 `@invalid` 给内联提示，回车即添加（无「+」按钮） Nuxt M3（2026-09-13）：AccountPage 双 Tab（账号/安全）+ 六卡 + AvatarCropDialog/TagInput/PasswordStrength 走查通过（头像上传闭环随线上 Storage 配置实测）； |
 | 用户管理              | ✅     | ✅       | ✅   | ✅    | ✅          | CRUD + 状态 + 重置密码 + 批量删除；Vue M1 已落地并冒烟验收通过（列表三态/epoch/写保护/表单/授权表单含组织关联）；**契约 v1.8.0 密码策略**（新建初始密码 / 重置密码同「我的账户」口径）NestJS + React + Next + Vue 已对齐；**契约 v1.9.0**：移除最后一个活跃 super_admin 绑定返回 403 SUPER_ADMIN_LAST_PROTECTED（不变量守卫，mechanisms §5），三端错误映射已对齐；v1.7.3 表单长度约束 + 字数统计三端已对齐 Nuxt M2（2026-09-13）：UsersPage + 表单/重置密码弹窗/链接与角色 cell 整体平移（组织关联下拉随 UserFormDialog 预带 org dept/post API），列表与新建弹窗走查通过； |
 | 角色管理              | ✅     | ✅       | ✅   | ✅    | ✅          | CRUD + 菜单授权 + super\_admin 保护；Vue M1 已落地并冒烟验收通过（code 锁定 / 授权抽屉勾选模型） Nuxt M2（2026-09-13）：RolesPage + 授权抽屉（use-grant-tree 521 行平移 + reka-ui Tree）整体落地，走查通过； |
 | 权限管理（只读）          | ✅     | ✅       | ✅   | ✅    | ✅          | 位掩码枚举字典；Vue M1 已落地并冒烟验收通过（前端过滤只读列表） Nuxt M2（2026-09-13）：PermissionsPage 只读列表走查通过（10 权限点）； |
@@ -35,14 +35,14 @@
 
 | 模块           | React | Next.js | Vue | Nuxt | NestJS API | 备注                                                                                                               |
 | ------------ | ----- | ------- | --- | ---- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| 组织管理         | ✅     | ✅       | ✅   | ❌    | ✅          | 左树右表 + 拖拽排序；Vue M2 已落地并冒烟验收通过（useSortable 同级拖拽整组重编号、关键词确认删除、负责人滚动加载选择）；2026-09-12 React / Next 补 KeyboardSensor 键盘拖拽（把手聚焦 Space / Enter 拾起、方向键移动、Esc 取消），Vue 端 sortablejs 无键盘能力记已知差异                                     |
-| 岗位管理         | ✅     | ✅       | ✅   | ❌    | ✅          | CRUD + 成员穿透；Vue M2 已落地（DeptTreeSelect 筛选 / UForm+zod 表单 / 在职人数穿透抽屉）；2026-09-09 GUI 冒烟验收通过 |
-| 人员通讯录        | ✅     | ✅       | ✅   | ❌    | ✅          | 组织树筛选 + 服务端分页；Vue M2 已落地（?deptId= URL Query 双向同步 / EXPORT 位门控）；2026-09-09 GUI 冒烟验收通过 |
-| 公告管理         | ✅     | ✅       | ✅   | ❌    | ✅          | 富文本 + 范围选择 + 定时 + 撤回 + 催读；Vue M2 已落地（Tiptap 富文本 / 三粒度范围 / 已读人员头像堆叠列 / 已读未读名单 / 一键催办）；2026-09-09 GUI 冒烟验收通过 |
-| 我的公告         | ✅     | ✅       | ✅   | ❌    | ✅          | 左列表右详情（URL `?noticeId=` 驱动选中）、阅读状态筛选 + 标题搜索 + 分页、置顶标签、UserInfo 发布人、进详情记已读；Vue M2 已落地；2026-09-09 GUI 冒烟验收通过；公告详情动态标题 2026-09-12 对齐：详情页写入 tabs meta（title + parentTitle），标签显示具体标题、面包屑渲染「公告详情 › 标题」两级，语言切换清空快照后随 locale 重写（对齐 React 端 syncMeta 依赖） |
-| 站内信通知        | ✅     | ✅       | ✅   | ❌    | ✅          | 铃铛 + 未读数 + 已读；详情 `/org/notices/:id` 登录可达（消费路由，不走菜单权限）；Header 固定「未读/全部」筛选 + 类型图标 + 未读点 + 「查看我的公告」；Vue M2 已落地（UChip 红点 + 60s 轮询）；2026-09-09 GUI 冒烟验收通过 |
-| 架构图谱         | ✅     | ✅       | ✅   | ❌    | —          | 只读可视化（平移/缩放/Fit View/折叠展开），复用组织树接口；Vue M2 已落地（@vue-flow/core + 手写树布局平移 + useColorMode 暗色）；2026-09-09 GUI 冒烟验收通过 |
-| 通讯录 Excel 导出 | ✅     | ✅       | ✅   | ❌    | —          | write-excel-file 触发时动态加载，串行分页批量（total 优先超限拦截，上限 10000）；企业级样式（品牌蓝表头 / 斑马纹 / 状态高亮 / 冻结首行）；Vue M2 已落地（与 React 端同源逻辑平移） |
+| 组织管理         | ✅     | ✅       | ✅   | ✅    | ✅          | 左树右表 + 拖拽排序；Vue M2 已落地并冒烟验收通过（useSortable 同级拖拽整组重编号、关键词确认删除、负责人滚动加载选择）；2026-09-12 React / Next 补 KeyboardSensor 键盘拖拽（把手聚焦 Space / Enter 拾起、方向键移动、Esc 取消），Vue 端 sortablejs 无键盘能力记已知差异 Nuxt M3（2026-09-13）：DeptsPage 左树右表 + DeptFormDialog/DeptLeaderSelect/DeptTree 走查通过； |
+| 岗位管理         | ✅     | ✅       | ✅   | ✅    | ✅          | CRUD + 成员穿透；Vue M2 已落地（DeptTreeSelect 筛选 / UForm+zod 表单 / 在职人数穿透抽屉）；2026-09-09 GUI 冒烟验收通过 Nuxt M3（2026-09-13）：PostsPage + PostFormDialog/PostMembersDrawer 走查通过； |
+| 人员通讯录        | ✅     | ✅       | ✅   | ✅    | ✅          | 组织树筛选 + 服务端分页；Vue M2 已落地（?deptId= URL Query 双向同步 / EXPORT 位门控）；2026-09-09 GUI 冒烟验收通过 Nuxt M3（2026-09-13）：DirectoryPage 组织树筛选 + 服务端分页走查通过； |
+| 公告管理         | ✅     | ✅       | ✅   | ✅    | ✅          | 富文本 + 范围选择 + 定时 + 撤回 + 催读；Vue M2 已落地（Tiptap 富文本 / 三粒度范围 / 已读人员头像堆叠列 / 已读未读名单 / 一键催办）；2026-09-09 GUI 冒烟验收通过 Nuxt M3（2026-09-13）：NoticesPage + NoticeFormDialog（UEditor 内置 Tiptap）/NoticeScopeSelector/详情 Drawer 走查通过； |
+| 我的公告         | ✅     | ✅       | ✅   | ✅    | ✅          | 左列表右详情（URL `?noticeId=` 驱动选中）、阅读状态筛选 + 标题搜索 + 分页、置顶标签、UserInfo 发布人、进详情记已读；Vue M2 已落地；2026-09-09 GUI 冒烟验收通过；公告详情动态标题 2026-09-12 对齐：详情页写入 tabs meta（title + parentTitle），标签显示具体标题、面包屑渲染「公告详情 › 标题」两级，语言切换清空快照后随 locale 重写（对齐 React 端 syncMeta 依赖） Nuxt M3（2026-09-13）：MyNoticesPage 走查通过； |
+| 站内信通知        | ✅     | ✅       | ✅   | ✅    | ✅          | 铃铛 + 未读数 + 已读；详情 `/org/notices/:id` 登录可达（消费路由，不走菜单权限）；Header 固定「未读/全部」筛选 + 类型图标 + 未读点 + 「查看我的公告」；Vue M2 已落地（UChip 红点 + 60s 轮询）；2026-09-09 GUI 冒烟验收通过 Nuxt M3（2026-09-13）：NoticeBell 铃铛（未读数「通知 (6)」+ 60s 轮询）渲染于 Header 首位，消费路由 /org/notices/:id 直链走查通过； |
+| 架构图谱         | ✅     | ✅       | ✅   | ✅    | —          | 只读可视化（平移/缩放/Fit View/折叠展开），复用组织树接口；Vue M2 已落地（@vue-flow/core + 手写树布局平移 + useColorMode 暗色）；2026-09-09 GUI 冒烟验收通过 Nuxt M3（2026-09-13）：OrgChartPage（@vue-flow/core + 手写树布局平移）13 节点 + controls 渲染走查通过； |
+| 通讯录 Excel 导出 | ✅     | ✅       | ✅   | ✅    | —          | write-excel-file 触发时动态加载，串行分页批量（total 优先超限拦截，上限 10000）；企业级样式（品牌蓝表头 / 斑马纹 / 状态高亮 / 冻结首行）；Vue M2 已落地（与 React 端同源逻辑平移） Nuxt M3（2026-09-13）：directory-export（write-excel-file 4.1.1 锁版本）导出按钮触发 + loading 门控实测（下载落盘不在无头断言内）； |
 
 ## 基础设施
 
@@ -75,7 +75,7 @@
 | React   | 26  | 1   | 96% |
 | Next.js | 26  | 1   | 96% |
 | Vue     | 26  | 1   | 96% |
-| Nuxt    | 13  | 14  | 48% |
+| Nuxt    | 22  | 5   | 81% |
 
 > 统计口径（2026-09-11 按行校正）：核心业务模块 9 项 + 组织中心 8 项 + 基础设施 10 项（含「路由过渡动画」行）= **27 项**（Dashboard 计入核心业务模块）。此前"23 项"的表述与表格实际行数不符（基础设施实为 10 行而非 6 行），本次按行修正，各端完成率随之重算。
 > 上表不含"已知架构差异"行。

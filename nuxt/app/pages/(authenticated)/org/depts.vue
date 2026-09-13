@@ -1,10 +1,7 @@
 <script setup lang="ts">
-// 组织管理：M3 平移（左树右表 + 同级拖拽排序），当前占位
+import DeptsPage from '@/features/org/DeptsPage.vue'
 </script>
 
 <template>
-  <PlaceholderPage
-    icon="i-lucide-network"
-    title-key="menu.pageTitle.depts"
-  />
+  <DeptsPage />
 </template>

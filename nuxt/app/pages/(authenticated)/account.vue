@@ -1,10 +1,7 @@
 <script setup lang="ts">
-// 我的账户：M3 平移（双 Tab 六卡 + AvatarCropDialog），当前占位
+import AccountPage from '@/features/account/AccountPage.vue'
 </script>
 
 <template>
-  <PlaceholderPage
-    icon="i-lucide-id-card"
-    title-key="menu.pageTitle.account"
-  />
+  <AccountPage />
 </template>
