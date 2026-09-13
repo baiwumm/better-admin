@@ -1,10 +1,7 @@
 <script setup lang="ts">
-// 字典管理：M2 平移（类型 + 项双栏 CRUD），当前占位
+import DictsPage from '@/features/dicts/DictsPage.vue'
 </script>
 
 <template>
-  <PlaceholderPage
-    icon="i-lucide-book-text"
-    title-key="menu.pageTitle.dicts"
-  />
+  <DictsPage />
 </template>

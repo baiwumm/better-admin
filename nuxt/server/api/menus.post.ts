@@ -18,10 +18,10 @@ export default defineEventHandler(async (event) => {
     }
 
     if (
-      typeof body?.label !== 'string' ||
-      body.label.trim().length === 0 ||
-      typeof body?.icon !== 'string' ||
-      body.icon.trim().length === 0
+      typeof body?.label !== 'string'
+      || body.label.trim().length === 0
+      || typeof body?.icon !== 'string'
+      || body.icon.trim().length === 0
     ) {
       throw new ServerApiError(400, 'VALIDATION_ERROR', 'label 与 icon 为必填')
     }

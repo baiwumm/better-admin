@@ -1,0 +1,689 @@
+<script setup lang="ts">
+import type { Role, User } from '@/lib/api-types'
+import type { FormSubmitEvent } from '@nuxt/ui'
+import type { DateValue, CalendarDate } from '@internationalized/date'
+
+import { parseDate } from '@internationalized/date'
+import * as z from 'zod'
+import { computed, h, reactive, ref, useTemplateRef, watch } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
+
+import Spinner from '@/components/ui/spinner/index.vue'
+
+import {
+  ROLE_OPTIONS_QUERY_KEY,
+  createUser,
+  fetchRoleOptions,
+  getUserErrorMessage,
+  updateUser
+} from './user-api'
+import PasswordField from '@/components/common/PasswordField.vue'
+
+import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from '@/features/org/dept-api'
+import { fetchPosts } from '@/features/org/post-api'
+import DeptTreeSelect from '@/features/org/DeptTreeSelect.vue'
+import { SUPER_ADMIN_ROLE_CODE } from '@/lib/constants'
+import { getPasswordError } from '@/lib/password-validation'
+import { useAuthStore } from '@/stores/auth-store'
+
+/**
+ * 用户新增/编辑弹窗（对齐 React 端 user-form-dialog）：
+ * UForm + zod schema 校验（官方范式，@submit 仅在校验通过后触发，
+ * event.data 为校验转换后的值）。
+ *
+ * - username 仅创建时可填且创建后不可变更（后端契约锁定）；
+ * - 编辑态不含密码字段：改密走「重置密码」弹窗；
+ * - username/email 唯一性由后端 409 拦截（文案映射见 getUserErrorMessage）；
+ * - roleIds / postIds 为全量替换语义：编辑时始终下发完整数组（含空数组 = 清空）；
+ * - 组织中心关联（契约 v1.6.0）：表单提交即全量下发（含空值 = 清空），所见即所得；
+ * - super_admin 绑定保护：非超管操作者不可见/不可选 super_admin 角色。
+ */
+const props = defineProps<{
+  open: boolean
+  mode: 'create' | 'edit'
+  /** edit：被编辑的用户；create：null */
+  user: User | null
+}>()
+
+const emit = defineEmits<{
+  'update:open': [value: boolean]
+  /** 保存成功（页面统一做列表失效） */
+  'saved': []
+}>()
+
+const FORM_ID = 'user-form'
+
+const { t } = useI18n()
+const toast = useToast()
+const auth = useAuthStore()
+
+const isEdit = computed(() => props.mode === 'edit')
+const currentUserIsSuperAdmin = computed(
+  () => auth.user?.roles.includes('super_admin') ?? false
+)
+
+// v1.4.6 保护：编辑受保护用户时锁定状态开关（后端拒绝停用请求，前端禁用入口）
+const isStatusLocked = computed(() => {
+  if (!isEdit.value || !props.user) return false
+  const user = props.user
+
+  return (
+    user.id === auth.user?.id
+    || user.username === 'admin'
+    || (user.roles.some(r => r.code === SUPER_ADMIN_ROLE_CODE)
+      && !currentUserIsSuperAdmin.value)
+  )
+})
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const ENTRY_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+// 输入长度上限与后端 DTO（契约 v1.7.3）对齐；模板 trailing 实时计数复用
+const USERNAME_MAX_LENGTH = 50
+const DISPLAY_NAME_MAX_LENGTH = 50
+const EMAIL_MAX_LENGTH = 100
+const EMPLOYEE_NO_MAX_LENGTH = 50
+
+// Reka UI 保留空串 value 用于 placeholder 清除语义，SelectItem 空串 value
+// 会告警——「无主岗」用哨兵值表示，提交/回显时与 null 互转；
+// 性别无需哨兵：USelectMenu clear 清空即置 null（null = 未设置）
+const MAIN_POST_NONE = 'none'
+
+// 校验规则与 React 端 buildUserFormSchema 一一对应；消息用函数延迟求值：
+// 语言切换后错误文案跟随当前 locale
+const schema = z
+  .object({
+    username: z
+      .string()
+      .trim()
+      .min(1, { error: () => t('features.users.form.usernameInvalid') })
+      .max(USERNAME_MAX_LENGTH, {
+        error: () => t('features.users.form.usernameInvalid')
+      }),
+    displayName: z
+      .string()
+      .trim()
+      .min(1, { error: () => t('features.users.form.displayNameInvalid') })
+      .max(DISPLAY_NAME_MAX_LENGTH, {
+        error: () => t('features.users.form.displayNameInvalid')
+      }),
+    email: z
+      .string()
+      .max(EMAIL_MAX_LENGTH, {
+        error: () => t('features.users.form.emailInvalid')
+      })
+      .refine(value => EMAIL_RE.test(value), {
+        error: () => t('features.users.form.emailInvalid')
+      }),
+    password: z.string(),
+    confirmPassword: z.string(),
+    status: z.enum(['active', 'disabled']),
+    roleIds: z.array(z.string()).max(5, {
+      error: () => t('features.users.form.rolesMax')
+    }),
+    postIds: z.array(z.string()).max(20, {
+      error: () => t('features.users.form.postsMax')
+    }),
+    deptId: z.string(),
+    employeeNo: z.string(),
+    entryDate: z.string(),
+    employmentStatus: z.enum(['employed', 'resigned']),
+    // null = 未设置（USelectMenu clear 清空即 null，对齐 React 端空串语义）
+    gender: z.enum(['male', 'female']).nullable(),
+    mainPostId: z.string()
+  })
+  .superRefine((data, ctx) => {
+    // 密码仅创建时校验（编辑态无密码字段：改密走「重置密码」弹窗）；
+    // 密码策略（契约 v1.8.0）含「不能包含用户名」跨字段项，故在对象级 superRefine 中校验，
+    // getPasswordError 返回的 key 拼 features.users.form.password.* 取精确文案
+    if (!isEdit.value) {
+      const passwordError = getPasswordError(
+        data.password,
+        data.username.trim()
+      )
+
+      if (passwordError) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['password'],
+          message: t(`features.users.form.password.${passwordError}`)
+        })
+      }
+
+      if (data.password !== data.confirmPassword) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['confirmPassword'],
+          message: t('features.users.form.confirmPasswordMismatch')
+        })
+      }
+    }
+
+    // 入职日期：空合法，非空须 YYYY-MM-DD
+    if (data.entryDate !== '' && !ENTRY_DATE_RE.test(data.entryDate)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['entryDate'],
+        message: t('features.users.form.entryDateInvalid')
+      })
+    }
+  })
+
+type Schema = z.output<typeof schema>
+
+// 打开时按模式回填（编辑回显 User.roles/posts 摘要；主岗取 posts 中 isMain 一条；
+// 在职状态存量 NULL 视为 employed）
+const state = reactive<Schema>({
+  username: '',
+  displayName: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  status: 'active',
+  roleIds: [],
+  deptId: '',
+  employeeNo: '',
+  entryDate: '',
+  employmentStatus: 'employed',
+  gender: null,
+  postIds: [],
+  mainPostId: MAIN_POST_NONE
+})
+const formRef = useTemplateRef('formRef')
+const entryDateInput = useTemplateRef('entryDateInput')
+
+// 入职日期模型桥接：state.entryDate 保持字符串（UForm 校验/回显/提交零改动），
+// UInputDate/UCalendar 经 computed 双向转换为 CalendarDate（@internationalized/date）
+function isoToCalendarDate(iso: string): CalendarDate | undefined {
+  if (!ENTRY_DATE_RE.test(iso)) return undefined
+
+  try {
+    return parseDate(iso)
+  } catch {
+    return undefined // 语义非法日期（如 02-31）视同未设置
+  }
+}
+
+const entryDateValue = computed({
+  get: (): CalendarDate | undefined =>
+    state.entryDate ? isoToCalendarDate(state.entryDate) : undefined,
+  set: (value?: DateValue) => {
+    state.entryDate = value?.toString() ?? ''
+  }
+})
+
+watch(
+  () => props.open,
+  (open) => {
+    if (!open) return
+
+    const user = props.user
+
+    state.username = user?.username ?? ''
+    state.displayName = user?.displayName ?? ''
+    state.email = user?.email ?? ''
+    state.password = ''
+    state.confirmPassword = ''
+    state.status = user?.status ?? 'active'
+    state.roleIds = user?.roles.map(role => role.id) ?? []
+    state.deptId = user?.deptId ?? ''
+    state.employeeNo = user?.employeeNo ?? ''
+    state.entryDate = user?.entryDate ?? ''
+    state.employmentStatus = user?.employmentStatus ?? 'employed'
+    state.gender = user?.gender ?? null
+    state.postIds = user?.posts.map(post => post.id) ?? []
+    state.mainPostId
+      = user?.posts.find(post => post.isMain)?.id ?? MAIN_POST_NONE
+    formRef.value?.clear()
+  },
+  { immediate: true }
+)
+
+// 角色下拉选项：仅启用角色；pageSize 上限 50，超出由 fetchRoleOptions 续拉
+const { data: fetchedRoleOptions, isLoading: rolesLoading } = useQuery({
+  queryKey: ROLE_OPTIONS_QUERY_KEY,
+  queryFn: fetchRoleOptions,
+  staleTime: 60_000
+})
+
+// super_admin 绑定保护（前端止损）：非超管操作者不可选 super_admin 角色
+const roleItems = computed(() =>
+  (fetchedRoleOptions.value ?? [])
+    .filter(
+      (role: Role) =>
+        currentUserIsSuperAdmin.value || role.code !== SUPER_ADMIN_ROLE_CODE
+    )
+    .map((role: Role) => ({ label: role.name, value: role.id }))
+)
+
+// 组织中心数据源：组织树（与组织/岗位页共享缓存）+ 岗位选项（首页 50 条）
+const { data: deptTree, isLoading: deptTreeLoading } = useQuery({
+  queryKey: DEPTS_TREE_QUERY_KEY,
+  queryFn: fetchDeptTree,
+  staleTime: 60_000
+})
+const { data: postOptionsRes, isLoading: postsLoading } = useQuery({
+  queryKey: ['org', 'posts', 'options'],
+  queryFn: () => fetchPosts({ page: 1, pageSize: 50 }),
+  staleTime: 60_000
+})
+const postOptions = computed(() => postOptionsRes.value?.data ?? [])
+// description 为 SelectMenu 选项次行（label 下方 muted 小字），展示岗位所属
+// 组织路径，对齐 React 端 ListBox.Item 两行结构
+const postItems = computed(() =>
+  postOptions.value.map(post => ({
+    label: post.name,
+    description: post.deptPath,
+    value: post.id,
+    disabled: post.status !== 'enabled'
+  }))
+)
+
+// 主岗选项 = 已选岗位（主岗必须在 postIds 中）；取消勾选已设主岗的岗位时联动清空
+const mainPostItems = computed(() => [
+  {
+    label: t('features.users.form.mainPostEmpty'),
+    value: MAIN_POST_NONE
+  },
+  ...postOptions.value
+    .filter(post => state.postIds.includes(post.id))
+    .map(post => ({ label: post.name, value: post.id }))
+])
+
+watch(
+  () => state.postIds,
+  (postIds) => {
+    if (
+      state.mainPostId
+      && state.mainPostId !== MAIN_POST_NONE
+      && !postIds.includes(state.mainPostId)
+    ) {
+      state.mainPostId = MAIN_POST_NONE
+    }
+  }
+)
+
+const submitting = ref(false)
+
+/** 哨兵值 → 后端 null（无主岗与「未选择」同义） */
+function toNullable<T extends string, S extends T>(
+  value: T,
+  sentinel: S
+): Exclude<T, S> | null {
+  if (value === sentinel || value === '') return null
+
+  return value as Exclude<T, S>
+}
+
+function close() {
+  emit('update:open', false)
+}
+
+async function onSubmit(event: FormSubmitEvent<Schema>) {
+  submitting.value = true
+
+  // toast.promise 形态（对齐 React 端）：保存全程 loading toast，
+  // 完成后原位替换为成功/失败；duration 0 保证请求返回前不消失
+  // （update 会重置计时回落全局时长）；icon 用 Spinner 组件（toast
+  // 内容支持 VNode），自带旋转动画
+  const savingToast = toast.add({
+    title: t('features.users.form.saving'),
+    icon: h(Spinner, { size: 'sm', class: 'mt-0.5' }),
+    color: 'info',
+    duration: 0
+  })
+
+  try {
+    if (isEdit.value && props.user) {
+      await updateUser(props.user.id, {
+        email: event.data.email,
+        displayName: event.data.displayName,
+        status: event.data.status,
+        roleIds: event.data.roleIds,
+        // 组织中心关联（契约 v1.6.0）：表单全量下发（含空值 = 清空），所见即所得
+        deptId: event.data.deptId || null,
+        employeeNo: event.data.employeeNo || null,
+        entryDate: event.data.entryDate || null,
+        employmentStatus: event.data.employmentStatus,
+        gender: event.data.gender || null,
+        postIds: event.data.postIds,
+        mainPostId: toNullable(event.data.mainPostId, MAIN_POST_NONE)
+      })
+    } else {
+      await createUser({
+        username: event.data.username,
+        email: event.data.email,
+        displayName: event.data.displayName,
+        password: event.data.password,
+        status: event.data.status,
+        roleIds: event.data.roleIds,
+        deptId: event.data.deptId || null,
+        employeeNo: event.data.employeeNo || null,
+        entryDate: event.data.entryDate || null,
+        employmentStatus: event.data.employmentStatus,
+        gender: event.data.gender || null,
+        postIds: event.data.postIds,
+        mainPostId: toNullable(event.data.mainPostId, MAIN_POST_NONE)
+      })
+    }
+
+    toast.update(savingToast.id, {
+      title: t(
+        isEdit.value
+          ? 'features.users.message.updateSuccess'
+          : 'features.users.message.createSuccess'
+      ),
+      icon: 'i-lucide-check',
+      color: 'success'
+    })
+    emit('saved')
+    close()
+  } catch (error) {
+    toast.update(savingToast.id, {
+      title: getUserErrorMessage(error),
+      icon: 'i-lucide-x',
+      color: 'error'
+    })
+  } finally {
+    submitting.value = false
+  }
+}
+</script>
+
+<template>
+  <UModal
+    :open="open"
+    :dismissible="false"
+    :title="
+      t(
+        isEdit
+          ? 'features.users.form.title.edit'
+          : 'features.users.form.title.create'
+      )
+    "
+    :ui="{ content: 'sm:max-w-lg', footer: 'justify-end' }"
+    @update:open="(value: boolean) => !value && close()"
+  >
+    <template #body>
+      <UForm
+        :id="FORM_ID"
+        ref="formRef"
+        :schema="schema"
+        :state="state"
+        class="flex flex-col gap-4"
+        @submit="onSubmit"
+      >
+        <UFormField
+          :label="t('features.users.form.username')"
+          :description="
+            isEdit ? t('features.users.form.usernameHint') : undefined
+          "
+          name="username"
+          required
+        >
+          <UInput
+            v-model="state.username"
+            :disabled="isEdit"
+            :maxlength="USERNAME_MAX_LENGTH"
+            :placeholder="t('features.users.form.usernamePlaceholder')"
+            :ui="{ base: 'pe-13' }"
+            class="w-full"
+          >
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.username.length }}/{{ USERNAME_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
+        </UFormField>
+
+        <UFormField
+          :label="t('features.users.form.displayName')"
+          name="displayName"
+          required
+        >
+          <UInput
+            v-model="state.displayName"
+            :maxlength="DISPLAY_NAME_MAX_LENGTH"
+            :placeholder="t('features.users.form.displayNamePlaceholder')"
+            :ui="{ base: 'pe-13' }"
+            class="w-full"
+          >
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.displayName.length }}/{{ DISPLAY_NAME_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
+        </UFormField>
+
+        <UFormField
+          :label="t('features.users.form.email')"
+          name="email"
+          required
+        >
+          <UInput
+            v-model="state.email"
+            :maxlength="EMAIL_MAX_LENGTH"
+            :placeholder="t('features.users.form.emailPlaceholder')"
+            :ui="{ base: 'pe-16' }"
+            class="w-full"
+          >
+            <template #trailing>
+              <span class="text-dimmed text-xs tabular-nums">
+                {{ state.email.length }}/{{ EMAIL_MAX_LENGTH }}
+              </span>
+            </template>
+          </UInput>
+        </UFormField>
+
+        <template v-if="!isEdit">
+          <PasswordField
+            v-model="state.password"
+            :help="t('features.users.form.passwordHint')"
+            :label="t('features.users.form.password')"
+            :placeholder="t('features.users.form.passwordPlaceholder')"
+            name="password"
+            :ui="{ help: 'text-dimmed text-xs' }"
+          />
+
+          <PasswordField
+            v-model="state.confirmPassword"
+            :label="t('features.users.form.confirmPassword')"
+            :placeholder="t('features.users.form.confirmPassword')"
+            name="confirmPassword"
+          />
+        </template>
+
+        <div
+          class="border-default flex items-center justify-between gap-3 rounded-xl border px-3 py-2"
+        >
+          <span class="text-sm font-medium">
+            {{ t("features.users.form.status") }}
+          </span>
+          <USwitch
+            :disabled="isStatusLocked"
+            :model-value="state.status === 'active'"
+            unchecked-icon="i-lucide-x"
+            checked-icon="i-lucide-check"
+            @update:model-value="
+              (value: boolean) => (state.status = value ? 'active' : 'disabled')
+            "
+          />
+        </div>
+
+        <UFormField
+          :label="t('features.users.form.roles')"
+          name="roleIds"
+        >
+          <USelectMenu
+            v-model="state.roleIds"
+            :items="roleItems"
+            :loading="rolesLoading"
+            :placeholder="
+              !rolesLoading && roleItems.length === 0
+                ? t('features.users.form.rolesEmpty')
+                : t('features.users.form.rolesPlaceholder')
+            "
+            class="w-full"
+            multiple
+            value-key="value"
+          />
+        </UFormField>
+
+        <UFormField
+          :label="t('features.users.form.dept')"
+          :help="t('features.users.form.deptHint')"
+          :ui="{ help: 'text-dimmed text-xs' }"
+        >
+          <DeptTreeSelect
+            v-model="state.deptId"
+            :is-loading="deptTreeLoading"
+            :tree="deptTree ?? []"
+          />
+        </UFormField>
+
+        <UFormField
+          :label="t('features.users.form.posts')"
+          :help="t('features.users.form.postsHint')"
+          name="postIds"
+          :ui="{ help: 'text-dimmed text-xs' }"
+        >
+          <USelectMenu
+            v-model="state.postIds"
+            :items="postItems"
+            :loading="postsLoading"
+            :placeholder="
+              !postsLoading && postItems.length === 0
+                ? t('features.users.form.postsEmpty')
+                : t('features.users.form.postsPlaceholder')
+            "
+            class="w-full"
+            multiple
+            value-key="value"
+          />
+        </UFormField>
+
+        <UFormField
+          :label="t('features.users.form.mainPost')"
+          :help="t('features.users.form.mainPostHint')"
+          :ui="{ help: 'text-dimmed text-xs' }"
+        >
+          <USelect
+            v-model="state.mainPostId"
+            :disabled="mainPostItems.length <= 1"
+            :items="mainPostItems"
+            class="w-full"
+            value-key="value"
+          />
+        </UFormField>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <UFormField :label="t('features.users.form.employeeNo')">
+            <UInput
+              v-model="state.employeeNo"
+              :maxlength="EMPLOYEE_NO_MAX_LENGTH"
+              :placeholder="t('features.users.form.employeeNoPlaceholder')"
+              :ui="{ base: 'pe-13' }"
+              class="w-full"
+            >
+              <template #trailing>
+                <span class="text-dimmed text-xs tabular-nums">
+                  {{ state.employeeNo.length }}/{{ EMPLOYEE_NO_MAX_LENGTH }}
+                </span>
+              </template>
+            </UInput>
+          </UFormField>
+
+          <UFormField
+            :label="t('features.users.form.entryDate')"
+            name="entryDate"
+          >
+            <!-- 入职日期：日期分段输入 + 内嵌 UCalendar 日历弹窗（对齐公告表单发布日期） -->
+            <UInputDate
+              ref="entryDateInput"
+              v-model="entryDateValue"
+              :aria-label="t('features.users.form.entryDate')"
+              class="w-full"
+            >
+              <template #trailing>
+                <UPopover :reference="entryDateInput?.inputsRef.at(-1)?.$el">
+                  <UButton
+                    :aria-label="t('features.users.form.entryDate')"
+                    class="px-0"
+                    color="neutral"
+                    icon="i-lucide-calendar"
+                    size="sm"
+                    variant="link"
+                  />
+
+                  <template #content>
+                    <UCalendar
+                      v-model="entryDateValue"
+                      class="p-2"
+                    />
+                  </template>
+                </UPopover>
+              </template>
+            </UInputDate>
+          </UFormField>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <UFormField :label="t('features.users.form.employmentStatus')">
+            <USelect
+              v-model="state.employmentStatus"
+              :items="[
+                {
+                  label: t('features.users.employment.employed'),
+                  value: 'employed'
+                },
+                {
+                  label: t('features.users.employment.resigned'),
+                  value: 'resigned'
+                }
+              ]"
+              class="w-full"
+              value-key="value"
+            />
+          </UFormField>
+
+          <UFormField :label="t('features.users.form.gender')">
+            <!-- 未设置 = clear 清空（null），对齐 React 端清空图标交互；
+                 仅两个选项，隐藏搜索框 -->
+            <USelectMenu
+              v-model="state.gender"
+              :aria-label="t('features.users.form.gender')"
+              :items="[
+                { label: t('features.users.gender.male'), value: 'male' },
+                { label: t('features.users.gender.female'), value: 'female' }
+              ]"
+              :placeholder="t('features.users.gender.unset')"
+              :search-input="false"
+              class="w-full"
+              clear
+              value-key="value"
+            />
+          </UFormField>
+        </div>
+      </UForm>
+    </template>
+
+    <template #footer="{ close: onClose }">
+      <UButton
+        :label="t('common.cancel')"
+        color="neutral"
+        variant="outline"
+        @click="onClose"
+      />
+      <UButton
+        :form="FORM_ID"
+        :label="
+          submitting ? t('features.users.form.saving') : t('common.confirm')
+        "
+        :loading="submitting"
+        type="submit"
+      />
+    </template>
+  </UModal>
+</template>

@@ -2,6 +2,16 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Nuxt M2：核心系统管理六模块（2026-09-13）
+
+- **范围**：`docs/nuxt-plan.md` §6 M2——用户（列表范式首立页）→ 角色 → 权限 → 菜单 → 字典 → 日志，只动 `/nuxt` 与 `docs/`。验收：typecheck 0 错 / lint 净 / **test 7 文件 46 用例全绿** / build 成功 / dev 正常 + 六页走查（列表真实数据 / 新建弹窗 13 字段 / 权限门控 / 列设置按钮）。
+- **平移内容（约 8,200 行，Vue → Nuxt 逐字）**：六模块 features（UsersPage / UserFormDialog / UserResetPasswordDialog / 链接与角色 Cells / RowActions；RolesPage / RoleFormDialog / RoleGrantDrawer + use-grant-tree 521 行；PermissionsPage；MenusPage / MenuFormModal / MenuTreeSelect；DictsPage 双栏 + 两个表单 + DictTypeItem；LogsPage / LogDetailDrawer）+ DataTable 组合件 8 文件（DataTable / Pagination / BulkActions / SearchReset / Toolbar / ViewOptions / column-setting / table-types，**列设置与首屏骨架行随组件内置**）+ 共享基建（list-store epoch 工厂 / use-list-query / use-permissions 按钮门控 / use-dialog-state / use-column-setting-key / dict-store 业务字典缓存 / format-date / ui 原子组件 spinner·loading-content / UserInfo·PasswordField·ErrorContent）。**UserFormDialog 依赖的 org dept-api / post-api / DeptTreeSelect 预带平移**（M3 组织中心的前置叶子，M3 落其余）。
+- **测试平移（7 文件 46 用例）**：permission 9 / route-access 10 / password-validation 9 / list-store 4 / column-setting 9 / use-list-query 2 / locales 3；vitest 环境从 node 切 **jsdom**（column-setting 消费 localStorage，对齐 Vue 端全局 jsdom 策略）。
+- **依赖补装**：@tanstack/vue-table 8.21（v8 对齐 UTable）/ zod 4.6 / sortablejs + @types / reka-ui 2.10.3（授权抽屉 Tree 类型，与 @nuxt/ui 同版）/ @vueuse/integrations 14.4 / @internationalized/date / jsdom。
+- **根因修复：@internationalized/date 双实例**——模板期 lockfile 固化 reka-ui → 3.12.1，`pnpm add` 装出 3.12.4 根实例；该库类含私有字段（名义类型），跨实例不兼容导致 UInputDate 的 `CalendarDate` v-model 全部报型不匹配（错误信息 `InputDateModelValue<boolean>` 有误导性，曾试错 allowArbitraryExtensions 关闭/恢复与 `:range` workaround 后定位真因）——pnpm-workspace overrides 统一 3.12.4 根治，全部 workaround 撤销。**顺带修复 @nuxt/eslint 自动合并导入引入的 TS2206**：`import type {A}` + `import { type B }` 被合并为 `import type {A, type B}`，在 Nuxt 开启的 verbatimModuleSyntax 下非法——改为 `import type {A, B}`。
+- **蓝本差异备案（3 处，均为 lint 规则差）**：dict-store / use-grant-tree 的动态键 `delete` 加 eslint-disable 注释（Vue 端规则集未启用 no-dynamic-delete，行为不变）；DictTypeItem 的 `const props =` 改裸 `defineProps`（props 未在 script 消费，模板访问不受影响）。
+- **走查记录**：登录 → redirect 回跳 `/settings/logs` 正常；六页标题 / 行数 / 工具栏（搜索·重置·筛选·新增·列设置）全部就位；新增用户弹窗 13 字段（含组织/岗位/主岗/入职日期/性别，占位符 `name@example.com` 验证 @ 转义）；分页与「每页条数」随组件可用；期间令牌过期触发的 401 → refresh → 踢回登录链路亦实测正常。
+
 ### Nuxt M1：服务端全量移植 + 契约冒烟（2026-09-13）
 
 - **范围**：`docs/nuxt-plan.md` §6 M1 全部任务，只动 `/nuxt` 与 `docs/`。验收：`typecheck` 0 错 / `lint` 净 / `test` 3/3 / `build` 成功 / `dev` 正常（五绿）+ 契约冒烟脚本 20 只读端点 diff 通过 + GUI 实测前端消费真实 `/menus` 数据。

@@ -162,7 +162,7 @@ async function main() {
     }
 
     const known = problems.filter(isKnownDiff)
-    const unknown = problems.filter((p) => !isKnownDiff(p))
+    const unknown = problems.filter(p => !isKnownDiff(p))
 
     const status = unknown.length === 0 ? (known.length > 0 ? 'KNOWN' : 'OK') : 'DIFF'
     report.push(`[${status}] GET ${path} (${a.status}/${b.status})`)

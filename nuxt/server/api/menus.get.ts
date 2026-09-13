@@ -1,8 +1,5 @@
 import { getAuthUser } from '../lib/auth/request-auth'
-import { createMenu, findMenuTree } from '../lib/menus-service'
-import { Permissions } from '../lib/permissions'
-import { requireAuthUser } from '../lib/route-auth'
-import { ServerApiError } from '../lib/http'
+import { findMenuTree } from '../lib/menus-service'
 import { jsonOk, jsonError, handleRouteError } from '../lib/route-helpers'
 
 /**
