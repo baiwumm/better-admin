@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { AppNotification } from "@/lib/api-types";
+import type { AppNotification } from '@/lib/api-types'
 
-import { computed, ref } from "vue";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
+import { computed, ref } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import {
   fetchNotifications,
   fetchUnreadCount,
   readAllNotifications,
-  readNotification,
-} from "@/features/notice/notification-api";
+  readNotification
+} from '@/features/notice/notification-api'
 
-import { formatRelativeTime } from "@/lib/format-date";
+import { formatRelativeTime } from '@/lib/format-date'
 
 /**
  * 顶栏通知铃铛（契约 v1.7.0 站内信，对应 React 端 notice-bell.tsx）：
@@ -20,112 +20,112 @@ import { formatRelativeTime } from "@/lib/format-date";
  *   点击条目标记已读并跳转 link（无 link 仅记已读）；
  * - 「全部已读」一键清零；「我的公告」入口。
  */
-const { t, locale } = useI18n();
-const router = useRouter();
-const queryClient = useQueryClient();
-const toast = useToast();
+const { t, locale } = useI18n()
+const router = useRouter()
+const queryClient = useQueryClient()
+const toast = useToast()
 
-const isOpen = ref(false);
-const activeTab = ref<"unread" | "all">("unread");
-const openingMyNotices = ref(false);
+const isOpen = ref(false)
+const activeTab = ref<'unread' | 'all'>('unread')
+const openingMyNotices = ref(false)
 
 const unreadQuery = useQuery({
-  queryKey: ["notifications", "unread-count"],
+  queryKey: ['notifications', 'unread-count'],
   queryFn: fetchUnreadCount,
   refetchInterval: 60_000,
-  staleTime: 30_000,
-});
-const unreadCount = computed(() => unreadQuery.data.value?.count ?? 0);
+  staleTime: 30_000
+})
+const unreadCount = computed(() => unreadQuery.data.value?.count ?? 0)
 
 const listQuery = useQuery({
-  queryKey: computed(() => ["notifications", "list", activeTab.value]),
+  queryKey: computed(() => ['notifications', 'list', activeTab.value]),
   queryFn: () =>
     fetchNotifications({
       page: 1,
       pageSize: 20,
-      unreadOnly: activeTab.value === "unread",
+      unreadOnly: activeTab.value === 'unread'
     }),
   enabled: computed(() => isOpen.value),
-  staleTime: 0,
-});
+  staleTime: 0
+})
 const notifications = computed<AppNotification[]>(
-  () => listQuery.data.value?.data ?? [],
-);
-const listTotal = computed(() => listQuery.data.value?.pagination.total ?? 0);
+  () => listQuery.data.value?.data ?? []
+)
+const listTotal = computed(() => listQuery.data.value?.pagination.total ?? 0)
 // isPending（而非 isLoading）：抽屉未开时 query 处于 disabled 的 pending 态，
 // 用 isLoading 会在打开抽屉首帧闪现空态，isPending 才稳定呈现骨架屏
-const listPending = computed(() => listQuery.status.value === "pending");
+const listPending = computed(() => listQuery.status.value === 'pending')
 
 const emptyTitle = computed(() =>
-  activeTab.value === "unread"
-    ? t("layout.header.noUnreadNotifications")
-    : t("layout.header.noNotifications"),
-);
+  activeTab.value === 'unread'
+    ? t('layout.header.noUnreadNotifications')
+    : t('layout.header.noNotifications')
+)
 
 function invalidateNotifications() {
-  void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  void queryClient.invalidateQueries({ queryKey: ['notifications'] })
 }
 
 const readAllMutation = useMutation({
   mutationFn: readAllNotifications,
   onSuccess: () => invalidateNotifications(),
   onError: () => {
-    toast.add({ color: "error", title: t("common.loadError") });
-  },
-});
+    toast.add({ color: 'error', title: t('common.loadError') })
+  }
+})
 
 const readOneMutation = useMutation({
   mutationFn: readNotification,
-  onSuccess: () => invalidateNotifications(),
-});
+  onSuccess: () => invalidateNotifications()
+})
 
 function handleItemClick(notification: AppNotification) {
   // 标记已读后跳转（跳转即可读，失败静默）
-  readOneMutation.mutate(notification.id);
+  readOneMutation.mutate(notification.id)
 
   if (notification.link) {
-    isOpen.value = false;
-    void router.push(notification.link);
+    isOpen.value = false
+    void router.push(notification.link)
   }
 }
 
 function openBell() {
-  activeTab.value = "unread";
-  isOpen.value = true;
+  activeTab.value = 'unread'
+  isOpen.value = true
 }
 
 async function openMyNotices() {
-  openingMyNotices.value = true;
-  isOpen.value = false;
+  openingMyNotices.value = true
+  isOpen.value = false
 
   try {
-    await router.push("/my-notices");
+    await router.push('/my-notices')
   } finally {
-    openingMyNotices.value = false;
+    openingMyNotices.value = false
   }
 }
 
 const tabItems = computed(() => [
-  { label: t("layout.header.unreadTab"), value: "unread" },
-  { label: t("layout.header.allTab"), value: "all" },
-]);
+  { label: t('layout.header.unreadTab'), value: 'unread' },
+  { label: t('layout.header.allTab'), value: 'all' }
+])
 
 /** 通知类型 → 图标（装饰性，aria-hidden） */
-const NOTIFICATION_ICONS: Record<AppNotification["type"], string> = {
-  notice_publish: "i-lucide-bell-ring",
-  notice_remind: "i-lucide-alarm-clock",
-  system: "i-lucide-settings",
-};
+const NOTIFICATION_ICONS: Record<AppNotification['type'], string> = {
+  notice_publish: 'i-lucide-bell-ring',
+  notice_remind: 'i-lucide-alarm-clock',
+  system: 'i-lucide-settings'
+}
 
 const bellAriaLabel = computed(() =>
   unreadCount.value > 0
-    ? `${t("layout.header.notifications")} (${unreadCount.value})`
-    : t("layout.header.notifications"),
-);
+    ? `${t('layout.header.notifications')} (${unreadCount.value})`
+    : t('layout.header.notifications')
+)
 </script>
 
 <script lang="ts">
-export default { name: "NoticeBell" };
+export default { name: 'NoticeBell' }
 </script>
 
 <template>
@@ -169,7 +169,11 @@ export default { name: "NoticeBell" };
             aria-hidden
             class="divide-default flex flex-col divide-y"
           >
-            <div v-for="index in 5" :key="index" class="px-1 py-3">
+            <div
+              v-for="index in 5"
+              :key="index"
+              class="px-1 py-3"
+            >
               <div class="flex w-full items-center gap-3">
                 <USkeleton class="size-9 shrink-0 rounded-full" />
                 <div
@@ -199,8 +203,14 @@ export default { name: "NoticeBell" };
             {{ emptyTitle }}
           </p>
 
-          <ul v-else class="divide-default divide-y">
-            <li v-for="notification in notifications" :key="notification.id">
+          <ul
+            v-else
+            class="divide-default divide-y"
+          >
+            <li
+              v-for="notification in notifications"
+              :key="notification.id"
+            >
               <button
                 class="w-full rounded-lg px-1 py-3 text-start transition-colors hover:bg-elevated/60"
                 type="button"
@@ -213,8 +223,8 @@ export default { name: "NoticeBell" };
                     >
                       <UIcon
                         :name="
-                          NOTIFICATION_ICONS[notification.type] ??
-                          'i-lucide-bell'
+                          NOTIFICATION_ICONS[notification.type]
+                            ?? 'i-lucide-bell'
                         "
                         aria-hidden
                         class="size-4"
@@ -227,7 +237,10 @@ export default { name: "NoticeBell" };
                     >
                       {{ notification.title }}
                     </span>
-                    <span v-if="notification.readAt === null" class="sr-only">
+                    <span
+                      v-if="notification.readAt === null"
+                      class="sr-only"
+                    >
                       {{ t("features.myNotices.filter.unread") }}
                     </span>
                     <span

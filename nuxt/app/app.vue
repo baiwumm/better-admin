@@ -48,7 +48,12 @@ const layoutName = computed(
     <!-- 请求驱动进度条：@bprogress Provider + lib/progress.ts 状态机桥接 -->
     <ProgressProvider>
       <NuxtLayout :name="layoutName">
-        <NuxtPage />
+        <!-- 保活宿主（对齐 Vue 端 KeepAliveOutlet）：标签集合约束 KeepAlive include，
+             路由 VT 编排 / 刷新重建 / 滚动回顶均在宿主内；auth / empty 布局下
+             cachedNames 为空，行为等同普通渲染 -->
+        <KeepAliveOutlet>
+          <NuxtPage />
+        </KeepAliveOutlet>
       </NuxtLayout>
     </ProgressProvider>
   </UApp>

@@ -1,7 +1,7 @@
 # Better Admin — Nuxt 端开发方案（v1.3 可行性计划）
 
 > 本文档是 Nuxt 端（Phase 6：Nuxt 全栈）的可行性评估与开发计划：功能对齐清单、代码复用地图、技术选型、待确认决策、MVP 路线与风险评估。
-> **状态：M0 + M1 + M2 + M3 已完成（2026-09-12/13）**——M0 工程基建与骨架 + 认证最小闭环；M1 服务端全量移植（70 个方法端点 / 11 个业务 service / 契约冒烟通过）；M2 核心系统管理六模块 + DataTable 组合件 / list-store epoch / 权限门控；M3 组织中心 8 项 + 我的账户（NoticeBell 挂入 Header）。**M4（增强特性与收尾）待开工指令**。各里程碑细节见 `progress.md` 对应条目。
+> **状态：M0-M4 已全部完成（2026-09-12/13），功能对齐 26/27（96%，仅剩 Dashboard，与三端持平）**——M0 工程基建与骨架 + 认证最小闭环；M1 服务端全量移植（70 个方法端点 / 11 个业务 service / 契约冒烟通过）；M2 核心系统管理六模块 + DataTable 组合件 / list-store epoch / 权限门控；M3 组织中心 8 项 + 我的账户；M4 偏好九项 / 多标签页（NuxtPage 内置 keepalive 重写保活宿主）/ 路由 VT / 命令面板主题组。**M5（部署与文档收尾）待开工指令**。各里程碑细节见 `progress.md` 对应条目。
 > 基准三方：**React = UI / 交互 / 页面结构 Source of Truth**（`ui-spec.md` §1）；**Vue = 组件实现与代码形态的平移蓝本**（同 Nuxt UI + Pinia + vue-query）；**Next = 服务端实现蓝本**（同为独立全栈、共用同一 PostgreSQL）。
 > 契约真源：`nest/openapi/openapi.yaml`（v1.9.0）。组件库规则见 `AGENTS.md` §21 与 `nuxt-ui-guide.md`。
 

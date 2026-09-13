@@ -14,7 +14,10 @@ import { CONSOLE_MENU_NODE } from '@/lib/menu-fetch'
 import { filterHiddenMenus } from '@/lib/permission'
 import { findActivePath } from '@/lib/menu-utils'
 import { resolveRouteTitleKey } from '@/lib/route-access'
+import { type ThemeMode, useDesignThemeStore } from '@/stores/design-theme-store'
+import ConfigDrawer from '@/components/layout/ConfigDrawer.vue'
 import LanguageSwitch from '@/components/layout/LanguageSwitch.vue'
+import TagsBar from '@/components/layout/TagsBar.vue'
 import SidebarBrand from '@/components/layout/SidebarBrand.vue'
 import ThemeSwitch from '@/components/layout/ThemeSwitch.vue'
 import UserMenu from '@/components/layout/UserMenu.vue'
@@ -26,10 +29,11 @@ import UserMenu from '@/components/layout/UserMenu.vue'
  * - 侧边栏：品牌下拉（技术栈入口）+ 导航菜单（骨架屏 / 失败重试 / 折叠
  *   tooltip + 悬浮子菜单）+ 底部快捷链接（GitHub / 博客）+ 用户菜单
  * - 顶栏：折叠按钮（leading，移动端为打开抽屉）+ 面包屑 + 右侧
- *   站内信铃铛（M3）/ 主题 / 语言 / 用户菜单
- * - 主体：slot（NuxtPage）；
- * M4 待平移：多标签页 TagsBar、FullscreenButton、ConfigDrawer 偏好抽屉、
- * 主题切换揭示动画 / KeepAliveOutlet 保活与路由 VT。
+ *   站内信铃铛 / 主题 / 语言 / 偏好抽屉（ConfigDrawer）
+ * - 多标签页栏：TagsBar 置于 UDashboardToolbar（偏好可隐藏）
+ * - 主体：slot（app.vue 的 KeepAliveOutlet > NuxtPage 提供保活与路由 VT）；
+ *   全宽页面（架构图谱 / 我的公告 / exception）去内边距。
+ * FullscreenButton 未列入 M4 平移范围（随需评估）。
  */
 useAuthSync()
 
@@ -129,11 +133,11 @@ interface CommandItem extends CommandPaletteItem {
 
 /**
  * 主题切换条目（labelKey 经 t() 取词；keywords 供英文关键字搜索）。
- * M0 直接切 @nuxtjs/color-mode 三态；M4 接入 design-theme-store 后
- * 经 setThemeMode 获得主题揭示动画（对齐 Vue 端 AdminLayout）。
+ * M4 起经 design-theme-store 的 setThemeMode 切换（带主题揭示动画，
+ * 对齐 Vue 端 AdminLayout；此前 M0 直切 @nuxtjs/color-mode 无动画）。
  */
 const THEME_COMMANDS: {
-  mode: 'system' | 'light' | 'dark'
+  mode: ThemeMode
   icon: string
   keywords: string
 }[] = [
@@ -142,7 +146,7 @@ const THEME_COMMANDS: {
   { mode: 'system', icon: 'i-lucide-monitor', keywords: 'system auto' }
 ]
 
-const colorMode = useColorMode()
+const designTheme = useDesignThemeStore()
 
 /**
  * 命令面板分组（对齐 React 端 command-menu 的 collectMenuSections）：
@@ -235,10 +239,10 @@ const searchGroups = computed<CommandPaletteGroup[]>(() => {
       return {
         label,
         icon,
-        active: colorMode.preference === mode,
+        active: designTheme.themeMode === mode,
         searchText: `${label} ${keywords}`,
         onSelect: () => {
-          colorMode.preference = mode
+          designTheme.setThemeMode(mode)
         }
       }
     })
@@ -342,7 +346,7 @@ function retryMenus() {
          全宽页面（架构图谱 / 我的公告 / exception）去内边距 -->
     <UDashboardPanel
       :ui="{
-        body: isFullWidthPage ? 'p-0! sm:p-0!' : undefined
+        body: isFullWidthPage ? 'route-vt-main p-0! sm:p-0!' : 'route-vt-main'
       }"
     >
       <template #header>
@@ -363,9 +367,20 @@ function retryMenus() {
               <NoticeBell />
               <ThemeSwitch />
               <LanguageSwitch />
+              <ConfigDrawer />
             </div>
           </template>
         </UDashboardNavbar>
+
+        <!-- 多标签页栏（M4）：置于 UDashboardToolbar 内，边框由 toolbar 提供；
+             覆盖其默认 min-h / px 让高度与内边距由 TagsBar 自身决定。
+             偏好设置可隐藏（关闭仅隐藏 UI，不清空已打开标签）。 -->
+        <UDashboardToolbar
+          v-if="designTheme.showTabs"
+          :ui="{ root: 'min-h-0 px-0 sm:px-0' }"
+        >
+          <TagsBar />
+        </UDashboardToolbar>
       </template>
 
       <template #body>
@@ -396,8 +411,8 @@ function retryMenus() {
           />
         </div>
 
-        <!-- display:contents 包裹层：M4 错误覆盖层将以 v-show 隐藏页面而非卸载
-             （KeepAlive 保活语义），M0 直接渲染 slot（NuxtPage） -->
+        <!-- display:contents 包裹层：错误覆盖层显示期间以 hidden 隐藏而非卸载，
+             app.vue 的 KeepAliveOutlet 保活实例池与路由 VT 守卫保持挂载，恢复后原页面状态无损 -->
         <div :class="error ? 'hidden' : 'contents'">
           <slot />
         </div>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { NoticeDetail } from '@/lib/api-types'
 
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
+
+import { useTabsStore } from '@/stores/tabs-store'
 
 import { sanitizeNoticeHtml } from '@/features/notice/sanitize'
 import { fetchNoticeDetail } from '@/features/notice/notice-api'
@@ -26,6 +28,7 @@ import { formatDateTime } from '@/lib/format-date'
 const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
+const tabsStore = useTabsStore()
 const { data: menuTree } = useMenus()
 
 // route.params 为全路由联合类型，动态段用宽松索引取值（消费路由仅本页匹配）
@@ -54,10 +57,24 @@ const sanitizedContent = computed(() =>
   sanitizeNoticeHtml(notice.value?.content ?? '')
 )
 
-// M4 多标签页里程碑恢复（Vue 蓝本此处为 tabsStore.syncMeta 快照写入）：
-// 把公告标题写入标签页元数据（标签显示具体标题 + 面包屑「公告详情 › 标题」
-// 两级结构），快照随 tabs 持久化、immediate 补写缓存命中场景；
-// Nuxt 端 tabs-store 未平移（M4）前此处为空实现。
+// 动态路由标题：把公告标题写入标签页元数据快照（tabs meta，M4 已接入），
+// 标签页据此显示具体标题，面包屑渲染「公告详情 › 标题」两级结构；
+// 快照随 tabs 持久化，刷新后仍可恢复，关闭标签时随治理清理。
+// immediate：vue-query 缓存命中时挂载即有数据，也需补写快照。
+watch(
+  [notice, () => route.path, locale],
+  ([detail, path]) => {
+    if (!detail) return
+
+    tabsStore.syncMeta({
+      [path]: {
+        title: detail.title,
+        parentTitle: t('features.notices.detail.titleFallback')
+      }
+    })
+  },
+  { immediate: true }
+)
 
 const publisherText = computed(() =>
   notice.value

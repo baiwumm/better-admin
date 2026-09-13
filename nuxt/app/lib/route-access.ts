@@ -166,9 +166,13 @@ export function isAuthLayoutPath(pathname: string): boolean {
  */
 export function isAdminLayoutRoute(route: {
   path: string
-  meta?: { fullscreenError?: boolean }
+  meta?: unknown
 }): boolean {
-  return !isFullscreenPath(route.path) && route.meta?.fullscreenError !== true
+  // vue-router 的 RouteMeta 带 unknown 索引签名且无已知属性，与字面量形状
+  // 交叉触发 weak type 拒绝——meta 经断言收窄后访问（非 any）
+  const meta = route.meta as { fullscreenError?: unknown } | undefined
+
+  return !isFullscreenPath(route.path) && meta?.fullscreenError !== true
 }
 
 /** 登录可达判定：精确白名单路径，或命中动态前缀（通知消费路由）。 */

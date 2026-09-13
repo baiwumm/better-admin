@@ -2,6 +2,16 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Nuxt M4：增强特性与收尾——Nuxt 端功能对齐全部完成（2026-09-13）
+
+- **范围**：`docs/nuxt-plan.md` §6 M4 全部任务，只动 `/nuxt` 与 `docs/`。验收：typecheck 0 错 / lint 净 / test **9 文件 95 用例**全绿 / build 成功 / dev 正常 + GUI 实测（保活 / 关闭销毁 / 偏好九项 / 主题切换持久与重置 / ⌘K / 键盘可达）。
+- **平移内容（约 3,100 行）**：design-theme-store（376 行）+ themes 五纯模块（primary-colors / radius / color-vision / route-transitions / transition-direction，含 runViewTransition 揭示动画）+ ConfigDrawer 与 prefs 十组件 + TagsBar（593 行）+ tabs-store / tabs-model（319 行，32 用例）+ route-vt + KeepAliveOutlet + CSS 四件（tags-bar / theme-transition / route-transitions / color-vision）+ themes 用例（21 用例）。**恢复 M0/M3 摘除点**：auth-store resetTabs、language-store clearTabsCache、NoticeDetailPage syncMeta（公告标题标签 + 面包屑两级）、命令面板主题组接 design-theme-store（揭示动画单一真源）。**NoticeBell 挂入 Header 首位、ConfigDrawer 接入双布局**（Auth 右上角与 Admin Header）。
+- **核心机制重写：KeepAliveOutlet 保活宿主（Nuxt 内置机制适配）**。Vue 端「按路径命名宿主 + KeepAlive include=path」在 NuxtPage 动态渲染下两种形态均失效（slot 直通形态停用实例跟随路由重渲；h(props.page) 冻结形态不缓存——经 `__vueParentComponent` 组件树取证与 `__v_cache` 缓存 Map 实证定位），最终改用 **NuxtPage 内置 keepalive**（nuxt-plan §4 内置机制优先）：include 按页面组件名匹配，path→组件名映射经 route.matched 实时记录并随 sessionStorage 持久化；刷新 = pageKey 递增强制重挂载 + include 摘一拍剪除；VT 编排（beforeResolve 捕旧帧 → 提交 → nextTick 放行捕新帧）与方向感知照蓝本挂同组件。**已知近似（备案）**：同名页面组件关闭其一将一并剪除缓存（仅损失缓存不影响正确性）。
+- **design-theme-store 适配**：明暗真源 @vueuse useColorMode → @nuxtjs/color-mode（preference 读写 / value resolved / matchMedia 系统偏好），ThemeMode 值域与模块一致无需 auto 映射；initDesignTheme 经 client plugin 于水合前应用（对齐 Vue 端 mount 前语义）。
+- **GUI 实测**：标签追加 / 关闭销毁（重进弹窗消失 = 缓存剪除）/ 重定向正确；**保活弹窗探针跨导航保留**；偏好抽屉九项渲染、主题色 Green→Red 切换（DOM --ui-primary 同步 + localStorage 持久化）、重置复原（回 Green）；命令面板菜单分组拍平 + 主题组切深色（preference system→dark）；标签键盘可达（关闭热区 tabindex=0 聚焦 + Enter 关闭）；401 → refresh → 踢回登录链路再次实测正常。
+- **里程碑意义**：**Nuxt 端功能对齐 27 项中 26 项完成（96%，与 React / Next / Vue 持平），仅剩 Dashboard ❌**（随 plan-dashboard-playground.md 统一立项）。剩余为 M5 部署与文档收尾（Vercel 部署 nuxt.baiwumm.com、根 version 同步、feature-matrix 终核）。
+- **文档同步**：feature-matrix 基础设施 4 行转 ✅（偏好设置抽屉 / 多标签页 / 命令面板 / 路由过渡动画）；AGENTS §19 指针；nuxt-plan 状态行。
+
 ### Nuxt M3：组织中心 + 我的账户（2026-09-13）
 
 - **范围**：`docs/nuxt-plan.md` §6 M3 全部 8 项——组织管理（左树右表）→ 岗位（成员穿透）→ 通讯录（组织树筛选）→ 公告管理（UEditor 富文本）→ 我的公告 → 站内信 → 架构图谱 → Excel 导出 → 我的账户，只动 `/nuxt` 与 `docs/`。验收：typecheck 0 错 / lint 净 / test 7 文件 46 用例全绿 / build 成功 / dev 正常 + 八页走查通过。
