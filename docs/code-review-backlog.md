@@ -21,6 +21,13 @@
 
 ## 【暂缓 / 备案】
 
+- **菜单声明 0 位的页面对普通角色不可见**（nest，2026-09-14 Playground Phase A 发现）：
+  `MenusService.buildAllowedMenuIds` 只把 `role_menus.permissions != 0` 的菜单算作可见，而四端
+  角色授权抽屉勾选菜单写入的是菜单声明位（`node.permissions || "0"`）——线上「异常页」三个子页
+  （`permissions = 0`，经 GUI 创建）因此**仅超管可见**，普通角色即使在角色管理中勾选也不可见。
+  Playground 页面已改为声明 `SEARCH` 位规避。异常页是否同样补 `SEARCH` 位（需脚本改库，并同步
+  feature-matrix「超管免授权可见」口径）待定；根治方案（「有 role_menus 记录即可见」）涉及五端
+  RBAC 核心语义，不在本项范围内擅动。
 - **#3 自绘树 role=tree/treeitem 语义**（react / next）：**暂缓**——完整可用需配套 roving tabindex
   与方向键漫游（APG tree 模式），自绘树改动量大；只加属性不加键导会让读屏器产生错误预期。
   Vue 端 UTree（reka）已自带 tree 语义与键盘导航，天然合规。待 a11y 需求出现或组件库提供

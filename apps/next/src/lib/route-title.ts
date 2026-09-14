@@ -38,6 +38,28 @@ const ROUTE_STATIC_META_BY_PATH: Record<string, RouteStaticMeta> = {
   "/exception/500": {
     titleKey: "menu.exception.500",
   },
+  // 演示场菜单页（与 React 端各路由 staticData 同 key，口径同上方异常页）
+  "/playground/code-block": {
+    titleKey: "menu.playground.codeBlock",
+  },
+  "/playground/count-to/number-flow": {
+    titleKey: "menu.playground.numberFlow",
+  },
+  "/playground/count-to/animated-counter": {
+    titleKey: "menu.playground.animatedCounter",
+  },
+  "/playground/ai-kit/fluid-orb": {
+    titleKey: "menu.playground.fluidOrb",
+  },
+  "/playground/ai-kit/grid-reveal": {
+    titleKey: "menu.playground.gridReveal",
+  },
+  "/playground/ai-kit/matrix-orb": {
+    titleKey: "menu.playground.matrixOrb",
+  },
+  "/playground/github-activity": {
+    titleKey: "menu.playground.githubActivity",
+  },
   // 动态路由：键为 App Router 模板路径，查询经 findRouteStaticMeta 做动态段
   // 模板匹配（对齐 React 端 TanStack 路由 staticData 的匹配语义）。/org/notices
   // 是登录可达的消费路由（不走菜单权限），详情页与列表页同 titleKey

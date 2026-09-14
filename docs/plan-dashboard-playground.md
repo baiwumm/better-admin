@@ -173,11 +173,11 @@
 
 ## 5. Phase A — Playground 骨架：菜单脚本 + 四端占位
 
-### 5.0 实施步骤（四步，2026-09-14 拍板）
+### 5.0 实施步骤（四步，2026-09-14 拍板；步骤 1-2 已于同日完成）
 
-1. [ ] **菜单录入脚本**：`apps/nest/scripts/playground-menu-seed.ts`（幂等、可重放），按 §5.1 菜单树写入 menus 表——字段与「菜单管理」手工配置完全一致（i18nKey / icon / to / parentId / sort / keepAlive，`permissions` 位掩码保持 0）；仍走 RBAC 授权流程，**不做默认全量授权**，`super_admin` 经聚合位自然全量可见，其余角色由「角色管理」按需关联，未授权角色不可见且路由不可达。
-2. [ ] **四端文件占位**：React / Next / Vue / Nuxt 四端建好 `/playground/*` 路由与页面文件 + `PlaygroundIntro` 信息卡骨架（§5.2），i18n 键四端 locales 同步登记，占位页可从菜单点入。
-3. [ ] **React 基准开发**（UI Source of Truth）：按 §6 演示页清单逐页实现；`PlaygroundIntro` 组件与 meta 机制在 React 端定稿；rare-ui 源码 vendor，`cn` 导入改 `@heroui/react`（已核实其导出 `cn`），**不初始化 shadcn 基建**（不建 `components.json` / `lib/utils`）。
+1. [x] **菜单录入脚本**：`apps/nest/scripts/migrate-menus-add-playground.ts`（幂等、可重放，命名沿用仓库 `migrate-menus-add-*` 惯例；整棵树 + 授权一个事务落库），按 §5.1 菜单树写入 menus 表——字段与「菜单管理」手工配置完全一致（i18nKey / icon / to / parentId / sort / keepAlive）。**权限位口径（与原计划「保持 0」的偏离，实施时核实）**：目录节点 `permissions = 0`（经子级祖先链可见，同「系统管理」「组织中心」）；**页面节点声明 `SEARCH` 位**——角色授权抽屉勾选菜单写入的是菜单声明位，而 `MenusService.buildAllowedMenuIds` 只把 `role_menus.permissions != 0` 的菜单算作可见，声明 0 位的页面对普通角色永远不可见（线上「异常页」三子页即处于该状态，已备案 `code-review-backlog.md`）；SEARCH 是项目事实上的「可查看」位，演示页只声明这一位，授权后即可见、无其他按钮。super_admin 按 `migrate-menus-add-org.ts` 同款补录 role_menus 全量位（保证树节点 `userPermissions` 完整）；其余角色不做默认授权，由「角色管理」按需关联，未授权角色不可见且路由不可达。
+2. [x] **四端文件占位**：React / Next / Vue / Nuxt 四端 `/playground/*` 路由与页面文件（7 页 × 4 端）已建，统一渲染 `PlaceholderPage`（图标 + 标题 + 「开发中」描述；React / Next 新建 `components/common/placeholder-page.tsx`，与 Vue / Nuxt 既有 `PlaceholderPage.vue` 同构）；i18n 键（`menu.playground.*` 10 键 + `features.playground.placeholder`）四端 zh-CN / en 同步登记；Vue / Nuxt `MENU_REQUIRED_PATHS` + `ROUTE_TITLE_KEYS`、Next `route-title.ts` 已登记（React / Next 菜单门卫为「非登录白名单即受控」，无需登记）。**`PlaygroundIntro` 信息卡骨架顺延为步骤 3 首项**：该组件在 React 端定稿（§5.2），Phase A 不先在四端各铺一版再返工。
+3. [ ] **React 基准开发**（UI Source of Truth）：首项落地 `PlaygroundIntro` 组件 + `meta.ts` / `registry.ts` 机制（§5.2），再按 §6 演示页清单逐页实现；rare-ui 源码 vendor，`cn` 导入改 `@heroui/react`（已核实其导出 `cn`），**不初始化 shadcn 基建**（不建 `components.json` / `lib/utils`）。**依赖评审（§7）通过后方可装包**。
 4. [ ] **逐端对齐**：Next（直接复用 rare-ui 源码）→ Vue → Nuxt（按 React 视觉以 Nuxt UI + 自定义组件重写，`AGENTS.md` §21 组件优先级）；Vue / Nuxt 本阶段引入 `clsx` + `tailwind-merge` 并新增 `cn` 工具函数（§7），Number Flow 用官方 `@number-flow/vue`。
 
 ### 5.1 菜单树（含三级菜单，共用库单点数据、四端自动一致）
@@ -195,8 +195,8 @@
 └── GitHub Activity         （二级页面  /playground/github-activity）
 ```
 
-- 菜单 `keepAlive` 全部开启（演示页纯静态、无写库副作用）；三级菜单同时作为侧边栏深层级渲染的真实演示。
-- 三级菜单验证点：React 展开态侧边栏已支持任意层级（`apps/react/src/layouts/components/sidebar-menu.tsx` 递归渲染），**折叠态菜单、面包屑、命令面板搜索以及 Next / Vue / Nuxt 端**的三级渲染需在本阶段逐项过检，发现未覆盖即补齐；Nuxt 端 `UNavigationMenu` 三级形态先做原型验证，旧项目 `better-nuxt` playground 有先例可参考。
+- 页面节点 `keepAlive` 开启、目录节点关闭（演示页纯静态、无写库副作用）；三级菜单同时作为侧边栏深层级渲染的真实演示。图标（lucide kebab-case，已核对同时存在于 lucide-react 1.x 与 @iconify-json/lucide）：演示场 `flask-conical` / 代码块 `square-code` / 数字动画 `hash` / Number Flow `arrow-up-1-0` / Animated Counter `tally-5` / Ai Kit `sparkles` / Fluid Orb `orbit` / Grid Reveal `grid-2x2` / Matrix Orb `atom` / GitHub Activity `calendar-days`（lucide-react 1.x 已移除品牌图标 `github`，改用热力图语义）。
+- 三级菜单验证点：**展开态四端已代码级核实递归渲染**——React / Next `SidebarGroup → MenuLevel` 递归、Vue / Nuxt `toNavLeaf` 递归映射 + Nuxt UI 4.11 `NavigationMenu` vertical 模式经 `ReuseItemTemplate(level + 1)` 递归渲染子级手风琴；**折叠态**（React / Next 折叠菜单；Nuxt UI 折叠态 `UPopover` 仅平铺一层子项，第三级形态待实测）、面包屑、命令面板搜索仍需 GUI 逐项过检，发现未覆盖即补齐。
 - [ ] 演示页通用规范：React 路由 `src/routes/_authenticated/playground/<demo>.tsx`（三级页为 `playground/count-to/<demo>.tsx`）、实现 `src/features/playground/<demo-name>/`，其余三端按各自路由约定建同名路径；页首固定 `PlaygroundIntro` 信息卡（规范见 §5.2）；开启 `keepAlive`；i18n 全量跟进；Nuxt 端 canvas / 动画组件以 `<ClientOnly>` 包裹防 SSR 水合报错。
 
 ### 5.2 页首信息卡 `PlaygroundIntro` 规范（四端统一）

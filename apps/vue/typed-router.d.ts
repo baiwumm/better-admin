@@ -122,6 +122,55 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/(authenticated)/playground/ai-kit/fluid-orb': RouteRecordInfo<
+      '/(authenticated)/playground/ai-kit/fluid-orb',
+      '/playground/ai-kit/fluid-orb',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/(authenticated)/playground/ai-kit/grid-reveal': RouteRecordInfo<
+      '/(authenticated)/playground/ai-kit/grid-reveal',
+      '/playground/ai-kit/grid-reveal',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/(authenticated)/playground/ai-kit/matrix-orb': RouteRecordInfo<
+      '/(authenticated)/playground/ai-kit/matrix-orb',
+      '/playground/ai-kit/matrix-orb',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/(authenticated)/playground/code-block': RouteRecordInfo<
+      '/(authenticated)/playground/code-block',
+      '/playground/code-block',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/(authenticated)/playground/count-to/animated-counter': RouteRecordInfo<
+      '/(authenticated)/playground/count-to/animated-counter',
+      '/playground/count-to/animated-counter',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/(authenticated)/playground/count-to/number-flow': RouteRecordInfo<
+      '/(authenticated)/playground/count-to/number-flow',
+      '/playground/count-to/number-flow',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/(authenticated)/playground/github-activity': RouteRecordInfo<
+      '/(authenticated)/playground/github-activity',
+      '/playground/github-activity',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/(authenticated)/settings/': RouteRecordInfo<
       '/(authenticated)/settings/',
       '/settings',
@@ -311,6 +360,62 @@ declare module 'vue-router/auto-routes' {
     'src/pages/(authenticated)/org/posts.vue': {
       routes:
         | '/(authenticated)/org/posts'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/(authenticated)/playground/ai-kit/fluid-orb.vue': {
+      routes:
+        | '/(authenticated)/playground/ai-kit/fluid-orb'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/(authenticated)/playground/ai-kit/grid-reveal.vue': {
+      routes:
+        | '/(authenticated)/playground/ai-kit/grid-reveal'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/(authenticated)/playground/ai-kit/matrix-orb.vue': {
+      routes:
+        | '/(authenticated)/playground/ai-kit/matrix-orb'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/(authenticated)/playground/code-block.vue': {
+      routes:
+        | '/(authenticated)/playground/code-block'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/(authenticated)/playground/count-to/animated-counter.vue': {
+      routes:
+        | '/(authenticated)/playground/count-to/animated-counter'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/(authenticated)/playground/count-to/number-flow.vue': {
+      routes:
+        | '/(authenticated)/playground/count-to/number-flow'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/(authenticated)/playground/github-activity.vue': {
+      routes:
+        | '/(authenticated)/playground/github-activity'
       views:
         | never
       pathParamNames:

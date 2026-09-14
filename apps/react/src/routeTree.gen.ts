@@ -25,6 +25,8 @@ import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_
 import { Route as AuthenticatedSettingsMenusRouteImport } from './routes/_authenticated/settings/menus'
 import { Route as AuthenticatedSettingsLogsRouteImport } from './routes/_authenticated/settings/logs'
 import { Route as AuthenticatedSettingsDictsRouteImport } from './routes/_authenticated/settings/dicts'
+import { Route as AuthenticatedPlaygroundGithubActivityRouteImport } from './routes/_authenticated/playground/github-activity'
+import { Route as AuthenticatedPlaygroundCodeBlockRouteImport } from './routes/_authenticated/playground/code-block'
 import { Route as AuthenticatedOrgPostsRouteImport } from './routes/_authenticated/org/posts'
 import { Route as AuthenticatedOrgNoticesRouteImport } from './routes/_authenticated/org/notices'
 import { Route as AuthenticatedOrgDirectoryRouteImport } from './routes/_authenticated/org/directory'
@@ -33,6 +35,11 @@ import { Route as AuthenticatedOrgChartRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedException500RouteImport } from './routes/_authenticated/exception/500'
 import { Route as AuthenticatedException404RouteImport } from './routes/_authenticated/exception/404'
 import { Route as AuthenticatedException403RouteImport } from './routes/_authenticated/exception/403'
+import { Route as AuthenticatedPlaygroundCountToNumberFlowRouteImport } from './routes/_authenticated/playground/count-to/number-flow'
+import { Route as AuthenticatedPlaygroundCountToAnimatedCounterRouteImport } from './routes/_authenticated/playground/count-to/animated-counter'
+import { Route as AuthenticatedPlaygroundAiKitMatrixOrbRouteImport } from './routes/_authenticated/playground/ai-kit/matrix-orb'
+import { Route as AuthenticatedPlaygroundAiKitGridRevealRouteImport } from './routes/_authenticated/playground/ai-kit/grid-reveal'
+import { Route as AuthenticatedPlaygroundAiKitFluidOrbRouteImport } from './routes/_authenticated/playground/ai-kit/fluid-orb'
 import { Route as AuthenticatedOrgNoticesNoticeIdRouteImport } from './routes/_authenticated/org/notices_.$noticeId'
 
 const R500Route = R500RouteImport.update({
@@ -120,6 +127,18 @@ const AuthenticatedSettingsDictsRoute =
     path: '/settings/dicts',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPlaygroundGithubActivityRoute =
+  AuthenticatedPlaygroundGithubActivityRouteImport.update({
+    id: '/playground/github-activity',
+    path: '/playground/github-activity',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundCodeBlockRoute =
+  AuthenticatedPlaygroundCodeBlockRouteImport.update({
+    id: '/playground/code-block',
+    path: '/playground/code-block',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOrgPostsRoute = AuthenticatedOrgPostsRouteImport.update({
   id: '/org/posts',
   path: '/org/posts',
@@ -164,6 +183,36 @@ const AuthenticatedException403Route =
     path: '/exception/403',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPlaygroundCountToNumberFlowRoute =
+  AuthenticatedPlaygroundCountToNumberFlowRouteImport.update({
+    id: '/playground/count-to/number-flow',
+    path: '/playground/count-to/number-flow',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundCountToAnimatedCounterRoute =
+  AuthenticatedPlaygroundCountToAnimatedCounterRouteImport.update({
+    id: '/playground/count-to/animated-counter',
+    path: '/playground/count-to/animated-counter',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundAiKitMatrixOrbRoute =
+  AuthenticatedPlaygroundAiKitMatrixOrbRouteImport.update({
+    id: '/playground/ai-kit/matrix-orb',
+    path: '/playground/ai-kit/matrix-orb',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundAiKitGridRevealRoute =
+  AuthenticatedPlaygroundAiKitGridRevealRouteImport.update({
+    id: '/playground/ai-kit/grid-reveal',
+    path: '/playground/ai-kit/grid-reveal',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundAiKitFluidOrbRoute =
+  AuthenticatedPlaygroundAiKitFluidOrbRouteImport.update({
+    id: '/playground/ai-kit/fluid-orb',
+    path: '/playground/ai-kit/fluid-orb',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOrgNoticesNoticeIdRoute =
   AuthenticatedOrgNoticesNoticeIdRouteImport.update({
     id: '/org/notices_/$noticeId',
@@ -187,6 +236,8 @@ export interface FileRoutesByFullPath {
   '/org/directory': typeof AuthenticatedOrgDirectoryRoute
   '/org/notices': typeof AuthenticatedOrgNoticesRoute
   '/org/posts': typeof AuthenticatedOrgPostsRoute
+  '/playground/code-block': typeof AuthenticatedPlaygroundCodeBlockRoute
+  '/playground/github-activity': typeof AuthenticatedPlaygroundGithubActivityRoute
   '/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/settings/logs': typeof AuthenticatedSettingsLogsRoute
   '/settings/menus': typeof AuthenticatedSettingsMenusRoute
@@ -195,6 +246,11 @@ export interface FileRoutesByFullPath {
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/org/notices/$noticeId': typeof AuthenticatedOrgNoticesNoticeIdRoute
+  '/playground/ai-kit/fluid-orb': typeof AuthenticatedPlaygroundAiKitFluidOrbRoute
+  '/playground/ai-kit/grid-reveal': typeof AuthenticatedPlaygroundAiKitGridRevealRoute
+  '/playground/ai-kit/matrix-orb': typeof AuthenticatedPlaygroundAiKitMatrixOrbRoute
+  '/playground/count-to/animated-counter': typeof AuthenticatedPlaygroundCountToAnimatedCounterRoute
+  '/playground/count-to/number-flow': typeof AuthenticatedPlaygroundCountToNumberFlowRoute
 }
 export interface FileRoutesByTo {
   '/403': typeof R403Route
@@ -212,6 +268,8 @@ export interface FileRoutesByTo {
   '/org/directory': typeof AuthenticatedOrgDirectoryRoute
   '/org/notices': typeof AuthenticatedOrgNoticesRoute
   '/org/posts': typeof AuthenticatedOrgPostsRoute
+  '/playground/code-block': typeof AuthenticatedPlaygroundCodeBlockRoute
+  '/playground/github-activity': typeof AuthenticatedPlaygroundGithubActivityRoute
   '/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/settings/logs': typeof AuthenticatedSettingsLogsRoute
   '/settings/menus': typeof AuthenticatedSettingsMenusRoute
@@ -220,6 +278,11 @@ export interface FileRoutesByTo {
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/org/notices/$noticeId': typeof AuthenticatedOrgNoticesNoticeIdRoute
+  '/playground/ai-kit/fluid-orb': typeof AuthenticatedPlaygroundAiKitFluidOrbRoute
+  '/playground/ai-kit/grid-reveal': typeof AuthenticatedPlaygroundAiKitGridRevealRoute
+  '/playground/ai-kit/matrix-orb': typeof AuthenticatedPlaygroundAiKitMatrixOrbRoute
+  '/playground/count-to/animated-counter': typeof AuthenticatedPlaygroundCountToAnimatedCounterRoute
+  '/playground/count-to/number-flow': typeof AuthenticatedPlaygroundCountToNumberFlowRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -240,6 +303,8 @@ export interface FileRoutesById {
   '/_authenticated/org/directory': typeof AuthenticatedOrgDirectoryRoute
   '/_authenticated/org/notices': typeof AuthenticatedOrgNoticesRoute
   '/_authenticated/org/posts': typeof AuthenticatedOrgPostsRoute
+  '/_authenticated/playground/code-block': typeof AuthenticatedPlaygroundCodeBlockRoute
+  '/_authenticated/playground/github-activity': typeof AuthenticatedPlaygroundGithubActivityRoute
   '/_authenticated/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/_authenticated/settings/logs': typeof AuthenticatedSettingsLogsRoute
   '/_authenticated/settings/menus': typeof AuthenticatedSettingsMenusRoute
@@ -248,6 +313,11 @@ export interface FileRoutesById {
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/org/notices_/$noticeId': typeof AuthenticatedOrgNoticesNoticeIdRoute
+  '/_authenticated/playground/ai-kit/fluid-orb': typeof AuthenticatedPlaygroundAiKitFluidOrbRoute
+  '/_authenticated/playground/ai-kit/grid-reveal': typeof AuthenticatedPlaygroundAiKitGridRevealRoute
+  '/_authenticated/playground/ai-kit/matrix-orb': typeof AuthenticatedPlaygroundAiKitMatrixOrbRoute
+  '/_authenticated/playground/count-to/animated-counter': typeof AuthenticatedPlaygroundCountToAnimatedCounterRoute
+  '/_authenticated/playground/count-to/number-flow': typeof AuthenticatedPlaygroundCountToNumberFlowRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -267,6 +337,8 @@ export interface FileRouteTypes {
     | '/org/directory'
     | '/org/notices'
     | '/org/posts'
+    | '/playground/code-block'
+    | '/playground/github-activity'
     | '/settings/dicts'
     | '/settings/logs'
     | '/settings/menus'
@@ -275,6 +347,11 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/settings/'
     | '/org/notices/$noticeId'
+    | '/playground/ai-kit/fluid-orb'
+    | '/playground/ai-kit/grid-reveal'
+    | '/playground/ai-kit/matrix-orb'
+    | '/playground/count-to/animated-counter'
+    | '/playground/count-to/number-flow'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/403'
@@ -292,6 +369,8 @@ export interface FileRouteTypes {
     | '/org/directory'
     | '/org/notices'
     | '/org/posts'
+    | '/playground/code-block'
+    | '/playground/github-activity'
     | '/settings/dicts'
     | '/settings/logs'
     | '/settings/menus'
@@ -300,6 +379,11 @@ export interface FileRouteTypes {
     | '/settings/users'
     | '/settings'
     | '/org/notices/$noticeId'
+    | '/playground/ai-kit/fluid-orb'
+    | '/playground/ai-kit/grid-reveal'
+    | '/playground/ai-kit/matrix-orb'
+    | '/playground/count-to/animated-counter'
+    | '/playground/count-to/number-flow'
   id:
     | '__root__'
     | '/(auth)'
@@ -319,6 +403,8 @@ export interface FileRouteTypes {
     | '/_authenticated/org/directory'
     | '/_authenticated/org/notices'
     | '/_authenticated/org/posts'
+    | '/_authenticated/playground/code-block'
+    | '/_authenticated/playground/github-activity'
     | '/_authenticated/settings/dicts'
     | '/_authenticated/settings/logs'
     | '/_authenticated/settings/menus'
@@ -327,6 +413,11 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/users'
     | '/_authenticated/settings/'
     | '/_authenticated/org/notices_/$noticeId'
+    | '/_authenticated/playground/ai-kit/fluid-orb'
+    | '/_authenticated/playground/ai-kit/grid-reveal'
+    | '/_authenticated/playground/ai-kit/matrix-orb'
+    | '/_authenticated/playground/count-to/animated-counter'
+    | '/_authenticated/playground/count-to/number-flow'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -451,6 +542,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsDictsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/playground/github-activity': {
+      id: '/_authenticated/playground/github-activity'
+      path: '/playground/github-activity'
+      fullPath: '/playground/github-activity'
+      preLoaderRoute: typeof AuthenticatedPlaygroundGithubActivityRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/code-block': {
+      id: '/_authenticated/playground/code-block'
+      path: '/playground/code-block'
+      fullPath: '/playground/code-block'
+      preLoaderRoute: typeof AuthenticatedPlaygroundCodeBlockRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/org/posts': {
       id: '/_authenticated/org/posts'
       path: '/org/posts'
@@ -507,6 +612,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedException403RouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/playground/count-to/number-flow': {
+      id: '/_authenticated/playground/count-to/number-flow'
+      path: '/playground/count-to/number-flow'
+      fullPath: '/playground/count-to/number-flow'
+      preLoaderRoute: typeof AuthenticatedPlaygroundCountToNumberFlowRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/count-to/animated-counter': {
+      id: '/_authenticated/playground/count-to/animated-counter'
+      path: '/playground/count-to/animated-counter'
+      fullPath: '/playground/count-to/animated-counter'
+      preLoaderRoute: typeof AuthenticatedPlaygroundCountToAnimatedCounterRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/ai-kit/matrix-orb': {
+      id: '/_authenticated/playground/ai-kit/matrix-orb'
+      path: '/playground/ai-kit/matrix-orb'
+      fullPath: '/playground/ai-kit/matrix-orb'
+      preLoaderRoute: typeof AuthenticatedPlaygroundAiKitMatrixOrbRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/ai-kit/grid-reveal': {
+      id: '/_authenticated/playground/ai-kit/grid-reveal'
+      path: '/playground/ai-kit/grid-reveal'
+      fullPath: '/playground/ai-kit/grid-reveal'
+      preLoaderRoute: typeof AuthenticatedPlaygroundAiKitGridRevealRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/ai-kit/fluid-orb': {
+      id: '/_authenticated/playground/ai-kit/fluid-orb'
+      path: '/playground/ai-kit/fluid-orb'
+      fullPath: '/playground/ai-kit/fluid-orb'
+      preLoaderRoute: typeof AuthenticatedPlaygroundAiKitFluidOrbRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/org/notices_/$noticeId': {
       id: '/_authenticated/org/notices_/$noticeId'
       path: '/org/notices/$noticeId'
@@ -541,6 +681,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOrgDirectoryRoute: typeof AuthenticatedOrgDirectoryRoute
   AuthenticatedOrgNoticesRoute: typeof AuthenticatedOrgNoticesRoute
   AuthenticatedOrgPostsRoute: typeof AuthenticatedOrgPostsRoute
+  AuthenticatedPlaygroundCodeBlockRoute: typeof AuthenticatedPlaygroundCodeBlockRoute
+  AuthenticatedPlaygroundGithubActivityRoute: typeof AuthenticatedPlaygroundGithubActivityRoute
   AuthenticatedSettingsDictsRoute: typeof AuthenticatedSettingsDictsRoute
   AuthenticatedSettingsLogsRoute: typeof AuthenticatedSettingsLogsRoute
   AuthenticatedSettingsMenusRoute: typeof AuthenticatedSettingsMenusRoute
@@ -549,6 +691,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
   AuthenticatedOrgNoticesNoticeIdRoute: typeof AuthenticatedOrgNoticesNoticeIdRoute
+  AuthenticatedPlaygroundAiKitFluidOrbRoute: typeof AuthenticatedPlaygroundAiKitFluidOrbRoute
+  AuthenticatedPlaygroundAiKitGridRevealRoute: typeof AuthenticatedPlaygroundAiKitGridRevealRoute
+  AuthenticatedPlaygroundAiKitMatrixOrbRoute: typeof AuthenticatedPlaygroundAiKitMatrixOrbRoute
+  AuthenticatedPlaygroundCountToAnimatedCounterRoute: typeof AuthenticatedPlaygroundCountToAnimatedCounterRoute
+  AuthenticatedPlaygroundCountToNumberFlowRoute: typeof AuthenticatedPlaygroundCountToNumberFlowRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -563,6 +710,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedOrgDirectoryRoute: AuthenticatedOrgDirectoryRoute,
   AuthenticatedOrgNoticesRoute: AuthenticatedOrgNoticesRoute,
   AuthenticatedOrgPostsRoute: AuthenticatedOrgPostsRoute,
+  AuthenticatedPlaygroundCodeBlockRoute: AuthenticatedPlaygroundCodeBlockRoute,
+  AuthenticatedPlaygroundGithubActivityRoute:
+    AuthenticatedPlaygroundGithubActivityRoute,
   AuthenticatedSettingsDictsRoute: AuthenticatedSettingsDictsRoute,
   AuthenticatedSettingsLogsRoute: AuthenticatedSettingsLogsRoute,
   AuthenticatedSettingsMenusRoute: AuthenticatedSettingsMenusRoute,
@@ -571,6 +721,16 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsUsersRoute: AuthenticatedSettingsUsersRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
   AuthenticatedOrgNoticesNoticeIdRoute: AuthenticatedOrgNoticesNoticeIdRoute,
+  AuthenticatedPlaygroundAiKitFluidOrbRoute:
+    AuthenticatedPlaygroundAiKitFluidOrbRoute,
+  AuthenticatedPlaygroundAiKitGridRevealRoute:
+    AuthenticatedPlaygroundAiKitGridRevealRoute,
+  AuthenticatedPlaygroundAiKitMatrixOrbRoute:
+    AuthenticatedPlaygroundAiKitMatrixOrbRoute,
+  AuthenticatedPlaygroundCountToAnimatedCounterRoute:
+    AuthenticatedPlaygroundCountToAnimatedCounterRoute,
+  AuthenticatedPlaygroundCountToNumberFlowRoute:
+    AuthenticatedPlaygroundCountToNumberFlowRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

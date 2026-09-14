@@ -374,6 +374,7 @@
   "features.permissions.items.RESET_PASSWORD": "Reset Password",
   "features.permissions.items.SEARCH": "Search",
   "features.permissions.searchPlaceholder": "Filter by permission name",
+  "features.playground.placeholder": "Demo page is under construction, stay tuned",
   "features.posts.action.add": "Add Post",
   "features.posts.category.management": "Management",
   "features.posts.category.production": "Production",

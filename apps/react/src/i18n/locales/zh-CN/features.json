@@ -374,6 +374,7 @@
   "features.permissions.items.RESET_PASSWORD": "重置密码",
   "features.permissions.items.SEARCH": "搜索",
   "features.permissions.searchPlaceholder": "按权限名称过滤",
+  "features.playground.placeholder": "演示页开发中，敬请期待",
   "features.posts.action.add": "新增岗位",
   "features.posts.category.management": "管理岗",
   "features.posts.category.production": "生产岗",

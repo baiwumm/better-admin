@@ -54,6 +54,13 @@ export const MENU_REQUIRED_PATHS = [
   "/settings/menus",
   "/settings/dicts",
   "/settings/logs",
+  "/playground/code-block",
+  "/playground/count-to/number-flow",
+  "/playground/count-to/animated-counter",
+  "/playground/ai-kit/fluid-orb",
+  "/playground/ai-kit/grid-reveal",
+  "/playground/ai-kit/matrix-orb",
+  "/playground/github-activity",
 ] as const;
 
 /** 路径 → 文档标题 i18n 键（menu.pageTitle.* / exception 页用 menu.exception.*）。 */
@@ -82,6 +89,14 @@ export const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/settings/menus": "menu.pageTitle.menus",
   "/settings/dicts": "menu.pageTitle.dicts",
   "/settings/logs": "menu.pageTitle.logs",
+  // 演示场（菜单页，标题直接复用菜单键，同 exception 口径）
+  "/playground/code-block": "menu.playground.codeBlock",
+  "/playground/count-to/number-flow": "menu.playground.numberFlow",
+  "/playground/count-to/animated-counter": "menu.playground.animatedCounter",
+  "/playground/ai-kit/fluid-orb": "menu.playground.fluidOrb",
+  "/playground/ai-kit/grid-reveal": "menu.playground.gridReveal",
+  "/playground/ai-kit/matrix-orb": "menu.playground.matrixOrb",
+  "/playground/github-activity": "menu.playground.githubActivity",
 };
 
 /**
