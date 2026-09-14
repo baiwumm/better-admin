@@ -2,6 +2,12 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Nuxt 对齐：顶栏全屏按钮替换主题切换（2026-09-14）
+
+- **现象**（用户反馈）：Nuxt 端顶栏缺少 Vue 端的 `FullscreenButton`。Vue 端 `AdminLayout` 右侧顺序为「铃铛 → 全屏 → 语言 → 配置抽屉」（主题切换已随提交 `222f42f` 收进 ConfigDrawer），Nuxt 端 M4 平移时 `admin.vue` 注释「FullscreenButton 未列入 M4 平移范围（随需评估）」，右侧第二位仍是 `ThemeSwitch`。
+- **修复**：新建 `app/components/layout/FullscreenButton.vue`（逐字平移 Vue 端，`useFullscreen` 经 `@vueuse/nuxt` auto-import、无参默认作用于 `documentElement`）；`admin.vue` 顶栏 `ThemeSwitch → FullscreenButton`，右侧顺序与 Vue 端一致；删除 `ThemeSwitch.vue`（唯一引用已替换）。主题三态切换能力**不损失**——仍在 ConfigDrawer 偏好抽屉与命令面板主题组两处。i18n `layout.fullscreen.enter / exit` 两语言键已随 M0 同步存在，无需补文案。
+- **验证**：eslint 净 + test 9 文件 95 用例全绿；`nuxt typecheck` 仅剩既有 P0（`app/features/logs/` 源码缺失，AGENTS §19 已登记），本次无新增错误。全屏切换端到端复测待用户自测（观察点：点击后 `document.documentElement` 进入全屏、图标切为 minimize、aria-label 切为「退出全屏」，Esc 退出后状态同步回来）。
+
 ### Nuxt 修复：异常页切换标签栏 / 面包屑冻结在首个页面（2026-09-14）
 
 - **现象**（用户反馈）：菜单进入 `/exception/403` 后再点 404、500，页面主体正确切换，但标签栏不新增、激活态与面包屑一直显示 403。

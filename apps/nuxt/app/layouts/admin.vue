@@ -16,10 +16,10 @@ import { findActivePath } from '@/lib/menu-utils'
 import { resolveRouteTitleKey } from '@/lib/route-access'
 import { type ThemeMode, useDesignThemeStore } from '@/stores/design-theme-store'
 import ConfigDrawer from '@/components/layout/ConfigDrawer.vue'
+import FullscreenButton from '@/components/layout/FullscreenButton.vue'
 import LanguageSwitch from '@/components/layout/LanguageSwitch.vue'
 import TagsBar from '@/components/layout/TagsBar.vue'
 import SidebarBrand from '@/components/layout/SidebarBrand.vue'
-import ThemeSwitch from '@/components/layout/ThemeSwitch.vue'
 import UserMenu from '@/components/layout/UserMenu.vue'
 
 /**
@@ -29,11 +29,11 @@ import UserMenu from '@/components/layout/UserMenu.vue'
  * - 侧边栏：品牌下拉（技术栈入口）+ 导航菜单（骨架屏 / 失败重试 / 折叠
  *   tooltip + 悬浮子菜单）+ 底部快捷链接（GitHub / 博客）+ 用户菜单
  * - 顶栏：折叠按钮（leading，移动端为打开抽屉）+ 面包屑 + 右侧
- *   站内信铃铛 / 主题 / 语言 / 偏好抽屉（ConfigDrawer）
+ *   站内信铃铛 / 全屏 / 语言 / 偏好抽屉（ConfigDrawer，主题切换收在其中，
+ *   对齐 Vue 端 AdminLayout）
  * - 多标签页栏：TagsBar 置于 UDashboardToolbar（偏好可隐藏）
  * - 主体：slot（app.vue 的 KeepAliveOutlet > NuxtPage 提供保活与路由 VT）；
  *   全宽页面（架构图谱 / 我的公告 / exception）去内边距。
- * FullscreenButton 未列入 M4 平移范围（随需评估）。
  */
 useAuthSync()
 
@@ -363,9 +363,10 @@ function retryMenus() {
 
           <template #right>
             <div class="flex items-center gap-2">
-              <!-- 站内信铃铛（M3）：未读数 + 60s 轮询，对齐 Vue AdminLayout 顺序首位 -->
+              <!-- 站内信铃铛（M3）：未读数 + 60s 轮询；右侧按钮顺序对齐
+                   Vue 端 AdminLayout：铃铛 → 全屏 → 语言 → 配置抽屉 -->
               <NoticeBell />
-              <ThemeSwitch />
+              <FullscreenButton />
               <LanguageSwitch />
               <ConfigDrawer />
             </div>
