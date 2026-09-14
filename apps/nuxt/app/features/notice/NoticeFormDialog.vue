@@ -535,6 +535,7 @@ export default { name: 'NoticeFormDialog' }
         <UFormField
           name="scopeDeptIds"
           required
+          :label="t('features.notices.form.scope')"
         >
           <NoticeScopeSelector
             v-model:dept-ids="state.scopeDeptIds"

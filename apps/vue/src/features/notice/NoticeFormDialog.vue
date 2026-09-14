@@ -534,7 +534,11 @@ export default { name: "NoticeFormDialog" };
           </UEditor>
         </UFormField>
 
-        <UFormField name="scopeDeptIds" required>
+        <UFormField
+          name="scopeDeptIds"
+          required
+          :label="t('features.notices.form.scope')"
+        >
           <NoticeScopeSelector
             v-model:dept-ids="state.scopeDeptIds"
             v-model:post-ids="state.scopePostIds"

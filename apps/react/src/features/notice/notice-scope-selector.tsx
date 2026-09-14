@@ -2,7 +2,15 @@ import type { DeptTreeNode, NoticeScopeType } from "@/lib/api-types";
 import type { Key } from "react";
 
 import { ListBoxLoadMoreItem } from "react-aria-components";
-import { Avatar, Label, ListBox, Select, Spinner, Tabs } from "@heroui/react";
+import {
+  Avatar,
+  ListBox,
+  Select,
+  Spinner,
+  Tabs,
+  Description,
+  FieldError,
+} from "@heroui/react";
 import { useMemo, useState } from "react";
 
 import { useTranslation } from "@/i18n";
@@ -35,9 +43,15 @@ export interface NoticeScopeSelectorProps {
   tree: DeptTreeNode[];
   posts: { id: string; name: string; deptPath: string; status: string }[];
   postsPaging: ScopePaging;
-  users: { id: string; username: string; displayName: string }[];
+  users: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatar: string | null;
+  }[];
   usersLoading: boolean;
   usersPaging: ScopePaging;
+  isError: boolean;
 }
 
 export function NoticeScopeSelector({
@@ -53,6 +67,7 @@ export function NoticeScopeSelector({
   users,
   usersLoading,
   usersPaging,
+  isError = false,
 }: NoticeScopeSelectorProps) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<NoticeScopeType>("dept");
@@ -103,8 +118,7 @@ export function NoticeScopeSelector({
   }, [deptIds.length, postIds.length, userIds.length, t]);
 
   return (
-    <div className="flex flex-col gap-2">
-      <Label>{t("features.notices.form.scope")}</Label>
+    <>
       <Tabs
         aria-label={t("features.notices.form.scope")}
         selectedKey={tab}
@@ -141,6 +155,7 @@ export function NoticeScopeSelector({
           >
             <Select.Trigger>
               <Select.Value />
+              <Select.ClearButton />
               <Select.Indicator />
             </Select.Trigger>
             <Select.Popover>
@@ -196,6 +211,7 @@ export function NoticeScopeSelector({
           >
             <Select.Trigger>
               <Select.Value />
+              <Select.ClearButton />
               <Select.Indicator />
             </Select.Trigger>
             <Select.Popover>
@@ -250,6 +266,7 @@ export function NoticeScopeSelector({
           >
             <Select.Trigger>
               <Select.Value />
+              <Select.ClearButton />
               <Select.Indicator />
             </Select.Trigger>
             <Select.Popover>
@@ -260,7 +277,31 @@ export function NoticeScopeSelector({
                     id={user.id}
                     textValue={user.displayName || user.username}
                   >
-                    {user.displayName || user.username}
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      {/* key 随 avatar 变化重建 Avatar 子树：Radix Avatar 图片加载
+                          状态残留会导致 Fallback 永不显示（同 UserInfo） */}
+                      <Avatar
+                        key={user.avatar ?? "fallback"}
+                        aria-hidden
+                        className="size-5 shrink-0"
+                        color="accent"
+                        variant="soft"
+                      >
+                        {user.avatar ? (
+                          <Avatar.Image
+                            alt={user.displayName || user.username}
+                            loading="lazy"
+                            src={user.avatar}
+                          />
+                        ) : null}
+                        <Avatar.Fallback className="text-[10px]">
+                          {(user.displayName || user.username).slice(0, 1)}
+                        </Avatar.Fallback>
+                      </Avatar>
+                      <span className="block truncate">
+                        {user.displayName || user.username}
+                      </span>
+                    </span>
                     <ListBox.ItemIndicator />
                   </ListBox.Item>
                 ))}
@@ -279,7 +320,11 @@ export function NoticeScopeSelector({
           </Select>
         </Tabs.Panel>
       </Tabs>
-      <p className="text-xs text-muted">{selectedSummary}</p>
-    </div>
+      {isError ? (
+        <FieldError>{t("features.notices.form.scopeRequired")}</FieldError>
+      ) : (
+        <Description>{selectedSummary}</Description>
+      )}
+    </>
   );
 }

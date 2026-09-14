@@ -21,7 +21,7 @@ const props = defineProps<{
   userIds: string[]
   tree: DeptTreeNode[]
   posts: { id: string, name: string, deptPath: string, status: string }[]
-  users: Pick<User, 'id' | 'username' | 'displayName'>[]
+  users: Pick<User, 'id' | 'username' | 'displayName' | 'avatar'>[]
   usersLoading: boolean
 }>()
 
@@ -73,17 +73,30 @@ const deptOptions = computed<DeptOption[]>(() => {
 const postOptions = computed(() =>
   props.posts.map(post => ({
     label: post.name,
-    hint: post.deptPath,
+    // 次行组织路径（USelectMenu item 的 description 槽，对齐 React 端 deptPath 次行）
+    description: post.deptPath,
     value: post.id,
     disabled: post.status !== 'enabled'
   }))
 )
 
 const userOptions = computed(() =>
-  props.users.map(user => ({
-    label: user.displayName || user.username,
-    value: user.id
-  }))
+  props.users.map((user) => {
+    const name = user.displayName || user.username
+
+    return {
+      label: name,
+      value: user.id,
+      // UAvatar props（src 缺省时 UAvatar 用 text 兜底显示首字，同 DeptLeaderSelect）
+      avatar: {
+        alt: name,
+        text: name.slice(0, 1),
+        ...(user.avatar ? { src: user.avatar } : {}),
+        // as const 防字面量拓宽为 string（AvatarProps.color 为字面量联合）
+        color: 'primary' as const
+      }
+    }
+  })
 )
 
 const selectedSummary = computed(() => {
@@ -120,9 +133,6 @@ export default { name: 'NoticeScopeSelector' }
 
 <template>
   <div class="flex flex-col gap-2">
-    <span class="text-sm font-medium">
-      {{ t("features.notices.form.scope") }}
-    </span>
     <UTabs
       v-model:model-value="tab"
       :content="false"
@@ -151,6 +161,9 @@ export default { name: 'NoticeScopeSelector' }
       class="w-full"
       multiple
       value-key="value"
+      :ui="{
+        itemDescription: 'text-xs'
+      }"
       @update:model-value="
         (value: unknown) => emit('update:postIds', toIds(value))
       "

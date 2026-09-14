@@ -177,7 +177,7 @@ function NoticeFormModal({
   });
   const notice = detailQuery.data ?? null;
 
-  const { control, handleSubmit, reset, setValue, watch } =
+  const { control, handleSubmit, reset, setValue, trigger, watch } =
     useForm<NoticeFormValues>({
       resolver: zodResolver(noticeFormSchema),
       defaultValues: {
@@ -450,8 +450,10 @@ function NoticeFormModal({
                       className="flex flex-col gap-1"
                       isInvalid={Boolean(fieldState.error)}
                     >
+                      <Label>{t("features.notices.form.scope")}</Label>
                       <NoticeScopeSelector
                         deptIds={watch("scopeDeptIds") ?? []}
+                        isError={Boolean(fieldState.error)}
                         postIds={watch("scopePostIds") ?? []}
                         posts={postOptions}
                         postsPaging={{
@@ -468,15 +470,22 @@ function NoticeFormModal({
                           loading: usersQuery.isFetchingNextPage,
                           loadMore: loadMoreUsers,
                         }}
-                        onDeptIdsChange={(ids) => setValue("scopeDeptIds", ids)}
-                        onPostIdsChange={(ids) => setValue("scopePostIds", ids)}
-                        onUserIdsChange={(ids) => setValue("scopeUserIds", ids)}
+                        // setValue 默认不重跑校验（refine 的「至少一项」错误挂在
+                        // scopeDeptIds 路径），三类粒度任一变化后统一 trigger
+                        // 错误路径字段，即时清除已显示的 FieldError
+                        onDeptIdsChange={(ids) => {
+                          setValue("scopeDeptIds", ids);
+                          void trigger("scopeDeptIds");
+                        }}
+                        onPostIdsChange={(ids) => {
+                          setValue("scopePostIds", ids);
+                          void trigger("scopeDeptIds");
+                        }}
+                        onUserIdsChange={(ids) => {
+                          setValue("scopeUserIds", ids);
+                          void trigger("scopeDeptIds");
+                        }}
                       />
-                      {fieldState.error && (
-                        <FieldError>
-                          {t("features.notices.form.scopeRequired")}
-                        </FieldError>
-                      )}
                     </TextField>
                   )}
                 />
