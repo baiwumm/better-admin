@@ -2,6 +2,28 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Nuxt 修复：异常页切换标签栏 / 面包屑冻结在首个页面（2026-09-14）
+
+- **现象**（用户反馈）：菜单进入 `/exception/403` 后再点 404、500，页面主体正确切换，但标签栏不新增、激活态与面包屑一直显示 403。
+- **根因**（机制沉淀 mechanisms.md §26）：Nuxt 的 `useRoute()` 是 `nuxtApp._route` **快照**，只在 NuxtPage 的 Suspense resolve 后 `_route.sync()` 才跟上导航；而 `KeepAliveOutlet` 传给 NuxtPage 的 `page-key` 恰好取自这个快照——Suspense 是否 resolve 又取决于 key 是否变化，形成「输入依赖输出」的死锁。异常页三个文件平移时去掉了 `<script setup>`，编译产物无 `__name`，dev 下被 Nuxt keepalive 分支归为同一个 RouteProvider 类型，「同 type + 同 key」凑齐后 Suspense 只 patch 不 resolve，`_route` 永久冻结。普通页面靠组件名不同触发 resolve 未暴露，但代价是每次切页页面组件挂载两次；经编译产物实证 `index.vue` 与 `settings/index.vue` 同名 `index`，控制台 ↔ 系统设置切换踩的是同一个坑。
+- **修复**：`KeepAliveOutlet.pageKey` 改取 `router.currentRoute.value.path`（vue-router 实时路由，与 NuxtPage 不传 `page-key` 时的默认行为等价），组件内其余 `route.*` 读取保留 `useRoute()`；三个异常页补回 `<script setup lang="ts">`（对齐 Vue 端写法），`__name` 恢复为 `403 / 404 / 500`。**规则沉淀**（§26）：驱动 NuxtPage 渲染的输入一律取 `useRouter().currentRoute`，`useRoute()` 只用于消费渲染结果的布局展示；页面 SFC 不得省略 `<script setup>`。
+- **验证**：eslint 净 + test 9 文件 95 用例全绿；dev server 编译产物比对确认两处修复已生效。异常页 / 控制台 ↔ 系统设置的切换端到端复测需登录态，待用户自测（观察点：标签逐个新增且激活态跟随、面包屑与文档标题同步更新）。
+
+### Nuxt 修复：登录 / 退出布局切换错乱帧（2026-09-14）
+
+- **现象**（用户反馈）：登录成功后「登录页表单变成控制台页面，然后再进入 AdminLayout」，退出同样错序。
+- **根因**（机制沉淀 mechanisms.md §25「后续调整」）：① **退出**——`app.vue` 布局缺省分支按 `isAuthenticated` 判定（同日三轮修复引入），`logout()` 内 `clearSession()` 先于导航同步清认证态，布局立刻切 `auth` 却套着仍在渲染的控制台页面，撤销请求返回、`router.push('/sign-in')` 完成后才换成表单（窗口 = 一次网络往返，最长 5s 超时，每次退出必现）；② **登录**——Nuxt 布局经 `#build/layouts` 以 `defineAsyncComponent` 注册、不在 vue-router 导航期加载范围，导航确认后 admin 布局首载空白；`KeepAliveOutlet.beforeResolve` 只判 `isAdminLayoutRoute(to)` 未判 `from`，登录导航（/sign-in → /）也进路由 VT，afterEach + nextTick 放行时布局未就绪，VT 捕获的新帧是空白，动画结束后布局与页面才「跳」出来。Vue 端 `AppShell.vue` 布局纯路径判定 + 静态 import、React 端 KeepAliveOutlet 挂在 AdminLayout 内部，均无此问题。
+- **修复**：`app.vue` `layoutName` 缺省分支改**纯路径判定**（`isAuthLayoutPath` → auth / `isAdminLayoutRoute` → admin / 否则 empty，对齐 Vue 端 AppShell；§25 防护仍成立——Nuxt 客户端入口 `await applyPlugins` 后才 mount，router 插件在该阶段无条件 `await router.isReady()`，首帧 route 已是守卫重定向后的最终位置，源码实证）；`KeepAliveOutlet.beforeResolve` 增加 `isAdminLayoutRoute(from)`（仅布局内页面切换播 VT）；`sign-in.vue` setup 内 `void import('@/layouts/admin.vue')` 预热 admin 布局 chunk（Vite 解析为与 `#build/layouts` loader **完全相同**的模块 URL，dev 下含同一 HMR 时间戳，实测一致）。
+- **验证**：eslint 净 + test 9 文件 95 用例全绿；IAB 复测无痕直访 `/settings/users` → 一步 `/sign-in?redirect=/settings/users`、`navType=navigate`、**零 /api 请求**、admin 布局未挂载 ✅，登录页渲染正常 ✅。登录 / 退出的端到端视觉复测需真实凭据，待用户自测（观察点：登录后不再有空白 / 无布局的中间帧；退出后控制台页面不再被套进登录页外壳）。
+
+### Nuxt 修复：登录页无限循环 + 二级跳变丢 redirect 参数（2026-09-14）
+
+- **现象**：nuxt dev 登录页无限循环（`/sign-in?redirect=/` ↔ `/sign-in` 白屏循环）；随后用户反馈干净直访首页也有「先 `/sign-in?redirect=/` 再刷新跳裸 `/sign-in`」的二级跳变，与其他端不一致。
+- **根因与修复**（机制结论沉淀 mechanisms.md §25）：① **无限循环**——M4 全局挂载的 `KeepAliveOutlet` 打破「菜单查询靠 Admin 布局隔离」的三端同构前提，未登录直访时 `useMenus()` 无 token 请求 `/menus` → 401 → api-client 硬跳登录页 → 整页重载 → 循环（临时 server middleware 打点实证 6 秒 30 次 noauth 请求）；修复为该组件菜单查询加 `enabled: isAuthenticated` 门控。② **二级跳变**——残留过期 token 直访时守卫放行 → `/auth/me` 401 → `redirectToSignIn()` 原实现不带 `redirect` 参数，登录后无法回跳；修复为携带当前完整路径（登录页自触发不带参数防自指）。**跨端备案**：React / Vue 端 `redirectToSignIn` 同构不带参数，后续按需统一。
+- **验证**：IAB 五场景实测（干净直访 / 过期 token 直访 / 过期 token 登录回跳 / 已登录访问登录页弹回 / 已登录刷新保持）全部通过；lint 净 + test 9 文件 95 用例全绿。诊断用临时 middleware 已删除。
+- **同日二轮收敛（用户无痕复测后拍板）**：redirect 参数规则统一为 **Next 端 `buildSignInRedirect` 既有规则**——根路径 `/` 跳登录页**不带参数**，其余业务路径保留 `redirect`。nuxt 守卫①与 api-client `redirectToSignIn` 两处同步；复测：无痕直访 `/` → 一步裸 `/sign-in` ✅、`/settings/users` 直访保留参数且登录后回跳原页渲染正常 ✅（`/settings/logs` 回跳后 404 为 logs 模块源码缺失的既有 P0 待办所致，与跳转逻辑无关）。
+- **同日三轮（用户三报「进入登录页又刷新」，文件打点抓到真根因）**：一轮修复只挡住了 KeepAliveOutlet 自己的菜单查询，**更底层根因是 `app.vue` 布局选择 `route.meta.layout ?? 'admin'`**——初始导航未完成 / 守卫重定向前的首帧缺省挂载 admin 布局，其副作用（admin.vue 的 `useMenus` + `NoticeBell` 未读数轮询）在未登录态发出 noauth 请求 → 401 → `redirectToSignIn` 登录页分支 `assign` 同 URL 造成整页重载（Vue / React 端布局由根组件按认证态控制、未登录不挂 AdminLayout，故无此问题）。修复：① `layoutName` 缺省分支改 `isAuthenticated ? 'admin' : 'auth'`（治本）；② `redirectToSignIn` 登录页分支改 return 不再重载（防御）。3002 冷启动实例 + 文件打点复测：无痕直访 `/` 全程**零 /api 请求、无重载**，业务路径直访保留参数、登录后回跳且全部请求带 Bearer。机制结论完整版见 mechanisms.md §25（已重写因果链）。
+
 ### 品牌标识审计：补齐 Next 文件约定图标 + `.workbuddy/` 出库（2026-09-14）
 
 - **审计范围**：按用户要求逐端核对「`apps/*` 替换是否完整」——覆盖 `public/` 资产、HTML / `metadata.icons` 声明、组件引用路径，以及**框架自身的图标入口**（框架约定常绕过显式声明）。

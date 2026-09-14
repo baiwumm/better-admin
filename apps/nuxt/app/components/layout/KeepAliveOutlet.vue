@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
 
-import { useMenus } from '@/composables/use-menus'
+import { menusQueryOptions } from '@/composables/use-menus'
 import { collectKeepAlivePaths, findActivePath } from '@/lib/menu-utils'
 import { isAdminLayoutRoute } from '@/lib/route-access'
 import { canRouteVt, startRouteVt } from '@/lib/route-vt'
+import { useAuthStore } from '@/stores/auth-store'
 import { useDesignThemeStore } from '@/stores/design-theme-store'
 import { useTabsStore } from '@/stores/tabs-store'
 
@@ -41,7 +43,15 @@ import { useTabsStore } from '@/stores/tabs-store'
  */
 const route = useRoute()
 const router = useRouter()
-const { data: menuTree } = useMenus()
+const auth = useAuthStore()
+// 本组件挂在 app.vue 全局（auth / empty 布局下同样渲染），与 Vue / React 端「仅在
+// Admin 布局内使用 useMenus」的布局隔离前提不同，菜单查询必须以登录态门控：
+// 未登录时若照常发起，登录页会无 token 请求 /menus → 401 → api-client 整页跳回
+// 登录页 → 页面重载 → 再次请求……形成无限循环。
+const { data: menuTree } = useQuery({
+  ...menusQueryOptions(),
+  enabled: computed(() => auth.isAuthenticated)
+})
 const tabsStore = useTabsStore()
 const designTheme = useDesignThemeStore()
 
@@ -115,10 +125,24 @@ const cachedNames = computed(() => {
   return [...new Set(names)]
 })
 
-/** 页面 key：路径 + 已应用刷新序号（刷新递增强制重挂载）。 */
-const pageKey = computed(
-  () => `${route.path}#${appliedRefreshSeq.value[route.path] ?? 0}`
-)
+/**
+ * 页面 key：路径 + 已应用刷新序号（刷新递增强制重挂载）。
+ *
+ * 路径必须取 vue-router 实时路由（router.currentRoute），不能用 useRoute()：
+ * Nuxt 的 useRoute() 是 nuxtApp._route 快照，只在 NuxtPage 的 Suspense resolve
+ * 后 `_route.sync()` 才跟上导航，而 pageKey 正是驱动该 resolve 的输入——若取
+ * 快照值，同名页面组件之间切换（Nuxt keepalive 分支按组件名复用 RouteProvider，
+ * Suspense 分支 type 与 key 均不变、只做 patch）永不 resolve，_route 冻结在旧
+ * 路径：页面内容由 RouterView 实时路由渲染是对的，但标签栏 / 面包屑 / 文档标题
+ * 全部停在上一页（异常页 403 → 404 → 500 首先暴露：纯模板 SFC 无 __name，dev 下
+ * 三页共用同一 RouteProvider）。不同名页面此前虽能靠 type 变化 resolve，但 key
+ * 先旧后新会让页面组件挂载两次；改为实时路由后单次挂载。
+ */
+const pageKey = computed(() => {
+  const path = router.currentRoute.value.path
+
+  return `${path}#${appliedRefreshSeq.value[path] ?? 0}`
+})
 
 /** 是否播放路由过渡：偏好非「无」+ 浏览器支持 VT + 未开启减弱动态效果。 */
 function shouldAnimate(): boolean {
@@ -161,7 +185,17 @@ function renderTimeout(): Promise<void> {
 }
 
 const removeBeforeResolve = router.beforeResolve(async (to, from) => {
-  if (to.path === from.path || !isAdminLayoutRoute(to) || !shouldAnimate()) {
+  // 仅 AdminLayout 内的页面切换播放（from / to 都要在布局内）。本组件全局挂载
+  // （React 端挂在 AdminLayout 内部，跨布局导航不经过它），登录进入（/sign-in → /）
+  // 也会走到这里：此类导航伴随布局切换，而 Nuxt 布局是异步 chunk，afterEach +
+  // nextTick 放行时新布局可能尚未加载，VT 捕获到的新帧是空白，动画结束后
+  // 布局与页面才「跳」出来。
+  if (
+    to.path === from.path
+    || !isAdminLayoutRoute(to)
+    || !isAdminLayoutRoute(from)
+    || !shouldAnimate()
+  ) {
     return
   }
 

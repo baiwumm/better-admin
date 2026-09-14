@@ -883,3 +883,54 @@ Iconify CDN，实现运行时零外部网络依赖（DB 动态菜单图标名的
 静态写法的图标另经 `clientBundle.scan: true` 进客户端 bundle）。
 
 - 落地：`nuxt/nuxt.config.ts` icon 块；背景见 `docs/progress.md` M0 条目（2026-09-12）。
+
+## 25. Nuxt 端登录页无限循环：缺省 admin 布局在未登录首帧挂载，其副作用发出 401 请求（2026-09-14）
+
+**现象**：未登录直访任意业务页，登录页反复整页重载（用户观感「进入登录页就又刷新一次」；早期版本表现为 `/sign-in?redirect=/` ↔ `/sign-in` 循环与白屏）。Vue / React 端无此问题。
+
+**根因链（3002 冷启动实例 + server middleware 文件打点实证）**：
+1. **`app.vue` 布局选择 `route.meta.layout ?? 'admin'`**：初始导航未完成（`route.meta` 为空）或守卫把业务路径重定向到 `/sign-in` 前的首帧，缺省解析为 **admin 布局**——未登录态下 admin 布局被短暂挂载，其副作用立即执行：布局自身的 `useMenus()`（无 `enabled` 门控，三端同构、均靠布局隔离）发 `GET /api/menus`、`NoticeBell` 发 `GET /api/notifications/unread-count`（文件打点实证：清存储直访 `/` 后 04:45:13/14 两条 noauth 请求）；
+2. 无 token → 401 → api-client `refreshAccessToken` 无 refreshToken 失败 → `redirectToSignIn()` → 旧实现在登录页分支 `location.assign('/sign-in')`——**assign 同 URL 也是整页重载**；
+3. 重载后模块级 `redirectingToSignIn` 防重标志归零，首帧再次挂载 admin 布局 → 再次 401 → 无限循环（URL 表现随 redirectToSignIn 是否带参而异）。
+   Vue 端无此问题的本质：根组件按**认证态**控制布局，未登录时 AdminLayout 根本不挂载；React 端同理（根路由按 auth 分支）。M0-M5 走查均为已登录态，未复测干净未登录直访，故未暴露。
+
+**修复（三层，缺一不可）**：
+1. **治本**（`apps/nuxt/app/app.vue`）：`layoutName` 缺省分支改为 `auth.isAuthenticated ? 'admin' : 'auth'`——未登录时 admin 布局树完全不挂载，对齐 Vue / React 端「布局跟随认证态」语义；显式 `meta.layout`（登录页 auth / 错误页 empty）优先不变；
+2. KeepAliveOutlet 菜单查询 `enabled: auth.isAuthenticated` 门控（一轮修复保留；该组件全局挂载属于 Nuxt 端特有形态，防御性保持）；
+3. **防御**（`apps/nuxt/app/lib/api-client.ts`）：`redirectToSignIn` 在 `pathname === '/sign-in'` 时直接 return（assign 同 URL 也是重载，会造成「登录页闪刷新」；未登录访问受保护页面的跳转由路由守卫统一处理）。
+
+**redirect 参数规则（用户拍板，对齐 Next 端 `proxy.ts` `buildSignInRedirect` 既有规则）**：`target === "/"` 跳 `/sign-in` **不带参数**（首页本就是登录后的默认落点），其余路径带 `redirect=<完整路径>`（encodeURIComponent）。nuxt 端路由守卫①（`auth.global.ts`）与 `redirectToSignIn` 两处同规则。**跨端备案**：React / Vue 端守卫与 `redirectToSignIn` 仍为「一律带参 / 一律裸跳」的旧形态，如需统一另行安排。
+
+- 验证场景矩阵（IAB 实测 + 3002 冷启动实例文件打点，三轮修复后复测）：无痕清存储直访 `/` → 一步裸 `/sign-in`，**全程零 /api 请求、无整页重载**（navType=navigate）✅；业务路径 `/settings/users` 直访 → `/sign-in?redirect=/settings/users` ✅ → 登录后回跳原页渲染正常、登录后全部请求带 Bearer ✅；已登录访问登录页 → 弹回 `/` ✅；lint 净 + test 9 文件 95 用例全绿。
+
+**后续调整（同日）：修复 1 改为纯路径判定——认证态驱动布局在登录 / 退出流程产生错乱帧**
+
+- **现象**：登录成功后「登录页表单变成控制台页面，然后再进入 AdminLayout」，退出同样错序。
+- **根因**：
+  1. **退出**——`logout()` 内 `clearSession()` **同步**置 `isAuthenticated=false`，此刻 route 仍停在业务页（无显式 `meta.layout`），修复 1 的缺省分支立刻回退为 `auth`：**auth 布局套着尚未离开的控制台页面**渲染，直到撤销请求返回、`router.push('/sign-in')` 完成才出现表单。窗口 = 一次网络往返（`AbortSignal.timeout(5_000)` 上限），每次退出必现。
+  2. **登录**——Nuxt 布局经 `#build/layouts` 以 `defineAsyncComponent(() => import(...))` 注册（`nuxt/dist/index.mjs` `layoutTemplate`），**不属于 vue-router 导航期加载的路由组件**（`preloadRouteComponents` 亦不覆盖），导航确认后 admin 布局才首次拉取，首载窗口内 `NuxtLayout` 渲染异步占位、整个视口空白（slot 中的 `NuxtPage` 随之不渲染）。叠加 `KeepAliveOutlet.beforeResolve` 只判 `isAdminLayoutRoute(to)` 未判 `from`，登录导航（/sign-in → /）也被纳入路由 VT：afterEach + nextTick 放行时布局尚未就绪，VT 捕获的新帧为空白，动画结束后布局与页面才「跳」出来。
+  3. 蓝本为何无此问题：Vue 端 `AppShell.vue` 布局判定是 `isAuthLayoutPath(route.path)` / `isAdminLayoutRoute(route)` **纯路径驱动 + 静态 import 同步渲染**，布局与页面在同一渲染周期原子切换；React 端 KeepAliveOutlet 挂在 AdminLayout **内部**，跨布局导航根本不经过它。修复 1 当时对齐的「Vue / React 按认证态控制布局」表述不准确——两端实际是**按路由位置**控制布局，认证态只决定守卫是否放行。
+- **三处修正**：
+  1. `app.vue` `layoutName` 缺省分支改为纯路径判定：`isAuthLayoutPath` → `auth`；`isAdminLayoutRoute` → `admin`；否则 `empty`（显式 `meta.layout` 仍优先）。**修复 1 的防护为何依然成立**：Nuxt 客户端入口 `nuxt/dist/app/entry.js` 为 `await applyPlugins` → `app:created` → `app:beforeMount` → `vueApp.mount`，而 `nuxt/dist/pages/runtime/plugins/router.js` 在 applyPlugins 阶段**无条件** `await router.isReady()`——首帧渲染时初始导航（含全局中间件与守卫重定向）已完成，未登录直访业务路径时 route 已是 `/sign-in`（显式 auth），不存在「meta 为空 / 重定向前的首帧」；「未登录 + 业务路径」的组合只出现在退出窗口，此时 admin 布局本就挂载、无新增副作用，且与 Vue 端同一窗口的行为完全一致（蓝本已长期验证）。
+  2. `KeepAliveOutlet.beforeResolve` 增加 `!isAdminLayoutRoute(from)` 早退：仅 AdminLayout 内的页面切换播路由 VT（落实 route-access.ts 注释原意「仅布局内的页面切换才播放主体区动画」）。
+  3. `sign-in.vue` setup 内 `void import('@/layouts/admin.vue')` 预热 admin 布局 chunk。Vite import analysis 将其解析为与 `#build/layouts` loader **完全相同**的模块 URL（dev 下含同一 HMR 时间戳：`/_nuxt/layouts/admin.vue?t=…`，经 dev server 转换产物比对实测一致；build 下为同一 chunk），登录切布局时 loader 直接命中模块缓存、同步渲染。
+- **复测**：IAB 无痕直访 `/settings/users` → 一步 `/sign-in?redirect=/settings/users`，`navType=navigate`、**零 /api 请求**、admin 布局未挂载 ✅；登录页渲染正常 ✅；lint 净 + test 9 文件 95 用例全绿。登录 / 退出的端到端视觉复测需真实凭据，待用户自测。
+
+## 26. Nuxt 端 `useRoute()` 是快照：NuxtPage `page-key` 取自它会形成「输入依赖输出」的同步死锁（2026-09-14）
+
+**现象**：菜单进入异常页 `/exception/403`，再点 404、500——页面主体正确切换，但标签栏不新增标签、激活态与面包屑（含文档标题）一直停在 403。
+
+**机制（Nuxt 源码，`nuxt/dist/pages/runtime/`）**：
+
+1. **`useRoute()` 不是 vue-router 的实时路由**：`plugins/router.js` 把 `nuxtApp._route` 定义为 `shallowRef(router.currentRoute.value)` 快照，只在两处同步：`afterEach` 判定 to / from **末级页面组件相同且 route key 相同**时立即 `syncCurrentRoute()`；否则等 **NuxtPage 的 Suspense `onResolve`** 里 `nuxtApp._route.sync()`（`page.js`，随后触发 `page:finish`）。设计意图是布局层（面包屑 / 标题）与页面渲染同步更新、不在过渡期提前跳变。
+2. **Suspense 是否 resolve 取决于分支 vnode 是否「换根」**：Vue `patchSuspense` 中 `isSameVNodeType(newBranch, activeBranch)`（同 type 且同 key）为真时只做普通 patch、**不 resolve**；为假才走 pending → resolve → `onResolve`。NuxtPage 的分支 vnode 是 `RouteProvider`，`key = generateRouteKey(routeProps, props.pageKey)`——**传了 `page-key` 就以它为 key**；开启 keepalive 时 NuxtPage 还会按 **页面组件名** 缓存派生的 `PageRouteProvider`（dev 下 `routeProviderKey = componentName`，prod 下为组件对象），同名页面复用同一个 provider 组件类型。
+3. **死锁链**：`KeepAliveOutlet` 的 `pageKey = useRoute().path#seq` —— 取的是 `_route` 快照。导航后 RouterView 已用实时路由渲染新页面组件（内容正确），但 `pageKey` 仍是旧路径；若新旧页面的 provider **type 也相同**（同名组件），Suspense 判定同 vnode → 只 patch → 不 resolve → `_route.sync()` 永不调用 → `_route` 冻结 → 所有 `useRoute()` 消费者（TagsBar `openPath` / 面包屑 / `useDocumentTitle` / `pageKey` 自身）停在旧值。**输入（pageKey）依赖输出（`_route`）**。
+4. **为何异常页首先暴露**：三个异常页平移时因组件自动导入去掉了 `<script setup>`，成为纯模板 SFC——编译产物**没有 `__name`**，dev 下三页共用 `defineRouteProvider(undefined)` 同一 provider 类型，正好凑齐「同 type + 同 key」。普通页面各有 `__name`，靠 type 变化触发 resolve 而未暴露，**但 key 先旧后新导致每次切页页面组件被挂载两次**（第一次 key 为旧路径，`_route.sync()` 后 pageKey 变化再换根一次）。另经编译产物实证 `pages/(authenticated)/index.vue` 与 `settings/index.vue` 的 `__name` 同为 `index`，控制台 ↔ 系统设置切换踩的是同一个死锁。
+
+**修复**：
+1. `KeepAliveOutlet.pageKey` 改取 **`router.currentRoute.value.path`**（vue-router 实时路由）——这正是 NuxtPage 不传 `page-key` 时 `generateRouteKey` 用 `routeProps.route`（RouterView 实时路由）的等价行为。导航一确认 key 即变化 → Suspense 换根 → resolve → `_route.sync()` → 布局层随之更新；页面组件也回到单次挂载。组件内其余 `route.*` 读取（滚动回顶、刷新判定、组件名记录）保留 `useRoute()`——它们消费的正是「与页面渲染同步」的语义。
+2. 三个异常页补回 `<script setup lang="ts">`（对齐 Vue 端写法），编译产物恢复 `__name` 为 `403` / `404` / `500`，dev 与 prod 的 provider 划分一致，`KeepAliveOutlet` 的 path → 组件名映射也能登记它们。
+
+**规则沉淀**：Nuxt 端凡是**驱动** NuxtPage 渲染的输入（`page-key`、keepalive include 派生源等），一律取 `useRouter().currentRoute`，不得取 `useRoute()`；`useRoute()` 只用于**消费**页面渲染结果的布局层展示（面包屑 / 标题 / 标签激活态）。页面 SFC 不得省略 `<script setup>`（组件名是 Nuxt keepalive 分支与本项目保活映射的键）。
+
+- 验证：eslint 净 + test 9 文件 95 用例全绿；dev server 编译产物比对——异常页 `__name` 从空变为 `403/404/500`，`pageKey` 已读取 `router.currentRoute.value.path`。异常页 / 同名 index 页的切换端到端复测需登录态，待用户自测。

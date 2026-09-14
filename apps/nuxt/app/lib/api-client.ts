@@ -79,8 +79,22 @@ function redirectToSignIn() {
 
   redirectingToSignIn = true
 
-  // 直接整页跳转登录页（清空 SPA 内存态更干净）
-  window.location.assign('/sign-in')
+  // 已在登录页：不再跳转。location.assign 同 URL 也会整页重载——若登录页上
+  // 出现意外 401（应无从发生，防御性兜底），重载会表现为「进入登录页又刷新」。
+  // 未登录访问受保护页面的跳转由路由守卫统一处理并按规则携带 redirect。
+  if (window.location.pathname === '/sign-in') return
+
+  redirectingToSignIn = true
+
+  // 直接整页跳转登录页（清空 SPA 内存态更干净）。redirect 参数与路由守卫
+  // ① 保持同一规则（对齐 Next 端 buildSignInRedirect）：根路径不带参数
+  // （登录后本就落首页，回跳无意义），其余路径携带当前完整路径。
+  if (window.location.pathname === '/') {
+    window.location.assign('/sign-in')
+  } else {
+    const target = `${window.location.pathname}${window.location.search}`
+    window.location.assign(`/sign-in?redirect=${encodeURIComponent(target)}`)
+  }
 }
 
 /** refresh 请求的并发去重 Promise（同一时刻只存在一个飞行中的 refresh）。 */

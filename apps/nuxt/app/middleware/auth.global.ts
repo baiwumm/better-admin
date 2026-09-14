@@ -44,8 +44,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  // ① 登录拦截（带 redirect 回跳参数）
+  // ① 登录拦截（根路径不带 redirect，其余路径带回跳参数——与 Next 端
+  // proxy.ts buildSignInRedirect 同构：首页本就是登录后的默认落点，
+  // 回跳 "/" 无意义；业务路径保留 redirect 供登录后回到原页面）
   if (!auth.accessToken) {
+    if (pathname === '/') {
+      return navigateTo({ path: '/sign-in' })
+    }
+
     return navigateTo({ path: '/sign-in', query: { redirect: to.fullPath } })
   }
 

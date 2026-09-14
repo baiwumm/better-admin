@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import * as uiLocales from '@nuxt/ui/locale'
 
 import { useDocumentTitle } from '@/composables/use-document-title'
+import { isAdminLayoutRoute, isAuthLayoutPath } from '@/lib/route-access'
 
 /**
  * 应用根组件（对齐 vue/src/App.vue 语义）：
@@ -29,10 +30,27 @@ const uiLocale = computed(
   () => uiLocales[UI_LOCALE_MAP[locale.value as keyof typeof UI_LOCALE_MAP]]
 )
 
-const layoutName = computed(
-  () =>
-    (route.meta.layout as 'admin' | 'auth' | 'empty' | undefined) ?? 'admin'
-)
+const layoutName = computed(() => {
+  const metaLayout = route.meta.layout as
+    | 'admin'
+    | 'auth'
+    | 'empty'
+    | undefined
+
+  if (metaLayout) return metaLayout
+
+  // 缺省分支按「路由位置」判定（对齐 Vue 端 AppShell：isAuthLayoutPath /
+  // isAdminLayoutRoute），不掺入认证态。认证态驱动会让布局先于导航切换：
+  // 退出时 clearSession 同步置 isAuthenticated=false，而 route 仍停在业务页，
+  // 布局立刻切成 auth 却套着尚未离开的控制台页面，等撤销请求返回、
+  // router.push('/sign-in') 完成后表单才出现（机制见 docs/mechanisms.md §25 后续调整）。
+  // 「未登录时 admin 布局不挂载」仍成立：Nuxt 客户端入口在 applyPlugins 阶段
+  // await router.isReady() 后才 mount，首帧 route 已是守卫重定向后的最终位置
+  // （未登录直访业务路径 → 此刻已是 /sign-in，显式 auth）。
+  if (isAuthLayoutPath(route.path)) return 'auth'
+
+  return isAdminLayoutRoute(route) ? 'admin' : 'empty'
+})
 </script>
 
 <template>

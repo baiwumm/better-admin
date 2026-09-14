@@ -34,6 +34,12 @@ const toast = useToast()
 // 认证页外壳（React 端 (auth) 路由组对应物）：格子背景 + 品牌区布局
 definePageMeta({ layout: 'auth' })
 
+// 预热 admin 布局 chunk：Nuxt 布局经 #build/layouts 以 defineAsyncComponent 注册，
+// 不属于 vue-router 导航期加载的路由组件（preloadRouteComponents 亦不覆盖），
+// 登录成功切到 admin 布局时才首次拉取，首载窗口内 NuxtLayout 渲染异步占位、
+// 整个视口空白。此处按同一模块路径提前 import（与 #build 的 loader 共享同一 chunk）。
+void import('@/layouts/admin.vue')
+
 const redirectTarget = computed(() => {
   const redirect = route.query.redirect
 

@@ -33,6 +33,10 @@ export default defineNuxtConfig({
   // Nuxt UI 置空），防闪烁脚本由模块接管。system / light / dark 对齐 Vue 端 auto/light/dark。
   colorMode: {},
 
+  ui: {
+    fonts: false
+  },
+
   // ── 公开环境变量（浏览器可见，必须带 NUXT_PUBLIC_ 前缀）──
   // 服务端密钥（DATABASE_URL / JWT_SECRET 等）不进 runtimeConfig，
   // 由 server/ 代码直接读 process.env（与 Next / Nest 端变量命名一致，见 .env.example）。
