@@ -57,7 +57,7 @@ const BRAND_CHIPS = [
     <!-- 右上角入口组：语言切换 + 主题切换 -->
     <div class="absolute right-4 top-4 z-30 flex items-center gap-1">
       <LanguageSwitch />
-      <ThemeSwitch />
+      <ConfigDrawer />
     </div>
 
     <div
