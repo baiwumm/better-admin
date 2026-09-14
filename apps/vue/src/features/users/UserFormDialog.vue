@@ -560,6 +560,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             class="w-full"
             multiple
             value-key="value"
+            :ui="{
+              itemDescription: 'text-xs',
+            }"
           />
         </UFormField>
 
