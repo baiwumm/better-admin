@@ -2,6 +2,27 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 品牌标识审计：补齐 Next 文件约定图标 + `.workbuddy/` 出库（2026-09-14）
+
+- **审计范围**：按用户要求逐端核对「`apps/*` 替换是否完整」——覆盖 `public/` 资产、HTML / `metadata.icons` 声明、组件引用路径，以及**框架自身的图标入口**（框架约定常绕过显式声明）。
+- **发现并修复的缺口（Next 端，真实生效路径被漏掉）**：`apps/next/src/app/{favicon.ico,icon0.svg,icon1.png,apple-icon.png}` 属 Next App Router 的 **file-based metadata**，其优先级**高于** `layout.tsx` 的 `metadata.icons`——即浏览器标签页 / 桌面图标实际取的是这一组，而上一轮只替换了 `public/`，该组仍是旧品牌（`icon0.svg` 为 RealFaviconGenerator 生成的内嵌 base64 位图包装，`favicon.ico` 栅格可见仍是旧的「左柱 + 右侧竖条」字形，与新 Monogram B 的双碗结构不同）。已纳入 `build-assets.py` 统一生成：`favicon.ico` ← `assets/logo/favicon.ico`、`icon0.svg` ← `favicon.svg`、`icon1.png` ← 图标几何 96px、`apple-icon.png` ← 品牌几何 180px；四个文件与各自来源 **sha1 完全一致**。文档：`ui-spec.md` §19.3 补登记表、§19.4 硬性规则 5 与 §19.6 输出清单同步（变更记录补 v1.5），`AGENTS.md` §19 品牌标识指针加约束。
+- **审计结论（其余部分完整）**：五端 `public/` 均已装配 `logo.svg` / `logo-dark.svg` / `favicon.svg` / `favicon.ico`（react / next 另有历史资产 `favicon_light.svg`）；代码侧引用全部命中新资产——React（`layouts/components/app-sidebar.tsx`、`routes/(auth)/route.tsx` 的 `import logo`）、Next（`app-sidebar.tsx`、`(auth)/auth-page-shell.tsx`）、Vue（`components/layout/SidebarBrand.vue`、`layouts/AuthLayout.vue`）、Nuxt（`app/components/layout/SidebarBrand.vue`、`app/layouts/auth.vue`）、website（`components/logo.tsx`）均指向 `/logo.svg` 或 `/logo-dark.svg`；`nest/` 为纯后端、无静态目录，符合预期。各端标签图标入口：React / Vue 走 `index.html` 的 `<link rel="icon">`；Next / website 走 `app/` 文件约定（website 无该组文件）+ `metadata.icons`；Nuxt 无 head 声明、依赖浏览器默认 `/favicon.ico`（既有状态，非本次引入）。
+- **未处理（登记备案）**：① `apps/{react,vue}/dist/` 为本地构建产物（各端 `.gitignore` 已忽略 `dist`），其中仍是旧图标与 `/vite.svg` 引用，重新构建即刷新，无需处理；② Next 端同时存在 `src/app/manifest.json`（文件约定）与 `public/site.webmanifest` + `metadata.manifest`，前者优先，两者引用同一组 PNG（无破图），属既有双来源，未在本次资源范围内改动。
+- **仓库卫生**：`.gitignore` 新增 `/.workbuddy/`——该目录只存 Agent 本地产物（`design/` 设计过程稿、`memory/` 会话记忆、缓存），不入库；`assets/`（品牌真源）与新增的 `apps/vue/public/favicon.ico` 保持追踪。⚠️ 副作用：日后若把项目级 Skills 放进 `.workbuddy/skills/`，需改写为 `/.workbuddy/*` + `!/.workbuddy/skills/` 白名单形式。
+- **`preview.png` 标题**：移除 `（方案 03 Monogram B · 精修版）` 后缀，只保留「Better Admin — Logo 资源预览」——方案名已在 `ui-spec.md` §19.1 登记，预览图标题保持中性。
+
+### 品牌标识定稿：方案 03 Monogram B 精修 + 全套资源落地（2026-09-14）
+
+- **产出**：新增 `assets/logo/` 作为品牌标识**单一真源**（`logo.svg` 主版本 currentColor 挖空 / `logo-dark.svg` 黑底白块 / `logo-light.svg` 白底黑块 / `favicon.svg` 图标几何双态 / `favicon-light.svg` 单态 / `favicon.ico` 16·32·48 / `logo.png`、`logo-dark.png` 256 / `preview.png`），并装配到五端 `apps/{react,vue,next,nuxt,website}/public/`（含 8 类派生位图，沿用仓库既有文件名与像素尺寸，**零代码改动**）。
+- **精修内容（结构不变，只调比例 / 间距）**：两碗垂直间距 `16 → 24`；竖柱宽 `46 → 52`、高 `136 → 128`（与碗组上下齐平）；碗高 `60 → 52`；字腔 `44×30 / 46×30 rx15 → 36×32 rx14`；整体安全区收敛为居中 `128×128`（`64–192`，原横向 `68–186` 不对称）；横向咬合 `8 → 4`。核心目的：16px 下两碗间距由 `1.0px` 提到 `1.5px`，避免被误读成「日 / 18」。
+- **关键决策 · 双几何策略**：**品牌几何** `64–192`（占画布 50%，克制；用于字标 / ogimg / apple-touch-icon / maskable 图标）与**图标几何** `52–204`（占 59.4%，饱满；用于浏览器标签 16 / 32——16px 下竖柱 `4px`、两碗间距 `2px`、字腔 `3×2.25px` 仍读作 B）。二者是同一套比例规则的两档留白，**不是两套图形语言**；`favicon.ico` 非 maskable，故可安全使用更满构图（圆角后墨迹最远点 99.2 < 安全圆半径 102.4）。
+- **关键决策 · 单文件自动反色**：主版本 `logo.svg` 用 `currentColor` + `<mask>` 挖空（白色保留 / 黑色打孔），改 `color` 即反色；亮暗静态变体**共用同一份几何、只换填充色**（色值仅在 CSS 变量默认值中出现，可被 `--ba-logo-plate` / `--ba-logo-mark` 覆盖），不维护第二份几何定义——满足「禁止维护两份独立文件」与「亮暗逐像素等价」两条约束。
+- **验收（脚本自检，可复现）**：亮暗两版 128px 逐像素角色比对 **不一致 `0`**（Alpha 最大差 `0`，两版字块均 `2913` 像素）；唯一 `30` 像素差位于圆角外缘 `alpha ≤ 31` 的 8bit 预乘毛边，已单列为忽略区；`favicon.ico` 内含 `16 / 32 / 48`；`logo.svg` hex 色值扫描为空（仅 `currentColor`）。
+- **顺手修复（审计中发现，与本次资源直接相关）**：`apps/react/index.html` 移除模板残留的 `<link rel="icon" href="/vite.svg">`（`public/vite.svg` 早已不存在，死链会干扰浏览器标签图标的选取）与前面一条重复的 `viewport` meta（该条缺 `viewport-fit=cover`，若被优先采纳会削弱 iOS 安全区适配）。
+- **生成入口**：`assets/logo/build-assets.py`（唯一入口，与资源同目录、路径相对仓库根可移植；替代原先放在 `.workbuddy/design/logo-drafts/` 的位置）；设计过程稿 `.workbuddy/design/logo-drafts/compare.html`（三方案并排 / 精修前后 / 像素放大自检）与同目录 `build-compare.py`。
+- **已知限制**：① 品牌几何在 16px 下笔画偏细（碗的上下环边仅 `0.625px`），故 16px 场景一律用图标几何，**不要**把品牌几何下放到 16px 标签页；② `assets/logo/` 与 `apps/*/public/` 的 `logo-dark` 命名语义**相反**（前者按图形外观、后者按适用主题），已在 `ui-spec.md` §19.3 立表对照，本次未重命名以免破坏现有 `import logo from "/logo.svg"` 引用。
+- **文档同步**：`docs/ui-spec.md` 新增 §19「品牌标识资源（Logo / Favicon）」（几何常量 / 命名对照 / 硬性规则 / 验收结果 / 生成方式），变更记录补 v1.4 行并顺延为 §20。
+
 ### 仓库结构重组：六端迁入 apps/（2026-09-14）
 
 - **变更**：`react` / `vue` / `next` / `nuxt` / `nest` / `website` 六个应用目录整体 `git mv` 迁入 `apps/`（1309 文件全部 rename 保留历史；根目录只留 `apps/` + `docs/` + `scripts/` + `.agents/` 等工程设施）。**决策：不引入 pnpm workspace**——单一根 lockfile + 依赖提升会破坏「各端独立 install / 独立 lockfile / 按 `apps/<name>` 子目录独立部署」的既有架构（AGENTS §3 独立性原则）；目录分层只是仓库组织约定。

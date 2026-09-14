@@ -1,7 +1,18 @@
-<?xml version="1.0" encoding="utf-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <rect fill="#FFFFFF" width="256" height="256" rx="57" ry="57"/>
-  <rect fill="#0A0A0A" x="60.5" y="60.5" width="92.5" height="135" rx="7" ry="7"/>
-  <rect fill="#0A0A0A" x="163.5" y="60.5" width="42.75" height="60.5" rx="7" ry="7"/>
-  <rect fill="#0A0A0A" x="163.5" y="131.5" width="42.75" height="64" rx="7" ry="7"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Better Admin">
+  <title>Better Admin Favicon — 白底黑块单态版</title>
+  <desc>图标几何的单一状态版本（白底黑块），供不读取 prefers-color-scheme 的平台使用；各端历史文件 favicon_light.svg 即本文件。几何与 favicon.svg 的 #dark-icon 分组一致，共用同一组形状常量。</desc>
+  <mask id="ba-favicon-light-shape">
+    <rect width="256" height="256" fill="black"/>
+    <g fill="white">
+      <rect x="52" y="52" width="64" height="152" rx="20" ry="20"/>
+      <rect x="112" y="52" width="92" height="60" rx="20" ry="20"/>
+      <rect x="112" y="144" width="92" height="60" rx="20" ry="20"/>
+    </g>
+    <g fill="black">
+      <rect x="136" y="64" width="48" height="36" rx="16" ry="16"/>
+      <rect x="136" y="156" width="48" height="36" rx="16" ry="16"/>
+    </g>
+  </mask>
+  <rect width="256" height="256" rx="57" ry="57" fill="#FFFFFF"/>
+  <rect width="256" height="256" fill="#0A0A0A" mask="url(#ba-favicon-light-shape)"/>
 </svg>

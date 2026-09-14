@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Better Admin">
+  <title>Better Admin Logo</title>
+  <desc>Better Admin 主标识（方案 03 Monogram B）。方章填充 currentColor，字母 B 为挖空透出背景，随 color 自动反色——同一文件即覆盖亮色与暗色两态。几何常量：竖柱 64,64,52x128；上碗 112,64,80x52；下碗 112,140,80x52；字腔 136,74 / 136,150，36x32；元素圆角 16/14；外框圆角 57。</desc>
+  <mask id="ba-logo-punch">
+    <rect width="256" height="256" fill="white"/>
+    <g fill="black">
+      <rect x="64" y="64" width="52" height="128" rx="16" ry="16"/>
+      <rect x="112" y="64" width="80" height="52" rx="16" ry="16"/>
+      <rect x="112" y="140" width="80" height="52" rx="16" ry="16"/>
+    </g>
+  </mask>
+  <rect width="256" height="256" rx="57" ry="57" fill="currentColor" mask="url(#ba-logo-punch)"/>
+</svg>

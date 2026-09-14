@@ -1,7 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <rect fill="#FFFFFF" width="256" height="256" rx="57" ry="57"/>
-  <rect fill="#0A0A0A" x="60.5" y="60.5" width="92.5" height="135" rx="7" ry="7"/>
-  <rect fill="#0A0A0A" x="163.5" y="60.5" width="42.75" height="60.5" rx="7" ry="7"/>
-  <rect fill="#0A0A0A" x="163.5" y="131.5" width="42.75" height="64" rx="7" ry="7"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Better Admin">
+  <title>Better Admin Logo — 白底黑块版</title>
+  <desc>静态变体（深色主题使用）：底板与字块实填两色，在纯黑 / 纯白 / 任意底色下自洽。几何与 logo.svg 逐字一致，仅填充方式不同；色值只出现在下方两行 CSS 变量默认值中，可由外部 --ba-logo-plate / --ba-logo-mark 覆盖。</desc>
+  <style>
+    .ba-logo-plate{fill:var(--ba-logo-plate,#FFFFFF)}
+    .ba-logo-mark{fill:var(--ba-logo-mark,#0A0A0A)}
+  </style>
+  <mask id="ba-logo-mark-shape">
+    <rect width="256" height="256" fill="black"/>
+    <g fill="white">
+      <rect x="64" y="64" width="52" height="128" rx="16" ry="16"/>
+      <rect x="112" y="64" width="80" height="52" rx="16" ry="16"/>
+      <rect x="112" y="140" width="80" height="52" rx="16" ry="16"/>
+    </g>
+    <g fill="black">
+      <rect x="136" y="74" width="36" height="32" rx="14" ry="14"/>
+      <rect x="136" y="150" width="36" height="32" rx="14" ry="14"/>
+    </g>
+  </mask>
+  <rect class="ba-logo-plate" width="256" height="256" rx="57" ry="57"/>
+  <rect class="ba-logo-mark" width="256" height="256" mask="url(#ba-logo-mark-shape)"/>
 </svg>
