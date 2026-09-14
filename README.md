@@ -6,24 +6,25 @@
 
 | 技术栈 | 目录 | 定位 | 组件库 |
 | --- | --- | --- | --- |
-| React | `react/` | 前端（UI 基准） | Hero UI 为主 + Shadcn UI 补充 |
-| Vue | `vue/` | 前端 | Nuxt UI v4 |
-| Next.js | `next/` | 全栈（不依赖 NestJS） | Hero UI 为主 + Shadcn UI 补充 |
-| Nuxt | `nuxt/` | 全栈（不依赖 NestJS） | Nuxt UI v4 |
-| NestJS | `nest/` | 后端 API | — |
+| React | `apps/react/` | 前端（UI 基准） | Hero UI 为主 + Shadcn UI 补充 |
+| Vue | `apps/vue/` | 前端 | Nuxt UI v4 |
+| Next.js | `apps/next/` | 全栈（不依赖 NestJS） | Hero UI 为主 + Shadcn UI 补充 |
+| Nuxt | `apps/nuxt/` | 全栈（不依赖 NestJS） | Nuxt UI v4 |
+| NestJS | `apps/nest/` | 后端 API | — |
 
-统一 PostgreSQL（Supabase 托管）+ Drizzle ORM；OpenAPI 为 API Contract 唯一真源（`nest/openapi/openapi.yaml`）。
+统一 PostgreSQL（Supabase 托管）+ Drizzle ORM；OpenAPI 为 API Contract 唯一真源（`apps/nest/openapi/openapi.yaml`）。
 
 ## 项目结构
 
 ```text
 better-admin/
-├── react/    # React 前端（UI 基准）
-├── vue/      # Vue 前端
-├── next/     # Next.js 全栈
-├── nuxt/     # Nuxt 全栈
-├── nest/     # NestJS 后端 API
-├── website/  # 官方文档站（Next 16 + Fumadocs）
+├── apps/     # 全部可独立运行 / 构建 / 部署的应用
+│   ├── react/    # React 前端（UI 基准）
+│   ├── vue/      # Vue 前端
+│   ├── next/     # Next.js 全栈
+│   ├── nuxt/     # Nuxt 全栈
+│   ├── nest/     # NestJS 后端 API
+│   └── website/  # 官方文档站（Next 16 + Fumadocs）
 └── docs/     # 项目文档
 ```
 
@@ -44,12 +45,12 @@ better-admin/
 
 ```bash
 # 前端任一子项目
-cd react   # 或 vue / next / nuxt
+cd apps/react   # 或 apps/vue / apps/next / apps/nuxt
 pnpm install
 pnpm dev
 
 # 后端
-cd nest
+cd apps/nest
 pnpm install
 pnpm start:dev
 ```
@@ -68,7 +69,7 @@ pnpm start:dev
 ## 当前进度
 
 - ✅ React + NestJS 全栈、Vue 前端、Next.js 全栈（功能对齐 React 基准）
-- 🔧 Nuxt 全栈（立项待决策）
+- ✅ Nuxt 全栈（功能对齐 26/27，仅剩 Dashboard）
 - ❌ Dashboard 概览、Playground 演示场（Gate 后启动）
 - ❌ 统一上线
 

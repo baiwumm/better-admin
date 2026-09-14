@@ -19,7 +19,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const websiteRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const repoRoot = resolve(websiteRoot, "..");
+const repoRoot = resolve(websiteRoot, "..", ".."); // apps/website → 仓库根
 const contentDir = join(websiteRoot, "content");
 
 /** 文档映射：仓库源文件 → 站内路由与展示信息 */
@@ -44,13 +44,13 @@ const DOCS_MAP = [
     description: "设计语言、Design Tokens、组件行为与页面结构规范。",
   },
   {
-    src: "nest/docs/database-design.md",
+    src: "apps/nest/docs/database-design.md",
     route: "backend/database-design",
     title: "数据库设计",
     description: "PostgreSQL Schema、Drizzle ORM 数据模型与权限位掩码设计。",
   },
   {
-    src: "nest/docs/openapi-design.md",
+    src: "apps/nest/docs/openapi-design.md",
     route: "backend/openapi-design",
     title: "API 设计",
     description: "RESTful API Contract 设计约定与 OpenAPI 规范说明。",

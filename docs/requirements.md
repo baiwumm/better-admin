@@ -561,7 +561,7 @@ DELETE /api/users/:id
 
 # 9. API Contract
 
-API Contract 的唯一事实来源是 [`nest/openapi/openapi.yaml`](../nest/openapi/openapi.yaml)（Contract-First：先定契约再实现；当前 v1.9.0）。
+API Contract 的唯一事实来源是 [`apps/nest/openapi/openapi.yaml`](../apps/nest/openapi/openapi.yaml)（Contract-First：先定契约再实现；当前 v1.9.0）。
 
 - 四端（React / Vue / Next.js / Nuxt）与 NestJS 均以该文件为准：路径、方法、信封、错误码、分页结构逐字一致；
 - 业务错误码（大写蛇形）统一登记在契约中，禁止散落各端实现；

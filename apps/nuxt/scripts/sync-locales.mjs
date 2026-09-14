@@ -20,9 +20,9 @@ import { fileURLToPath } from 'node:url'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(scriptDir, '..')
-const repoRoot = resolve(projectRoot, '..')
+const appsRoot = resolve(projectRoot, '..') // apps/（六端并列目录）
 
-const source = join(repoRoot, 'react', 'src', 'i18n', 'locales')
+const source = join(appsRoot, 'react', 'src', 'i18n', 'locales')
 // @nuxtjs/i18n v10 约定：<rootDir>/i18n/locales（restructureDir/langDir 默认值）
 const target = join(projectRoot, 'i18n', 'locales')
 

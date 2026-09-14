@@ -1,6 +1,6 @@
 # 语言包一致性检查：next 与 react 的语言包（i18n/locales）必须逐 key 逐值一致。
 # 差异即失败并输出差异报告，强制开发者同步语言包后才能合并 PR。
-# 对比脚本：next/scripts/check-locales.mjs（pnpm check-locales）
+# 对比脚本：apps/next/scripts/check-locales.mjs（pnpm check-locales）
 
 name: check-locales
 
@@ -22,14 +22,14 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: next/pnpm-lock.yaml
+          cache-dependency-path: apps/next/pnpm-lock.yaml
 
       # check-locales 只做文件对比，无运行时依赖；
       # 但脚本经由 next/package.json scripts 入口，安装以保证执行环境一致
       - name: Install dependencies (next)
-        working-directory: next
+        working-directory: apps/next
         run: pnpm install --frozen-lockfile
 
       - name: Check locales consistency (next vs react)
-        working-directory: next
+        working-directory: apps/next
         run: pnpm check-locales

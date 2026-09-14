@@ -5,7 +5,7 @@
  * 各子项目（同一产品的多套实现 + 后端）在同一 release 内与根保持一致。
  * 发布流程：改根 version → `pnpm sync-versions` → 单个提交 → 打 git tag。
  *
- * 子项目按目录名列举、存在才处理——后续新增 vue / next / nuxt 时脚本
+ * 子项目按 apps/ 下的目录名列举、存在才处理——后续新增子应用时脚本
  * 无需改动；version 未变化的文件不重写（保持 git diff 干净）。
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -13,7 +13,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const SUB_PROJECTS = ["react", "vue", "next", "nuxt", "nest"];
+const SUB_PROJECTS = [
+  "apps/react",
+  "apps/vue",
+  "apps/next",
+  "apps/nuxt",
+  "apps/nest",
+];
 
 const rootPkg = JSON.parse(
   readFileSync(path.join(rootDir, "package.json"), "utf8"),

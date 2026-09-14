@@ -33,7 +33,7 @@
 
 ### 3.1 演示数据重置与生成（faker）
 
-- **脚本**：`nest/scripts/demo-reset.ts`，命令 `pnpm db:demo-reset --confirm`；**安全阀**：必须显式携带 `--confirm`，执行前打印目标数据库 host 与将删除的行数预估；幂等（先清后生），**固定 faker seed**，重复执行产出完全一致的数据集，便于截图 / 文档 / 三端对比稳定。`DEMO_MODE` 是线上运行时只读开关，与脚本执行解耦。
+- **脚本**：`apps/nest/scripts/demo-reset.ts`，命令 `pnpm db:demo-reset --confirm`；**安全阀**：必须显式携带 `--confirm`，执行前打印目标数据库 host 与将删除的行数预估；幂等（先清后生），**固定 faker seed**，重复执行产出完全一致的数据集，便于截图 / 文档 / 三端对比稳定。`DEMO_MODE` 是线上运行时只读开关，与脚本执行解耦。
 - **执行语义与时机**（本地与线上共用同一 Supabase 库，重置即两端同时生效）：
   - 重置会清空 refresh_tokens，**全端会话同时失效**，重置后需重新登录（快捷登录下成本极低）；
   - 数据写入用**事务包裹**保证原子性（头像上传是网络 IO 放事务外：先传文件，事务内落 URL），清空到生成的中间态对外基本不可见；
@@ -135,7 +135,7 @@
 3. **微交互**：卡片 hover 阴影微升（既有 shadow token）；区块**入场 stagger 动画**（透明度 + 位移，React 端遵循 `vercel-react-view-transitions`，不引入第三方动画库）；数字滚动仅在数据到达后触发一次。
 4. **加载态**：整页 Skeleton 骨架（布局与真实内容一致，杜绝跳变）；图表区骨架为等高灰色块。
 5. **深浅色模式**：两套模式均需逐像素过一遍；深色下可给主图表区极弱的主色光晕（主色 5%~8% 透明度径向渐变），克制使用，不新增任何色值。
-6. **硬性约束**：全部使用现有项目级 Design Tokens（`react/src/styles/theme.css` oklch 变量、radius 10px、既有 shadow / spacing），**禁止新增颜色 / 圆角 / 阴影 / 字体**（`AGENTS.md` §7.3）；Vue 端不移植 token，用 Nuxt UI 默认体系实现同等视觉（`AGENTS.md` §21）。
+6. **硬性约束**：全部使用现有项目级 Design Tokens（`apps/react/src/styles/theme.css` oklch 变量、radius 10px、既有 shadow / spacing），**禁止新增颜色 / 圆角 / 阴影 / 字体**（`AGENTS.md` §7.3）；Vue 端不移植 token，用 Nuxt UI 默认体系实现同等视觉（`AGENTS.md` §21）。
 7. **逼真数据口径**：数字全部来自真实接口聚合（§4.3），不用假数据硬编码；接口未就绪前前端以 Skeleton 呈现。数据底座即 Phase 0 的 faker 数据集。
 
 ### 4.2 页面内容规划
@@ -153,7 +153,7 @@
 
 ### 4.3 数据契约（OpenAPI 先行）
 
-- 契约版本 v1.9.0 → **v1.10.0**，先更新 [`nest/openapi/openapi.yaml`](../nest/openapi/openapi.yaml) 再实现（`AGENTS.md` §6）。
+- 契约版本 v1.9.0 → **v1.10.0**，先更新 [`apps/nest/openapi/openapi.yaml`](../apps/nest/openapi/openapi.yaml) 再实现（`AGENTS.md` §6）。
 - 新增（草案，字段以契约定稿为准）：
   - `GET /stats/overview` — 一次返回 KPI 计数、登录趋势序列（按 `?days=7|30`）、角色占比、最新公告、最近日志。**只读聚合接口**，鉴权为「任意已登录用户」，不要求按钮位权限；敏感字段（手机号 / 邮箱 / IP）不出现在响应中。
 - 四端影响评估：React（消费方）、Next（独立 server API 同名对齐）、Vue（消费方）、Nuxt（未启动，仅记录）；Nest（实现方）。
@@ -190,7 +190,7 @@
 ```
 
   - 目录与三级页在 Phase B 随「数字动画」一起落地；Phase A 先建一级目录与三个零依赖二级页。
-  - 三级菜单验证点：React 展开态侧边栏已支持任意层级（`react/src/layouts/components/sidebar-menu.tsx` 递归渲染），**折叠态菜单、面包屑、命令面板搜索以及 Next / Vue 端**的三级渲染需在本阶段逐项过检，发现未覆盖即补齐。
+  - 三级菜单验证点：React 展开态侧边栏已支持任意层级（`apps/react/src/layouts/components/sidebar-menu.tsx` 递归渲染），**折叠态菜单、面包屑、命令面板搜索以及 Next / Vue 端**的三级渲染需在本阶段逐项过检，发现未覆盖即补齐。
 - [ ] 演示页通用规范：路由 `src/routes/_authenticated/playground/<demo>.tsx`（三级页为 `playground/count-to/<demo>.tsx`）、实现 `src/features/playground/<demo-name>/`；页首固定 `PlaygroundIntro` 信息卡（规范见 §5.1）；开启 `keepAlive`；i18n 全量跟进。
 
 ### 5.1 页首信息卡 `PlaygroundIntro` 规范（三端统一）
@@ -277,7 +277,7 @@ type DemoMeta = {
 - [ ] `docs/ui-spec.md` §1.3：Dashboard 状态「占位」→「已实现」；登录页快捷登录、Playground 模式补充。
 - [ ] `docs/progress.md`：每 Phase 完成置顶记录。
 - [ ] `AGENTS.md` §19：当前待办指针同步。
-- [ ] 契约 v1.9.0（demo-login / `DEMO_READONLY`）与 v1.10.0（stats）变更记录：`nest/openapi/openapi.yaml` + `docs/progress.md`。
+- [ ] 契约 v1.9.0（demo-login / `DEMO_READONLY`）与 v1.10.0（stats）变更记录：`apps/nest/openapi/openapi.yaml` + `docs/progress.md`。
 - [ ] 各端 `.env.example`：`DEMO_MODE`、`LOG_API_SKIP_GET` 登记。
 
 ## 9. 验收标准

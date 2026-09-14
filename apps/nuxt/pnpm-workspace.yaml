@@ -1,0 +1,15 @@
+allowBuilds:
+  '@parcel/watcher': false
+  '@tailwindcss/oxide': false
+  esbuild: false
+  unrs-resolver: false
+  vue-demi: false
+overrides:
+  vue: 3.5.42
+  '@internationalized/date': 3.12.4
+
+# 供应链策略兼容：trustPolicy: no-downgrade 会对「早期版本带 provenance、
+# 后发布版本不带」的存量老包批量误报（semver@6.3.1 / undici-types@6.21.0
+# 均为多年稳定使用的已知安全版本），与 next 端同一方案：
+# 发布超过 1 年（525600 分钟）的包跳过信任检查，保留对新增发布版本的降级防护。
+trustPolicyIgnoreAfter: 525600

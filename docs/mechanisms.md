@@ -1,8 +1,8 @@
 # 机制梳理：权限点请求 / 标签页保活 / 菜单可见性与超管 / 列表缓存展示策略
 
 > 本文沉淀高频疑问的机制结论，供开发与排查快速查阅。
-> 相关设计文档：`nest/docs/database-design.md`（§1.1 超管全量位、§1.5 菜单可见性）、
-> `docs/progress.md`（keepAlive 路由缓存 + 过渡动画重构条目）、`nest/openapi/openapi.yaml`（API Contract）。
+> 相关设计文档：`apps/nest/docs/database-design.md`（§1.1 超管全量位、§1.5 菜单可见性）、
+> `docs/progress.md`（keepAlive 路由缓存 + 过渡动画重构条目）、`apps/nest/openapi/openapi.yaml`（API Contract）。
 > 更新日期：2026-09-09（基于当前代码实现梳理，代码为准）。
 
 ---
@@ -23,7 +23,7 @@
   横向不做整幅平移；覆盖类改用**盒内 `clip-path` 擦除**，视觉上仍是"推入"）；
   ② 给**组盒** `::view-transition-group(main-content) { overflow: clip }` 兜底——
   实测可完全消除顶栏/侧边栏污染，且对忽略该属性的内核会退化为原行为、无害。
-- **落地**：`react/src/styles/route-transitions.css`（提交 `c0dd121`）与 Vue 端同源副本
+- **落地**：`apps/react/src/styles/route-transitions.css`（提交 `c0dd121`）与 Vue 端同源副本
   （规则层已逐条对齐，仅差 Vue 特有的 `.route-vt-main` 承载规则）；
   **Next 端已于 2026-09-11 同步，选择器形态不同但关键帧/变量语义逐字一致，见本节 §0.1。**
 
@@ -45,7 +45,7 @@
 
 ### 0.1 Next 端同步落地（2026-09-11，原「待同步」清单已全部执行）
 
-**结论：`next/src/styles/route-transitions.css` 已按 React 端同源参数对齐「位移收敛 + 进出场分时」；
+**结论：`apps/next/src/styles/route-transitions.css` 已按 React 端同源参数对齐「位移收敛 + 进出场分时」；
 仅选择器形态因编排机制不同而不同，关键帧与 CSS 变量语义三端逐字一致。**
 
 - **Why 选择器不同**：Next 端编排由 React `<ViewTransition update="rt rt-<id>">` 承担，组名由 React
@@ -78,12 +78,12 @@
 
 **结论：不是进入应用就加载，也没有持久化；全项目共用一份内存缓存，按需懒加载。**
 
-- **触发时机**：`usePermissions()`（`react/src/hooks/use-permissions.ts`）是普通
+- **触发时机**：`usePermissions()`（`apps/react/src/hooks/use-permissions.ts`）是普通
   TanStack Query hook，没有任何入口级 prefetch。第一个消费它的组件挂载时才发请求。
   登录成功后只有 `/api/menus` 会被预取（`auth-store.ts`，供路由 beforeLoad 同步判权）。
 - **消费方**：权限管理页、菜单管理页（页面 / 树表 / 表单弹窗）、以及 PageHeader 的
   `useHasPermissionKey`（页面声明了「新增」按钮权限位时）。因此进入这类页面即触发请求。
-- **项目共用**：全局单例 `QueryClient`（`react/src/lib/query-client.ts`），
+- **项目共用**：全局单例 `QueryClient`（`apps/react/src/lib/query-client.ts`），
   `queryKey: ["permissions"]` 全项目共享——多组件同时挂载只发一次请求（自动去重）。
 - **缓存策略**：该查询单独 `staleTime: 5 分钟`（覆盖全局默认 1 分钟），理由是权限点
   枚举为编译期固定值；全局 `refetchOnWindowFocus: false`。stale 后重新挂载会后台刷新。
@@ -99,8 +99,8 @@
 页面长驻保活且与标签页绑定（关闭标签 = 销毁实例）；池上限 10，超限先淘汰过渡实例、
 再在保活实例间 LRU。**
 
-- **实例池**：核心在 `react/src/layouts/components/keep-alive-outlet.tsx` +
-  `react/src/lib/keepalive-pool.ts`（纯函数池逻辑，vitest 单测覆盖）。
+- **实例池**：核心在 `apps/react/src/layouts/components/keep-alive-outlet.tsx` +
+  `apps/react/src/lib/keepalive-pool.ts`（纯函数池逻辑，vitest 单测覆盖）。
   hidden 实例保留组件 state 与 DOM、卸载 effects——React Query 订阅暂停、恢复可见时
   数据 stale 自动 refetch（「保活 ≠ 数据冻结」）。
 - **permanent / transient 两级**：
@@ -124,12 +124,12 @@
 硬编码的角色，而是「聚合权限位 = 全量掩码」的用户——新增菜单对超管天然可见，
 未经授权的菜单只对普通用户隐藏。**
 
-- **过滤逻辑**（`nest/src/modules/menus/menus.service.ts` `buildAllowedMenuIds`）：
+- **过滤逻辑**（`apps/nest/src/modules/menus/menus.service.ts` `buildAllowedMenuIds`）：
   1. 用户聚合权限位等于全量掩码（`9223372036854775807`，内部 `-1n`）→ 返回 null
      表示全量可见，**跳过 role_menus 过滤**，返回完整菜单树（含新建菜单）；
   2. 普通用户 → 取其所有角色在 `role_menus` 中直接授权的 menu_id 去重集合，
      再向上追溯 `parent_id` 补全祖先链（保证树形完整）；未授权菜单不可见。
-- **超管身份的推导**（`nest/src/auth/auth.service.ts` `aggregatePermissions`）：
+- **超管身份的推导**（`apps/nest/src/auth/auth.service.ts` `aggregatePermissions`）：
   用户权限位 = 其所有角色的 `role_menus.permissions` 按位 OR。
   运行时（菜单过滤、`permissions.guard.ts` 接口鉴权）只判定**位掩码的值**是否为
   全量掩码，不识别角色码——`super_admin` 只是种子数据里权限位恰好全 1 的角色名。
@@ -229,8 +229,8 @@
 - **与 §4.2 的关系**：store 层同值幂等保持不变（URL 同步 effect 等隐式调用仍依赖
   它防重复请求）；「同值也发请求」只发生在**用户显式点搜索**这一路径上，
   §4.3 边界定义中「重复搜索同一词永远重新请求」自此经 refetch 分支真正成立。
-- **单测**：`react/src/hooks/__tests__/use-list-query.test.ts` 与
-  `vue/src/composables/__tests__/use-list-query.test.ts` 的 `submitListSearch`
+- **单测**：`apps/react/src/hooks/__tests__/use-list-query.test.ts` 与
+  `apps/vue/src/composables/__tests__/use-list-query.test.ts` 的 `submitListSearch`
   两分支用例（异值 → epoch+1 回第 1 页；同值 → refetch 且不 bump epoch）。
 
 ## 5. 用户写操作保护：本人 / admin / super_admin 三层规则（NestJS 端，契约 v1.4.6）
@@ -240,7 +240,7 @@
 admin（403 ADMIN_USER_PROTECTED）→ super_admin 绑定用户（403
 SUPER_ADMIN_USER_PROTECTED）；前端只做入口隐藏止损，后端为契约级强制校验。**
 
-- **判据实现**（`nest/src/modules/users/users.service.ts`）：
+- **判据实现**（`apps/nest/src/modules/users/users.service.ts`）：
   1. 本人：`target.id === operatorId`（`operatorId` 来自 JWT，前端传什么都不算数）；
   2. 内置 admin：`target.username === 'admin'`（seed 固定创建，模块内常量
      `ADMIN_USERNAME`）；
@@ -314,7 +314,7 @@ SUPER_ADMIN_USER_PROTECTED）；前端只做入口隐藏止损，后端为契约
 
 ## 7. 组织架构图谱与通讯录 Excel 导出（React 端，阶段 4）
 
-> 更新日期：2026-09-03。对应代码：`react/src/features/org/org-chart*.ts(x)`、
+> 更新日期：2026-09-03。对应代码：`apps/react/src/features/org/org-chart*.ts(x)`、
 > `directory-export.ts`、`directory-page.tsx`、`routes/_authenticated/org/{chart,directory}.tsx`。
 
 ### 7.1 React Flow v12 只读配置（@xyflow/react 12.11）
@@ -386,7 +386,7 @@ SUPER_ADMIN_USER_PROTECTED）；前端只做入口隐藏止损，后端为契约
   `window.location.assign("/sign-in")` → 整页刷新 → 回到「挂载时占位路由为 /」
   → 无限循环（每次刷新写一条 error.401 日志，~7 次/秒打满主线程，表现为
   「页面卡死 / 白屏」）。
-- **修复**：`vue/src/main.ts` 改为 `router.isReady().then(() => app.mount("#app"))`。
+- **修复**：`apps/vue/src/main.ts` 改为 `router.isReady().then(() => app.mount("#app"))`。
   挂载时初始导航已完成，`route.path` 即真实路径，公共页不再误挂布局。
 - **排查手法（可复用）**：怀疑页面死循环时，给关键组件 `onMounted` 挂
   `navigator.sendBeacon` 探针发到本地日志代理（记录 `location.href` /
@@ -420,7 +420,7 @@ URL 参数一律用 `useSearch({ strict: false })` / `useParams({ strict: false 
   `useMatch({ from })` → `router.stores.getRouteMatchStore(routeId)` 派生 store
   读 match；导航提交（`setMatches`）会把离开页面的 match 从 `matchStores` /
   `matchesId` 中删除，snapshot 变 `undefined`，selector 的 `shouldThrow` 分支即抛
-  上述 Invariant（`react/src/routes/_authenticated/my-notices.tsx` 注释为首例记录）。
+  上述 Invariant（`apps/react/src/routes/_authenticated/my-notices.tsx` 注释为首例记录）。
 - **偶现根因是竞速**：离开页面时池面板的过渡帧仍 visible；开启路由 VT 动画时，
   池提交（`startViewTransition` 回调，下一帧）晚于 matches 提交（`onReady`
   微任务）→ 窗口必踩；无动画时 `useLayoutEffect` 同步提交先行 → 不崩。次级路径：
@@ -431,7 +431,7 @@ URL 参数一律用 `useSearch({ strict: false })` / `useParams({ strict: false 
   `useParams({ strict: false })`（全仓唯一动态路由
   `org/notices_.$noticeId.tsx`）。登录页 `sign-in.tsx` 的 `Route.useSearch()`
   在 `(auth)` 布局、不入池，不受影响。
-- **防回归守卫**：`react/src/lib/__tests__/strict-route-hooks.test.ts` 静态
+- **防回归守卫**：`apps/react/src/lib/__tests__/strict-route-hooks.test.ts` 静态
   扫描池内组件源码范围（`routes/_authenticated` + `features` / `layouts` /
   `hooks` / `components`），拦截 `Route.useXxx()`、`useXxx({ from })`（含
   `shouldThrow: false` 豁免）与无参 `useParams()`（池内读到布局层 params
@@ -507,7 +507,7 @@ URL 参数一律用 `useSearch({ strict: false })` / `useParams({ strict: false 
   vue-i18n 把 `@e...` 解析为 linked format，消息编译抛 `SyntaxError: Invalid linked
   format`（unhandledrejection），**引用该文案的组件渲染中断**——表现为「点击新增
   用户弹窗不打开、控制台报错」。i18next 无此语法，react 真源无需修改。
-- **修复机制在同步脚本**：`vue/scripts/sync-locales.mjs` 在 `cpSync` 后递归遍历
+- **修复机制在同步脚本**：`apps/vue/scripts/sync-locales.mjs` 在 `cpSync` 后递归遍历
   `locales/<locale>/*.json`，把消息值中的 `@` 统一转义为字面量插值 `{'@'}`；先还原
   已有 `{'@'}` 再统一转义保证**幂等**。JSON 往返用 `JSON.stringify(msg, null, 2)`，
   与源格式（2 空格缩进扁平键）一致，diff 仅含转义行。注意 `readdirSync` 不递归，
@@ -582,9 +582,9 @@ URL 参数一律用 `useSearch({ strict: false })` / `useParams({ strict: false 
 
 ## 16. Vue 端 M4 冒烟四条机制结论（常驻挂载查询 / 动态标题 / Nuxt UI locale 缺键 / 无渲染组件）
 
-> 更新日期：2026-09-11。对应代码：`vue/src/features/roles/use-grant-tree.ts`、
-> `vue/src/lib/route-access.ts`、`vue/src/router/guards.ts`、`vue/src/layouts/AdminLayout.vue`、
-> `vue/src/components/layout/TagsBar.vue`、`vue/src/components/common/progress-provider/progress-bridge.vue`。
+> 更新日期：2026-09-11。对应代码：`apps/vue/src/features/roles/use-grant-tree.ts`、
+> `apps/vue/src/lib/route-access.ts`、`apps/vue/src/router/guards.ts`、`apps/vue/src/layouts/AdminLayout.vue`、
+> `apps/vue/src/components/layout/TagsBar.vue`、`apps/vue/src/components/common/progress-provider/progress-bridge.vue`。
 
 ### 16.1 常驻挂载的浮层组件：依赖 props 的 useQuery 必须显式 `enabled` 门控
 
@@ -795,7 +795,7 @@ titleKey 与 React 端 TanStack Router 的 `staticData.titleKey` 一字不差（
   pointerup 在 target 上、dnd-kit 在 document 冒泡——ref 须在 `onDragStart` 置位，
   `requestAnimationFrame` 兜底复位）；关闭热区（原生捕获截停的 span）加 `data-tab-close`
   供 capture handler 排除。
-- **落地**：`react/src/layouts/components/tags-bar.tsx` 与 `next/src/layouts/components/tags-bar.tsx`
+- **落地**：`apps/react/src/layouts/components/tags-bar.tsx` 与 `apps/next/src/layouts/components/tags-bar.tsx`
   （`TabPointerSensor` + `SortableTabItem`，2026-09-12）；背景与验证详见 `docs/progress.md`
   对应条目。本文档原编号 §10（与 KeepAlive 池条目撞号），2026-09-12 指针清理时重编为 §20。
 
@@ -819,7 +819,7 @@ NuxtPage 动态渲染下不可用；必须改用 NuxtPage 内置 `keepalive` pro
 - **取证手法**：`el.__vueParentComponent` 向上遍历组件链核对 KeepAlive 的 include 与缓存；
   KeepAlive 缓存 Map 挂在实例 `__v_cache`；页面实例身份用 `inst.uid` 对比（DOM 节点对比
   不可靠——UTable 内部 ReusableTemplate 会干扰）。
-- **重写要点（`nuxt/app/components/layout/KeepAliveOutlet.vue`）**：
+- **重写要点（`apps/nuxt/app/components/layout/KeepAliveOutlet.vue`）**：
   `<NuxtPage :keepalive="{ include: cachedNames, max: 10 }" :page-key="pageKey" />`；
   include = 已打开标签的**组件名**集合 ∩ 菜单 keepAlive 路径 ∖ 刷新中；组件名从
   `route.matched[0].components.default.__name` 取（watch matched 记录 + sessionStorage）；
@@ -828,7 +828,7 @@ NuxtPage 动态渲染下不可用；必须改用 NuxtPage 内置 `keepalive` pro
   `index`）关闭其一将一并剪除两者缓存——仅损失缓存不影响正确性。
 - **路由 VT 编排不受影响**：beforeResolve 捕旧帧 / afterEach 放行 / 方向感知照 Vue 蓝本
   挂同一组件（app.vue slot 包装、admin 区外编排条件已过滤）。
-- 落地：`nuxt/app/components/layout/KeepAliveOutlet.vue`；背景与取证过程详见
+- 落地：`apps/nuxt/app/components/layout/KeepAliveOutlet.vue`；背景与取证过程详见
   `docs/progress.md` M4 条目（2026-09-13）。
 
 ## 22. @nuxtjs/i18n v10 接线三坑：vueI18n 路径 / files 加载绕过归一化 / 非组件取词（Nuxt 端，M0）
@@ -850,8 +850,8 @@ React 零漂移）；nuxt.config 的 locales 仅保留 code/language/name 元信
 `i18n-bridge`（plugin 启动时注入 getErrorMessage / setGlobalLocale，与 bindAuthSnapshot
 同一解耦惯例），语言持久化仍由 language-store 管 localStorage（detectBrowserLanguage 关闭）。
 
-- 落地：`nuxt/i18n/vue-i18n.config.ts`、`nuxt/app/plugins/i18n-bridge.ts`、
-  `nuxt/scripts/sync-locales.mjs`（@ 转义幂等，check-locales 对比前归一化还原）。
+- 落地：`apps/nuxt/i18n/vue-i18n.config.ts`、`apps/nuxt/app/plugins/i18n-bridge.ts`、
+  `apps/nuxt/scripts/sync-locales.mjs`（@ 转义幂等，check-locales 对比前归一化还原）。
 
 ## 23. Nuxt 期依赖治理三条：TS 大版本 / 索引严格检查 / 名义类型双实例（Nuxt 端，M0-M2）
 

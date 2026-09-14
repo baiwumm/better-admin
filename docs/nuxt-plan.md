@@ -3,7 +3,7 @@
 > 本文档是 Nuxt 端（Phase 6：Nuxt 全栈）的可行性评估与开发计划：功能对齐清单、代码复用地图、技术选型、待确认决策、MVP 路线与风险评估。
 > **状态：M0-M4 已全部完成（2026-09-12/13），功能对齐 26/27（96%，仅剩 Dashboard，与三端持平）；M5 文档收尾已完成（2026-09-13，mechanisms §21-§24 / 根 version 0.2.0 五端同步 / feature-matrix 终核）。Vercel 部署与线上冒烟延后，随四端统一上线执行（AGENTS §17）**。各里程碑细节见 `progress.md` 对应条目。
 > 基准三方：**React = UI / 交互 / 页面结构 Source of Truth**（`ui-spec.md` §1）；**Vue = 组件实现与代码形态的平移蓝本**（同 Nuxt UI + Pinia + vue-query）；**Next = 服务端实现蓝本**（同为独立全栈、共用同一 PostgreSQL）。
-> 契约真源：`nest/openapi/openapi.yaml`（v1.9.0）。组件库规则见 `AGENTS.md` §21 与 `nuxt-ui-guide.md`。
+> 契约真源：`apps/nest/openapi/openapi.yaml`（v1.9.0）。组件库规则见 `AGENTS.md` §21 与 `nuxt-ui-guide.md`。
 
 ## 修订记录
 
@@ -24,7 +24,7 @@
 
 1. **Nuxt 与 Vue 前端同构，可整体平移。** Vue 端已是 Nuxt UI v4 + Pinia + `@tanstack/vue-query` + `vue-i18n`（扁平键 resolver）+ `@tanstack/vue-table`，与 Nuxt 端技术栈**逐项相同**，差别只在「路由与运行时的接线方式」。Vue 前端约 **21,600 行**（features 12,987 / components 3,902 / lib 2,124 / stores 764 / themes 480 / layouts 469 / composables 332 / pages 330），预计 **85-90% 可平移**，真正需要新写/改造的入口文件合计仅约 **1,100 行**（`AdminLayout.vue` 326 / `AuthLayout.vue` 143 / `api-client.ts` 231 / `KeepAliveOutlet.vue` 199 / `i18n/index.ts` 88 / `guards.ts` 60 / `main.ts` 39 / `App.vue` 35 / `route-vt.ts` 34 / `env.ts` 10）。
 2. **服务端必须新写，但蓝本完备。** Nuxt 是独立全栈、不依赖 NestJS（`AGENTS.md` §4），需自行实现全部 REST API。Next 端已经是一份**同构可移植实现**：`db/` 774 行 + `lib/server/` 5,780 行（22 文件）+ `app/api/` 44 个 route handler 2,386 行 + `proxy.ts` 147 行，合计约 **8,900 行**，且**与 Next 框架耦合点仅 4 文件 22 处**（`route-helpers.ts` 10、`request-auth.ts` 7、`auth/cookies.ts` 3、`route-auth.ts` 2），其余全是框架无关的 drizzle 业务逻辑。
-3. **Next 端页面无服务端查库。** 已核对 `next/src/app/**/page.tsx`：**全部为客户端组件**，数据一律经 `/api/**` route handler 获取。因此 Nuxt 端**不需要**为 SSR 重写数据层，沿用 Vue 的 `vue-query + api-client` 客户端取数即可，Nuxt 的「全栈」价值落在 Nitro server routes（与 Next 完全同构）。
+3. **Next 端页面无服务端查库。** 已核对 `apps/next/src/app/**/page.tsx`：**全部为客户端组件**，数据一律经 `/api/**` route handler 获取。因此 Nuxt 端**不需要**为 SSR 重写数据层，沿用 Vue 的 `vue-query + api-client` 客户端取数即可，Nuxt 的「全栈」价值落在 Nitro server routes（与 Next 完全同构）。
 4. **共用同一数据库，行级业务规则已在 Next 端固化。** schema（17 张表 / 573 行）、`token_version` 实时校验、软删、日志 action 命名、`super_admin` 保护等均为既有资产，移植时**只搬运不改写**，是保证四端数据行为一致的最低风险路径。
 5. **最大不确定性是渲染模式与认证传输层**（§5 D1/D2），两者决定前端改造量级（0% 或 20%），**须先拍板再动工**。
 
@@ -35,7 +35,7 @@
 ## 1. 架构约束（不可违反）
 
 - **全栈独立**：Nuxt 不依赖 NestJS、不依赖 Next.js（`AGENTS.md` §4）；数据库访问只经 Nitro 服务端，浏览器端不接触 `DATABASE_URL`（§5）。
-- **共用数据库**：与 Nest / Next 共用同一个 Supabase PostgreSQL；**不改 Schema、不改 API Contract**。若发现契约缺口，先改 `nest/openapi/openapi.yaml` 评审再实现（§6）。
+- **共用数据库**：与 Nest / Next 共用同一个 Supabase PostgreSQL；**不改 Schema、不改 API Contract**。若发现契约缺口，先改 `apps/nest/openapi/openapi.yaml` 评审再实现（§6）。
 - **Contract 一致**：44 个端点的路径、方法、请求/响应信封（`{ data }` / `{ data, pagination }` / `{ code, message }`）、错误码必须与契约逐字一致。
 - **UI 对齐策略**：页面结构、布局骨架、交互行为（侧边栏折叠 / Header 操作区顺序 / 表格工具栏位置）与 **React 端**一致；组件视觉直接使用 **Nuxt UI 默认风格**，不刻意模仿 HeroUI（`AGENTS.md` §21；`vue-plan.md` §0 同口径）。
 - **组件库唯一**：Nuxt UI v4（`@nuxt/ui` Nuxt module）。禁止 Vuetify / Quasar / Element Plus / PrimeVue / shadcn-vue（§21）。
@@ -64,7 +64,7 @@
 | 命令面板 | ✅ | ✅ | `UDashboardSearch` + React 语义的菜单分组拍平（Vue M3-6 成果平移）+ 自建主题组（走 design-theme-store）；**必须显式传 `title` / `description`**（Nuxt UI 4.11 locale 包缺键，见 `mechanisms.md` §16.3） | P1 |
 | 错误页（403/404/500） | ✅ | ✅ | `error.vue` + `components/common/error-pages/*` 平移；Nuxt 原生 `createError` / `showError` 接线；文档标题用 `errors.*.title`（同 React `staticData.titleKey`）；**登录要求口径待统一**（见 `feature-matrix.md` 错误页行 ⚠️） | P0 |
 | 异常页菜单（/exception/*） | ✅ | ✅ | `pages/exception/{403,404,500}.vue` + AdminLayout 全宽白名单 + 文档标题键 | P0 |
-| 路由权限守卫 | ✅ | ✅ | 三层守卫用 Nuxt 全局 route middleware（`app/middleware/auth.global.ts`）重写（逻辑照抄 `vue/src/router/guards.ts`）；**权威仍是 API 层鉴权** | P0 |
+| 路由权限守卫 | ✅ | ✅ | 三层守卫用 Nuxt 全局 route middleware（`app/middleware/auth.global.ts`）重写（逻辑照抄 `apps/vue/src/router/guards.ts`）；**权威仍是 API 层鉴权** | P0 |
 | 路由过渡动画（9 预设 + 3 档速度） | ✅ | ✅ | `lib/route-vt.ts` + `route-transitions.css` 平移；接线点为 `useRouter()` 的 `beforeResolve` / `afterEach`（须 `import.meta.client` 守卫）；动态路由标题/面包屑需用 `resolveRouteTitleKey()` 前缀匹配（见 `mechanisms.md` §16.2） | P2 |
 
 ### 2.2 核心业务模块（9 项）
@@ -116,7 +116,7 @@
 
 | Next 资产 | 规模 | 移植处置 |
 | --- | --- | --- |
-| `src/db/schema.ts` + `relations.ts` + `client.ts` | 774 行 | **整体平移**（同构副本）；`server-only` 导入移除；`postgres` 驱动 + `ssl: { rejectUnauthorized: false }` + `prepare: false` + `max: 10` 配置逐字保留（机制见 `next/src/db/client.ts` 头注释） |
+| `src/db/schema.ts` + `relations.ts` + `client.ts` | 774 行 | **整体平移**（同构副本）；`server-only` 导入移除；`postgres` 驱动 + `ssl: { rejectUnauthorized: false }` + `prepare: false` + `max: 10` 配置逐字保留（机制见 `apps/next/src/db/client.ts` 头注释） |
 | `src/lib/server/*-service.ts`（12 个业务 service） | 5,780 行 | **逐文件平移**，业务逻辑零改写；仅改 import 别名 |
 | `src/lib/server/auth/*`（tokens / session / cookies / request-auth） | 470 行 | 平移 + h3 适配：`jose` 验签逻辑不变；`NextRequest.cookies` → `getCookie(event, ...)`；`NextResponse.cookies.set` → `setCookie(event, ...)` |
 | `src/app/api/**/route.ts`（44 个） | 2,386 行 | 平移为 `server/api/**/*.{get,post,put,delete}.ts`（Nitro 文件式 + 方法后缀）；`GET/POST` 具名导出 → `defineEventHandler`；44 端点逐一对照契约 |
@@ -230,7 +230,7 @@
 ### M1 — 服务端全量移植（Nuxt 特有主战场）
 
 - 顺序：`route-helpers` h3 等价层 → 业务 service 逐文件平移（`permissions` → `dict` → `menus` → `roles` → `users` → `logs` → `posts` → `depts` → `notices` → `notifications` → `account`）→ 对应 `server/api/**` 端点 → `password-policy` → `avatar-storage` → 脚本（`clean-logs` / `check-locales`）。
-- 逐端点核对 `nest/openapi/openapi.yaml`（v1.9.0）：路径、方法、信封、错误码、分页结构。
+- 逐端点核对 `apps/nest/openapi/openapi.yaml`（v1.9.0）：路径、方法、信封、错误码、分页结构。
 - 不回改业务规则：`token_version` 实时校验、软删、日志 action 命名、`super_admin` 保护（`PUT /roles/{id}/menus`、`DELETE /roles/{id}` → 403 `SUPER_ADMIN_ROLE_PROTECTED`）逐行比对移植。
 - 中间件按 D1 决策接线（客户端守卫必需；Nitro server middleware 视 SSR 决策）。
 

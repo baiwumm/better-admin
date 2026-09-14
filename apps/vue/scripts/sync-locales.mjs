@@ -19,9 +19,9 @@ import { fileURLToPath } from "node:url";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(scriptDir, "..");
-const repoRoot = resolve(projectRoot, "..");
+const appsRoot = resolve(projectRoot, ".."); // apps/（六端并列目录）
 
-const source = join(repoRoot, "react", "src", "i18n", "locales");
+const source = join(appsRoot, "react", "src", "i18n", "locales");
 const target = join(projectRoot, "src", "i18n", "locales");
 
 /** 递归转义消息值中的裸 `@`（vue-i18n linked 语法 → 字面量插值）。

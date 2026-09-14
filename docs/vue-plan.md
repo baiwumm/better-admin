@@ -1,7 +1,7 @@
 # Better Admin — Vue 端开发方案（v1.1 修订版）
 
 > 本文档是 Vue 端（Phase 4：Vue + NestJS）的完整开发方案：功能对齐清单、技术选型、MVP 路线。
-> 基准：React 端为 UI / 交互 / 页面结构 Source of Truth（`ui-spec.md` §1）；API Contract 以 `nest/openapi/openapi.yaml`（v1.7.0）为唯一事实来源。
+> 基准：React 端为 UI / 交互 / 页面结构 Source of Truth（`ui-spec.md` §1）；API Contract 以 `apps/nest/openapi/openapi.yaml`（v1.7.0）为唯一事实来源。
 > 组件库策略：**Vue / Nuxt 以 Nuxt UI v4 为唯一 UI 组件库**（规则真源见 `AGENTS.md` §21 与 `docs/nuxt-ui-guide.md`）。
 
 ## 修订记录
@@ -17,7 +17,7 @@
 ## 0. 架构约束（不可违反）
 
 - **数据库**：Vue 不直接连接数据库，数据来源为 NestJS API（`requirements.md` §4.2）：`Browser → Vue → NestJS → PostgreSQL`。
-- **API Contract**：请求/响应结构遵守 `nest/openapi/openapi.yaml`（v1.7.0）；Vue 阶段零后端改动，若发现契约缺口，先改契约评审再实现。
+- **API Contract**：请求/响应结构遵守 `apps/nest/openapi/openapi.yaml`（v1.7.0）；Vue 阶段零后端改动，若发现契约缺口，先改契约评审再实现。
 - **UI 对齐策略（v1.1 修订）**：页面结构、布局骨架、交互行为（侧边栏折叠/展开、Header 操作区顺序、表格工具栏位置等）与 React 端保持一致；**组件视觉直接使用 Nuxt UI 默认风格**，不刻意模仿 React（HeroUI）组件样式；品牌标识（Logo、产品名）保持一致；**功能对齐优先于像素级视觉对齐**。
 - **UI 组件库**：Vue / Nuxt 均使用 **Nuxt UI v4**（`@nuxt/ui`，Tailwind CSS v4 + Reka UI）；禁止引入 Vuetify / Quasar / Element Plus / PrimeVue / shadcn-vue 等替代 UI 库（详见 `docs/nuxt-ui-guide.md`）。
 - **布局实现硬约束**：侧边栏与顶部栏必须优先使用 Nuxt UI 官方 Dashboard 套件（`UDashboardGroup` / `UDashboardPanel` / `UDashboardSidebar` / `UDashboardNavbar` / `UDashboardSearch` / `UCommandPalette`），**禁止从零手写布局**。命名说明：评审意见中的 `UDashboardLayout` 在 Nuxt UI v4 中的实际组件名为 **`UDashboardGroup`**（v3 → v4 更名，职责一致：布局容器 + 侧栏状态持久化 + 单位定义）。
@@ -27,13 +27,13 @@
 
 ## 1. 功能对齐清单
 
-基准：`docs/feature-matrix.md` 22 项 + `react/src/routes/` 实际路由核对。优先级：**P0** = M0 骨架必备；**P1** = 核心业务（M1）；**P2** = 组织中心与增强（M2/M3）；P3 = 暂缓。依赖 API 均为 NestJS 现有契约，**Vue 阶段零后端改动**。
+基准：`docs/feature-matrix.md` 22 项 + `apps/react/src/routes/` 实际路由核对。优先级：**P0** = M0 骨架必备；**P1** = 核心业务（M1）；**P2** = 组织中心与增强（M2/M3）；P3 = 暂缓。依赖 API 均为 NestJS 现有契约，**Vue 阶段零后端改动**。
 
 ### 1.1 基础设施（6 项）
 
 | 功能模块 | React 状态 | Vue 需实现内容（技术映射） | 依赖 API | 优先级 |
 | --- | --- | --- | --- | --- |
-| 全站 i18n（zh-CN/en） | ✅ | vue-i18n v11 + **`messageResolver` 扁平键查表**（等价 React 端 i18next `keySeparator: false`，兼容 `menu.settings` 等"叶子/分支共存"键）；直接复用 `react/src/i18n/locales/` 七个命名空间 JSON（同步脚本） | — | P0 |
+| 全站 i18n（zh-CN/en） | ✅ | vue-i18n v11 + **`messageResolver` 扁平键查表**（等价 React 端 i18next `keySeparator: false`，兼容 `menu.settings` 等"叶子/分支共存"键）；直接复用 `apps/react/src/i18n/locales/` 七个命名空间 JSON（同步脚本） | — | P0 |
 | 主题系统（明暗模式） | ✅ | **Nuxt UI 内置 color mode（Vue 端基于 `@vueuse/core` 集成，`useColorMode` 自动导入）**，system/light/dark；**直接使用 Nuxt UI 默认 Design Tokens 与 Color System**，不移植 React token | — | P0 |
 | 错误页（403/404/500） | ✅ | 独立全屏路由 + vue-router catch-all 404 | — | P0 |
 | 路由权限守卫 | ✅ | vue-router **全局前置守卫**三层：登录拦截（带 redirect）→ 菜单派生权限（`permission.ts` 位运算平移）→ 白名单（`LOGIN_REQUIRED_PATHS = ['/','/account','/my-notices']` + 前缀 `'/org/notices/'`）；页面级 meta（`public` / `requiresMenu` / `titleKey`）经页面文件 `definePage()` 声明 | `GET /menus`、`GET /auth/me` | P0 |
@@ -103,7 +103,7 @@
 unplugin-vue-router 官方约定：`index.vue` → 空路径；`[param].vue` → 动态段；`[...all].vue` → catch-all；`(group)/` 分组目录**不入 URL**；`a.[param].vue` 点号扁平化 → 顶层路由（不嵌套进 `a.vue`）——与 React 端 TanStack Router 的 `notices_.$noticeId.tsx` 脱嵌套语法一一对应。文件树覆盖全部 22 项功能的 URL：
 
 ```text
-vue/src/pages/
+apps/vue/src/pages/
 ├── (auth)/
 │   └── sign-in.vue                 → /sign-in                    登录
 ├── (errors)/
@@ -179,7 +179,7 @@ vue/src/pages/
 
 - 顺序：用户 → 角色 → 权限 → 菜单 → 字典 → 日志（用户页首立 DataTable/Drawer 表单/ConfirmDialog 范式）。
 - 同步落地：DataTable 组合件、`create-list-store` + epoch（含契约测试）、`hasPermission` 按钮门控。
-- **测试策略（v1.1 微调 3）**：`vue/src/lib/__tests__/` 存放从 React 拷贝的纯函数测试（permission、tabs-model、format-date），vitest 配置 `globals: true` + `environment: 'jsdom'`（避免 JSX 解析差异，测试文件为纯 TS）；KeepAlive 行为等组件测试用 `@vue/test-utils` 独立编写；**不做覆盖率硬性要求**。
+- **测试策略（v1.1 微调 3）**：`apps/vue/src/lib/__tests__/` 存放从 React 拷贝的纯函数测试（permission、tabs-model、format-date），vitest 配置 `globals: true` + `environment: 'jsdom'`（避免 JSX 解析差异，测试文件为纯 TS）；KeepAlive 行为等组件测试用 `@vue/test-utils` 独立编写；**不做覆盖率硬性要求**。
 - 验收：六页功能与 React 对齐（列表三态、URL 状态、权限门控、super_admin 保护 403 文案）；vitest 全绿；与 React 并排走查。
 
 ### M2 — 组织中心

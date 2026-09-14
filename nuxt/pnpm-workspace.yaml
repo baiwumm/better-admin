@@ -1,9 +1,0 @@
-allowBuilds:
-  '@parcel/watcher': false
-  '@tailwindcss/oxide': false
-  esbuild: false
-  unrs-resolver: false
-  vue-demi: false
-overrides:
-  vue: 3.5.42
-  '@internationalized/date': 3.12.4

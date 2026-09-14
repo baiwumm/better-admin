@@ -21,7 +21,7 @@ Browser → React → NestJS API → PostgreSQL
 
 ## 2. 技术栈
 
-> 版本以 `/react/package.json` 为准（记录于 2026-08-30）。
+> 版本以 `apps/react/package.json` 为准（记录于 2026-08-30）。
 
 | 类别 | 选型 | 版本 |
 | --- | --- | --- |
@@ -67,7 +67,7 @@ Browser → React → NestJS API → PostgreSQL
 ### 关于 pnpm 构建脚本（pnpm-workspace.yaml）
 
 - pnpm 10+ 出于安全默认不执行依赖的构建脚本（`ERR_PNPM_IGNORED_BUILDS`）。
-- 本仓库通过 `react/pnpm-workspace.yaml` 的 `allowBuilds` 显式声明 `esbuild` **不执行**脚本：
+- 本仓库通过 `apps/react/pnpm-workspace.yaml` 的 `allowBuilds` 显式声明 `esbuild` **不执行**脚本：
   - `esbuild` 的平台二进制已随对应平台包提供，无需 postinstall（已实测 dev/build 正常）。
 - 如需在本地运行这些脚本，可将对应值改为 `true` 或执行 `pnpm approve-builds`。
 

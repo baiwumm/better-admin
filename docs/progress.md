@@ -2,6 +2,16 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 仓库结构重组：六端迁入 apps/（2026-09-14）
+
+- **变更**：`react` / `vue` / `next` / `nuxt` / `nest` / `website` 六个应用目录整体 `git mv` 迁入 `apps/`（1309 文件全部 rename 保留历史；根目录只留 `apps/` + `docs/` + `scripts/` + `.agents/` 等工程设施）。**决策：不引入 pnpm workspace**——单一根 lockfile + 依赖提升会破坏「各端独立 install / 独立 lockfile / 按 `apps/<name>` 子目录独立部署」的既有架构（AGENTS §3 独立性原则）；目录分层只是仓库组织约定。
+- **时机依据**：四端均未上线，部署平台 Root Directory 尚未绑定——统一上线时直接用 `apps/<应用名>` 新路径，零线上成本（若上线后改需同时动 Vercel ×3 + CF Pages ×2 + Render ×1）。
+- **脚本与 CI 路径同步**：`scripts/sync-versions.mjs`（SUB_PROJECTS 加 apps/ 前缀）；`.github/workflows/check-locales.yml` 与 `clean-logs.yml`（`cache-dependency-path` / `working-directory`）；`apps/website/scripts/sync-docs.mjs`（repoRoot 改为向上两级到仓库根 + 源路径 `nest/docs/*` → `apps/nest/docs/*`——**唯一真正断链的脚本**，其余 locales 类脚本的兄弟相对引用（`../react`、`../..` + `react`）随整体平移恰好继续有效，仅把 vue / nuxt `sync-locales.mjs` 语义漂移的 `repoRoot` 变量改名 `appsRoot`）。
+- **依赖重装暴露的两个既有问题（均非本次移动引入）**：① **nuxt 端 `pnpm-workspace.yaml` 补 `trustPolicyIgnoreAfter: 525600`**——其 packageManager 钉 pnpm 12（其余端 11.x），pnpm 12 默认启用的供应链策略对 `semver@6.3.1` / `undici-types@6.21.0` 等存量老包报 trust downgrade 误报，按 next 端既定方案补配；② **next 端 frozen install 曾报 lockfile overrides mismatch**——为 install 中间态误报，`--no-frozen-lockfile` 重新解析后写回内容与 HEAD 完全一致（零 diff，overrides `@internationalized/date` 终态 3.12.4 与 workspace 声明一致）。
+- **文档同步**：AGENTS §3 结构树 / §4 表 / §7.1 / §13（`apps/nest/docs/*`）/ §15 / §17（Root Directory 表述）/ §20（Next 内置 docs 路径）/ §21；README（结构表树 + `cd apps/*` + 进度小节顺手修正「Nuxt 立项待决策」→「M0-M5 完成」）；docs 现状类 12 篇批量加 `apps/` 前缀（sed，含 `../nest/...` 相对链接修复）；**progress.md 历史条目按「现状与历史分离」原则一律不回改**。
+- **验证**：`pnpm sync-versions` 五端一致 0.2.0；check-locales 三向（next↔react / nuxt↔react / react↔next）全部一致；react 端 lint 0 error / test 8 文件 93 用例 / build 三绿；nuxt 端 lint 净 / test 9 文件 95 用例全绿；website `sync-docs.mjs` 同步 14/14 篇、`apps/nest/docs/*` 到位（3 条「链接未重写」警告均为既有：nuxt-plan / plan-dashboard-playground 不在同步清单、openapi.yaml 非 md）。
+- **⚠️ 验证暴露的既有缺陷：nuxt 端日志管理模块源码从未进仓库**——`apps/nuxt/.gitignore` 沿用 Nuxt 模板默认的不锚定 `logs` 规则，把业务目录 `app/features/logs/` 整个忽略（react 端 `.gitignore` 早已用 `/logs` 锚定根目录修过同一问题，vue 端正常追踪），HEAD 中不存在、当前工作副本也不存在、无 stash / 分支可恢复，`pages/(authenticated)/settings/logs.vue` 引用悬空 → **nuxt typecheck / build 在干净 clone 下本就不可通过**（M2 期本地能过是因为文件当时未追踪地存在于开发机）。本次只修 `.gitignore`（`logs` → `/logs`，对齐 react 端）；**LogsPage 模块按 vue 端 `src/features/logs/` 重新平移属业务代码，登记 §19 待办、待用户安排**。
+
 ### Nuxt M5：文档收尾（2026-09-13；部署与线上冒烟随四端统一上线）
 
 - **范围调整（用户指示）**：M5 仅执行文档收尾；Vercel 部署 nuxt.baiwumm.com 与线上冒烟**延后**，随四端统一上线一并执行（§17 统一上线清单）。

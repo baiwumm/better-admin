@@ -4,8 +4,8 @@
 > 状态：已落地实现。React：TanStack Router 文件式路由 + NestJS 真实后端；Vue：vue-router + unplugin-vue-router 文件式路由（M0）。
 >
 > 相关代码：
-> - React：`react/src/routes/`、`react/src/router.ts`、`react/src/lib/route-access.ts`（访问控制唯一语义源）、`react/src/lib/api-client.ts`、`react/src/stores/auth-store.ts`
-> - Vue：`vue/src/pages/`、`vue/src/router/guards.ts`、`vue/src/lib/route-access.ts`、`vue/src/lib/permission.ts`、`vue/src/composables/use-menus.ts`、`vue/src/stores/auth-store.ts`
+> - React：`apps/react/src/routes/`、`apps/react/src/router.ts`、`apps/react/src/lib/route-access.ts`（访问控制唯一语义源）、`apps/react/src/lib/api-client.ts`、`apps/react/src/stores/auth-store.ts`
+> - Vue：`apps/vue/src/pages/`、`apps/vue/src/router/guards.ts`、`apps/vue/src/lib/route-access.ts`、`apps/vue/src/lib/permission.ts`、`apps/vue/src/composables/use-menus.ts`、`apps/vue/src/stores/auth-store.ts`
 > 依赖：React——`@tanstack/react-router`、`@tanstack/react-query`、`zustand`；Vue——`vue-router`（内置 unplugin-vue-router 集成）、`@tanstack/vue-query`、`pinia`（详见各端 `package.json`）
 
 ---
@@ -78,7 +78,7 @@ src/routes/
 | `_layout` | pathless 布局，**不进入 URL** | `_authenticated` |
 | `$param` / `notices_.$noticeId` | 动态段 | 公告详情 `/org/notices/:noticeId` |
 
-### 2.2 Vue（unplugin-vue-router，`vue/src/pages/`）
+### 2.2 Vue（unplugin-vue-router，`apps/vue/src/pages/`）
 
 ```text
 src/pages/
@@ -150,7 +150,7 @@ src/pages/
   - `LOGIN_REQUIRED_PATHS = ["/", "/account", "/my-notices"]`：登录即可访问的精确白名单；
   - `LOGIN_REQUIRED_PREFIXES = ["/org/notices/"]`：登录可达的动态前缀（公告详情，前缀带尾斜杠，列表页 `/org/notices` 不豁免）；
   - `isLoginRequiredPath(pathname)`：统一判定函数。
-  - Next 端（`next/src/lib/route-access.ts` + `proxy.ts`）保持同构实现。
+  - Next 端（`apps/next/src/lib/route-access.ts` + `proxy.ts`）保持同构实现。
 
 ---
 
@@ -232,7 +232,7 @@ useMenus()（GET /api/menus，后端 buildAllowedMenuIds 按角色关联过滤 +
 ### 新增一个页面
 
 1. 新建 `src/routes/_authenticated/<域>/<name>.tsx`，`createFileRoute("/_authenticated/<域>/<name>")`；
-2. 在菜单管理中新增菜单节点，`to` 指向新路径（后端 seed 可用 `nest/scripts/migrate-menus-add-*.ts` 幂等补录）；
+2. 在菜单管理中新增菜单节点，`to` 指向新路径（后端 seed 可用 `apps/nest/scripts/migrate-menus-add-*.ts` 幂等补录）；
 3. dev/build 自动重建 `routeTree.gen.ts`，运行 `pnpm lint && pnpm build` 验证；
 4. 页面按钮级门控使用 `useMenuHasPermissionKey`（菜单粒度权限位）。
 
@@ -253,5 +253,5 @@ useMenus()（GET /api/menus，后端 buildAllowedMenuIds 按角色关联过滤 +
 
 - ⚠️ `src/routeTree.gen.ts` 为自动生成文件：勿手改；新增路由后由 Vite 插件自动重建。
 - ℹ️ 管理页详情规范：列表详情一律用 Drawer/Dialog（见 `docs/ui-spec.md` §1.3）；唯一的消费端详情路由是公告详情（登录可达前缀）。
-- ℹ️ Next 端路由与本文档路由表逐页对应（App Router 目录 `next/src/app/(authenticated)/`），差异仅实现层（httpOnly Cookie + `proxy.ts` 门卫，见 `docs/feature-matrix.md`）。
+- ℹ️ Next 端路由与本文档路由表逐页对应（App Router 目录 `apps/next/src/app/(authenticated)/`），差异仅实现层（httpOnly Cookie + `proxy.ts` 门卫，见 `docs/feature-matrix.md`）。
 - ℹ️ Vue 端路由表与本文档逐条对齐：文件树见 §2.2；`lib/route-access.ts` 与 React 同构（`PUBLIC_PATHS` / `LOGIN_REQUIRED_PATHS` / `LOGIN_REQUIRED_PREFIXES` / `MENU_REQUIRED_PATHS`）；守卫为全局 `beforeEach`（§2.2）。

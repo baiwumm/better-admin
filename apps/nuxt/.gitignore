@@ -9,8 +9,9 @@ dist
 # Node dependencies
 node_modules
 
-# Logs
-logs
+# Logs（锚定根目录：运行时日志，不忽略 app/features/logs 源码目录——
+# 模板默认的不锚定 `logs` 曾把日志管理模块整目录排除在仓库之外，与 react 端修法一致）
+/logs
 *.log
 
 # Misc
