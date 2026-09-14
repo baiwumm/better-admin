@@ -2,6 +2,13 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 菜单可见性修正：有 role_menus 关联记录即可见（三端服务端，2026-09-14）
+
+- **背景**（订正上一条「页面声明 SEARCH 位」的决策）：Phase A 为绕开「0 位页面对普通角色不可见」给演示页声明了 SEARCH 位；用户裁定这是服务端逻辑本身不对——`/api/menus` 应包含 `permissions = 0` 的菜单，纯展示页只是没有按钮，角色管理中照常勾选。用户已手动把演示场 10 节点改回 0 位（只读查询核实一致）。
+- **修复**：Nest `MenusService.buildAllowedMenuIds`、Next `lib/server/menus-service.ts`、Nuxt `server/lib/menus-service.ts` 三处同款移除 `role_menus.permissions != 0` 过滤（`sql` 导入随之清理），语义回归 `database-design.md` §1.5 步骤 2「关联记录集合 = 直接授权集合」（该文档 v0.10 明确此口径并记录变更）。**安全前提已核实**：四端授权抽屉的保存载荷只含勾选节点（React / Next `isNodeSelected`、Vue / Nuxt `use-grant-tree` 对齐口径），未勾选项不会产生 0 位记录，故不会误放行；守卫按「路径是否在返回树中」判定、`usePermissions` 不按 0 位拦页面，无连带改动。录入脚本改为全部节点 `permissions: 0n`，与库一致。**副作用即收益**：线上「异常页」三子页（0 位）此前仅超管可见，现普通角色勾选后即可见，无需改库。
+- **验证**：Nest lint + `nest build` + 脚本单文件 tsc；Next lint（2 条既有 warning，本次未新增）+ `tsc --noEmit`；Nuxt lint + typecheck（唯一错误仍为既有 logs P0）。无既有测试断言旧过滤行为。待用户 GUI 自测：给任一普通角色勾选「演示场」子页 → 该角色登录后侧边栏可见、页面可进、无按钮。
+- **文档**：`database-design.md` §1.5 步骤 2 + §9 v0.10；`code-review-backlog.md` 备案项转入「已修复 2026-09-14」；`plan-dashboard-playground.md` §5.0 步骤 1、`feature-matrix.md` Playground 行、`AGENTS.md` §19 口径同步（上一条 progress 记录按规则不回改）。
+
 ### Playground Phase A：菜单树录入共用库 + 四端占位页（2026-09-14）
 
 - **做了什么**（`plan-dashboard-playground.md` §5.0 步骤 1-2）：① `apps/nest/scripts/migrate-menus-add-playground.ts`——幂等菜单录入脚本（命名沿用 `migrate-menus-add-*` 惯例，整棵树 + super_admin 授权一个事务落库），已在共用库执行：10 节点（演示场 一级目录 → 代码块 / 数字动画 / Ai Kit / GitHub Activity 二级 → Number Flow / Animated Counter / Fluid Orb / Grid Reveal / Matrix Orb 三级，**项目首个三级菜单**），重跑验证全部跳过、无重复插入。② 四端 7 页占位（28 文件）：React / Next 新建 `components/common/placeholder-page.tsx`（图标 + 标题 + 描述，与 Vue / Nuxt 既有 `PlaceholderPage.vue` 同构），Vue / Nuxt 复用既有组件；i18n `menu.playground.*` 10 键 + `features.playground.placeholder` 四端 zh-CN / en 同步（node 脚本按字母序插入，16 文件 round-trip 校验后仅新增行）；Vue / Nuxt `MENU_REQUIRED_PATHS` + `ROUTE_TITLE_KEYS`、Next `route-title.ts` 登记 7 路径（React / Next 菜单门卫为「非登录白名单即受控」，无需登记）。

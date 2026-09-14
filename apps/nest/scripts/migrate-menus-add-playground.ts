@@ -5,7 +5,6 @@ import { nanoid } from 'nanoid';
 import { db } from '../src/db/client';
 import { menus, roles, roleMenus } from '../src/db/schema';
 import {
-  Permissions,
   SUPER_ADMIN_BITS,
   SUPER_ADMIN_ROLE_CODE,
 } from '../src/db/schema/permissions.enum';
@@ -16,14 +15,10 @@ import {
  *
  * 行为（重复执行结果不变，幂等；整棵树 + 授权在一个事务内落库）：
  * 1. 按 i18nKey 逐节点查重，不存在则插入（父级 id 取自上一层的查回 / 插入结果）；
- * 2. 目录节点：to = NULL（与线上既有目录一致，避开 menus_to_unique 部分唯一索引）、
- *    permissions = 0（经子级祖先链可见，同「系统管理」「组织中心」）；
- *    页面节点：permissions = SEARCH 位、keepAlive = true。
- *    ⚠️ 页面不能保持 0 位：角色授权抽屉勾选菜单写入的是菜单声明位，而
- *    MenusService.buildAllowedMenuIds 只把 role_menus.permissions != 0 的菜单算作可见，
- *    声明 0 位的页面对普通角色永远不可见（线上「异常页」三个子页即处于该状态）。
- *    SEARCH 是项目事实上的「可查看」位（/menus/tree 与全部列表接口的读权限），
- *    演示页只声明这一位，授权后即可见、无其他按钮。
+ * 2. 目录节点：to = NULL（与线上既有目录一致，避开 menus_to_unique 部分唯一索引）；
+ *    页面节点：keepAlive = true。全部节点 permissions = 0——演示页是纯展示页，不声明任何
+ *    按钮位；可见性由 role_menus 关联决定（「有记录即可见」，MenusService.buildAllowedMenuIds
+ *    自 2026-09-14 起不再按 permissions != 0 过滤），角色管理中照常勾选授权、页面无按钮。
  * 3. super_admin 角色对以上菜单补 role_menus 全量位（SUPER_ADMIN_BITS），
  *    保证其树节点 userPermissions 完整（模式同 migrate-menus-add-org.ts）；
  *    其余角色不做默认授权，由「角色管理」按需关联。
@@ -158,7 +153,7 @@ async function ensureMenuSubtree(
         sort: def.sort,
         keepAlive: !isDirectory,
         enabled: true,
-        permissions: isDirectory ? 0n : Permissions.SEARCH.bits,
+        permissions: 0n,
       })
       .returning({ id: menus.id });
     id = created.id;

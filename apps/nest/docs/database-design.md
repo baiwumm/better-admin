@@ -81,7 +81,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 **实现规范（基于角色关联过滤）**：
 
 1. 服务端在 `GET /api/menus` 中，首先获取当前用户的所有角色（通过 `user_roles`）。
-2. 查询 `role_menus` 表，获取这些角色关联的所有 `menu_id`（去重），作为「直接授权菜单集合」。
+2. 查询 `role_menus` 表，获取这些角色关联的所有 `menu_id`（去重），作为「直接授权菜单集合」。**有关联记录即计入，不按 `permissions` 值过滤**：目录与纯展示页（异常页、演示场等）不声明任何按钮位，授权后 `role_menus.permissions = 0`，页面可见、只是没有按钮（v0.10 明确；此前实现层曾加 `!= 0` 过滤致 0 位页面对普通角色不可见，已移除）。
 3. **若用户为超级管理员（权限位 = 全量掩码 `9223372036854775807`），跳过此过滤，返回完整菜单树。**
 4. 对于普通用户，将「直接授权菜单集合」向上追溯父级（`parent_id`），将祖先节点也纳入可见范围（保证树形结构完整）。
 5. 最终仅查询 `menus` 表中 `id` 落在此集合内的记录，再组装为树形结构。**未关联的菜单节点不应出现在返回树中**（即角色未授权的菜单对用户不可见）。
@@ -452,6 +452,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 | 日期 | 版本 | 说明 |
 | --- | --- | --- |
+| 2026-09-14 | v0.10 | §1.5 步骤 2 明确「有 `role_menus` 关联记录即可见，不按 `permissions` 值过滤」：Nest / Next / Nuxt 三端服务端同款移除 `buildAllowedMenuIds` 中的 `permissions != 0` 过滤（实现层偏离设计，致 0 位纯展示页对普通角色不可见）。无 Schema / 契约变化；新增「演示场」菜单树 10 节点（含三级，全部 0 位）经 `nest/scripts/migrate-menus-add-playground.ts` 幂等录入。 |
 | 2026-09-01 | v0.6 | 契约 v1.6.0（组织中心阶段 1/2）：迁移 0007 新增 8 张表——`depts` / `posts` / `user_posts` / `notices` / `notice_scopes` / `notice_read_records` / `notice_remind_logs` / `notifications`（后 5 张阶段 3 实现业务）；`users` 表新增 `dept_id` / `employee_no` / `employment_status` / `entry_date` 四个可空列（向前兼容）。组织/岗位软删 + 部分唯一索引；depts↔users 循环外键以 AnyPgColumn 惰性回调声明；岗位不参与权限聚合（架构决策）。存量库需执行 `pnpm db:migrate`（0007）与 `nest/scripts/migrate-menus-add-org.ts`（菜单补录）。 |
 | 2026-08-30 | v0.5 | 契约 v1.4.4：新增 `GRANT`(256) 权限点（菜单授权，守卫 `PUT /roles/:id/menus`，原为 EDIT）；仅角色管理菜单声明该位，存量库经 `nest/scripts/migrate-menus-add-grant-bit.ts` 幂等补录；super_admin 全量位自动覆盖，无需迁移数据。权限点共 9 个。 |
 | 2026-09-05 | v0.9 | 契约 v1.7.1：新增 `EXPORT`(512) 权限点（通讯录 Excel 导出按钮前端门控，无独立端点）；仅人员通讯录菜单声明该位，存量库经 `nest/scripts/migrate-menus-add-export-bit.ts` 幂等补录；super_admin 全量位自动覆盖。权限点共 10 个。 |

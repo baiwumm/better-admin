@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, asc, count, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { menus, roleMenus, userRoles, roles, logs } from '@/db/schema';
 import {
@@ -99,21 +99,16 @@ export class MenusService {
       return null;
     }
 
-    // 直接授权集合：用户所有**启用**角色在 role_menus 中关联的 menu_id（去重）
-    // 只包含 permissions 不为 0 的菜单（permissions = 0 表示无权限，不应出现在可见菜单中）
+    // 直接授权集合：用户所有**启用**角色在 role_menus 中关联的 menu_id（去重）。
+    // 「有关联记录即可见」（database-design.md §1.5 步骤 2）：permissions = 0 的记录同样计入——
+    // 目录与纯展示页（异常页 / 演示场）不声明任何按钮位，授权抽屉勾选后写入 0 位记录，
+    // 页面可见、只是没有按钮；四端授权抽屉的载荷只含勾选节点，未勾选项不会产生记录。
     const directRows = await db
       .selectDistinct({ menuId: roleMenus.menuId })
       .from(roleMenus)
       .innerJoin(userRoles, eq(roleMenus.roleId, userRoles.roleId))
       .innerJoin(roles, eq(userRoles.roleId, roles.id))
-      .where(
-        and(
-          eq(userRoles.userId, user.id),
-          eq(roles.enabled, true),
-          // 关键修复：只包含 permissions 不为 0 的菜单
-          sql`${roleMenus.permissions} != 0`,
-        ),
-      );
+      .where(and(eq(userRoles.userId, user.id), eq(roles.enabled, true)));
 
     const directIds = new Set(directRows.map((r) => r.menuId));
     if (directIds.size === 0) {
