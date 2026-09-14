@@ -2,6 +2,13 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 演示站计划修订：Playground 先行 + 菜单定稿 rare-ui 组件集（2026-09-14，仅文档）
+
+- **决策**（用户拍板三项，评估过程见本条「核实结论」）：① Playground 菜单定稿为 rare-ui 组件集（`code-block` / `animated-counter` / `fluid-orb` / `grid-reveal` / `matrix-orb` / `github-activity`）+ `@number-flow`，含两个二级目录下的五个三级页；旧清单（Smart Ticker / 拖拽 / 富文本 / 加载态集 / 轮播 / auto-animate / Lightbox / 二维码）**整体移除**——拖拽、富文本业务功能已上线无需重复演示。② Vue / Nuxt 端引入 `clsx` + `tailwind-merge` 新增 `cn` 工具函数；React / Next 直接用 `@heroui/react` 导出的 `cn`。③ **Phase A/B Playground 调整为先行、不等 Gate**（纯前端静态演示，与 Nuxt 收尾并发；Gate-1 / Gate-2 改为只约束 Phase 0 与 Phase C），三大功能块新顺序：Playground → 演示上线准备 → Dashboard。
+- **核实结论**：`@heroui/react` 确认导出 `cn`（tailwind-variants 封装）；`@nuxt/ui` v4 内部依赖 tailwind-merge 但 `addImports` 只注册 composables，**不向业务代码导出 `cn`**；Vue 端现状无 clsx / tailwind-merge、类名全部手拼；`@number-flow/vue` 官方存在（0.5.2）；rare-ui 为 MIT shadcn registry，组件共同依赖 `motion`，code-block 另需 `prism-react-renderer`，Ai Kit 三件依赖装后核对；React / Next 两端**从未初始化 shadcn**（无 `components.json`），决定手动 vendor 源码、不建 shadcn 基建；`menus` 表 `parentId` 自引用树对三级层级无 schema 约束，菜单数据经共用库单点录入四端自动一致。
+- **实施四步**（尚未写代码）：`apps/nest/scripts/playground-menu-seed.ts` 幂等菜单录入（不做默认授权，走 RBAC）→ 四端路由 / 页面占位 + `PlaygroundIntro` 骨架 → React 基准开发 → Next（复用源码）/ Vue / Nuxt（Nuxt UI + 自定义重写）逐端对齐。
+- **文档**：`plan-dashboard-playground.md` §1 / §2 / §3.2 / §4.3 / §4.4 / §5 / §6 / §7 / §9 同步重写（§7 新增 `motion` / `prism-react-renderer` / `@number-flow/vue` / `clsx`+`tailwind-merge` / `motion-v`（待评审），移除五个旧依赖；「三端」表述全部改「四端」，Nuxt 首页已核实同为 `PlaceholderPage`）；`AGENTS.md` §19 待办指针同步并合并了两处重复表述。
+
 ### Nuxt 对齐：顶栏全屏按钮替换主题切换（2026-09-14）
 
 - **现象**（用户反馈）：Nuxt 端顶栏缺少 Vue 端的 `FullscreenButton`。Vue 端 `AdminLayout` 右侧顺序为「铃铛 → 全屏 → 语言 → 配置抽屉」（主题切换已随提交 `222f42f` 收进 ConfigDrawer），Nuxt 端 M4 平移时 `admin.vue` 注释「FullscreenButton 未列入 M4 平移范围（随需评估）」，右侧第二位仍是 `ThemeSwitch`。
