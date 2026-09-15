@@ -1,16 +1,7 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-
-import PlaceholderPage from "@/components/PlaceholderPage.vue";
-
-// 演示场 › GitHub Activity（Phase A 占位；Phase B 按 plan-dashboard-playground.md §6 实现）
-const { t } = useI18n();
+import GitHubActivityPage from "@/features/playground/github-activity/GitHubActivityPage.vue";
 </script>
 
 <template>
-  <PlaceholderPage
-    icon="i-lucide-calendar-days"
-    title-key="menu.playground.githubActivity"
-    :description="t('features.playground.placeholder')"
-  />
+  <GitHubActivityPage />
 </template>
