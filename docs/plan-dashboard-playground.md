@@ -40,17 +40,27 @@
   - 定位是**日常可重跑的「洗数据」命令**而非一次性脚本：开发期写操作弄脏数据后，随时重跑即恢复标准演示数据集；
   - 批量插入按 50~100 条分批（Supabase 连接池限制）。
 - **依赖**：`@faker-js/faker`（devDependency，`zh_CN` locale）；不用 `drizzle-seed`（中文数据失真）。
-- **清理范围与顺序**（按外键依赖）：真实日志 → refresh_tokens → notifications / notices → user_roles（非超管）→ users（非超管）→ posts → depts → roles（非超管）。**保留**：`super_admin` 角色、超管用户（**密码哈希原样保留，脚本不得重设**）、菜单、字典、settings。
+- **清理范围与顺序**（按外键依赖）：真实日志 → refresh_tokens → notifications / notices → user_roles（非超管）→ users（非超管，**含 `deletedAt` 非空的软删除用户，一并物理清除**，delete 不加软删过滤）→ posts → depts → roles（非超管）。**保留**：`super_admin` 角色、超管用户（**密码哈希原样保留，脚本不得重设**）、菜单、字典、settings。
 - **生成规模与逼真度设计**：
 
 | 数据 | 规模 | 逼真要点 |
 | --- | --- | --- |
 | 组织树 | 30~50 节点 | 公司 → 中心 / 事业群 → 部门 → 小组，名称贴合真实企业 |
 | 岗位 | 20~30 | 与部门匹配（技术总监属研发中心、HR 专员属人力部等） |
-| 用户 | 100~200 | `zh_CN` 姓名、性别、手机 / 邮箱格式合规、入职时间分布近 1~3 年、统一演示密码（满足契约 v1.8.0 密码策略，仅供服务端 demo-login 使用，不在前端暴露） |
-| 演示角色 | 5 个 | 系统管理员 5% / 部门主管 10% / HR 专员 5% / 普通员工 70% / 访客 10%；菜单授权呈明显权限梯度（初版按此，后续按需调整） |
+| 用户 | 100~200 | `zh_CN` 姓名、性别、手机 / 邮箱格式合规、入职时间分布近 1~3 年、**统一演示密码 `demo1234`**（脚本常量；满足契约 v1.8.0 策略：8~20 位 ASCII、含字母与数字、不含用户名；仅供服务端 demo-login 使用，前端不暴露） |
+| 演示角色 | 5 个 | 比例 系统管理员 5% / 部门主管 10% / HR 专员 5% / 普通员工 70% / 访客 10%；权限矩阵见下表（2026-09-15 拍板默认版） |
 | 公告 | 30~50 | 富文本正文、不同范围 / 状态 / 发布时间 |
 | 日志 | 500~1000 | login / operation / api / error 四类，**时间分布近 30 天**，打 `seed` 标记（见 §3.4 永久布景） |
+
+- **演示角色权限矩阵**（菜单可见性 + 按钮位；`super_admin` 不在此列，保持既有全量位）：
+
+| 角色 | 可见范围 | 按钮位 |
+| --- | --- | --- |
+| 系统管理员 | 除超管保护项外全部菜单（设置全套 + 组织中心全套 + 演示场） | 全部按钮位（受只读守卫拦截，仅用于展示按钮可见性） |
+| 部门主管 | 组织中心全套 + 设置只读（用户 / 角色 / 菜单 / 字典 / 日志页面可见） | 组织中心增删改位；设置页面无按钮位 |
+| HR 专员 | 用户管理 + 组织中心（组织 / 岗位 / 通讯录 / 公告） | 用户与组织中心增删改位 |
+| 普通员工 | 公告 / 站内信 / 通讯录 / 架构图谱 / 演示场 | 无按钮位（纯查看） |
+| 访客 | 最小集：公告 / 站内信 | 无按钮位 |
 
 - **头像**：脚本在**服务端下载真人风格头像后转存 Supabase Storage `avatars` bucket**（脚本持密钥、浏览器不接触，符合 `AGENTS.md` §5 豁免规则），头像 URL 落库为自家 Storage 域名，无外链依赖。来源选逼真的真人照片风格（faker `image.personPortrait({ sex })` 或同等真人风格数据集），**性别与用户性别字段匹配**；单张下载失败回退空头像走首字。**Storage 文件名用确定性命名**（如 `demo/0012.jpg`，按 seed 序号），重置时同名覆盖——用户主键是 nanoid 每次重置都会变，文件名若跟主键走会在 Storage 累积垃圾文件。
 
@@ -86,18 +96,71 @@
 
 ### 3.5 契约与环境变量
 
-- **OpenAPI 新 minor 版本**（v1.9.0 已被 super_admin 绑定不变量守卫占用，2026-09-12）：新增 `POST /auth/demo-login`；通用错误响应登记 `DEMO_READONLY`（403）。Dashboard 的 `stats` 契约顺延为再下一个 minor 版本（§4.3）。
+- **OpenAPI v1.9.0 → v1.10.0**（v1.9.0 已被 super_admin 绑定不变量守卫占用，2026-09-12）：新增 `POST /auth/demo-login`；通用错误响应登记 `DEMO_READONLY`（403）。Dashboard 的 `stats` 契约顺延为 v1.11.0（§4.3）。
 - **环境变量**：`DEMO_MODE`（默认 false）、`LOG_API_SKIP_GET`（默认 false）、`LOG_RETENTION_DAYS`（已有）；各端 `.env.example` 登记（`AGENTS.md` §9）。
 
-### 3.6 实施顺序
+### 3.6 执行清单（Gate 达成后启动；每完成一项打钩，进度记录写 `progress.md`）
 
-1. [ ] faker 重置脚本（含头像转存）开发并在共用库验证通过：验证即一次真实重置，跑完可继续开发，Gate 后上线前再洗一次
-2. [ ] OpenAPI v1.9.0（demo-login + `DEMO_READONLY`）
-3. [ ] Nest：`DemoReadonlyGuard` + `@DemoAllowed` + 过滤器排除 + 拦截器 GET 跳过 + demo-login + cleanup 跳过 seed + 超管双保险
-4. [ ] React / Vue：登录页两按钮 + 拦截器 toast + i18n
-5. [ ] Next：同名实现（Nuxt 仅记录）
-6. [ ] Gate 达成 → 执行 `demo-reset` 洗数据 → 开启 `DEMO_MODE` 上线
-7. [ ] `feature-matrix.md` / `progress.md` 更新
+> 依赖关系：Step 1 与 Step 2 无依赖可并行；Step 3 依赖 Step 1 的契约与 Step 2 跑出的演示角色数据；Step 4~7 依赖 Step 3 的 demo-login 与错误码；Step 8 收尾。总量级约 4~6 个工作日。
+
+**Step 1 — OpenAPI 契约 v1.10.0**（半天）
+
+- [ ] `POST /auth/demo-login` 请求体 `{ kind: 'admin' | 'random' }`、响应复用 `/auth/login` 结构、`DEMO_MODE` 关闭时 404
+- [ ] 通用错误响应登记 403 `DEMO_READONLY`
+- [ ] 契约变更记录（`openapi.yaml` 头部 changelog）+ 四端影响评估
+
+**Step 2 — faker 重置脚本 `apps/nest/scripts/demo-reset.ts`**（1~2 天，与 Step 1 并行）
+
+- [ ] 安装 `@faker-js/faker`（devDependency，锁版）
+- [ ] 骨架：`--confirm` 安全阀（打印目标库 host + 将删行数预估）、固定 seed、分批插入（50~100 条/批）、数据写入事务包裹
+- [ ] 清理逻辑：按 §3.1 顺序物理删除（含软删除用户）；保留超管（密码哈希不动）/ `super_admin` / 菜单 / 字典 / settings
+- [ ] 生成：组织树 → 岗位 → 5 个演示角色 + 权限矩阵写入 `role_menus` → 用户（按比例分配角色、密码 `demo1234`）→ 公告 → 日志（四类、近 30 天、`seed` 标记）
+- [ ] 头像：下载真人照片（性别匹配）→ 转存 Storage `demo/00xx.jpg`（同名覆盖）→ 事务内落 URL；单张失败回退空头像
+- [ ] `package.json` 加 `db:demo-reset` 脚本命令
+- [ ] 验证：在共用库跑一遍（即一次真实重置），逐模块页面看数据观感；超管原密码可登录；重跑一次确认数据集一致
+
+**Step 3 — Nest 服务端改造**（1 天）
+
+- [ ] `DemoReadonlyGuard` 全局注册（`DEMO_MODE=true` 启用，默认拦所有非 GET）+ `@DemoAllowed()` 装饰器
+- [ ] 白名单标注：auth `login` / `refresh` / `logout` / `demo-login`；notifications `:id/read` / `read-all`
+- [ ] `HttpExceptionFilter`：`DEMO_READONLY` 不写 error 日志
+- [ ] `LoggingInterceptor`：`LOG_API_SKIP_GET` 开关，GET 不记 api 日志
+- [ ] `demo-login` 端点：admin = 系统管理员角色随机一人；random = 其余四角色两级随机；超管永不进池
+- [ ] 超管双保险：users `reset-password` / `status` / `DELETE` 对 `super_admin` 目标永久拦截
+- [ ] `log-cleanup` 跳过 `seed` 标记日志
+- [ ] refresh_tokens 过期清理：确认现有，缺则补 cron
+- [ ] `.env.example` 登记 `DEMO_MODE` / `LOG_API_SKIP_GET`
+- [ ] 验证：本地开 `DEMO_MODE`，curl 逐条过白名单放行 / 其余非 GET 全拦 / 超管保护 / 登录-刷新-退出链路完整；e2e 测试补齐
+
+**Step 4 — React 端**（半天）
+
+- [ ] 登录页移除 GitHub / Google 占位按钮 → 「管理员」「随机用户」两按钮（调 demo-login）
+- [ ] 请求拦截器识别 `DEMO_READONLY` → 统一 toast（i18n 键 zh-CN / en）
+- [ ] 登录成功 toast 带「姓名 · 角色」（可选）
+- [ ] 验证：两种 kind 登录成功；写表单可打开、校验可见、提交被拦 toast
+
+**Step 5 — Vue 端**（半天，与 Step 4 同构平移）
+
+- [ ] 登录页两按钮 + 拦截器 toast + i18n
+- [ ] 验证同 Step 4
+
+**Step 6 — Next 端**（1 天，独立全栈）
+
+- [ ] server API：`demo-login` route handler + 只读拦截（共用 `DEMO_MODE` / `DEMO_READONLY`）+ 白名单
+- [ ] 登录页两按钮 + 拦截器 toast + i18n；`.env.example` 登记
+- [ ] 验证同 Step 3 + Step 4
+
+**Step 7 — Nuxt 端**（1 天，与 Step 6 同构）
+
+- [ ] server API 同名实现 + 登录页 + toast + i18n；`.env.example` 登记
+- [ ] 验证同 Step 6
+
+**Step 8 — 统一验收与上线**
+
+- [ ] §9.1 验收清单逐项过（curl 直拦、脚本幂等、头像全自家域名、GET 不记日志、拦截不写 error 日志）
+- [ ] `feature-matrix.md` 新增演示模式行（快捷登录 / 只读守卫，四端状态）
+- [ ] 执行 `demo-reset` 洗数据 → 各端线上环境配 `DEMO_MODE=true` → 上线
+- [ ] `progress.md` 置顶记录 + `AGENTS.md` §19 指针同步
 
 ---
 
@@ -153,7 +216,7 @@
 
 ### 4.3 数据契约（OpenAPI 先行）
 
-- 契约版本 v1.9.0 → **v1.10.0**，先更新 [`apps/nest/openapi/openapi.yaml`](../apps/nest/openapi/openapi.yaml) 再实现（`AGENTS.md` §6）。
+- 契约版本 v1.10.0 → **v1.11.0**，先更新 [`apps/nest/openapi/openapi.yaml`](../apps/nest/openapi/openapi.yaml) 再实现（`AGENTS.md` §6）。
 - 新增（草案，字段以契约定稿为准）：
   - `GET /stats/overview` — 一次返回 KPI 计数、登录趋势序列（按 `?days=7|30`）、角色占比、最新公告、最近日志。**只读聚合接口**，鉴权为「任意已登录用户」，不要求按钮位权限；敏感字段（手机号 / 邮箱 / IP）不出现在响应中。
 - 四端影响评估：React（消费方）、Next（独立 server API 同名对齐）、Vue（消费方）、Nuxt（消费方，随 Phase C 对齐）；Nest（实现方）。
@@ -161,7 +224,7 @@
 
 ### 4.4 实施顺序
 
-1. [ ] OpenAPI v1.10.0 契约定稿（`stats/overview`）
+1. [ ] OpenAPI v1.11.0 契约定稿（`stats/overview`）
 2. [ ] Nest `stats` 模块（只读 service + e2e 测试）
 3. [ ] React Dashboard（设计定稿基准版；`recharts` 按 §7 评审，`@number-flow/react` 已随 Phase A/B 引入直接复用）
 4. [ ] Next 端对齐（server API 同名实现 + 页面复刻）
@@ -280,7 +343,7 @@ type DemoMeta = {
 - [ ] `docs/ui-spec.md` §1.3：Dashboard 状态「占位」→「已实现」；登录页快捷登录、Playground 模式补充。
 - [ ] `docs/progress.md`：每 Phase 完成置顶记录。
 - [ ] `AGENTS.md` §19：当前待办指针同步。
-- [ ] 契约 v1.9.0（demo-login / `DEMO_READONLY`）与 v1.10.0（stats）变更记录：`apps/nest/openapi/openapi.yaml` + `docs/progress.md`。
+- [ ] 契约 v1.10.0（demo-login / `DEMO_READONLY`）与 v1.11.0（stats）变更记录：`apps/nest/openapi/openapi.yaml` + `docs/progress.md`。
 - [ ] 各端 `.env.example`：`DEMO_MODE`、`LOG_API_SKIP_GET` 登记。
 
 ## 9. 验收标准
