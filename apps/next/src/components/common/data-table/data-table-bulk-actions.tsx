@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 
 import { useTranslation } from "@/i18n";
-import { useEventListener } from "@/hooks/use-event-listener";
+import { getWindow, useEventListener } from "@/hooks/use-event-listener";
 
 export interface DataTableBulkActionsProps<TData extends RowData> {
   table: AppTable<TData>;
@@ -67,7 +67,11 @@ export function DataTableBulkActions<TData extends RowData>({
   );
 
   // 未选中行时不订阅（Esc 监听条件生效）
-  useEventListener(window, "keydown", selectedCount > 0 ? handleKeyDown : null);
+  useEventListener(
+    getWindow(),
+    "keydown",
+    selectedCount > 0 ? handleKeyDown : null,
+  );
 
   if (!mounted) return null;
 

@@ -6,7 +6,7 @@ import { useCallback } from "react";
 
 import { PickerLabel } from "./picker-label";
 
-import { useEventListener } from "@/hooks/use-event-listener";
+import { getWindow, useEventListener } from "@/hooks/use-event-listener";
 import { THEME_PALETTES } from "@/themes/color-palettes";
 import { useTranslation } from "@/i18n";
 import { useDesignThemeStore } from "@/stores/design-theme-store";
@@ -41,7 +41,7 @@ export function ThemeColorPicker() {
     [setDesignTheme],
   );
 
-  useEventListener(window, "storage", handleStorage);
+  useEventListener(getWindow(), "storage", handleStorage);
 
   // ColorSwatchPicker 的 value 需要是 parseColor(Color) 对象
   const swatchValue = parseColor(

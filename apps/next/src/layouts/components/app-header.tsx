@@ -21,7 +21,7 @@ import { NoticeBell } from "./notice-bell";
 import { SearchTrigger } from "./search-trigger";
 import { ThemeSettingsDrawer } from "./theme-settings-drawer";
 
-import { useEventListener } from "@/hooks/use-event-listener";
+import { getDocument, useEventListener } from "@/hooks/use-event-listener";
 import { useTranslation } from "@/i18n";
 import { getMenuLabel } from "@/lib/menu-i18n";
 import { filterHiddenMenus } from "@/lib/permission";
@@ -80,7 +80,7 @@ export function AppHeader({
     [searchSetOpen, searchState.isOpen],
   );
 
-  useEventListener(document, "keydown", onKeyDown);
+  useEventListener(getDocument(), "keydown", onKeyDown);
 
   // 从可见菜单树解析出当前路由对应的面包屑节点链（含图标与名称）；
   // 非菜单路由（如登录白名单页 /account、通知详情）在菜单树中无匹配，回退为

@@ -5,7 +5,7 @@ import { Maximize, Minimize } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { useTranslation } from "@/i18n";
-import { useEventListener } from "@/hooks/use-event-listener";
+import { getDocument, useEventListener } from "@/hooks/use-event-listener";
 
 /**
  * 全屏切换按钮：点击进入 / 退出浏览器全屏。
@@ -27,7 +27,7 @@ export function FullscreenButton() {
     sync();
   }, [sync]);
 
-  useEventListener(document, "fullscreenchange", sync);
+  useEventListener(getDocument(), "fullscreenchange", sync);
 
   const { t } = useTranslation();
 
