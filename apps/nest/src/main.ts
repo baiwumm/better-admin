@@ -5,6 +5,7 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { apiReference } from '@scalar/nestjs-api-reference';
 import { AppModule } from './app.module';
 import { loadConfig } from './config/env';
 
@@ -44,7 +45,8 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger 文档（挂在 /docs，与 openapi-design.md §6 约定一致）
+  // API 文档：/docs 挂 Scalar API Reference（UI），/docs-json 保留 OpenAPI JSON 出口
+  // （契约运行时出口不变；@nestjs/swagger 仅负责文档生成，UI 由 Scalar 承担）
   // 版本号与 openapi.yaml info.version 保持同步（契约唯一事实来源）
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Better Admin API')
@@ -53,13 +55,24 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerUiEnabled: false,
+    jsonDocumentUrl: '/docs-json',
+  });
+  app.use(
+    '/docs',
+    apiReference({
+      url: '/docs-json',
+      pageTitle: 'Better Admin API',
+      theme: 'alternate'
+    }),
+  );
 
   const port = Number(process.env.PORT ?? 3000);
   await app.listen(port);
-   
+
   console.log(
-    `[nest] Better Admin API listening on http://localhost:${port}/api , Swagger on http://localhost:${port}/docs`,
+    `[nest] Better Admin API listening on http://localhost:${port}/api , API Docs on http://localhost:${port}/docs`,
   );
 }
 

@@ -16,7 +16,7 @@
 
 - **OpenAPI 是 API Contract 唯一事实来源（Single Source of Truth）**。
 - 采用 **文档优先（Contract-First）**：先定义 `nest/openapi/openapi.yaml`，NestJS 代码按它实现。
-- `@nestjs/swagger` 仅用于：开发期从代码生成 Swagger UI 供联调，**并定期与 `openapi.yaml` 核对一致性**；yaml 为权威，代码偏差以 yaml 为准修正。
+- `@nestjs/swagger` 仅用于：开发期从代码生成 OpenAPI 文档（JSON 出口 `/docs-json`，UI 由 Scalar API Reference 在 `/docs` 承载）供联调，**并定期与 `openapi.yaml` 核对一致性**；yaml 为权威，代码偏差以 yaml 为准修正。
 - React / Vue 前端请求、Next.js / Nuxt 自有 Server API 均需遵循同一 Contract。
 
 ---
@@ -325,7 +325,7 @@ paths:
 
 - 每个 path item 用 `x-permission` 标注所需位（§2）。
 - `security` 全局要求 `bearerAuth`，login/refresh/logout 显式置空。
-- Swagger UI 挂在 `/docs`（NestJS 启动时可访问）。
+- API 文档 UI（Scalar API Reference）挂在 `/docs`，OpenAPI JSON 挂在 `/docs-json`（NestJS 启动时均可访问；2026-09-15 起 UI 由 Swagger UI 换为 Scalar，JSON 出口不变）。
 
 ---
 
