@@ -51,7 +51,7 @@ export const SortField: FC<SortFieldProps> = ({
       >
         <NumberField.Group>
           <NumberField.DecrementButton />
-          <NumberField.Input className="w-32" id={inputId} />
+          <NumberField.Input id={inputId} />
           <NumberField.IncrementButton />
         </NumberField.Group>
       </NumberField>

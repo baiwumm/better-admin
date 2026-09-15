@@ -67,3 +67,9 @@
     height:auto !important;
   }
 }
+
+@layer components {
+  .number-field__input {
+    @apply text-center;
+  }
+}

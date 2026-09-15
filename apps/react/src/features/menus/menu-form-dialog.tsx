@@ -545,6 +545,7 @@ function MenuFormModal({
                         </span>
                       )}
                     </Select.Value>
+                    <Select.ClearButton />
                     <Select.Indicator />
                   </Select.Trigger>
                   <Select.Popover>
