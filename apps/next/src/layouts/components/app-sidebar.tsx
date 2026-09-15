@@ -10,6 +10,7 @@ import {
   Dropdown,
   Label,
   Link,
+  ScrollShadow,
   Separator,
   Typography,
 } from "@heroui/react";
@@ -223,7 +224,7 @@ function SidebarLinks({ collapsed }: { collapsed?: boolean }) {
  * 菜单区底部快捷链接，最底部用户头像。
  * - 展开态（256px）：Accordion 折叠展开菜单 + ListBox 子菜单
  * - 折叠态（仅图标宽度）：保留 Logo 图标、一级菜单图标、快捷链接图标、用户头像
- * - 菜单过多时由中间 nav 区域滚动（flex-1 + overflow-y-auto），上下区块固定
+ * - 菜单过多时由中间 ScrollShadow 区域滚动（上下渐隐阴影提示溢出），上下区块固定
  *
  * Next 适配：菜单树/用户由 RSC 注入；服务端 findMenuTree 已按角色权限过滤，
  * 此处仅做渲染级 hideInMenu 剔除，不再有 useMenus/骨架屏（RSC 阻塞渲染即 loading）。
@@ -250,14 +251,21 @@ export function AppSidebar({
       {/* 顶部品牌：Logo + 名称（技术栈下拉） */}
       <SidebarBrand collapsed={collapsed} />
 
-      {/* 中间菜单区域 */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3.5 py-2">
-        {collapsed ? (
-          <CollapsedMenu items={items} onNavigate={onNavigate} />
-        ) : (
-          <SidebarMenu items={items} onNavigate={onNavigate} />
-        )}
-      </nav>
+      {/* 中间菜单区域。
+          ScrollShadow 自身即滚动容器（vertical 自带 overflow-y-auto + 主题细滚动条，
+          溢出时上下渐隐），nav 退为纯语义容器保留 landmark。 */}
+      <ScrollShadow
+        className="min-h-0 flex-1 overflow-x-hidden px-3.5 py-2"
+        size={24}
+      >
+        <nav>
+          {collapsed ? (
+            <CollapsedMenu items={items} onNavigate={onNavigate} />
+          ) : (
+            <SidebarMenu items={items} onNavigate={onNavigate} />
+          )}
+        </nav>
+      </ScrollShadow>
 
       {/* 菜单区底部快捷链接 */}
       <SidebarLinks collapsed={collapsed} />

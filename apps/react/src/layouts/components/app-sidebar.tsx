@@ -6,6 +6,7 @@ import {
   Label,
   Link,
   Separator,
+  ScrollShadow,
   Skeleton,
   Tooltip,
   Typography,
@@ -249,7 +250,7 @@ function SidebarLinks({ collapsed }: { collapsed?: boolean }) {
  * 菜单区底部快捷链接，最底部用户头像。
  * - 展开态（256px）：Accordion 折叠展开菜单 + ListBox 子菜单
  * - 折叠态（仅图标宽度）：保留 Logo 图标、一级菜单图标、快捷链接图标、用户头像
- * - 菜单过多时由中间 nav 区域滚动（flex-1 + overflow-y-auto），上下区块固定
+ * - 菜单过多时由中间 ScrollShadow 区域滚动（上下渐隐阴影提示溢出），上下区块固定
  */
 export function AppSidebar({ collapsed, onNavigate }: AppSidebarProps) {
   // 当前用户可见菜单树（权限过滤后）；侧边栏再剔除 hideInMenu 隐藏节点。
@@ -273,20 +274,27 @@ export function AppSidebar({ collapsed, onNavigate }: AppSidebarProps) {
       {/* 顶部品牌：Logo + 名称（技术栈下拉） */}
       <SidebarBrand collapsed={collapsed} />
 
-      {/* 中间菜单区域：首次加载（无缓存）显示骨架屏；有数据后渲染真实菜单 */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3.5 py-2">
-        {isLoading ? (
-          collapsed ? (
-            <CollapsedMenuSkeleton />
+      {/* 中间菜单区域：首次加载（无缓存）显示骨架屏；有数据后渲染真实菜单。
+          ScrollShadow 自身即滚动容器（vertical 自带 overflow-y-auto + 主题细滚动条，
+          溢出时上下渐隐），nav 退为纯语义容器保留 landmark。 */}
+      <ScrollShadow
+        className="min-h-0 flex-1 overflow-x-hidden px-3.5 py-2"
+        size={24}
+      >
+        <nav>
+          {isLoading ? (
+            collapsed ? (
+              <CollapsedMenuSkeleton />
+            ) : (
+              <SidebarMenuSkeleton />
+            )
+          ) : collapsed ? (
+            <CollapsedMenu items={items} onNavigate={onNavigate} />
           ) : (
-            <SidebarMenuSkeleton />
-          )
-        ) : collapsed ? (
-          <CollapsedMenu items={items} onNavigate={onNavigate} />
-        ) : (
-          <SidebarMenu items={items} onNavigate={onNavigate} />
-        )}
-      </nav>
+            <SidebarMenu items={items} onNavigate={onNavigate} />
+          )}
+        </nav>
+      </ScrollShadow>
 
       {/* 菜单区底部快捷链接 */}
       <SidebarLinks collapsed={collapsed} />
