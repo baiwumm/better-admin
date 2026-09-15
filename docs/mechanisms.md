@@ -934,3 +934,15 @@ Iconify CDN，实现运行时零外部网络依赖（DB 动态菜单图标名的
 **规则沉淀**：Nuxt 端凡是**驱动** NuxtPage 渲染的输入（`page-key`、keepalive include 派生源等），一律取 `useRouter().currentRoute`，不得取 `useRoute()`；`useRoute()` 只用于**消费**页面渲染结果的布局层展示（面包屑 / 标题 / 标签激活态）。页面 SFC 不得省略 `<script setup>`（组件名是 Nuxt keepalive 分支与本项目保活映射的键）。
 
 - 验证：eslint 净 + test 9 文件 95 用例全绿；dev server 编译产物比对——异常页 `__name` 从空变为 `403/404/500`，`pageKey` 已读取 `router.currentRoute.value.path`。异常页 / 同名 index 页的切换端到端复测需登录态，待用户自测。
+
+## 27. HeroUI 全局 BEM 组件类会命中第三方库输出的同名 className（React / Next 端，Playground Phase B）
+
+**现象**：Playground 代码块页（vendor 自 rare-ui，`prism-react-renderer` 高亮）中 JSX 标签属性之间的空格全部消失，`<Modal.Backdrop isOpen={...} onOpenChange={...}>` 渲染成 `<Modal.BackdropisOpen={...}onOpenChange={...}>`；纯 JS 行（`import` / `const`）不受影响。
+
+**机制**：`@heroui/styles` 以**全局 BEM 类名**发布组件样式（`.button` / `.card` / `.chip` / `.tag` / `.label` / `.link` …），并非 CSS Modules 或前缀命名空间。prism 为每个 token 输出语义 className（`token tag` / `token attr-name` / `token punctuation` …），其中 **`tag` 与 HeroUI Tag 组件的 `.tag` 撞名** → JSX 标签 token 的 `<span>` 被套上 `display: inline-flex` 等 Tag 组件样式；flex 容器会丢弃仅含空白的匿名文本，于是属性间的空白 token（同为 `tag` 类型）折叠为零宽。已扫描 `@heroui/styles/dist/*.css` 逐一比对 prism 全部 token 名，**目前仅 `tag` 一处撞名**，但机制是通用的：任何向 DOM 输出通用英文单词 className 的第三方渲染器（语法高亮、Markdown 渲染、图表库 legend 等）都可能被 HeroUI 组件样式误染。
+
+**修复**：token `<span>` 只取 `getTokenProps()` 的 `style` / `children`，不透传 `className`——prism-react-renderer 的主题颜色本就走内联样式，className 仅语义用途，丢弃无损（`apps/react/src/features/playground/code-block/code-block.tsx`）。
+
+**规则沉淀**：React / Next 端引入会自行输出 className 的第三方渲染组件时，先 grep 其可能输出的类名是否与 `@heroui/styles` 组件类（`.<component>` 单词级）撞名；能不透传 className 就不透传，必须保留时在组件根上加作用域并用 `[&_.tag]:...` 之类的后代选择器复位。
+
+- 验证：修复后 DOM 文本与像素级渲染均恢复空格；`display` 回到 `inline`。

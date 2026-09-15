@@ -177,7 +177,7 @@
 
 1. [x] **菜单录入脚本**：`apps/nest/scripts/migrate-menus-add-playground.ts`（幂等、可重放，命名沿用仓库 `migrate-menus-add-*` 惯例；整棵树 + 授权一个事务落库），按 §5.1 菜单树写入 menus 表——字段与「菜单管理」手工配置完全一致（i18nKey / icon / to / parentId / sort / keepAlive），**全部节点 `permissions = 0`**（纯展示页不声明按钮位，与原计划一致）。**实施时发现并根治的服务端问题**：`buildAllowedMenuIds` 原带 `role_menus.permissions != 0` 过滤，而授权抽屉勾选写入的是菜单声明位，0 位页面对普通角色永远不可见（线上「异常页」三子页亦受影响）——经用户拍板改为「有 role_menus 关联记录即可见」（`database-design.md` §1.5 步骤 2 原设计），Nest / Next / Nuxt 三端服务端同款移除过滤（记录见 `code-review-backlog.md` 2026-09-14 已修复）。super_admin 按 `migrate-menus-add-org.ts` 同款补录 role_menus 全量位（保证树节点 `userPermissions` 完整）；其余角色不做默认授权，由「角色管理」按需勾选（页面可见、无按钮），未授权角色不可见且路由不可达。
 2. [x] **四端文件占位**：React / Next / Vue / Nuxt 四端 `/playground/*` 路由与页面文件（7 页 × 4 端）已建，统一渲染 `PlaceholderPage`（图标 + 标题 + 「开发中」描述；React / Next 新建 `components/common/placeholder-page.tsx`，与 Vue / Nuxt 既有 `PlaceholderPage.vue` 同构）；i18n 键（`menu.playground.*` 10 键 + `features.playground.placeholder`）四端 zh-CN / en 同步登记；Vue / Nuxt `MENU_REQUIRED_PATHS` + `ROUTE_TITLE_KEYS`、Next `route-title.ts` 已登记（React / Next 菜单门卫为「非登录白名单即受控」，无需登记）。**`PlaygroundIntro` 信息卡骨架顺延为步骤 3 首项**：该组件在 React 端定稿（§5.2），Phase A 不先在四端各铺一版再返工。**验收（2026-09-15，React 端 GUI 冒烟）**：角色管理勾选后普通角色可见且页面无按钮、三级菜单展示、7 个占位页点入均正常；Next / Vue / Nuxt 的 GUI 冒烟随步骤 4 逐端对齐时执行。
-3. [ ] **React 基准开发**（UI Source of Truth，**下次会话启动，用户 2026-09-15 确认推进**）：首项落地 `PlaygroundIntro` 组件 + `meta.ts` / `registry.ts` 机制（§5.2），再按 §6 演示页清单逐页实现；rare-ui 源码 vendor，`cn` 导入改 `@heroui/react`（已核实其导出 `cn`），**不初始化 shadcn 基建**（不建 `components.json` / `lib/utils`）。依赖按 §7 评审清单安装。
+3. [x] **React 基准开发**（UI Source of Truth，**2026-09-15 完成**）：`PlaygroundIntro` 组件 + `meta.ts` / `registry.ts` 机制（§5.2）落地——版本经 `packageVersion()` 从 `package.json` JSON import 读取、参数类型收敛为 `keyof typeof pkg.dependencies`（登记未安装的包编译期即报错）；页面骨架 / 控件抽成 `demo-section.tsx` + `demo-controls.tsx` 供七页复用；rare-ui 六组件按 §6 清单 vendor（`cn` 导入改 `@heroui/react`，移除 `"use client"`，shadcn / 硬编码色替换为项目 token，github-activity 增补 `formatHeading` / `formatDay` / `toggleLabels` 三个可选 i18n 出口），**未初始化 shadcn 基建**；依赖按 §7 清单锁版安装。七页全部实现，i18n 116 键（React + Next 语言包同步）。四绿通过；GUI 自测代码块 / Number Flow 两页时发现并修复「HeroUI 全局 `.tag` 类与 prism token 撞名折叠空白」（`mechanisms.md` §27）与无边框区浮动按钮裁切两项，其余页面交用户手动验证（详见 progress.md 2026-09-15 条目）。
 4. [ ] **逐端对齐**：Next（直接复用 rare-ui 源码）→ Vue → Nuxt（按 React 视觉以 Nuxt UI + 自定义组件重写，`AGENTS.md` §21 组件优先级）；Vue / Nuxt 本阶段引入 `clsx` + `tailwind-merge` 并新增 `cn` 工具函数（§7），Number Flow 用官方 `@number-flow/vue`。
 
 ### 5.1 菜单树（含三级菜单，共用库单点数据、四端自动一致）
@@ -248,7 +248,7 @@ type DemoMeta = {
 | 代码块 | rare-ui `code-block`（`motion` + `prism-react-renderer`） | 自定义重写，高亮同样用 `prism-react-renderer`（或评审更轻替代） | 多语言语法高亮 + 主题切换 / 复制 |
 | 数字动画 › Number Flow（三级页） | `@number-flow/react` | `@number-flow/vue`（官方 Vue 包） | 活动 / 倒计时 / 计数输入 / 滑块联动（与 Dashboard KPI 共用同一依赖） |
 | 数字动画 › Animated Counter（三级页） | rare-ui `animated-counter`（`motion`） | 自定义重写（motion-v 或 CSS/RAF） | 数字滚动计数动画 |
-| Ai Kit › Fluid Orb（三级页） | rare-ui `fluid-orb`（**装后核对源码依赖**，官网未列全，需确认无 WebGL 重依赖） | 按源码移植 canvas 实现 | 流体光球视觉演示 |
+| Ai Kit › Fluid Orb（三级页） | rare-ui `fluid-orb`（**已核对 2026-09-15**：原生 WebGL 片元着色器，零 npm 依赖，无 three.js 等重依赖） | 按源码移植 canvas 实现 | 流体光球视觉演示 |
 | Ai Kit › Grid Reveal（三级页） | rare-ui `grid-reveal` | 自定义重写 | 网格揭示动画 |
 | Ai Kit › Matrix Orb（三级页） | rare-ui `matrix-orb` | 自定义重写 | 矩阵光球动画 |
 | GitHub Activity | rare-ui `github-activity`（`motion`） | 自定义重写 | 贡献热力图（静态数据，不连外部 API） |
@@ -262,9 +262,9 @@ type DemoMeta = {
 | 包 | 阶段 | 理由 | 引入影响 |
 | --- | --- | --- | --- |
 | `@faker-js/faker` | Phase 0（devDependency） | 演示数据生成，`zh_CN` locale；仅脚本使用，不进运行时 | 无运行时影响 |
-| `motion` | Phase A/B（React / Next） | rare-ui 全部组件的动画底座；**仅限 Playground 演示组件内部使用，不进业务代码**——`AGENTS.md` §20 路由 / 主题过渡动画仍走 View Transition API，不因此破例 | 中（按需 tree-shake） |
-| `prism-react-renderer` | Phase A/B（React / Next） | code-block 语法高亮，较 shiki 轻量 | 轻 |
-| `@number-flow/react` | Phase A/B（先行，Playground 引入） | KPI 数字滚动点睛，约 10KB；Dashboard（Phase C）直接复用，依赖评审一次过 | 轻 |
+| `motion` | Phase A/B（React / Next）**——React 已引入 13.2.0（2026-09-15）** | rare-ui 全部组件的动画底座；**仅限 Playground 演示组件内部使用，不进业务代码**——`AGENTS.md` §20 路由 / 主题过渡动画仍走 View Transition API，不因此破例 | 中（按需 tree-shake；实测落在演示页按需共享包 122KB，首屏不受影响） |
+| `prism-react-renderer` | Phase A/B（React / Next）**——React 已引入 2.4.1** | code-block 语法高亮，较 shiki 轻量；内置 tsx / css / json / sql / python / yaml 等，**不含 bash**（未知语言降级为纯文本） | 轻 |
+| `@number-flow/react` | Phase A/B（先行，Playground 引入）**——React 已引入 0.6.2** | KPI 数字滚动点睛，约 10KB；Dashboard（Phase C）直接复用，依赖评审一次过 | 轻 |
 | `@number-flow/vue` | Phase A/B（Vue / Nuxt） | Number Flow 官方 Vue 包（0.5.x，已核实存在），免重写 | 轻 |
 | `clsx` + `tailwind-merge` | Phase A/B（Vue / Nuxt） | 各端新增约 3 行 `cn` 工具函数（React / Next 用 `@heroui/react` 导出的 `cn`，无需安装；`@nuxt/ui` v4 已核实**不**向业务代码导出 `cn`）；合计约 8KB，shadcn 生态事实标准 | 轻 |
 | `motion-v` | Phase A/B（Vue / Nuxt，**待评审**） | rare-ui 动画重写候选（Motion 官方 Vue 版）；对齐首个动画演示页时评审，CSS 等效可满足则不引入 | 待定 |
