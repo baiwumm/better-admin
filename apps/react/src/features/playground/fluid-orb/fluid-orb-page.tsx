@@ -6,7 +6,7 @@ import {
   DemoStage,
   PlaygroundPage,
 } from "../demo-section";
-import { ColorSwatches, DemoSegmented } from "../demo-controls";
+import { DemoColorSwatchPicker, DemoSegmented } from "../demo-controls";
 import { DEMO_ACCENTS } from "../demo-palette";
 
 import FluidOrb from "./fluid-orb";
@@ -37,7 +37,7 @@ export function FluidOrbPage() {
         controls={
           <>
             <DemoControl label={t("features.playground.common.color")}>
-              <ColorSwatches
+              <DemoColorSwatchPicker
                 colors={DEMO_ACCENTS}
                 label={t("features.playground.common.color")}
                 value={color}

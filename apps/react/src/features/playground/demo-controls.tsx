@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import {
+  ColorSwatchPicker,
   Label,
   Slider,
   Switch,
@@ -8,7 +9,11 @@ import {
   ToggleButtonGroup,
 } from "@heroui/react";
 
-/** 带文字标签的开关。 */
+/**
+ * 带文字标签的开关。
+ * `Switch.Content` 才是可点击的 SwitchButton（HeroUI 实现注释：wrapping the control + Label），
+ * Control 必须放在 Content 内才能整体点击，且二者同行排布（根 `.switch` 是 flex-col）。
+ */
 export function DemoSwitch({
   label,
   isSelected,
@@ -20,10 +25,10 @@ export function DemoSwitch({
 }) {
   return (
     <Switch isSelected={isSelected} onChange={onChange}>
-      <Switch.Control>
-        <Switch.Thumb />
-      </Switch.Control>
       <Switch.Content>
+        <Switch.Control>
+          <Switch.Thumb />
+        </Switch.Control>
         <Label className="text-sm">{label}</Label>
       </Switch.Content>
     </Switch>
@@ -64,8 +69,8 @@ export function DemoSegmented<T extends string>({
   );
 }
 
-/** 颜色色板单选：每个色值一枚圆点 ToggleButton（aria-label 为色值）。 */
-export function ColorSwatches({
+/** 颜色色板单选：HeroUI 内置 ColorSwatchPicker，选中值以 hex 字符串回传。 */
+export function DemoColorSwatchPicker({
   label,
   colors,
   value,
@@ -77,34 +82,19 @@ export function ColorSwatches({
   onChange: (color: string) => void;
 }) {
   return (
-    <ToggleButtonGroup
-      disallowEmptySelection
-      isDetached
+    <ColorSwatchPicker
       aria-label={label}
-      selectedKeys={[value]}
       size="sm"
-      onSelectionChange={(keys) => {
-        const [key] = keys;
-
-        if (key !== undefined) onChange(String(key));
-      }}
+      value={value}
+      onChange={(color) => onChange(color.toString("hex"))}
     >
       {colors.map((color) => (
-        <ToggleButton
-          key={color}
-          isIconOnly
-          aria-label={color}
-          className="rounded-full"
-          id={color}
-        >
-          <span
-            aria-hidden
-            className="size-4 rounded-full ring-1 ring-black/10 ring-inset"
-            style={{ backgroundColor: color }}
-          />
-        </ToggleButton>
+        <ColorSwatchPicker.Item key={color} color={color}>
+          <ColorSwatchPicker.Swatch />
+          <ColorSwatchPicker.Indicator />
+        </ColorSwatchPicker.Item>
       ))}
-    </ToggleButtonGroup>
+    </ColorSwatchPicker>
   );
 }
 

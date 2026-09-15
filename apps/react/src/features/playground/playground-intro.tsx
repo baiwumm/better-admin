@@ -1,11 +1,21 @@
 import type { DemoMeta, DemoPackage } from "./types";
 import type { ReactNode } from "react";
 
-import { Button, Card, Chip, Link, Tooltip, Typography } from "@heroui/react";
+import {
+  Button,
+  Card,
+  Chip,
+  Link,
+  Tooltip,
+  Typography,
+  buttonVariants,
+  cn,
+} from "@heroui/react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowUpRight,
   BookOpen,
+  ExternalLink,
   FileCode2,
   FolderGit2,
   Package,
@@ -131,15 +141,22 @@ export function PlaygroundIntro({ meta }: PlaygroundIntroProps) {
         </IntroSection>
       </Card.Content>
       <Card.Footer className="flex flex-wrap items-center gap-2 border-t border-separator pt-4">
+        {/*
+         * ghost 按钮外观 + 真实 <a>（可中键 / 右键复制链接）：HeroUI variant 函数套在 Link 上。
+         * link.css 对 `.link.button` 组合显式置 gap-0（按 Link.Icon 的 margin 设计），这里用 lucide 图标故补 gap-2
+         */}
         <Link
-          className="inline-flex items-center gap-1.5 text-sm no-underline"
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "sm" }),
+            "gap-2",
+          )}
           href={sourceUrl(meta.source)}
           rel="noopener noreferrer"
           target="_blank"
         >
           <FileCode2 className="size-4" />
           {t("features.playground.intro.viewSource")}
-          <Link.Icon className="pb-0" />
+          <ExternalLink className="size-3.5 text-muted" />
         </Link>
         {meta.usedIn?.length ? (
           <div className="ml-auto flex flex-wrap items-center gap-2">

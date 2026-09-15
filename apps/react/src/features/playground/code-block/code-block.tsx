@@ -2,7 +2,8 @@
  * Vendor 自 rare-ui（MIT）`code-block`，快照来源 https://rareui.com/r/code-block.json（2026-09-15）。
  * 本地改动：`cn` 改自 @heroui/react 导入；移除 "use client" 指令（Vite SPA 无需，Next 端复用时自行加回）；
  * shadcn 语义类 / 硬编码色替换为项目 HeroUI token（见 plan-dashboard-playground.md §6 实施约束）；
- * token span 不透传 prism 语义 className（HeroUI 全局 `.tag` 类撞名会折叠 JSX 属性间空白，见渲染处注释）。
+ * token span 不透传 prism 语义 className（HeroUI 全局 `.tag` 类撞名会折叠 JSX 属性间空白，见渲染处注释）；
+ * 头部增补 macOS 风格三色圆点（`TRAFFIC_LIGHTS`，纯装饰）。
  * 其余逻辑与上游保持一致，便于后续同步。
  */
 import { Copy } from "lucide-react";
@@ -22,6 +23,8 @@ const TAP_SPRING = { type: "spring", stiffness: 500, damping: 30 } as const;
 const SWAP_SPRING = { type: "spring", duration: 0.3, bounce: 0 } as const;
 const CHECK_SPRING = { type: "spring", duration: 0.4, bounce: 0.35 } as const;
 const COPY_RESET_MS = 1800;
+/** 本地增补：头部 macOS 窗口风格三色圆点（关闭 / 最小化 / 缩放的标准色）。 */
+const TRAFFIC_LIGHTS = ["#FF5F57", "#FEBC2E", "#28C840"] as const;
 
 export type CodeBlockProps = Omit<React.ComponentProps<"div">, "children"> & {
   /** The source code to render. */
@@ -396,6 +399,16 @@ export function CodeBlock({
           className="flex h-10 shrink-0 items-center gap-3 border-b border-(--cb-border) bg-(--cb-header-bg) px-3.5 backdrop-blur-md"
           data-slot="code-block-header"
         >
+          {/* 本地增补：macOS 窗口风格三色圆点（装饰，纯视觉） */}
+          <span aria-hidden className="flex shrink-0 items-center gap-1.5">
+            {TRAFFIC_LIGHTS.map((color) => (
+              <span
+                key={color}
+                className="size-3 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </span>
           <span className="min-w-0 flex-1 truncate font-mono text-xs text-(--cb-muted)">
             {filename ?? safeLanguage}
           </span>

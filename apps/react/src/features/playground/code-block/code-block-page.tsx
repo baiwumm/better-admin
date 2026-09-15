@@ -4,7 +4,11 @@ import { Typography } from "@heroui/react";
 import { useState } from "react";
 
 import { DemoControl, DemoSection, PlaygroundPage } from "../demo-section";
-import { ColorSwatches, DemoSegmented, DemoSwitch } from "../demo-controls";
+import {
+  DemoColorSwatchPicker,
+  DemoSegmented,
+  DemoSwitch,
+} from "../demo-controls";
 import { DEMO_ACCENTS } from "../demo-palette";
 
 import { CodeBlock } from "./code-block";
@@ -91,7 +95,7 @@ export function CodeBlockPage() {
       <DemoSection
         controls={
           <DemoControl label={t("features.playground.codeBlock.accent")}>
-            <ColorSwatches
+            <DemoColorSwatchPicker
               colors={DEMO_ACCENTS}
               label={t("features.playground.codeBlock.accent")}
               value={accent}
@@ -129,11 +133,14 @@ export function CodeBlockPage() {
         <Typography type="body-sm">
           {t("features.playground.codeBlock.inlineLead")}
         </Typography>
-        <div className="rounded-3xl border border-border bg-default/40 p-3">
-          {/* 单行代码的容器高度不足以容纳浮动复制按钮（overflow-hidden 会裁切）：给最小高度并预留右侧空间 */}
+        <div className="rounded-3xl border border-border bg-default/40 px-3">
+          {/*
+           * 单行命令 + 浮动复制按钮：容器给最小高度容纳按钮（overflow-hidden 会裁切）并预留右侧空间；
+           * viewport（唯一 div 子元素）是 flex-1 会撑满高度、代码贴顶，改成 flex + items-center 让代码与按钮同轴居中
+           */}
           <CodeBlock
             accent={accent}
-            className="min-h-12 justify-center pr-12"
+            className="min-h-12 pr-12 [&>div]:flex [&>div]:items-center"
             code={INLINE_SAMPLE}
             language="bash"
             showFrame={false}

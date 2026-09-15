@@ -9,7 +9,7 @@ import {
   PlaygroundPage,
 } from "../demo-section";
 import {
-  ColorSwatches,
+  DemoColorSwatchPicker,
   DemoSegmented,
   DemoSlider,
   DemoSwitch,
@@ -85,7 +85,7 @@ export function MatrixOrbPage() {
               />
             </DemoControl>
             <DemoControl label={t("features.playground.common.color")}>
-              <ColorSwatches
+              <DemoColorSwatchPicker
                 colors={DEMO_ACCENTS}
                 label={t("features.playground.common.color")}
                 value={color}
