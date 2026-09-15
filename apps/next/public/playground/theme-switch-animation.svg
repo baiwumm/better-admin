@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- theme-switch-animation · 方案B 圆形扩散 · 浅色底 -->
+  <!-- 容器：仅承载背景，不参与 logo 语义 -->
+  <rect width="512" height="512" rx="116" fill="#F5F5F7"/>
+  <!-- 实心圆：点击位置（扩散中心） -->
+  <path d="M160 256a96 96 0 1 0 192 0a96 96 0 1 0-192 0Z" fill="#111111"/>
+  <!-- 内段波纹：粗、实 -->
+  <path d="M325.95 367.94A132 132 0 0 1 144.06 186.05" fill="none" stroke="#111111" stroke-width="16" stroke-linecap="round"/>
+  <!-- 外段波纹：细、虚（正在消散的波前） -->
+  <path d="M283.78 413.57A160 160 0 0 1 98.43 228.22" fill="none" stroke="#111111" stroke-width="9" stroke-linecap="round" opacity="0.45"/>
+</svg>

@@ -89,15 +89,29 @@ export function buildContributions(
   return days;
 }
 
-/** 静态仓库榜（演示计数，不请求 GitHub API）。 */
+/**
+ * 静态仓库榜（演示计数，不请求 GitHub API）。
+ * logo 为本地静态资源（`public/playground/`），均为自带底色的方章 / 圆形图标，亮暗主题共用一份。
+ */
 export const DEMO_REPOS: RepoContribution[] = [
-  { name: "better-admin", count: 486, href: REPO_URL },
   {
-    name: "better-nuxt",
-    count: 132,
-    href: "https://github.com/baiwumm/better-nuxt",
+    name: "better-admin",
+    count: 486,
+    href: REPO_URL,
+    logo: <img alt="" src="/logo.png" />,
   },
-  { name: "blog", count: 57, href: "https://github.com/baiwumm/blog" },
+  {
+    name: "theme-switch-animation",
+    count: 132,
+    href: "https://github.com/baiwumm/theme-switch-animation",
+    logo: <img alt="" src="/playground/theme-switch-animation.svg" />,
+  },
+  {
+    name: "next-daily-hot",
+    count: 57,
+    href: "https://github.com/baiwumm/next-daily-hot",
+    logo: <img alt="" src="/playground/next-daily-hot.png" />,
+  },
 ];
 
 /** GitHub 官方五档绿（浅色）：演示 `accent` 传色阶数组的形态。 */
