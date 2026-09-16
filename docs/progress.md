@@ -2,6 +2,16 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 登录页品牌文案口径统一为「五端」（2026-09-16）
+
+- **背景**：四端登录页品牌区文案（「一套产品，四种实现」）与官网文档站 Hero（「一套 Admin 系统，五种技术栈实现」）及 README / AGENTS 的全栈定位口径不一致——登录页是早期只有四端时的遗留表述，产品级口径应为 React / Vue / Next.js / Nuxt / NestJS 五端。经用户拍板按方案 A 统一为五端口径。
+- **做了什么**（语言包真源链路：React → Next 逐键一致 / Vue · Nuxt 由 sync-locales 自动拷贝）：
+  - `apps/react/src/i18n/locales/{zh-CN,en}/auth.json` 与 `apps/next/src/i18n/locales/{zh-CN,en}/auth.json` 各改 3 键：`auth.brand.slogan`（一套产品，五种实现 / One Product, Five Implementations）、`auth.brand.sloganDetail`（与官网 Hero 副句同义对齐，补 NestJS）、`auth.brand.chip.stacks`（补「· NestJS」，否则与新 slogan 同屏矛盾）。
+  - Vue / Nuxt 端 auth.json 由各自 `scripts/sync-locales.mjs` 重新生成（非手工编辑，避免 predev 覆盖漂移）。
+- **明确不改**：docs / 各计划文档中的「四端 / 四种前端」表述（如 feature-matrix「四种前端实现的功能对齐状态」）是前端对齐语境，与 NestJS 后端并列陈述，事实准确，不属品牌口径，保持原样。
+- **验证**：react / next 两端 `check-locales` 通过（14 文件逐键一致）；全仓 grep 无「四种实现 / Four Implementations」残留。
+- **文档**：本条目；官网文档站 Hero 与 Features / FAQ 本就为五端口径，无需改动。
+
 ### Playground Grid Reveal 说明条修复 + Vue / Nuxt 端用户 GUI 验证通过（2026-09-16）
 
 - **做了什么**（提交 `92c3944`，Vue / Nuxt 两端 `GridReveal.vue`）：用户本地测试发现「模拟生成」期间说明条「AI 正在生成 X%」完全不可见。根因是文案切换用了 `<Transition mode="out-in">`，而生成期间百分比每 80ms 递增、`:key="caption"` 随之变化，串行 out-in 的旧文字淡出（0.14s）永远追不上变化频率，新文字始终未插入；React 端 rare-ui 用的是 `AnimatePresence mode="popLayout"`（并行、旧元素脱流）。修复为默认并行模式 + `.gr-text-leave-active { position: absolute; left: 0.625rem }`，机制与规则沉淀见 `mechanisms.md` §28（motion popLayout → Vue Transition 的等效写法是「并行 + 离场 absolute」，不是 out-in）。
