@@ -301,6 +301,35 @@ export const useDesignThemeStore = defineStore('design-theme', () => {
   }
 
   /**
+   * 无动画直切主题模式（同步写 <html> class + 同步 color-mode preference，不编排 View Transition）。
+   *
+   * 供演示场「主题切换动画」页使用：该页转场由 theme-switch-animation 库以 mask 独占编排
+   * （库内 startViewTransition → 快照回调里 onChange → waitForThemeSync 观察 <html> class
+   * 是否与目标一致）。若此处仍走 setThemeMode 的 runViewTransition，会在库的转场回调内
+   * 再开一次 VT——同一文档内后启动者会抢占并跳过前者，库的揭示动画随之失效，
+   * 故提供这条「只落状态、不编排动画」的入口。
+   *
+   * 与 setThemeMode 的差别仅在「不做动画」，取值语义一致（非法值收窄为 system）。
+   * <html> class 同步写入，让库的 waitForThemeSync 立即命中，不必等 color-mode 模块的
+   * watcher；随后写 preference 让 store 状态与持久化跟上（模块 watcher 会按同一取值
+   * 再落一次 class，幂等无副作用）。业务代码请继续用 setThemeMode。
+   */
+  function applyThemeModeInstant(mode: ThemeMode): void {
+    const validMode: ThemeMode
+      = mode === 'light' || mode === 'dark' || mode === 'system'
+        ? mode
+        : 'system'
+
+    const resolvedDark
+      = validMode === 'system' ? systemPrefersDark() : validMode === 'dark'
+
+    // 与 @nuxtjs/color-mode 首帧脚本一致：明暗以 <html>.dark 类表达
+    document.documentElement.classList.toggle('dark', resolvedDark)
+
+    colorMode.preference = validMode
+  }
+
+  /**
    * 一键恢复全部偏好为初始状态（state + DOM + localStorage，带一次揭示动画）。
    * Promise 在揭示动画完全结束后 resolve（调用方据此错峰弹成功 toast）。
    */
@@ -370,6 +399,7 @@ export const useDesignThemeStore = defineStore('design-theme', () => {
     setRouteTransitionSpeed,
     setShowTabs,
     setThemeMode,
+    applyThemeModeInstant,
     resetPreferences
   }
 })

@@ -30,6 +30,15 @@ html[data-theme-transition] .route-vt-main {
   view-transition-name: none !important;
 }
 
+/* 演示页「主题切换动画」：转场交由 theme-switch-animation 库以 mask 独占编排
+   （库内自开 startViewTransition），页面在触发前于 <html> 挂 data-theme-demo-vt。
+   同主题切换 VT 的理由——带独立 view-transition-name 的主体区（.route-vt-main
+   → main-content）须临时摘名并入 root 单组，否则其静止快照组叠放在 root 之上、
+   遮挡库的 mask 揭示。属性随本次时长撤除，规则同步失效。 */
+html[data-theme-demo-vt] .route-vt-main {
+  view-transition-name: none !important;
+}
+
 @keyframes theme-reveal {
   from {
     clip-path: var(--tt-from, inset(0 100% 0 0));

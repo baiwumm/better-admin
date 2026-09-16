@@ -7,6 +7,7 @@ import { githubActivityMeta } from './github-activity/meta'
 import { gridRevealMeta } from './grid-reveal/meta'
 import { matrixOrbMeta } from './matrix-orb/meta'
 import { numberFlowMeta } from './number-flow/meta'
+import { themeSwitchAnimationMeta } from './theme-switch-animation/meta'
 
 export type PlaygroundDemo = {
   /** 目录名（与 `features/playground/<id>/` 一致） */
@@ -47,5 +48,10 @@ export const PLAYGROUND_DEMOS: readonly PlaygroundDemo[] = [
     id: 'github-activity',
     to: '/playground/github-activity',
     meta: githubActivityMeta
+  },
+  {
+    id: 'theme-switch-animation',
+    to: '/playground/theme-switch-animation',
+    meta: themeSwitchAnimationMeta
   }
 ]

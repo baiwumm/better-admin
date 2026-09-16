@@ -47,6 +47,7 @@
     "sortablejs": "1.15.7",
     "tailwind-merge": "3.7.0",
     "tailwindcss": "^4.3.3",
+    "theme-switch-animation": "0.1.0",
     "vue-advanced-cropper": "^2.8.9",
     "write-excel-file": "4.1.1",
     "zod": "^4.6.2"

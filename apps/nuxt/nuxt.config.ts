@@ -5,7 +5,12 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@pinia/nuxt',
     '@nuxtjs/i18n',
-    '@vueuse/nuxt'
+    '@vueuse/nuxt',
+    // 演示场「主题切换动画」所用库的 Nuxt 模块：经 addImportsDir 自动导入
+    // useThemeAnimation / ThemeAnimationType / observeThemeClass 等，并补一份
+    // 全局 ThemeAnimationType 类型声明；未注册时页面需手写
+    // `import ... from 'theme-switch-animation/vue'`（Vue 端即此写法）。
+    'theme-switch-animation/nuxt'
   ],
 
   // 渲染模式（nuxt-plan.md §5 D1 决策）：SPA 模式——与 Vue / React 行为完全一致，
