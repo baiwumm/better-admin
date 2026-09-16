@@ -171,6 +171,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/(authenticated)/playground/theme-switch-animation': RouteRecordInfo<
+      '/(authenticated)/playground/theme-switch-animation',
+      '/playground/theme-switch-animation',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/(authenticated)/settings/': RouteRecordInfo<
       '/(authenticated)/settings/',
       '/settings',
@@ -416,6 +423,14 @@ declare module 'vue-router/auto-routes' {
     'src/pages/(authenticated)/playground/github-activity.vue': {
       routes:
         | '/(authenticated)/playground/github-activity'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/(authenticated)/playground/theme-switch-animation.vue': {
+      routes:
+        | '/(authenticated)/playground/theme-switch-animation'
       views:
         | never
       pathParamNames:

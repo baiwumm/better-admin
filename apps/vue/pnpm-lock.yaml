@@ -95,6 +95,9 @@ importers:
       tailwind-merge:
         specifier: 3.7.0
         version: 3.7.0
+      theme-switch-animation:
+        specifier: 0.1.0
+        version: 0.1.0(@nuxt/kit@4.5.2(magic-string@1.2.3)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.27.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0))))(vue@3.5.42(typescript@5.9.3))
       vue:
         specifier: ^3.5.42
         version: 3.5.42(typescript@5.9.3)
@@ -2732,6 +2735,24 @@ packages:
   tapable@2.3.3:
     resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
     engines: {node: '>=6'}
+
+  theme-switch-animation@0.1.0:
+    resolution: {integrity: sha512-Yq3oKm2mLVsAoQuSxbA9rt57XfKJOInyNanvraRQo65uo3wuzsueRE36Cg9XUAuGDKlGTYpZuBejvmWbSOwOew==}
+    engines: {node: '>=18', pnpm: '>=9'}
+    peerDependencies:
+      '@nuxt/kit': '>=3'
+      react: '>=18'
+      react-dom: '>=18'
+      vue: '>=3'
+    peerDependenciesMeta:
+      '@nuxt/kit':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      vue:
+        optional: true
 
   tiny-inflate@1.0.3:
     resolution: {integrity: sha512-pkY1fj1cKHb2seWDy0B16HeWyczlJA9/WW3u3c4z/NiWDsO3DOU5D7nhTLE9CF0yXv/QZFY7sEJmj24dK+Rrqw==}
@@ -5850,6 +5871,11 @@ snapshots:
   tailwindcss@4.3.3: {}
 
   tapable@2.3.3: {}
+
+  theme-switch-animation@0.1.0(@nuxt/kit@4.5.2(magic-string@1.2.3)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.27.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0))))(vue@3.5.42(typescript@5.9.3)):
+    optionalDependencies:
+      '@nuxt/kit': 4.5.2(magic-string@1.2.3)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.27.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)))
+      vue: 3.5.42(typescript@5.9.3)
 
   tiny-inflate@1.0.3: {}
 
