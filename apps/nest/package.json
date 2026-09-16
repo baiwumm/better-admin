@@ -23,6 +23,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "ts-node scripts/migrate.ts",
     "db:seed": "ts-node src/db/seed.ts",
+    "db:demo-reset": "ts-node scripts/demo-reset.ts",
     "storage:init": "ts-node scripts/init-storage.ts"
   },
   "dependencies": {
@@ -50,6 +51,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@faker-js/faker": "10.6.0",
     "@nestjs/cli": "11.0.24",
     "@nestjs/schematics": "11.0.8",
     "@types/bcrypt": "6.0.0",
