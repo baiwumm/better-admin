@@ -307,7 +307,11 @@ const captionStyle = computed(() => {
         )
       "
     >
-      <Transition mode="out-in" name="gr-text">
+      <!--
+        文案切换为并行进出（对齐 React 端 AnimatePresence popLayout）：生成期间百分比每 80ms 递增、
+        key 随之变化，out-in 串行模式下旧文字淡出（0.14s）永远追不上变化频率，文字会一直不可见
+      -->
+      <Transition name="gr-text">
         <span
           :key="caption"
           :class="
@@ -331,6 +335,11 @@ const captionStyle = computed(() => {
 .gr-text-enter-active,
 .gr-text-leave-active {
   transition: opacity 0.14s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* 离场文字脱离文档流（左侧对齐 px-2.5 内边距），新文字立即占位、二者并行淡入淡出 */
+.gr-text-leave-active {
+  position: absolute;
+  left: 0.625rem;
 }
 .gr-text-enter-from,
 .gr-text-leave-to {
