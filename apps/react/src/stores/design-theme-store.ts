@@ -490,6 +490,30 @@ export function initDesignTheme(): void {
 }
 
 /**
+ * 无动画直切主题模式（写 <html> class / data-theme + localStorage + store，不启动 View Transition）。
+ *
+ * 供演示场「主题切换动画」页使用：该页的转场动画由 theme-switch-animation 库以 mask 形式独占编排
+ * （库内先 startViewTransition、再在回调里等待 DOM 同步）。若此处仍走 setThemeMode 的
+ * runViewTransition，会在库的转场回调内再启动一次 VT——同一文档先后两次
+ * startViewTransition 时后启动者会抢占并跳过前者，库的揭示动画随之失效，
+ * 故提供这条「只落状态、不编排动画」的入口。
+ *
+ * 取值语义与 setThemeMode 一致（非法值收窄为 system；system 取当前系统偏好），
+ * 差别仅在「不做动画」。业务代码请继续用 setThemeMode。
+ */
+export function applyThemeModeInstant(mode: ThemeMode): void {
+  const validMode: ThemeMode =
+    mode === "light" || mode === "dark" || mode === "system" ? mode : "system";
+
+  const resolved: ResolvedTheme =
+    validMode === "system" ? getSystemPreference() : validMode;
+
+  applyThemeModeToDOM(resolved);
+  writeThemeModeToStorage(validMode);
+  useDesignThemeStore.setState({ themeMode: validMode });
+}
+
+/**
  * 当前实际生效的明暗外观（themeMode 为 system 时取系统偏好）。
  * 原子 selector 组合，供 Logo 明暗切换等只关心 resolved 值的场景使用。
  */

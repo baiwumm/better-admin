@@ -51,3 +51,13 @@ html[data-theme-transition] [data-vt-name] {
     animation: none;
   }
 }
+
+/* 演示场「主题切换动画」页（theme-switch-animation 库的 mask 揭示）：
+   库的动画只挂在 ::view-transition-new(root) 上，同样需要把带独立 view-transition-name
+   的区域（main-content）临时并入 root 单组——否则其快照组会静止叠放在 root 组之上，
+   遮挡 mask 揭示。属性 data-theme-demo-vt 由演示页在触发切换前后挂 / 摘。
+   注意：不得复用 data-theme-transition —— 它会同时激活上方主题揭示的 clip-path 动画，
+   且 html[attr] 前缀的特异性高于库注入的裸伪元素规则，会直接覆盖库的 mask 动画。 */
+html[data-theme-demo-vt] [data-vt-name] {
+  view-transition-name: none !important;
+}

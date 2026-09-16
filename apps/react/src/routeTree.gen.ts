@@ -25,6 +25,7 @@ import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_
 import { Route as AuthenticatedSettingsMenusRouteImport } from './routes/_authenticated/settings/menus'
 import { Route as AuthenticatedSettingsLogsRouteImport } from './routes/_authenticated/settings/logs'
 import { Route as AuthenticatedSettingsDictsRouteImport } from './routes/_authenticated/settings/dicts'
+import { Route as AuthenticatedPlaygroundThemeSwitchAnimationRouteImport } from './routes/_authenticated/playground/theme-switch-animation'
 import { Route as AuthenticatedPlaygroundGithubActivityRouteImport } from './routes/_authenticated/playground/github-activity'
 import { Route as AuthenticatedPlaygroundCodeBlockRouteImport } from './routes/_authenticated/playground/code-block'
 import { Route as AuthenticatedOrgPostsRouteImport } from './routes/_authenticated/org/posts'
@@ -125,6 +126,12 @@ const AuthenticatedSettingsDictsRoute =
   AuthenticatedSettingsDictsRouteImport.update({
     id: '/settings/dicts',
     path: '/settings/dicts',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundThemeSwitchAnimationRoute =
+  AuthenticatedPlaygroundThemeSwitchAnimationRouteImport.update({
+    id: '/playground/theme-switch-animation',
+    path: '/playground/theme-switch-animation',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPlaygroundGithubActivityRoute =
@@ -238,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/org/posts': typeof AuthenticatedOrgPostsRoute
   '/playground/code-block': typeof AuthenticatedPlaygroundCodeBlockRoute
   '/playground/github-activity': typeof AuthenticatedPlaygroundGithubActivityRoute
+  '/playground/theme-switch-animation': typeof AuthenticatedPlaygroundThemeSwitchAnimationRoute
   '/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/settings/logs': typeof AuthenticatedSettingsLogsRoute
   '/settings/menus': typeof AuthenticatedSettingsMenusRoute
@@ -270,6 +278,7 @@ export interface FileRoutesByTo {
   '/org/posts': typeof AuthenticatedOrgPostsRoute
   '/playground/code-block': typeof AuthenticatedPlaygroundCodeBlockRoute
   '/playground/github-activity': typeof AuthenticatedPlaygroundGithubActivityRoute
+  '/playground/theme-switch-animation': typeof AuthenticatedPlaygroundThemeSwitchAnimationRoute
   '/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/settings/logs': typeof AuthenticatedSettingsLogsRoute
   '/settings/menus': typeof AuthenticatedSettingsMenusRoute
@@ -305,6 +314,7 @@ export interface FileRoutesById {
   '/_authenticated/org/posts': typeof AuthenticatedOrgPostsRoute
   '/_authenticated/playground/code-block': typeof AuthenticatedPlaygroundCodeBlockRoute
   '/_authenticated/playground/github-activity': typeof AuthenticatedPlaygroundGithubActivityRoute
+  '/_authenticated/playground/theme-switch-animation': typeof AuthenticatedPlaygroundThemeSwitchAnimationRoute
   '/_authenticated/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/_authenticated/settings/logs': typeof AuthenticatedSettingsLogsRoute
   '/_authenticated/settings/menus': typeof AuthenticatedSettingsMenusRoute
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/org/posts'
     | '/playground/code-block'
     | '/playground/github-activity'
+    | '/playground/theme-switch-animation'
     | '/settings/dicts'
     | '/settings/logs'
     | '/settings/menus'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/org/posts'
     | '/playground/code-block'
     | '/playground/github-activity'
+    | '/playground/theme-switch-animation'
     | '/settings/dicts'
     | '/settings/logs'
     | '/settings/menus'
@@ -405,6 +417,7 @@ export interface FileRouteTypes {
     | '/_authenticated/org/posts'
     | '/_authenticated/playground/code-block'
     | '/_authenticated/playground/github-activity'
+    | '/_authenticated/playground/theme-switch-animation'
     | '/_authenticated/settings/dicts'
     | '/_authenticated/settings/logs'
     | '/_authenticated/settings/menus'
@@ -540,6 +553,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/dicts'
       fullPath: '/settings/dicts'
       preLoaderRoute: typeof AuthenticatedSettingsDictsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/theme-switch-animation': {
+      id: '/_authenticated/playground/theme-switch-animation'
+      path: '/playground/theme-switch-animation'
+      fullPath: '/playground/theme-switch-animation'
+      preLoaderRoute: typeof AuthenticatedPlaygroundThemeSwitchAnimationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/playground/github-activity': {
@@ -683,6 +703,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOrgPostsRoute: typeof AuthenticatedOrgPostsRoute
   AuthenticatedPlaygroundCodeBlockRoute: typeof AuthenticatedPlaygroundCodeBlockRoute
   AuthenticatedPlaygroundGithubActivityRoute: typeof AuthenticatedPlaygroundGithubActivityRoute
+  AuthenticatedPlaygroundThemeSwitchAnimationRoute: typeof AuthenticatedPlaygroundThemeSwitchAnimationRoute
   AuthenticatedSettingsDictsRoute: typeof AuthenticatedSettingsDictsRoute
   AuthenticatedSettingsLogsRoute: typeof AuthenticatedSettingsLogsRoute
   AuthenticatedSettingsMenusRoute: typeof AuthenticatedSettingsMenusRoute
@@ -713,6 +734,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlaygroundCodeBlockRoute: AuthenticatedPlaygroundCodeBlockRoute,
   AuthenticatedPlaygroundGithubActivityRoute:
     AuthenticatedPlaygroundGithubActivityRoute,
+  AuthenticatedPlaygroundThemeSwitchAnimationRoute:
+    AuthenticatedPlaygroundThemeSwitchAnimationRoute,
   AuthenticatedSettingsDictsRoute: AuthenticatedSettingsDictsRoute,
   AuthenticatedSettingsLogsRoute: AuthenticatedSettingsLogsRoute,
   AuthenticatedSettingsMenusRoute: AuthenticatedSettingsMenusRoute,

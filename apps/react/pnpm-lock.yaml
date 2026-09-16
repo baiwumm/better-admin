@@ -92,6 +92,9 @@ importers:
       react-i18next:
         specifier: ^17.0.12
         version: 17.0.12(i18next@26.4.0(typescript@5.6.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.6.3)
+      theme-switch-animation:
+        specifier: 0.1.0
+        version: 0.1.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       write-excel-file:
         specifier: ^4.1.1
         version: 4.1.1
@@ -3022,6 +3025,24 @@ packages:
   tapable@2.3.3:
     resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
     engines: {node: '>=6'}
+
+  theme-switch-animation@0.1.0:
+    resolution: {integrity: sha512-Yq3oKm2mLVsAoQuSxbA9rt57XfKJOInyNanvraRQo65uo3wuzsueRE36Cg9XUAuGDKlGTYpZuBejvmWbSOwOew==}
+    engines: {node: '>=18', pnpm: '>=9'}
+    peerDependencies:
+      '@nuxt/kit': '>=3'
+      react: '>=18'
+      react-dom: '>=18'
+      vue: '>=3'
+    peerDependenciesMeta:
+      '@nuxt/kit':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      vue:
+        optional: true
 
   tinybench@2.9.0:
     resolution: {integrity: sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==}
@@ -6279,6 +6300,11 @@ snapshots:
   tailwindcss@4.3.1: {}
 
   tapable@2.3.3: {}
+
+  theme-switch-animation@0.1.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+    optionalDependencies:
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
 
   tinybench@2.9.0: {}
 

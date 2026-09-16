@@ -958,3 +958,21 @@ Iconify CDN，实现运行时零外部网络依赖（DB 动态菜单图标名的
 **规则沉淀**：Vue / Nuxt 端把 motion 的 `AnimatePresence mode="popLayout"` 翻译成 Vue Transition 时，等效写法是**默认并行模式 + `*-leave-active { position: absolute }`**，不是 `mode="out-in"`；`out-in` 只适用于 key 切换间隔明显大于 leave 时长的低频场景（如手动点击切换 Tab）。凡是由计时器 / 进度 / 实时数据驱动 key 变化的文案与数字，一律用并行模式。同理 `<TransitionGroup>` 的离场元素也应 absolute 脱流，其余元素的 FLIP 才能立即计算终点（AnimatedCounter 已按此实现）。
 
 - 验证：用户本地手动测试通过（Vue 端 5174，2026-09-16）。
+
+## 29. HeroUI 组件样式在 `components` 层、Tailwind 工具类在 `utilities` 层：工具类无条件覆盖组件样式（React / Next 端，Playground 主题切换动画页）
+
+**背景**：主题切换动画演示页要把 HeroUI `Button` 做成「渐变描边圆钮」——`variant="ghost"` + **实心圆底**（用于遮出 1px 渐变环）+ 正圆 + 自定义图标尺寸。直觉上会担心工具类打不过组件自带样式，从而去写 `!important` 或内联 style。
+
+**机制**：`@heroui/styles/dist/index.css` 第 1 行即 `@layer theme, base, components, utilities;`，`./components/index.css`（含 `button.css`）**经 `layer(components)` 引入**。`apps/react/src/styles/globals.css` 又在其后 `@import "tailwindcss"`。CSS 级联中**层序优先于选择器优先级**，`utilities` 晚于 `components`，因此**任何 Tailwind 工具类都无条件覆盖 HeroUI 组件样式**——不需要 `!important`，也不受组件选择器特异性（如 `.button--icon-only.button--sm` 双类、`.button svg:not(...)` 后代选择器）影响。
+
+**三条推论**：
+
+1. `bg-surface` 覆盖 `.button--ghost { --button-bg: transparent }`（`.button` 的 `background-color: var(--button-bg)`）——这正是「外层 `rounded-full p-px` 打渐变底 + 内层按钮实心底遮出圆环」可行、无需内联样式的原因。
+2. `rounded-full` 覆盖 `.button` 的 `rounded-3xl`；自定义 `size-*` 覆盖 `.button svg:not([data-slot=…])` 的图标尺寸规则。
+3. **反向副作用（易踩）**：HeroUI 的 `:hover` / `&[data-hovered=true]` / `&:active` 背景与 `transform` 规则同样在 `components` 层，会被**无条件**工具类（如 `bg-surface`）一并顶掉 → 悬停不再有背景变化、`scale(0.97)` 按压反馈也可能被 `hover:scale-*` 顶掉。需要交互反馈时应换用不冲突的属性（本项目改用 `shadow-sm hover:shadow-md`）或显式补 `hover:` / `active:` 变体。
+
+**尺寸事实（读自 `components/button.css`）**：`.button--icon-only.button--sm` = `w-9 h-9`（`md:` 断点 `w-8 h-8`）；默认尺寸（md）= `w-10 h-10`（`md:` `w-9 h-9`）。同一断点下宽高相同，**icon-only 按钮本身就是正方形**，配 `rounded-full` 即正圆，**不需要**强设 `size-*` 或内联 `borderRadius`。
+
+**规则沉淀**：React / Next 端要改 HeroUI 组件外观（背景、圆角、尺寸、图标大小）时，**直接用 Tailwind 工具类**，按需叠加层序保证；不要在组件上写 `!important` 或内联样式兜底。但改动前先想清楚「是否会连带顶掉状态样式」，交互反馈另找属性或显式声明状态变体。
+
+- 依据：`apps/react/node_modules/@heroui/styles/dist/index.css`（层声明）与 `components/button.css`（变体 / 尺寸 / 状态规则）实读；本轮改动 `tsc --noEmit` / eslint / `check-locales` / vitest（8 文件 93 用例）全绿。页面对应运行时视觉（渐变环是否被正确遮出、亮暗两态观感）待用户本地目视确认。
