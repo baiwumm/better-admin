@@ -31,6 +31,13 @@
 
 ## 【暂缓 / 备案】
 
+- **Nest 端 e2e / 单测基建缺失**（2026-09-17 Phase 0 任务 A 发现）：`apps/nest` 无任何 spec 文件、
+  jest 配置、`test` 脚本或 `@nestjs/testing` 依赖，计划 §3.6 Step 3「e2e 测试补齐」的前提不成立。
+  从零引入测试框架（jest / vitest 选型 + supertest + `@nestjs/testing`，约 4~5 个 devDependency）
+  与测试库策略（本地与线上共用同一 Supabase 库，写测试需隔离方案，`AGENTS.md` §16）属架构级决策，
+  定时任务未自行拍板。演示模式改造已由 curl 全链路（拦截 / 白名单 / 链路 / 日志降噪 / 关闭态回归）
+  与真实数据端到端验证覆盖。待用户拍板框架后单独立项，首批用例可直接复用
+  `progress.md` 2026-09-17 条目中的 curl 矩阵。
 - **#3 自绘树 role=tree/treeitem 语义**（react / next）：**暂缓**——完整可用需配套 roving tabindex
   与方向键漫游（APG tree 模式），自绘树改动量大；只加属性不加键导会让读屏器产生错误预期。
   Vue 端 UTree（reka）已自带 tree 语义与键盘导航，天然合规。待 a11y 需求出现或组件库提供

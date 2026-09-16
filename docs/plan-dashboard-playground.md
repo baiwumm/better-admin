@@ -103,34 +103,34 @@
 
 > 依赖关系：Step 1 与 Step 2 无依赖可并行；Step 3 依赖 Step 1 的契约与 Step 2 跑出的演示角色数据；Step 4~7 依赖 Step 3 的 demo-login 与错误码；Step 8 收尾。总量级约 4~6 个工作日。
 
-**Step 1 — OpenAPI 契约 v1.10.0**（半天）
+**Step 1 — OpenAPI 契约 v1.10.0**（半天）**——2026-09-17 完成（`d7b7bb3`）**
 
-- [ ] `POST /auth/demo-login` 请求体 `{ kind: 'admin' | 'random' }`、响应复用 `/auth/login` 结构、`DEMO_MODE` 关闭时 404
-- [ ] 通用错误响应登记 403 `DEMO_READONLY`
-- [ ] 契约变更记录（`openapi.yaml` 头部 changelog）+ 四端影响评估
+- [x] `POST /auth/demo-login` 请求体 `{ kind: 'admin' | 'random' }`、响应复用 `/auth/login` 结构、`DEMO_MODE` 关闭时 404
+- [x] 通用错误响应登记 403 `DEMO_READONLY`
+- [x] 契约变更记录（`openapi.yaml` 头部 changelog）+ 四端影响评估
 
-**Step 2 — faker 重置脚本 `apps/nest/scripts/demo-reset.ts`**（1~2 天，与 Step 1 并行）
+**Step 2 — faker 重置脚本 `apps/nest/scripts/demo-reset.ts`**（1~2 天，与 Step 1 并行）**——2026-09-17 完成（`1e5d48f`）**
 
-- [ ] 安装 `@faker-js/faker`（devDependency，锁版）
-- [ ] 骨架：`--confirm` 安全阀（打印目标库 host + 将删行数预估）、固定 seed、分批插入（50~100 条/批）、数据写入事务包裹
-- [ ] 清理逻辑：按 §3.1 顺序物理删除（含软删除用户）；保留超管（密码哈希不动）/ `super_admin` / 菜单 / 字典 / settings
-- [ ] 生成：组织树 → 岗位 → 5 个演示角色 + 权限矩阵写入 `role_menus` → 用户（按比例分配角色、密码 `demo1234`）→ 公告 → 日志（四类、近 30 天、`seed` 标记）
-- [ ] 头像：下载真人照片（性别匹配）→ 转存 Storage `demo/00xx.jpg`（同名覆盖）→ 事务内落 URL；单张失败回退空头像
-- [ ] `package.json` 加 `db:demo-reset` 脚本命令
-- [ ] 验证：在共用库跑一遍（即一次真实重置），逐模块页面看数据观感；超管原密码可登录；重跑一次确认数据集一致
+- [x] 安装 `@faker-js/faker`（devDependency，锁版 10.6.0）
+- [x] 骨架：`--confirm` 安全阀（打印目标库 host + 将删行数预估）、固定 seed、分批插入（100 条/批）、数据写入事务包裹
+- [x] 清理逻辑：按 §3.1 顺序物理删除（含软删除用户）；保留超管（密码哈希不动）/ `super_admin` / 菜单 / 字典
+- [x] 生成：组织树 → 岗位 → 5 个演示角色 + 权限矩阵写入 `role_menus` → 用户（按比例分配角色、密码 `demo1234`）→ 公告 → 日志（四类、近 30 天、`seed` 标记）
+- [x] 头像：下载真人照片（性别匹配）→ 转存 Storage `demo/00xx.jpg`（同名覆盖）→ 事务内落 URL；单张失败回退空头像
+- [x] `package.json` 加 `db:demo-reset` 脚本命令
+- [x] 验证：在共用库跑一遍（即一次真实重置），逐模块页面看数据观感（**页面观感留用户 GUI**）；超管原密码可登录；重跑一次确认数据集一致（11 表指纹一致）
 
-**Step 3 — Nest 服务端改造**（1 天）
+**Step 3 — Nest 服务端改造**（1 天）**——2026-09-17 完成（`4147654`）**
 
-- [ ] `DemoReadonlyGuard` 全局注册（`DEMO_MODE=true` 启用，默认拦所有非 GET）+ `@DemoAllowed()` 装饰器
-- [ ] 白名单标注：auth `login` / `refresh` / `logout` / `demo-login`；notifications `:id/read` / `read-all`
-- [ ] `HttpExceptionFilter`：`DEMO_READONLY` 不写 error 日志
-- [ ] `LoggingInterceptor`：`LOG_API_SKIP_GET` 开关，GET 不记 api 日志
-- [ ] `demo-login` 端点：admin = 系统管理员角色随机一人；random = 其余四角色两级随机；超管永不进池
-- [ ] 超管双保险：users `reset-password` / `status` / `DELETE` 对 `super_admin` 目标永久拦截
-- [ ] `log-cleanup` 跳过 `seed` 标记日志
-- [ ] refresh_tokens 过期清理：确认现有，缺则补 cron
-- [ ] `.env.example` 登记 `DEMO_MODE` / `LOG_API_SKIP_GET`
-- [ ] 验证：本地开 `DEMO_MODE`，curl 逐条过白名单放行 / 其余非 GET 全拦 / 超管保护 / 登录-刷新-退出链路完整；e2e 测试补齐
+- [x] `DemoReadonlyGuard` 全局注册（`DEMO_MODE=true` 启用，默认拦所有非 GET）+ `@DemoAllowed()` 装饰器
+- [x] 白名单标注：auth `login` / `refresh` / `logout` / `demo-login`；notifications `:id/read` / `read-all`
+- [x] `HttpExceptionFilter`：`DEMO_READONLY` 不写 error 日志
+- [x] `LoggingInterceptor`：`LOG_API_SKIP_GET` 开关，GET 不记 api 日志
+- [x] `demo-login` 端点：admin = 系统管理员角色随机一人；random = 其余四角色两级随机；超管永不进池
+- [x] 超管双保险：users `reset-password` / `status` / `DELETE` 对 `super_admin` 目标永久拦截（v1.4.6 已有，经代码确认覆盖）
+- [x] `log-cleanup` 跳过 `seed` 标记日志
+- [x] refresh_tokens 过期清理：确认现有缺失，补 `RefreshTokenCleanupService` cron（每日 03:30）
+- [x] `.env.example` 登记 `DEMO_MODE` / `LOG_API_SKIP_GET`
+- [x] 验证：本地开 `DEMO_MODE`，curl 逐条过白名单放行 / 其余非 GET 全拦 / 超管保护 / 登录-刷新-退出链路完整；**e2e 测试未补齐**——项目无测试基建，备案 `code-review-backlog.md`
 
 **Step 4 — React 端**（半天）
 
