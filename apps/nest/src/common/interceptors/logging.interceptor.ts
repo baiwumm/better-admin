@@ -14,7 +14,8 @@ import { LogsService } from '@/modules/logs/logs.service';
  * 在所有请求响应完成后，异步记录一条 api 日志：
  * action = `${method} ${path}`，detail 含 status / 耗时。
  *
- * 开关：环境变量 LOG_API_ENABLED（默认 'true'）。
+ * 开关：环境变量 LOG_API_ENABLED（默认 'true'）；
+ * LOG_API_SKIP_GET=true 时 GET 请求不记录（演示环境降噪，非 GET 照记），默认 false 全记。
  * 为避免自引用噪声，跳过对 /api/logs 的读取型请求记录。
  * best-effort：失败仅打印，不影响主流程。
  */
@@ -32,6 +33,12 @@ export class LoggingInterceptor implements NestInterceptor {
     const req = ctx.getRequest<Request>();
     const res = ctx.getResponse<Response>();
     const path = req.originalUrl ?? req.url;
+
+    // 演示环境 GET 降噪：只读请求量大且无审计价值，按开关跳过
+    const skipGet = (process.env.LOG_API_SKIP_GET ?? 'false') === 'true';
+    if (skipGet && req.method.toUpperCase() === 'GET') {
+      return next.handle();
+    }
 
     // 跳过对日志接口自身的记录，避免自引用噪声
     if (path.startsWith('/api/logs')) {

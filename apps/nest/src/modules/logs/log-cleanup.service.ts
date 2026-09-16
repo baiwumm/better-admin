@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { inArray, lt } from 'drizzle-orm';
+import { and, inArray, lt, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { logs } from '@/db/schema';
+import { DEMO_SEED_LOG_DETAIL_KEY } from '@/db/demo.constants';
 
 /**
  * 日志定时清理（type=api/error/login/operation 统一保留 30 天，评审确认）。
@@ -10,6 +11,8 @@ import { logs } from '@/db/schema';
  * - 默认每日北京时间 03:00 执行（cron 显式 TZ，Render 服务器为 UTC）；
  * - LOG_CLEANUP_CRON 覆盖执行计划；LOG_CLEANUP_ENABLED=false 关闭（默认开）；
  *   LOG_RETENTION_DAYS 覆盖保留天数（默认 30，须为正整数，非法值回退默认）；
+ * - 跳过 faker 布景日志（detail.seed === true，Phase 0 演示数据集的永久布景），
+ *   只滚动真实日志；
  * - 分批删除：单条 SQL 全删会长时间持锁，按批 1000 条循环删到删无可删
  *   （logs_created_idx 支撑截止时间扫描）；
  * - best-effort：失败仅打印，不影响主流程；成功写一条 operation 日志
@@ -59,7 +62,13 @@ export class LogCleanupService {
         const rows = await db
           .select({ id: logs.id })
           .from(logs)
-          .where(lt(logs.createdAt, cutoff))
+          .where(
+            and(
+              lt(logs.createdAt, cutoff),
+              // 布景日志永久保留：detail 无 seed 键或不为 true 才进入清理
+              sql`coalesce(${logs.detail} ->> ${DEMO_SEED_LOG_DETAIL_KEY}, '') <> 'true'`,
+            ),
+          )
           .limit(DELETE_CHUNK_SIZE);
 
         if (rows.length === 0) break;

@@ -4,6 +4,7 @@ import { Request } from 'express';
 import { NotificationsService } from './notifications.service';
 import { NotificationQueryDto } from './dto/notification-query.dto';
 import { AuthUser } from '@/auth/auth.service';
+import { DemoAllowed } from '@/auth/decorators/demo-allowed.decorator';
 
 /**
  * 站内信铃铛（契约 v1.7.0）：仅登录态（无权限位），数据严格限定当前用户。
@@ -34,16 +35,18 @@ export class NotificationsController {
     return this.notificationsService.unreadCount(this.userId(req));
   }
 
-  /** POST /api/notifications/read-all —— 全部已读 */
+  /** POST /api/notifications/read-all —— 全部已读（演示只读白名单：只改当前用户自身已读状态） */
   @Post('read-all')
   @HttpCode(200)
+  @DemoAllowed()
   readAll(@Req() req: Request) {
     return this.notificationsService.readAll(this.userId(req));
   }
 
-  /** POST /api/notifications/:id/read —— 单条已读 */
+  /** POST /api/notifications/:id/read —— 单条已读（演示只读白名单） */
   @Post(':id/read')
   @HttpCode(200)
+  @DemoAllowed()
   readOne(@Param('id') id: string, @Req() req: Request) {
     return this.notificationsService.readOne(this.userId(req), id);
   }

@@ -99,6 +99,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
     message: string,
     exception: unknown,
   ) {
+    // 演示只读拦截不落 error 日志（契约 v1.10.0）：访客误触写操作属预期交互，
+    // 若逐条记录会在演示站持续刷库
+    if (code === 'DEMO_READONLY') {
+      return;
+    }
+
     try {
       const ip =
         (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
