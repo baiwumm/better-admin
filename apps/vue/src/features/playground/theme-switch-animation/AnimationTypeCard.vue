@@ -70,7 +70,9 @@ const actionLabel = computed(() =>
     <!--
       渐变描边圆钮：外层 p-px 只留 1px 渐变环，内层按钮以 bg-default 实心底遮出圆面。
       Nuxt UI 按钮内部样式经 tv() 的 tailwind-merge 归并，class 里的
-      size-10 / rounded-full / p-0 能稳定覆盖默认的圆角与内边距，得到正圆。
+      size-10 / rounded-full / p-0 能稳定覆盖默认的圆角与内边距，得到正圆；
+      justify-center 必须显式声明——UButton 基础类只有 items-center（垂直居中），
+      水平居中类仅 block 变体提供，p-0 清掉默认左右 padding 后图标会贴左。
       ref 挂外层：与按钮同心、尺寸仅差 1px 环，库取该元素 rect 中心即按钮圆心，
       不依赖 UButton 的 ref 透传实现。
     -->
@@ -85,7 +87,7 @@ const actionLabel = computed(() =>
         :aria-label="`${type} · ${actionLabel}`"
         :disabled="isAnimating"
         :icon="isDark ? 'i-lucide-moon' : 'i-lucide-sun'"
-        class="bg-default text-default size-10 rounded-full p-0 shadow-sm hover:shadow-md"
+        class="bg-default text-default size-10 justify-center rounded-full p-0 shadow-sm hover:shadow-md"
         color="neutral"
         variant="ghost"
         @click="toggle"
