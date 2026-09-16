@@ -21,7 +21,7 @@
 > Gate-1 / Gate-2 只约束 Phase 0 与 Phase C；Playground 为纯前端静态演示，不等 Gate（口径调整详见本节末 2026-09-14 说明）：
 
 - [x] **Gate-1**：Nuxt 端与 React 基准**功能全部对齐**（`docs/feature-matrix.md` 中 Nuxt 列全部 ✅；口径为现有业务功能对齐，不含本计划三块，避免循环依赖）。**2026-09-16 达成**——Nuxt 26/27（仅剩 Dashboard，属 Phase C 豁免项），同日 logs 模块源码缺失 P0 修复（提交 `60546ab`）后，干净 clone 下 `typecheck` / `build` 恢复可过。
-- [ ] **Gate-2**：Nuxt 端**冒烟测试通过**（登录 / 菜单加载 / 各模块列表与 CRUD / 权限边界 / 登出，见 §9.4 冒烟清单口径）。
+- [x] **Gate-2**：Nuxt 端**冒烟测试通过**（登录 / 菜单加载 / 各模块列表与 CRUD / 权限边界 / 登出，见 §9.4 冒烟清单口径）。**2026-09-16 用户实测通过——Gate 全部达成，Phase 0 可启动（执行清单 §3.6）。**
 
 **总顺序（2026-09-14 重排）**：**Phase A + Phase B Playground 不等 Gate、立即启动**（纯前端静态演示，无数据依赖，与 Nuxt 收尾并发；四端同步推进）；Gate 达成后按 **Phase 0 演示上线准备 → Phase C Dashboard** 推进。每个 Phase 完成后按 `AGENTS.md` §10 提交并更新 `progress.md`。
 
@@ -166,6 +166,8 @@
 
 ## 4. Phase C — Dashboard 概览页
 
+> **启动条件：Phase 0（演示上线准备）完成后启动**——趋势图与 KPI 环比依赖有时间分布的 faker 数据集（§2 总顺序、§4.3 数据底座）。
+
 ### 4.1 设计目标：高级感视觉基准
 
 > 总要求：**高大上、逼真、有高级感**。参照 Vercel / Linear / shadcn 一系的克制式高级感——靠**排版层级、留白、渐变与微动效**取胜，不堆砌装饰。以下为可验收的设计基准，四端共用。
@@ -241,7 +243,7 @@
 1. [x] **菜单录入脚本**（2026-09-14）：`apps/nest/scripts/migrate-menus-add-playground.ts` 幂等录入 §5.1 菜单树 10 节点（项目首个三级菜单；整棵树 + super_admin 授权一个事务落库；全部节点 `permissions = 0`，super_admin 补录全量位，其余角色由「角色管理」按需勾选）。**实施中根治的服务端问题**：`buildAllowedMenuIds` 原 `role_menus.permissions != 0` 过滤导致 0 位页面对普通角色不可见——经用户拍板改为「有 role_menus 关联记录即可见」（Nest / Next / Nuxt 三端同步移除，`database-design.md` §1.5 v0.10；线上「异常页」三子页同获修复，备案见 `code-review-backlog.md`）。
 2. [x] **四端文件占位**（2026-09-14）：四端 `/playground/*` 路由与 7 页占位（统一渲染 `PlaceholderPage`）+ i18n 键（`menu.playground.*` 10 键 + `features.playground.placeholder`）四端 zh-CN / en 同步；Vue / Nuxt `MENU_REQUIRED_PATHS` + `ROUTE_TITLE_KEYS`、Next `route-title.ts` 登记（React / Next 菜单门卫为「非登录白名单即受控」，无需登记）。`PlaygroundIntro` 信息卡骨架顺延为步骤 3 首项（React 端定稿，避免四端先铺再返工）。**验收（2026-09-15，React 端 GUI 冒烟）**：角色授权可见性、三级菜单展示、7 个占位页均正常。
 3. [x] **React 基准开发**（UI Source of Truth，2026-09-15）：`PlaygroundIntro` + `meta.ts` / `registry.ts` 机制（§5.2）——版本经 `packageVersion()` 从 `package.json` JSON import 读取、参数类型收敛为 `keyof typeof pkg.dependencies`（登记未安装的包编译期即报错）；页面骨架 / 控件抽成 `demo-section.tsx` + `demo-controls.tsx` 供七页复用；rare-ui 六组件按 §6 清单 vendor（`cn` 导入改 `@heroui/react`，移除 `"use client"`，shadcn / 硬编码色替换为项目 token，github-activity 增补 i18n 出口），未初始化 shadcn 基建；依赖按 §7 锁版安装。七页全部实现，i18n 116 键（React + Next 语言包同步）。GUI 冒烟发现并修复 HeroUI 全局 `.tag` 类与 prism token 撞名（机制沉淀 `mechanisms.md` §27）与无边框区浮动按钮裁切两项。
-4. [x] **逐端对齐**（2026-09-15 ~ 09-16）：**Next**（2026-09-15）——`features/playground/` 自 React 端整体平移：vendor 六组件与客户端 tsx 加回文件顶部 `"use client"`，7 个 `meta.ts` 的 `source` 指向 `apps/next/`，`PlaygroundIntro` 的 `usedIn` 跳转改 `next/navigation`；`motion` / `prism-react-renderer` / `@number-flow/react` 三依赖同版锁入；构建产物核实 motion / prism 均隔离在演示页按需 chunk，未进首屏大包；page.tsx 保持服务端组件导出 `generateRouteMetadata`。**Vue / Nuxt**（2026-09-16）——按 React 视觉以 Nuxt UI 内置组件 + 自定义组件重写（组件优先级见 `AGENTS.md` §21）：高亮 `prismjs` 直渲染（自实现 prism-react-renderer 的 normalizeTokens 语义逐行渲染），动画一律 CSS transition / `<Transition>` / `<TransitionGroup>` FLIP / Canvas RAF 等效（**motion-v 评审结论：不引入**），`useDemoActive` 组合式统一 keepAlive 暂停；引入 `clsx` + `tailwind-merge`（新增 `cn` 工具）与 `@number-flow/vue`；Nuxt 端自 Vue 平移，canvas 三页 `<ClientOnly>` 包裹。两端 lint / test 全绿，GUI 冒烟 7 页 + 深浅色 + keepAlive 通过，**用户本地 GUI 验证通过**（Next 端 GUI 冒烟待用户本地复核；Nuxt typecheck / build 原受 logs P0 阻塞，2026-09-16 修复后解除）。
+4. [x] **逐端对齐**（2026-09-15 ~ 09-16）：**Next**（2026-09-15）——`features/playground/` 自 React 端整体平移：vendor 六组件与客户端 tsx 加回文件顶部 `"use client"`，7 个 `meta.ts` 的 `source` 指向 `apps/next/`，`PlaygroundIntro` 的 `usedIn` 跳转改 `next/navigation`；`motion` / `prism-react-renderer` / `@number-flow/react` 三依赖同版锁入；构建产物核实 motion / prism 均隔离在演示页按需 chunk，未进首屏大包；page.tsx 保持服务端组件导出 `generateRouteMetadata`。**Vue / Nuxt**（2026-09-16）——按 React 视觉以 Nuxt UI 内置组件 + 自定义组件重写（组件优先级见 `AGENTS.md` §21）：高亮 `prismjs` 直渲染（自实现 prism-react-renderer 的 normalizeTokens 语义逐行渲染），动画一律 CSS transition / `<Transition>` / `<TransitionGroup>` FLIP / Canvas RAF 等效（**motion-v 评审结论：不引入**），`useDemoActive` 组合式统一 keepAlive 暂停；引入 `clsx` + `tailwind-merge`（新增 `cn` 工具）与 `@number-flow/vue`；Nuxt 端自 Vue 平移，canvas 三页 `<ClientOnly>` 包裹。两端 lint / test 全绿，GUI 冒烟 7 页 + 深浅色 + keepAlive 通过，**用户本地 GUI 验证通过**（Next 端 GUI 冒烟经用户本地复核通过（2026-09-16）；Nuxt typecheck / build 原受 logs P0 阻塞，2026-09-16 修复后解除）。
 
 ### 5.1 菜单树（含三级菜单，共用库单点数据、四端自动一致）
 
@@ -260,7 +262,7 @@
 ```
 
 - 页面节点 `keepAlive` 开启、目录节点关闭（演示页纯静态、无写库副作用）；三级菜单同时作为侧边栏深层级渲染的真实演示。图标（lucide kebab-case，已核对同时存在于 lucide-react 1.x 与 @iconify-json/lucide）：演示场 `flask-conical` / 代码块 `square-code` / 数字动画 `hash` / Number Flow `arrow-up-1-0` / Animated Counter `tally-5` / Ai Kit `sparkles` / Fluid Orb `orbit` / Grid Reveal `grid-2x2` / Matrix Orb `atom` / GitHub Activity `calendar-days`（lucide-react 1.x 已移除品牌图标 `github`，改用热力图语义）/ 主题切换动画 `sun-moon`（2026-09-16 追加，sort 4 排 GitHub Activity 之后，经 `apps/nest/scripts/migrate-menus-add-theme-switch-animation.ts` 幂等录入）。
-- 三级菜单验证点：**展开态四端已代码级核实递归渲染**——React / Next `SidebarGroup → MenuLevel` 递归、Vue / Nuxt `toNavLeaf` 递归映射 + Nuxt UI 4.11 `NavigationMenu` vertical 模式经 `ReuseItemTemplate(level + 1)` 递归渲染子级手风琴；**折叠态**（React / Next 折叠菜单；Nuxt UI 折叠态 `UPopover` 仅平铺一层子项，第三级形态待实测）、面包屑、命令面板搜索仍需 GUI 逐项过检，发现未覆盖即补齐。
+- 三级菜单验证点：**展开态四端已代码级核实递归渲染**——React / Next `SidebarGroup → MenuLevel` 递归、Vue / Nuxt `toNavLeaf` 递归映射 + Nuxt UI 4.11 `NavigationMenu` vertical 模式经 `ReuseItemTemplate(level + 1)` 递归渲染子级手风琴；**折叠态**（React / Next 折叠菜单；Nuxt UI 折叠态 `UPopover` 仅平铺一层子项）、面包屑、命令面板搜索已经用户 GUI 实测过检通过（2026-09-16），四端一致。
 - [x] 演示页通用规范（四端已随 Phase B 落地）：React 路由 `src/routes/_authenticated/playground/<demo>.tsx`（三级页为 `playground/count-to/<demo>.tsx`）、实现 `src/features/playground/<demo-name>/`，其余三端按各自路由约定建同名路径；页首固定 `PlaygroundIntro` 信息卡（规范见 §5.2）；开启 `keepAlive`；i18n 全量跟进；Nuxt 端 canvas / 动画组件以 `<ClientOnly>` 包裹防 SSR 水合报错。
 
 ### 5.2 页首信息卡 `PlaygroundIntro` 规范（四端统一）
@@ -358,11 +360,13 @@ type DemoMeta = {
 
 ### 9.1 Playground（Phase A / B）
 
-- [ ] 菜单接入 RBAC：与其他菜单同流程——录入脚本写入 + 「角色管理」关联授权后才可见；未授权角色不可见且路由不可达；`super_admin` 经聚合位自然全量可见。
-- [ ] 三级菜单（演示场 › 数字动画 › Number Flow / Animated Counter；演示场 › Ai Kit › Fluid Orb 等）在侧边栏展开态与折叠态、面包屑、命令面板搜索中均正确渲染与高亮；路由直达时祖先分组自动展开；**四端一致**。
-- [ ] 每页 `PlaygroundIntro` 信息卡符合 §5.2 规范（元数据齐全、版本自动读取、npm / GitHub / Docs 外链可达、「项目内使用」跳转正确）；i18n 无硬编码文案；深浅色过检；四端信息卡结构一致。
-- [ ] keepAlive 保活下切走页面动画暂停、切回恢复；Nuxt 端无 SSR 水合报错。
-- [ ] 全部演示不产生写库副作用（写操作仅前端本地状态）；不暴露敏感数据。
+> **2026-09-16 逐项验收通过（用户 GUI 实测；Phase A/B 全部完成）。**
+
+- [x] 菜单接入 RBAC：与其他菜单同流程——录入脚本写入 + 「角色管理」关联授权后才可见；未授权角色不可见且路由不可达；`super_admin` 经聚合位自然全量可见。
+- [x] 三级菜单（演示场 › 数字动画 › Number Flow / Animated Counter；演示场 › Ai Kit › Fluid Orb 等）在侧边栏展开态与折叠态、面包屑、命令面板搜索中均正确渲染与高亮；路由直达时祖先分组自动展开；**四端一致**。
+- [x] 每页 `PlaygroundIntro` 信息卡符合 §5.2 规范（元数据齐全、版本自动读取、npm / GitHub / Docs 外链可达、「项目内使用」跳转正确）；i18n 无硬编码文案；深浅色过检；四端信息卡结构一致。
+- [x] keepAlive 保活下切走页面动画暂停、切回恢复；Nuxt 端无 SSR 水合报错。
+- [x] 全部演示不产生写库副作用（写操作仅前端本地状态）；不暴露敏感数据。
 
 ### 9.2 演示上线准备（Phase 0）
 

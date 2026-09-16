@@ -2,6 +2,11 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Playground 整体验收通过 + Gate 全部达成（2026-09-16，仅文档）
+
+- **验收（用户 GUI 实测）**：① Gate-2 冒烟通过（§9.4 口径）；② 计划 §9.1 Playground 验收清单五项全过——含折叠态三级菜单 / 面包屑 / 命令面板搜索过检点（§5.1）与 Next 端 8 页 GUI 冒烟。**Gate-1 / Gate-2 均达成；下一步进入 Phase 0（§3.6 执行清单），Phase C Dashboard 等 Phase 0 完成后启动**（§2 总顺序）。
+- **文档**：`plan-dashboard-playground.md`（Gate-2 勾选、§5.0 步骤 4 与 §5.1 过检点销项、§9.1 五项全勾并注验收日期、§4 补「等 Phase 0 完成后启动」）；`AGENTS.md` §19 当前待办按「快照不存历史」规则重写为两条精简条目（Playground 2,875 字符历史叙述移交本文件，仅保留撞名警示指针）；本条目。
+
 ### Nuxt logs 模块源码重建（P0 销项）+ Playground 语言包措辞技术栈中立（2026-09-16）
 
 - **做了什么**：① **`apps/nuxt/app/features/logs/` 四文件按 Vue 端 `apps/vue/src/features/logs/` 逐字平移**（`LogsPage.vue` / `LogDetailDrawer.vue` / `log-api.ts` / `log-type.ts`，修复 2026-09-14 发现的 `.gitignore` 模板规则导致源码从未入库的 P0，`pages/(authenticated)/settings/logs.vue` 引用恢复，AGENTS §19 待办销项）。Nuxt 端适配三点：`getErrorMessage` 改走 `@/lib/i18n-bridge`（Vue 端为 `@/i18n`）；`vue-i18n` / `useToast` 去显式导入走 Nuxt 自动导入（`vue` / `@tanstack/*` 显式导入保留，与既有 feature 一致）；**Nuxt 端 eslint 比 Vue 端严格**——`resolveComponent` 调用必须在全部 import 之后（`import/first`）、table-types 类型导入合并为单条 `import type`（`import/no-duplicates` + `no-import-type-side-effects`），风格经 `eslint --fix` 收敛。①′ 顺手根治 **NUXT_B3011 重名警告**：`components/layout/prefs/ConfigDrawer.vue` 为仓库重组（`618e368`）时误入库的空文件（Vue 端 prefs/ 无对应物、全仓零引用），`git rm` 移除。② **Playground 语言包措辞技术栈中立（用户拍板）**：React 真源 2 键（zh-CN / en 各 2）——`features.playground.codeBlock.inlineLead`「在 React 端安装本页依赖：」→「安装本页依赖：」、`features.playground.numberFlow.description`「官方 @number-flow/react：」→「官方 Number Flow：」；Next 端手工同步同 2 键，Vue / Nuxt 端经各自 `sync-locales.mjs` 重新生成（非手工编辑）。
