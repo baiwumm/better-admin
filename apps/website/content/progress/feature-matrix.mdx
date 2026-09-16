@@ -1,0 +1,63 @@
+---
+title: 功能矩阵
+description: 四种前端实现的功能对齐状态、已知差异与唯一缺口。
+---
+
+<FeatureMatrixDiagram />
+
+## 统计口径
+
+功能矩阵共 **27 项**，分三组：
+
+| 分组 | 项数 | 说明 |
+| --- | --- | --- |
+| 核心业务 | 9 | 用户、角色、权限、菜单、字典、日志等 |
+| 组织中心 | 8 | 部门、岗位、通讯录、公告等 |
+| 基础设施 | 10 | 认证、布局、主题、i18n、错误页、上传等 |
+
+四个前端（React / Vue / Next.js / Nuxt）当前均为 **26 / 27**，完成度 96%。
+
+## 唯一缺口：Dashboard 概览
+
+四端与 NestJS **都没有实现** Dashboard 概览页 —— NestJS 侧该列也没有对应 API。
+
+这不是"某端落后"，而是这个功能本身还没有开工：它已列入路线图的 **Phase C**，会同步新增 `stats/overview` 契约。
+
+## 已知架构差异
+
+有两处差异是**有意为之**，不算功能缺失：
+
+| 差异项 | 表现 | 为什么保留 |
+| --- | --- | --- |
+| **页面保活（KeepAlive）** | React 端有多标签页保活池，Next.js 端没有 | Next.js 的 App Router 没有对应的保活原语，硬做会破坏其路由模型 |
+| **认证传输载体** | React / Vue 走 `Authorization: Bearer`，Next.js 走 httpOnly Cookie | 两者契约完全一致，只是 Token 存放位置不同；Next 端用 Cookie 换来对 XSS 的天然免疫 |
+
+<Callout title="对齐的判定标准是功能，不是代码">
+
+技术栈不同就必然有实现差异。矩阵判定的是**功能是否齐备、契约是否一致**，不要求四端代码逐行对应。功能对齐优先于实现对齐。
+
+</Callout>
+
+## NestJS 侧的对照
+
+后端独立对照 API 契约：**44 条契约路径全部实现**，每条路径的权限位声明（`x-permission`）与契约一致。
+
+## 已完成的关键里程碑
+
+| 时间 | 内容 |
+| --- | --- |
+| 09-16 | **Playground 演示场四端全对齐**（7 页，React → Next → Vue → Nuxt 依次跟进） |
+| 09-15 | NestJS API 文档 UI 由 Swagger 换为 **Scalar**（保留 `/docs-json`） |
+| 09-14 | 菜单可见性修正：**只要有 `role_menus` 记录即视为可见**，三端同步 |
+
+## 部署状态
+
+**五个应用目前都还没有正式上线。** 规划的平台分工：
+
+| 应用 | 目标平台 |
+| --- | --- |
+| React · Vue | Cloudflare Pages |
+| Next.js · Nuxt · website | Vercel |
+| NestJS | Render |
+
+统一上线前还有一份待执行清单，其中包含 NestJS 的保活 ping 与 CORS 白名单收敛 —— 详见[路线图](/docs/progress/roadmap)。

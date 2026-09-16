@@ -12,7 +12,7 @@ export function Navbar() {
 
   return (
     <header className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
-      <nav className="w-full max-w-2xl rounded-2xl border border-black/10 bg-background/70 px-4 py-2 shadow-lg backdrop-blur-xl dark:border-white/10">
+      <nav className="navbar-premium w-full max-w-2xl rounded-2xl px-4 py-2">
         <div className="flex items-center justify-between">
           <Link
             href="/"
@@ -25,7 +25,7 @@ export function Navbar() {
           <div className="hidden items-center gap-1 sm:flex">
             <Link
               href="/docs"
-              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               文档
             </Link>
@@ -33,14 +33,14 @@ export function Navbar() {
               href={SITE.github}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               GitHub
             </a>
             <ThemeToggle />
             <Link
               href="/docs"
-              className="ml-1 rounded-full bg-foreground px-4 py-1.5 text-xs font-bold text-background transition-opacity hover:opacity-80"
+              className="btn-solid ms-1 px-4 py-1.5 text-xs font-bold"
             >
               开始阅读
             </Link>
@@ -52,7 +52,7 @@ export function Navbar() {
               type="button"
               aria-label="展开导航"
               onClick={() => setOpen(!open)}
-              className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+              className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <Menu size={16} />
             </button>

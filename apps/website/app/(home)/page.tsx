@@ -10,9 +10,17 @@ import { Stacks } from "@/components/landing/stacks";
 export default function HomePage() {
   return (
     <div className="relative isolate overflow-hidden">
+      {/*
+        背景光效：固定视口、z-0，压在 main(z-10) 之下。
+        调参说明：这片光在白色底上会同时带来"光束"和"灰纱"两种观感，
+        片元着色器还会把 alpha 与 rgb 独立缩放，铺满后整页像蒙了层纱。
+        因此这里刻意收着用——`opacity` 降低整体强度、`rayLength` 收窄影响范围，
+        只留首屏顶部那束光，别再往页面下半部渗。
+      */}
       <LightRays
-        className="fixed inset-0 z-0"
+        className="fixed inset-0 z-0 opacity-65"
         raysOrigin="top-center"
+        rayLength={1.5}
         followMouse
       />
       <Navbar />

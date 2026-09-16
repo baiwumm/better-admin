@@ -1,0 +1,82 @@
+---
+title: 仓库结构
+description: 单仓库多独立应用的组织方式，以及为什么刻意不引入 workspace。
+---
+
+<RepoStructureDiagram />
+
+## 为什么要放在一个仓库里
+
+五个应用要实现**同一套产品**，跨栈对照是常态。放在同一个仓库，可以：
+
+- 用同一份 `docs/` 与 `AGENTS.md` 约束所有实现，规则只维护一处；
+- 让"改契约会影响哪几端"变得一眼可见；
+- 让各端的技术栈选型差异在同一视野内被审视。
+
+但**组织在一起不等于耦合**。下面这条边界很关键。
+
+## 刻意不引入 pnpm workspace
+
+各个 `apps/*` 下确实存在 `pnpm-workspace.yaml`，但它**只是 pnpm 的设置文件，不构成 workspace 依赖提升** —— 里面放的是 `allowBuilds`、`overrides`、`trustPolicyIgnoreAfter` 这类开关，不是 workspace 包清单。
+
+仓库根目录**没有** `pnpm-workspace.yaml`，每个应用各持一份独立的 `pnpm-lock.yaml`。
+
+这么做是为了保证独立性：
+
+| 目标 | 为什么需要独立 lockfile |
+| --- | --- |
+| 独立部署 | 子目录可以单独作为部署根，依赖解析不受其他应用影响 |
+| 独立升级 | React 端升 Hero UI 不会牵动 Vue 端 |
+| 独立排障 | 依赖问题被限制在单个应用内 |
+
+<Callout title="一条容易踩的坑">
+
+在仓库根执行 `pnpm install` **不会**安装任何应用的依赖。请进入具体应用目录安装。
+
+</Callout>
+
+## 版本同步
+
+仓库根 `package.json` 的 `version` 是**产品级版本的唯一真源**：
+
+```bash
+pnpm sync-versions
+```
+
+该脚本把根的 `version` 分发到 `apps/react|vue|next|nuxt|nest`，避免五个应用版本号各自漂移。发布时只改根版本号，然后跑一次同步。
+
+## 组件分层约定
+
+React 端（UI 基准）把 `src/components/` 按职责分三层，**按需创建，不提前建空目录**：
+
+| 层级 | 目录 | 职责 |
+| --- | --- | --- |
+| UI 层 | `components/ui/` | 纯 UI 基础组件 |
+| 通用层 | `components/common/` | 跨业务模块复用的项目级组件（Shell、Loading、EmptyState、ConfirmDialog 等） |
+| 业务层 | `components/business/` | 特定业务域专用组件（UserTable、UserForm 等） |
+
+布局组件保留在 `layouts/components/`，不归入这三层 —— 它们是布局专属，不是跨模块通用组件。
+
+命名上保持一致：目录与文件名 **kebab-case**，组件导出名 **PascalCase**。
+
+## 提交规范
+
+使用 **Conventional Commits**，描述用中文：
+
+```text
+feat: 用户管理新增分页功能
+fix: 修复菜单树在暗色模式下的描边丢失
+docs: 补充数据库设计说明
+refactor: 收敛权限位判断逻辑
+```
+
+常用类型：`feat` / `fix` / `docs` / `style` / `refactor` / `perf` / `test` / `chore` / `build` / `ci`。
+
+## 两类文档，各司其职
+
+| 位置 | 面向谁 | 内容形态 |
+| --- | --- | --- |
+| `docs/` · `AGENTS.md` | 开发者与 AI Agent | 完整规则、机制沉淀、进度日志，可长可细 |
+| `apps/website/content/`（本站） | 读者 | 提炼后的重点、图示与核心代码，追求短而清楚 |
+
+两边**不互相同步**。规则在第一处维护，本站负责把结论讲明白 —— 这也是本站不再整篇搬运仓库文档的原因。

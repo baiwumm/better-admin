@@ -1,6 +1,7 @@
 "use client";
 
 import { Github } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/logo";
 import { TextScramble } from "@/components/text-scramble";
@@ -44,16 +45,22 @@ export function Footer() {
 
             <nav
               aria-label="相关链接"
-              className="flex items-center gap-3 md:justify-end md:pt-1"
+              className="flex items-center gap-2 md:justify-end md:pt-1"
             >
+              <Link
+                href="/docs"
+                className="btn-outline px-4 py-1.5 text-xs font-bold text-foreground"
+              >
+                阅读文档
+              </Link>
               <a
                 href={SITE.github}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Better Admin on GitHub"
-                className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
+                className="btn-outline size-9 p-0 text-muted-foreground hover:text-foreground"
               >
-                <Github size={20} />
+                <Github size={16} />
               </a>
             </nav>
           </div>

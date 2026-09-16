@@ -9,8 +9,10 @@ next-env.d.ts
 # fumadocs-mdx 生成物
 .source/
 
-# sync-docs.mjs 从仓库 docs/ 同步生成（真源在 ../docs，禁止双源）
-content/
+# 注意：content/ 是本文档站的**内容真源**，提交进仓库，不要加入忽略清单。
+# 历史背景：早期由 scripts/sync-docs.mjs 从仓库 ../docs 全量同步生成，导致
+# 353KB 的 progress.md 等超长文档被原样铺成网页。现改为本站自建精编内容，
+# 与仓库 docs/ 解耦——docs/ 面向开发者与 AI Agent，本站面向读者。
 
 # misc
 .DS_Store

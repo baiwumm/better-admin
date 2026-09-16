@@ -1,0 +1,142 @@
+---
+title: 认证与权限
+description: 双 Token 会话、token_version 强制下线，以及 RBAC 位掩码的完整校验链路。
+---
+
+<AuthFlowDiagram />
+
+## 认证：自己实现，不借外部服务
+
+项目**不使用 Supabase Auth**，认证体系由应用自身实现。四端的登录 / 登出 / Session / 用户身份 / 角色 / 权限行为必须保持一致。
+
+### 双 Token 分工
+
+| Token | 用途 | 特点 |
+| --- | --- | --- |
+| `accessToken` | 业务请求鉴权 | 短期有效，**无状态**，服务端不存 |
+| `refreshToken` | 换取新的 accessToken | 长期有效，**服务端托管 hash**，可撤销 |
+
+登录（`POST /api/auth/login`）返回两者：
+
+```json
+{
+  "data": {
+    "accessToken": "eyJhbGciOi…",
+    "refreshToken": "eyJhbGciOi…",
+    "user": { "id": "V1StGXR8_Z5j", "username": "admin", "roles": [], "permissions": 9223372036854775807 }
+  }
+}
+```
+
+「记住我」决定 refreshToken 是否持久化到本地存储，因而不影响契约形状。
+
+### refreshToken 会轮换
+
+`POST /api/auth/refresh` 不只是"续期"，而是**换发一对新 Token，旧 refreshToken 立即作废**。这样即使旧 token 泄漏，攻击窗口也被限制在一次刷新之内。
+
+### token_version：一个字段实现全端强制下线
+
+签发 JWT 时会把用户的 `token_version` 写进 payload 的 **`ver` 声明**。校验时若 `ver` 与数据库当前值不匹配，Token 直接失效。
+
+于是"强制下线"变得极其简单：**把 `users.token_version` 加一**。改密码、封禁账号都这么做，该用户所有设备上已签发的 accessToken 与 refreshToken 同时失效。
+
+<Callout type="warn" title="accessToken 无状态带来的残留窗口">
+
+登出撤销的是服务端托管的 refreshToken。已签发的 accessToken 在自身有效期内**仍然可用**，这是无状态 JWT 的固有取舍，属预期行为。用户下一次刷新失败时会被引导重新登录。
+
+</Callout>
+
+## 权限：位掩码，不是权限行
+
+<PermissionBitsDiagram />
+
+权限点**不是"数据库行 + 关联表"**，而是编译期常量枚举 + 整型位掩码。每个操作占一个 bit，值就是 2 的幂。
+
+好处很直接：判断权限退化成一次按位与，不需要查表；新增权限点也不用动种子数据。
+
+```ts
+// apps/nest/src/db/schema/permissions.enum.ts（节选）
+export const Permissions = {
+  SEARCH: { value: 'SEARCH', label: 'search', bits: 1n, icon: 'search' },
+  ADD: { value: 'ADD', label: 'add', bits: 2n, icon: 'plus' },
+  EDIT: { value: 'EDIT', label: 'edit', bits: 4n, icon: 'pencil-line' },
+  DELETE: { value: 'DELETE', label: 'delete', bits: 8n, icon: 'trash-2' },
+  // … BATCH_DELETE / ADD_CHILD / RESET / RESET_PASSWORD / GRANT / EXPORT
+} as const satisfies Record<string, PermissionMeta>;
+```
+
+### 权限怎么聚合出来
+
+1. 用户的每个角色，在 `role_menus` 里对每个菜单持有一个权限位；
+2. 把该用户所有角色的位**按位或**叠加，得到聚合权限位；
+3. 前端用它决定按钮显隐，服务端用它做最终裁决。
+
+菜单可见性的规则是：**只要存在 `role_menus` 记录就可见** —— 即使该记录上的权限位是 0，菜单也应当出现在侧边栏里，只是里面的操作按钮会被权限位门控。
+
+### 超级管理员的全量位
+
+`super_admin` 用"全 1 掩码"表示拥有全部权限：
+
+- **内部存储**用有符号 `-1n`；
+- **对外 JSON** 归一化为正数 `9223372036854775807`，避免前端 BigInt 与位运算出现歧义。
+
+```ts
+// 对外输出时归一化：仅负数映射为 2^63-1
+export function normalizePermissionBits(bits: bigint): bigint {
+  return bits < 0n ? bits & SUPER_ADMIN_BITS_POSITIVE : bits;
+}
+
+// 判定：全量位直接放行，否则按位与
+export function hasPermission(userBits: bigint, requiredBit: bigint): boolean {
+  if (userBits === -1n || userBits === SUPER_ADMIN_BITS_POSITIVE) return true;
+  return (userBits & requiredBit) !== 0n;
+}
+```
+
+这个设计让**新增权限点时无需修改种子数据** —— 全 1 掩码天然覆盖未来所有位。
+
+## 服务端强制校验
+
+前端路由守卫**只是体验层**。真正的裁决发生在服务端，链路是「装饰器声明 → 守卫读取 → 按位校验」。
+
+```ts
+// 1) 在 Controller / Handler 上声明所需权限位
+@Get()
+@Permissions('SEARCH')
+findAll() { /* … */ }
+```
+
+```ts
+// 2) PermissionsGuard 读取元数据并与用户聚合位做位掩码校验
+const requiredBits: string[] =
+  this.reflector.getAllAndOverride<string[]>(PERMISSIONS_KEY, [
+    context.getHandler(),
+    context.getClass(),
+  ]) ?? [];
+
+if (requiredBits.length === 0) return true;          // 无声明即放行
+
+const userBits = BigInt(user.permissions);
+if (userBits === -1n || userBits === SUPER_ADMIN_BITS_POSITIVE) return true;
+```
+
+校验失败抛 **403**：
+
+```json
+{ "code": "FORBIDDEN", "message": "无权限" }
+```
+
+<Callout title="装饰器可以叠加多个位">
+
+`@Permissions('EDIT', 'DELETE')` 表示同时要求两个位。契约里的 `x-permission` 扩展与这里的声明是同一套语义，两端必须对齐。
+
+</Callout>
+
+## 超级管理员的保护不变量
+
+`super_admin` 角色受到额外保护，避免管理员把自己锁在系统外：
+
+- **不可删除**
+- **不可停用**
+- **其菜单授权不可修改**
+- 受「**最后活跃超管**」不变量保护 —— 不允许出现系统里没有任何可用超管的状态

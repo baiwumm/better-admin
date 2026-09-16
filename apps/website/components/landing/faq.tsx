@@ -19,25 +19,31 @@ const QUESTIONS = [
     value: "shared-database",
     title: "五个版本共用数据库吗？",
     content:
-      "是。全部版本共用同一个 Supabase 托管的 PostgreSQL 数据库，ORM 统一为 Drizzle，Schema、数据模型、业务规则、数据类型与 API Contract 五项跨栈保持一致。",
+      "是。全部版本共用同一个 Supabase 托管的 PostgreSQL 数据库，ORM 统一为 Drizzle，Schema、数据模型、业务规则、数据类型与 API Contract 五项跨栈保持一致。迁移只在 NestJS 端发起。",
   },
   {
     value: "ui-consistency",
     title: "不同技术栈的 UI 如何保持一致？",
     content:
-      "React 版本是项目的 UI Source of Truth：页面结构、组件行为、交互与 Design Tokens 均以它为基准，其余技术栈按基准复刻；功能对齐优先于像素级对齐。",
+      "React 版本是项目的 UI Source of Truth：页面结构、组件行为、交互与 Design Tokens 均以它为基准，其余技术栈按基准复刻。React 与 Next.js 用 Hero UI，Vue 与 Nuxt 用 Nuxt UI v4，组件库不同但视觉与交互对齐；功能对齐优先于像素级对齐。",
   },
   {
     value: "api-contract",
     title: "API 契约在哪里定义？",
     content:
-      "OpenAPI 是 API Contract 的唯一事实来源（nest/openapi/openapi.yaml），先定义 Contract 再实现。React / Vue 走 NestJS REST API，Next.js / Nuxt 各自实现同等契约的 Server API。",
+      "OpenAPI 是 API Contract 的唯一事实来源（apps/nest/openapi/openapi.yaml），先定义 Contract 再实现。React / Vue 走 NestJS REST API，Next.js / Nuxt 各自实现同等契约的 Server API。改契约前必须逐端评估影响面。",
   },
   {
     value: "auth-rbac",
     title: "认证与权限是怎么实现的？",
     content:
-      "认证由应用自身实现（JWT 会话），不依赖 Supabase Auth；权限模型为 RBAC（用户 ↔ 角色 ↔ 权限位掩码），并支持菜单与权限关联控制，服务端强制校验 API 权限。",
+      "认证由应用自身实现（JWT 双 Token 会话），不依赖 Supabase Auth；权限模型为 RBAC（用户 ↔ 角色 ↔ 权限位掩码），10 个权限点各占一个二进制位。服务端通过权限守卫强制校验 API 权限，前端路由守卫只是体验层。",
+  },
+  {
+    value: "function-parity",
+    title: "四个前端的功能对齐到什么程度了？",
+    content:
+      "共 27 项功能，四个前端目前均为 26 / 27，完成度 96%。唯一未对齐的是 Dashboard 概览，四端与 NestJS 都还没实现，已列入后续排期。",
   },
   {
     value: "open-source",
@@ -46,10 +52,10 @@ const QUESTIONS = [
       "是，代码开源于 GitHub（baiwumm/better-admin），可以自由学习、参考与贡献，欢迎提交 Issue 与 Pull Request。",
   },
   {
-    value: "docs-sync",
-    title: "文档站的内容和仓库同步吗？",
+    value: "docs-source",
+    title: "这个文档站的内容来自哪里？",
     content:
-      "同步。文档站构建时从仓库 docs/ 目录自动生成（docs/ 是唯一真源，含 frontmatter 注入与站内链接重写），仓库文档更新后网站内容随之更新，不存在手工维护的第二份副本。",
+      "本站的文档是为读者单独整理、精编的，不是仓库文档的整篇搬运——每页只留重点、配图与核心代码。仓库里的 docs/ 面向开发者与 AI Agent，规则更细、篇幅更长；两处各自维护，不互相同步。",
   },
 ];
 
@@ -69,14 +75,14 @@ export function Faq() {
         <Accordions
           type="single"
           collapsible
-          className="-space-y-px w-full rounded-lg border border-dashed border-black/10 bg-card/50 dark:border-white/10"
+          className="-space-y-px w-full rounded-xl border bg-card shadow-[0_1px_2px_rgb(0_0_0/0.04),0_12px_32px_-20px_rgb(0_0_0/0.22)] dark:shadow-[0_1px_2px_rgb(0_0_0/0.4),0_12px_32px_-20px_rgb(0_0_0/0.8)]"
         >
           {QUESTIONS.map((item) => (
             <Accordion
               key={item.value}
               value={item.value}
               title={item.title}
-              className="relative border-x border-dashed border-black/20 first:rounded-t-lg first:border-t last:rounded-b-lg last:border-b dark:border-white/10"
+              className="relative border-b border-dashed border-black/10 last:border-b-0 dark:border-white/10"
             >
               {item.content}
             </Accordion>

@@ -1,0 +1,112 @@
+---
+title: React 实现
+description: UI Source of Truth 的技术栈、目录结构、数据流与开发命令。
+---
+
+React 版本是整个项目的 **UI Source of Truth**。Vue、Next.js、Nuxt 的页面结构、组件行为、视觉与交互都按它复刻。
+
+<FrontendFlow name="React 19" kind="api" stack="Vite · TanStack Router" />
+
+## 技术栈
+
+| 类别 | 选型 |
+| --- | --- |
+| 语言 | TypeScript（strict） |
+| UI 框架 | React 19 |
+| 构建 | Vite |
+| 样式 | Tailwind CSS v4（CSS-first，无 `tailwind.config`） |
+| UI 组件库 | **Hero UI**（`@heroui/react` + `@heroui/styles`），当前无任何 Shadcn / Radix 组件 |
+| 路由 | **TanStack Router**（文件式路由，自动生成 `src/routeTree.gen.ts`） |
+| 状态 | **Zustand**（全局 store） |
+| 数据请求 | **TanStack Query** + `fetch` 封装（统一走 `src/lib/api-client.ts`，**不用 axios**） |
+| 表单 | react-hook-form + zod |
+| 表格 | TanStack Table（可复用 DataTable） |
+| 拖拽 | dnd-kit |
+| 国际化 | i18next + react-i18next（自建实例，非默认单例） |
+| 图标 | lucide-react |
+| 规范 / 测试 | ESLint（flat config）+ Prettier / Vitest |
+
+## 目录结构
+
+```text
+apps/react/src/
+├── components/
+│   ├── ui/            # 纯 UI 基础组件（按需创建）
+│   ├── common/        # 跨业务复用（error-pages / PageHeader …）
+│   └── business/      # 业务域专用（UserTable / UserForm …）
+├── layouts/
+│   ├── components/    # 布局专属子组件（app-sidebar / sidebar-menu …）
+│   └── admin-layout.tsx
+├── hooks/
+├── lib/               # api-client / menu-utils / permission …
+├── routes/            # TanStack Router 文件式路由 + 页面
+├── stores/            # Zustand（auth-store）
+├── styles/            # Tailwind v4 CSS + theme.css（Design Tokens 真源）
+├── provider.tsx
+└── main.tsx
+```
+
+组件按 `ui` → `common` → `business` 三层分职责，**按需创建，不提前建空目录**。布局组件留在 `layouts/components/`，不进 `components/` 三层体系。
+
+## 数据流与缓存
+
+纯前端，**不直接连数据库**：
+
+```text
+Browser → React → NestJS REST API → PostgreSQL
+```
+
+TanStack Query 的全局配置是刻意收窄过的：
+
+| 项 | 值 | 意图 |
+| --- | --- | --- |
+| `retry` | `1` | 失败不要反复重试，快速暴露问题 |
+| `staleTime` | 1 分钟 | 常规数据的新鲜度窗口 |
+| `refetchOnWindowFocus` | `false` | 避免切窗口时无意义的重刷 |
+
+两类关键数据有各自的策略：
+
+- **菜单树**（`["menus"]`）：登录成功后立即预取，供路由 `beforeLoad` **同步判权**；
+- **权限点枚举**（`["permissions"]`）：懒加载，`staleTime` 5 分钟，全项目共享缓存。
+
+两者都不做持久化 —— 权限是会变的，落盘后续更容易出现"幽灵权限"。
+
+## 主题与 Dark Mode
+
+自定义 `ThemeProvider` 在 `<html>` 上切换 `light` / `dark` class，支持 `system` 跟随，并以 cookie 持久化偏好。Tailwind v4 通过 `@custom-variant dark` 实现 class 策略。
+
+## 写浮层的硬性规则
+
+所有由布尔值控制的浮层，`open` 状态**统一用 Hero UI 的 `useOverlayState()`**，受控属性挂最外层 Overlay：
+
+```tsx
+const state = useOverlayState();
+
+<AlertDialog.Backdrop isOpen={state.isOpen} onOpenChange={state.setOpen}>
+  …
+</AlertDialog.Backdrop>
+```
+
+不要用 `useState(true / false)` 把 `isOpen` 挂在 Root 或 Trigger 上，会让 react-aria 的受控流不匹配。
+
+## 开发命令
+
+```bash
+cd apps/react
+
+pnpm install     # 独立安装（仓库不共享依赖）
+pnpm dev         # Vite 开发服务器 → http://localhost:5173
+pnpm build       # tsc 类型检查 + vite build
+pnpm preview     # 预览生产构建
+pnpm lint        # ESLint --fix
+pnpm test        # Vitest
+pnpm check-locales
+```
+
+环境变量只有三个，全部带 `VITE_` 前缀：`VITE_APP_NAME`、`VITE_APP_DESC`、`VITE_API_BASE_URL`。**纯前端应用没有任何服务端密钥。**
+
+<Callout title="关于 pnpm 的 allowBuilds">
+
+pnpm 10+ 默认不执行依赖的构建脚本。`apps/react/pnpm-workspace.yaml` 里用 `allowBuilds` 显式声明了哪些依赖不需要跑 postinstall，避免出现 `ERR_PNPM_IGNORED_BUILDS`。
+
+</Callout>

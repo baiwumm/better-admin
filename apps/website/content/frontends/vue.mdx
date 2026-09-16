@@ -1,0 +1,110 @@
+---
+title: Vue 实现
+description: 用 Nuxt UI v4 复刻 React 基准，以及 Vue 端特有的使用约束。
+---
+
+Vue 版本的目标是**还原 React 版本的页面、交互与 UX**。组件库不同，但最终视觉与行为必须对齐。
+
+<FrontendFlow name="Vue 3" kind="api" stack="Vite · Vue Router · Pinia" />
+
+## 技术栈
+
+| 类别 | 选型 |
+| --- | --- |
+| 框架 | Vue 3.5（Composition API） |
+| 构建 | Vite |
+| UI 组件库 | **Nuxt UI v4**（`@nuxt/ui`）—— 唯一组件库 |
+| 无头组件基座 | reka-ui |
+| 路由 | Vue Router（带类型化路由声明 `typed-router.d.ts`） |
+| 状态 | **Pinia** |
+| 数据请求 | **TanStack Query（Vue 版）** |
+| 表格 | TanStack Table（Vue 版） |
+| 国际化 | vue-i18n |
+| 工具 | VueUse · sortablejs · dompurify · prismjs · write-excel-file |
+
+## 目录结构
+
+```text
+apps/vue/src/
+├── components/
+├── composables/
+├── features/        # 按业务域组织
+├── i18n/
+├── layouts/
+├── lib/
+├── pages/
+├── router/
+├── stores/          # Pinia
+├── styles/
+├── themes/
+├── App.vue
+└── main.ts
+```
+
+## Vue 端的硬性约束
+
+<Callout type="warn" title="组件库只有一个选择">
+
+Vue / Nuxt 端**必须使用 Nuxt UI v4**。禁止引入 Vuetify、Quasar、Element Plus、PrimeVue、shadcn-vue。
+
+组件优先级是：Nuxt UI 内置组件 → 项目级自定义 → 第三方（须评审后引入）。
+
+</Callout>
+
+### 不要手写 Sidebar 和 Header
+
+布局**必须使用 Nuxt UI 的 Dashboard 套件**（`UDashboardGroup` / `UDashboardSidebar` / `UDashboardPanel` / `UDashboardNavbar`）搭建，**禁止从零手写 Sidebar / Header**。
+
+原因很简单：React 端有 Hero UI 的成熟布局件，Vue 端如果手搓一套，滚动、折叠、响应式行为一定会和基准漂移，后面每改一次都要对齐两套实现。
+
+```vue
+<!-- 骨架形态 -->
+<UDashboardGroup>
+  <UDashboardSidebar collapsible>
+    <UDashboardSearch />
+  </UDashboardSidebar>
+  <UDashboardPanel>
+    <UDashboardNavbar>
+      <template #right><!-- Search → ThemeSwitch → ProfileDropdown --></template>
+    </UDashboardNavbar>
+  </UDashboardPanel>
+</UDashboardGroup>
+```
+
+### 不要移植 React 的 Token
+
+主题**直接使用 Nuxt UI 的默认 Token**，不要移植 React 端的 `theme.css`，**也不要自建一层 Token 映射**。
+
+多出来的映射层会变成"两套变量"的隐患：改基准时总有一端忘了同步。视觉一致性靠"复刻同一份设计意图"来保证，而不是靠变量逐字对应。
+
+### 浮层状态用 v-model
+
+React 端的 `useOverlayState()` 在 Vue 端的等价物是 **`v-model:open`**：
+
+```vue
+<UModal v-model:open="isOpen" />
+```
+
+## 开发命令
+
+```bash
+cd apps/vue
+
+pnpm install
+pnpm dev          # Vite 开发服务器 → http://localhost:5174
+pnpm build        # vite build + vue-tsc 类型检查
+pnpm type-check
+pnpm preview
+pnpm lint
+pnpm test
+```
+
+<Callout title="语言包会自动同步">
+
+`pnpm dev` 与 `pnpm build` 都有 `pre` 钩子，会先执行 `scripts/sync-locales.mjs` 同步语言包，不需要手动跑。
+
+</Callout>
+
+端口特意与 React 端的 5173 错开，方便两端同时开着一一对照。
+
+环境变量与 React 端完全一致：`VITE_APP_NAME`、`VITE_APP_DESC`、`VITE_API_BASE_URL`。

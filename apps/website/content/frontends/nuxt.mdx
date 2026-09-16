@@ -1,0 +1,114 @@
+---
+title: Nuxt 实现
+description: 独立全栈实现：Nitro Server API 直连数据库，同用 Nuxt UI v4。
+---
+
+Nuxt 版本同样是**独立全栈应用**，页面与服务端接口都在同一个工程里，**不依赖 NestJS**。
+
+<FrontendFlow name="Nuxt" kind="fullstack" stack="Nuxt 4 · Nitro · Nuxt UI v4" />
+
+## 技术栈
+
+| 类别 | 选型 |
+| --- | --- |
+| 框架 | Nuxt 4 + Vue 3.5 |
+| 服务端 | **Nitro**（`server/api/` 下的 Server API） |
+| UI 组件库 | **Nuxt UI v4** —— 唯一组件库 |
+| 无头组件基座 | reka-ui |
+| 数据库 | **Drizzle ORM** + `postgres`（postgres.js 驱动） |
+| 认证 | `jose`（JWT）+ `bcryptjs` |
+| 状态 | Pinia（`@pinia/nuxt`） |
+| 国际化 | `@nuxtjs/i18n` |
+| 数据请求 | TanStack Query（Vue 版）+ TanStack Table |
+| 存储 | `@supabase/supabase-js`（仅头像） |
+
+## 目录结构
+
+Nuxt 的结构把「客户端」与「服务端」分得很清楚：
+
+```text
+apps/nuxt/
+├── app/                 # 客户端
+│   ├── components/
+│   ├── composables/
+│   ├── features/        # 按业务域组织
+│   ├── i18n/
+│   ├── layouts/
+│   ├── lib/
+│   ├── middleware/      # 路由中间件
+│   ├── pages/
+│   ├── plugins/
+│   ├── stores/          # Pinia
+│   ├── themes/
+│   ├── app.config.ts
+│   ├── app.vue
+│   └── error.vue        # 全局错误页
+├── server/              # 服务端（Nitro）
+│   ├── api/             # Server API，与统一契约对齐
+│   ├── db/              # Drizzle schema 与连接
+│   └── lib/
+├── i18n/locales/        # 语言包
+└── nuxt.config.ts
+```
+
+<Callout title="Server API 与 NestJS 契约逐字一致">
+
+`server/api/` 下每个路由的路径、方法、响应信封、错误码都必须和 `apps/nest/openapi/openapi.yaml` 对齐。Nuxt 端**不新增自己的契约**，只实现同一份契约。
+
+</Callout>
+
+## 与 Vue 端的共享约束
+
+Nuxt 端与 Vue 端同属 Nuxt UI v4 体系，因此约束也共用一套：
+
+- **Nuxt UI v4 是唯一组件库**，禁止引入 Vuetify、Quasar、Element Plus、PrimeVue、shadcn-vue；
+- 布局用 **Dashboard 套件**搭建，**不手写 Sidebar / Header**；
+- 主题直接用默认 Token，**不移植 `theme.css`、不建映射层**。
+
+差别只在渲染模式与服务端能力：Vue 端是纯 SPA，Nuxt 端有 Nitro 承担服务端逻辑。
+
+## 开发命令
+
+```bash
+cd apps/nuxt
+
+pnpm install     # postinstall 会自动跑 nuxt prepare
+pnpm dev         # Nuxt 开发服务器 → http://localhost:3001
+pnpm build
+pnpm preview
+pnpm typecheck   # nuxt typecheck
+pnpm lint
+pnpm test
+```
+
+`predev` / `prebuild` / `pretest` 都会先同步语言包。
+
+## 环境变量
+
+Nuxt 端的变量比其他端多两项：
+
+```dotenv
+# 服务端专属
+DATABASE_URL=
+JWT_SECRET=
+JWT_REFRESH_SECRET=
+JWT_EXPIRES_IN=
+REFRESH_EXPIRES_IN=
+REFRESH_EXPIRES_IN_SHORT=
+SUPABASE_URL=
+SUPABASE_SECRET_KEY=
+SUPABASE_AVATAR_BUCKET=          # 头像 Storage bucket 名
+```
+
+```dotenv
+# 浏览器可见（NUXT_PUBLIC_ 前缀）
+NUXT_PUBLIC_APP_NAME=
+NUXT_PUBLIC_APP_DESC=
+NUXT_PUBLIC_API_BASE_URL=
+```
+
+<Callout title="版本锁定">
+
+Nuxt 端在 `package.json` 里显式声明了 `packageManager: pnpm@12.3.4`，是五个应用里唯一锁定包管理器版本的 —— 安装时请遵循该声明。
+
+</Callout>

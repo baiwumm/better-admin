@@ -1,0 +1,218 @@
+---
+title: 快速开始
+description: 从零把五个应用跑起来：装依赖、配环境变量、初始化数据库、启动。
+---
+
+<QuickStartFlow />
+
+## 前置要求
+
+| 依赖 | 说明 |
+| --- | --- |
+| **Node.js** | 各应用均未锁 `engines`，以实际构建通过的版本为准（React / Next 端为 React 19 + Next 16） |
+| **pnpm** | 全部应用统一用 pnpm。**每个应用各持一份 `pnpm-lock.yaml`**，在各自目录内独立安装 |
+| **PostgreSQL** | 统一使用 Supabase 托管的 PostgreSQL，连接端口 **6543**（transaction pooler） |
+
+<Callout title="每个应用都是独立工程">
+
+仓库**不引入 workspace 依赖提升**。`pnpm install` 必须在具体应用目录里执行，不要奢望在仓库根目录一次装好全部依赖。
+
+</Callout>
+
+## 启动各应用
+
+<StackTabs>
+
+<Tab value="React">
+
+```bash
+cd apps/react
+pnpm install
+pnpm dev        # Vite 开发服务器 → http://localhost:5173
+```
+
+| 命令 | 作用 |
+| --- | --- |
+| `pnpm dev` | 启动 Vite（端口 5173，`strictPort` 占用即报错） |
+| `pnpm build` | `tsc` 类型检查 + `vite build` |
+| `pnpm preview` | 预览生产构建 |
+| `pnpm lint` | ESLint（带 `--fix`） |
+| `pnpm test` | Vitest |
+
+</Tab>
+
+<Tab value="Vue">
+
+```bash
+cd apps/vue
+pnpm install
+pnpm dev        # Vite 开发服务器 → http://localhost:5174
+```
+
+`pnpm dev` 与 `pnpm build` 前置会自动跑 `scripts/sync-locales.mjs` 同步语言包。端口特意与 React 端的 5173 错开，两端可以同时启动对照。
+
+</Tab>
+
+<Tab value="Next.js">
+
+```bash
+cd apps/next
+pnpm install
+pnpm dev        # Next 开发服务器 → http://localhost:3100
+```
+
+`dev` 脚本显式指定了 `-p 3100`。生产启动用 `pnpm start`（未指定端口，走 Next 默认）。
+
+</Tab>
+
+<Tab value="Nuxt">
+
+```bash
+cd apps/nuxt
+pnpm install
+pnpm dev        # Nuxt 开发服务器 → http://localhost:3001
+```
+
+同样有 `predev` / `prebuild` 前置同步语言包。生产预览用 `pnpm preview`。
+
+</Tab>
+
+<Tab value="NestJS">
+
+```bash
+cd apps/nest
+pnpm install
+pnpm start:dev  # nest start --watch → http://localhost:3000
+```
+
+<Callout type="warn" title="后端脚本名是 start:dev，不是 dev">
+
+NestJS 端没有 `dev` 脚本，开发模式用 `pnpm start:dev`。`PORT` 默认 3000，可用环境变量覆盖。
+
+</Callout>
+
+</Tab>
+
+</StackTabs>
+
+### 端口一览
+
+| 应用 | 端口 | 说明 |
+| --- | --- | --- |
+| NestJS | `3000` | 由 `PORT` 环境变量控制 |
+| Nuxt | `3001` | `nuxt dev --port 3001` |
+| Next.js | `3100` | `next dev -p 3100` |
+| React | `5173` | `vite.config.ts` 里 `strictPort: true` |
+| Vue | `5174` | 与 React 错开，便于并排对照 |
+
+<Callout title="跨域白名单">
+
+NestJS 默认放行 `5173 / 5174 / 4173 / 3000 / 3001 / 3100` 以及线上域名。需要额外放行时用 `CORS_ORIGINS` 覆盖，不要直接改代码里的白名单数组。
+
+</Callout>
+
+## 配置环境变量
+
+每个应用目录下都有 `.env.example` 作为模板，复制成 `.env` 或 `.env.local` 后填写真实值。**真实密钥严禁提交到仓库。**
+
+前端可见的变量必须带公开前缀：React / Vue 用 `VITE_`，Next.js 用 `NEXT_PUBLIC_`，Nuxt 用 `NUXT_PUBLIC_`。
+
+<StackTabs>
+
+<Tab value="React / Vue（纯前端）">
+
+```dotenv
+# 仅这三项，全部是浏览器可见变量
+VITE_APP_NAME=
+VITE_APP_DESC=
+VITE_API_BASE_URL=   # 本地 NestJS 形如 http://localhost:3000/api
+```
+
+纯前端应用**没有任何服务端密钥** —— 它们只能通过 NestJS API 取数，拿不到数据库连接串。
+
+</Tab>
+
+<Tab value="Next.js / Nuxt（全栈）">
+
+```dotenv
+# 服务端：绝不暴露给浏览器
+DATABASE_URL=
+JWT_SECRET=
+JWT_REFRESH_SECRET=
+JWT_EXPIRES_IN=
+REFRESH_EXPIRES_IN=
+REFRESH_EXPIRES_IN_SHORT=
+SUPABASE_URL=
+SUPABASE_SECRET_KEY=          # sb_secret_ 前缀，只走 apikey 请求头
+LOG_RETENTION_DAYS=
+```
+
+```dotenv
+# 浏览器可见（带公开前缀）
+NEXT_PUBLIC_APP_NAME=         # Nuxt 端为 NUXT_PUBLIC_APP_NAME
+NEXT_PUBLIC_APP_DESC=         # Nuxt 端为 NUXT_PUBLIC_APP_DESC
+```
+
+Nuxt 端额外多两项：`SUPABASE_AVATAR_BUCKET` 与 `NUXT_PUBLIC_API_BASE_URL`。
+
+</Tab>
+
+<Tab value="NestJS">
+
+```dotenv
+DATABASE_URL=
+JWT_SECRET=
+JWT_REFRESH_SECRET=
+JWT_EXPIRES_IN=
+REFRESH_EXPIRES_IN=
+REFRESH_EXPIRES_IN_SHORT=
+SEED_ADMIN_PASSWORD=          # 种子管理员密码，缺省 admin123
+LOG_API_ENABLED=
+LOG_CLEANUP_ENABLED=
+LOG_CLEANUP_CRON=
+LOG_RETENTION_DAYS=
+PORT=3000
+SUPABASE_URL=
+SUPABASE_SECRET_KEY=
+```
+
+</Tab>
+
+</StackTabs>
+
+<Callout type="warn" title="连接串里不要写 sslmode">
+
+SSL 已在代码层统一处理（`rejectUnauthorized: false`）。URL 上再带 `sslmode` 参数会与代码设置冲突。
+
+</Callout>
+
+## 初始化数据库
+
+**迁移的唯一真源在 NestJS 端**，其余应用共用同一个数据库，因此只需要跑一次。
+
+```bash
+cd apps/nest
+
+pnpm db:generate   # drizzle-kit generate，由 schema 生成迁移 SQL
+pnpm db:migrate    # 执行 migrationsFolder: ./drizzle 下的迁移
+pnpm db:seed       # 写入种子数据（含管理员账号）
+pnpm storage:init  # 初始化 Supabase Storage bucket（首次部署时执行）
+```
+
+迁移产物在 `apps/nest/drizzle/`，`drizzle.config.ts` 指向 `src/db/schema/index.ts`。
+
+<Callout title="Next.js 端只做内省，不产迁移">
+
+`apps/next` 的 `db:pull` 用 `drizzle-kit pull` 从现有数据库反向同步 schema 类型，**不生成、也不执行迁移**；Nuxt 端则完全没有 `db:` 脚本。迁移只能从 NestJS 端发起。
+
+</Callout>
+
+## 仓库级命令
+
+仓库根的 `package.json` 只维护一个脚本：
+
+```bash
+pnpm sync-versions   # 把根 version 分发到 apps/react|vue|next|nuxt|nest
+```
+
+根 `package.json` 的 `version` 是产品级版本的唯一真源。

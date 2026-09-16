@@ -1,0 +1,80 @@
+---
+title: 概览
+description: Better Admin 是什么、由哪些应用组成、数据怎么流动。
+---
+
+Better Admin 是一个**同一套产品、同一套 UI、同一套业务逻辑、同一套数据库，分别用不同技术栈实现**的全栈 Admin 系统。
+
+它不是"几套不同的后台"，而是把同一份业务需求在 React、Vue、Next.js、Nuxt 与 NestJS 上各完整落地一遍，用来横向对照多栈工程实践。
+
+<ArchitectureDiagram />
+
+## 一句话理解这个项目
+
+**React 版本是 UI Source of Truth。** 页面结构、组件行为、视觉、交互与 Design Tokens 都以它为基准，Vue、Next.js、Nuxt 按它复刻 —— 功能对齐优先于像素级对齐。
+
+## 五个应用
+
+| 应用 | 角色 | 数据访问路径 |
+| --- | --- | --- |
+| `apps/react` | **UI Source of Truth**，Hero UI 模板实现 | → NestJS REST API |
+| `apps/vue` | 按 React 复刻，Nuxt UI v4 | → NestJS REST API |
+| `apps/next` | 独立全栈，**不依赖 NestJS** | → PostgreSQL 直连 |
+| `apps/nuxt` | 独立全栈，**不依赖 NestJS** | → PostgreSQL 直连 |
+| `apps/nest` | 独立 REST 后端，只服务 React / Vue | → PostgreSQL |
+
+五个应用都能**独立运行、独立构建、独立部署**。仓库不引入 pnpm workspace，也不因为放在同一目录而产生依赖耦合。
+
+## 三条不可动摇的约定
+
+<Callout title="1 · 一个数据库，四端共用">
+
+全部版本共用同一个 **Supabase 托管的 PostgreSQL**，统一 **Drizzle ORM**。Supabase 在这里**只当数据库用** —— 不使用 Supabase Auth、RLS、Edge Functions（唯一豁免是 v1.5.0 起的用户头像 Storage）。
+
+浏览器端**禁止直连数据库**，连接串只存在于服务端环境变量。
+
+</Callout>
+
+<Callout title="2 · Contract 优先，OpenAPI 是唯一真源">
+
+API 设计**先定义 Contract，再动手实现**。契约真源是 `apps/nest/openapi/openapi.yaml`，五个应用必须遵循同一份契约：路径、方法、响应信封、错误码、分页参数**逐字一致**。
+
+不允许为了"实现方便"自行改契约。改契约前必须评估五个应用各自受到的影响。
+
+</Callout>
+
+<Callout title="3 · 服务端强制校验权限">
+
+认证由应用自身实现（JWT 会话），**不依赖 Supabase Auth**。权限模型是 RBAC：用户 ↔ 角色 ↔ 权限位掩码，并支持菜单与权限关联控制。
+
+**前端路由守卫只是体验层**，服务端必须独立做一遍 API 权限校验。
+
+</Callout>
+
+## 当前状态
+
+四个前端的功能对齐度为 **26 / 27（96%）**，唯一缺口是 Dashboard 概览页；五个应用目前都还没有正式上线。
+
+<FeatureMatrixDiagram />
+
+## 接下来读什么
+
+<Cards>
+
+  <Card href="/docs/start/quick-start" title="快速开始" description="装依赖、配环境变量、初始化数据库、把五个应用跑起来" />
+
+  <Card href="/docs/architecture/database" title="数据库设计" description="17 张表的分域、关键字段与权限位掩码存储" />
+
+  <Card href="/docs/architecture/api" title="API 契约" description="统一响应信封、分页约定与错误码规范" />
+
+  <Card href="/docs/architecture/auth" title="认证与权限" description="双 Token 会话、RBAC 位掩码与服务端校验链路" />
+
+  <Card href="/docs/design/ui" title="UI 规范与 Design Tokens" description="HeroUI 设计体系、色板、圆角档位与组件优先级" />
+
+  <Card href="/docs/frontends/react" title="React 实现" description="UI 基准版本的技术栈、目录结构与开发命令" />
+
+  <Card href="/docs/progress/feature-matrix" title="功能矩阵" description="四种前端实现的功能对齐状态" />
+
+  <Card href="/docs/progress/roadmap" title="路线图" description="Playground 已完成，Dashboard 与上线准备待启动" />
+
+</Cards>

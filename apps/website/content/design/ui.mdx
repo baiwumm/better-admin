@@ -1,0 +1,154 @@
+---
+title: UI 规范与 Design Tokens
+description: 设计基准、组件库优先级、色板与圆角档位，以及跨端的视觉一致规则。
+---
+
+四端各用各的组件库，但**最终产品必须长得像同一套系统**。这一页说明约束从哪来、Token 长什么样、哪些做法被明确禁止。
+
+## 设计基准：React 是唯一的 UI 真源
+
+页面结构、组件行为、交互、UX、Design Tokens —— 全部以 React 版本为基准，其余端按它复刻。
+
+需要强调的是：**React 是 UI 真源，但这不等于四端必须用同一个组件库。**
+
+| 技术栈 | 主组件库 | 补充 |
+| --- | --- | --- |
+| React / Next.js | **Hero UI** | Shadcn UI |
+| Vue / Nuxt | **Nuxt UI v4** | 无（唯一组件库） |
+
+## 组件优先级
+
+<ComponentPriorityDiagram />
+
+### 跨库对照
+
+需要复刻同一个交互时，按下表换算：
+
+| Hero UI（React / Next） | Nuxt UI v4（Vue / Nuxt） |
+| --- | --- |
+| `Button` | `UButton` |
+| `TextField` | `UInput` |
+| `Modal` | `UModal` |
+| `Drawer` | `UDrawer` / `USlideover` |
+| `Table` | `UTable` |
+| `useOverlayState()` | `v-model:open` |
+
+<Callout type="warn" title="明确禁止的做法">
+
+**通用禁止**：同一种基础组件跨页面混用不同库；因为自己熟悉某个库就默认用它；为了"全库统一"而发起一次性大规模重构；并行维护两套互相独立的设计变量。
+
+**Vue / Nuxt 额外禁止**：引入 Vuetify、Quasar、Element Plus、PrimeVue、shadcn-vue；**从零手写 Sidebar / Header**（必须使用 Nuxt UI 的 Dashboard 套件）；移植 React 端的 `theme.css` 或自建一层 Token 映射。
+
+</Callout>
+
+<Callout title="浮层开合状态必须用 useOverlayState">
+
+React / Next 中所有由布尔值控制的浮层（Modal / AlertDialog / Drawer / Popover 等），其 `open` 状态**统一用 Hero UI 导出的 `useOverlayState()` 管理**：
+
+```tsx
+const state = useOverlayState();
+// 受控写法：isOpen / onOpenChange 挂在最外层 Overlay 组件上
+<AlertDialog.Backdrop isOpen={state.isOpen} onOpenChange={state.setOpen}>
+```
+
+禁止自己用 `useState(true / false)` 把 `isOpen` 挂在 Root / Trigger 上 —— 会让 react-aria 的受控流不匹配，表现为弹窗不显示或控制台报错。Vue 端的等价物是 `v-model:open`。
+
+</Callout>
+
+## Design Tokens
+
+以 **HeroUI 设计体系为主要参考**，形成**一套项目级 Token**，Hero UI、Shadcn UI 与自定义组件共用。真源是 `apps/react/src/styles/theme.css`。
+
+<TokenSwatchDiagram />
+
+### 颜色
+
+| Token | 中文语义 | Light | Dark |
+| --- | --- | --- | --- |
+| `accent` | 品牌主色 | `oklch(62.04% 0.195 253.83)` | 同左 |
+| `danger` | 危险 / 错误 | `oklch(65.32% 0.2335 25.74)` | `oklch(59.4% 0.1973 24.63)` |
+| `success` | 成功 / 通过 | `oklch(73.29% 0.1941 150.81)` | 同左 |
+| `warning` | 警告 / 提醒 | `oklch(78.19% 0.159 72.33)` | 同左 |
+| `background` | 页面底色 | `oklch(97.02% 0.0015 253.83)` | `oklch(12% 0.0015 253.83)` |
+| `surface` | 卡片 / 浮层 | `oklch(100% 0.0008 253.83)` | `oklch(21.03% 0.003 253.83)` |
+| `foreground` | 正文文字 | `oklch(21.03% 0.0015 253.83)` | `oklch(99.11% 0.0015 253.83)` |
+| `muted` | 次要文字 | `oklch(55.17% 0.003 253.83)` | `oklch(70.5% 0.003 253.83)` |
+| `border` | 描边 / 分隔 | `oklch(90% 0.0015 253.83)` | `oklch(28% 0.0015 253.83)` |
+
+<Callout title="新增颜色必须双套定义">
+
+Dark Mode 采用 class 策略（在 `<html>` 上切 `light` / `dark`）。**任何新增色值都要同时给出亮暗两档**，只在单一模式验证过的颜色不许进主分支。
+
+</Callout>
+
+### 圆角
+
+HeroUI v3 的整条圆角刻度（`--radius-xs` … `--radius-4xl`、`--field-radius`）**都由基准变量 `--radius` 派生**，所以用户切换圆角偏好时，覆盖基准即可全站生效 —— 按钮、卡片、输入框、表格容器、弹窗一起变。
+
+| 档位 | `--radius` | `--field-radius` |
+| --- | --- | --- |
+| `none` | `0rem` | `0rem` |
+| `small` | `0.25rem` | `0.375rem` |
+| **`medium`（默认）** | `0.5rem` | `0.75rem` |
+| `large` | `0.75rem` | `1.125rem` |
+
+圆形件（头像、Chip、Switch 手柄）走 `rounded-full`，**不走这条刻度**，因此不受档位影响 —— 这是预期行为。
+
+### 字体
+
+默认字体是自托管的 **Maple Mono CN** 子集（OFL-1.1 授权），通过 `unicode-range` 只对常用汉字与 ASCII 区段生效：
+
+```css
+@font-face {
+  font-family: "Maple Mono CN";
+  src: url("/fonts/maple-mono-cn-regular.woff2") format("woff2");
+  font-display: swap;
+  unicode-range: U+0020-007E, U+00B1, U+00B7, U+00D7, U+00F7, U+2014,
+    U+2018-2019, U+201C-201D, U+2026, U+3000-303F, U+4E00-9FFF, U+FF00-FFEF;
+}
+```
+
+子集之外的生僻字与动态数据用字自然回退系统字体，不产生额外加载。
+
+### 间距与阴影
+
+- 间距以 `0.25rem` 为基准单位；主内容区 `px-4 py-6`，Header `h-16 p-4`，卡片 `px-6 py-6`，表单纵向 `space-y-6`。
+- 阴影**克制使用**：只有 Dialog / Drawer 这类真正浮起的层用 `shadow-lg`，常规卡片不加阴影。
+
+## 布局骨架
+
+```text
+SidebarProvider
+└── SidebarInset（@container/content）
+    ├── Header
+    └── Main
+```
+
+- Header 右侧操作区顺序固定：**Search → ThemeSwitch → ThemeSettingsDrawer → ProfileDropdown**。
+- 列表页 Header 用 `fixed`；**页面内禁止自写 `sticky` / `fixed`** —— 滚动行为由布局统一管理，页面各自为政必然打架。
+
+三种页面模板：
+
+| 页面类型 | 结构 |
+| --- | --- |
+| 列表页 | 页头 + DataTable + 各类 Dialog |
+| 设置页 | 左侧 sticky 导航 + `ContentSection`（`max-w-xl`） |
+| 认证页 | 居中容器 `max-w-sm` |
+
+## 三种状态互斥
+
+列表与详情区域必须显式处理三种非正常状态，且**同时只出现一种**：
+
+| 状态 | 表现 |
+| --- | --- |
+| **空** | `EmptyContent`，带说明与引导操作 |
+| **错** | `ErrorContent`，带重试入口 |
+| **加载** | 首屏用骨架屏；已有数据时的刷新用半透明遮罩，**不要用骨架屏把已有内容闪掉** |
+
+## 响应式
+
+沿用 Tailwind 默认断点，不加自定义断点。表格容器统一 `overflow-x-auto` 横向滚动；**触摸目标不小于 32px**。
+
+## 品牌标识资源
+
+跨端共享的品牌资产真源在仓库 `assets/logo/`，各端引用而不是各自复制一份。改品牌标识时先改真源，再分发。

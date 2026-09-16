@@ -11,7 +11,7 @@ const FEATURES = [
     icon: FileJson,
     title: "OpenAPI Contract 优先",
     description:
-      "API 设计先定义 Contract 再实现，OpenAPI 是唯一事实来源；数据库 Schema、数据模型、业务规则五项跨栈一致。",
+      "API 设计先定义 Contract 再实现，OpenAPI 是唯一事实来源；Schema、数据模型、业务规则、数据类型与契约五项跨栈一致。",
   },
   {
     icon: ShieldCheck,
@@ -26,6 +26,9 @@ export function Features() {
     <section className="px-6 py-24">
       <div className="mx-auto max-w-5xl">
         <div className="mb-12 text-center">
+          <p className="pill-badge mx-auto mb-5 w-fit rounded-full px-3 py-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+            Design First
+          </p>
           <h2 className="text-balance text-3xl font-bold tracking-tight">
             设计先行，一致性是硬性规则
           </h2>
@@ -33,18 +36,17 @@ export function Features() {
             不允许为了实现方便而破坏架构约定，所有技术栈遵循同一份规范。
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-3">
           {FEATURES.map((feature) => (
-            <div
-              key={feature.title}
-              className="rounded-2xl border border-dashed p-6 shadow-none transition-colors hover:bg-muted/50"
-            >
-              <feature.icon
-                size={20}
-                className="text-foreground"
-                strokeWidth={1.75}
-              />
-              <h3 className="mt-4 font-semibold">{feature.title}</h3>
+            <div key={feature.title} className="card-premium p-6">
+              <span className="icon-tile">
+                <feature.icon
+                  size={20}
+                  className="text-foreground"
+                  strokeWidth={1.75}
+                />
+              </span>
+              <h3 className="mt-5 font-semibold">{feature.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 {feature.description}
               </p>

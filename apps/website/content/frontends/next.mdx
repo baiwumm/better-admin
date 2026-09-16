@@ -1,0 +1,113 @@
+---
+title: Next.js 实现
+description: 独立全栈实现：自建 Server API 直连数据库，不依赖 NestJS。
+---
+
+Next.js 版本是**独立全栈应用** —— 页面、API、服务端逻辑、数据库访问、认证与权限全部自带，**不依赖 NestJS**。
+
+<FrontendFlow name="Next.js 16" kind="fullstack" stack="App Router · Hero UI" />
+
+## 技术栈
+
+| 类别 | 选型 |
+| --- | --- |
+| 框架 | Next.js 16（App Router）+ React 19 |
+| UI 组件库 | **Hero UI** + react-aria-components |
+| 数据库 | **Drizzle ORM** + `postgres`（postgres.js 驱动） |
+| 认证 | `jose`（JWT）+ `bcryptjs` |
+| 状态 | Zustand |
+| 数据请求 | TanStack Query + TanStack Table |
+| 表单 | react-hook-form + zod |
+| 富文本 | Tiptap |
+| 动效 | motion |
+| 存储 | `@supabase/supabase-js`（仅头像，服务端中转） |
+
+## 目录结构
+
+```text
+apps/next/src/
+├── app/             # App Router：页面 + Route Handler（含 /api/auth/*）
+├── components/
+├── db/              # Drizzle schema 与连接
+├── features/        # 按业务域组织
+├── hooks/
+├── i18n/
+├── layouts/
+├── lib/             # api-client / auth-cookies / server-fetch …
+├── stores/
+├── styles/
+├── themes/
+├── types/
+└── proxy.ts         # 请求中间件
+```
+
+## 与 NestJS 的两处刻意差异
+
+Next.js 端不追求和 NestJS 后端"代码一样"，只追求**契约一样**。有两处实现差异是有意为之：
+
+### ① 认证传输：httpOnly Cookie，而不是 Bearer 头
+
+React / Vue 端把 Token 放在请求头，Next.js 端则写进 **httpOnly + Secure + SameSite=Lax** 的 Cookie，由浏览器自动携带：
+
+```ts
+// src/lib/auth-cookies.ts
+// 双令牌 Cookie 常量（httpOnly + Secure + SameSite=Lax）
+```
+
+好处是 Token 对前端 JS **完全不可见**，天然免疫 XSS 窃取；代价是跨域场景需要额外配置。契约层面两者的请求路径、响应形状与错误码完全一致，只是传输载体不同。
+
+### ② 数据库迁移只在 NestJS 端发起
+
+Next.js 端提供 `db:pull`，用 `drizzle-kit pull` 从**现有数据库反向同步** schema 与类型：
+
+```bash
+pnpm db:pull        # drizzle-kit pull + scripts/sync-pulled-schema.mjs
+```
+
+它**不生成迁移、也不执行迁移** —— 迁移的唯一真源在 NestJS 端，避免两个全栈应用同时改结构。
+
+## 开发命令
+
+```bash
+cd apps/next
+
+pnpm install
+pnpm dev          # Next 开发服务器 → http://localhost:3100
+pnpm build
+pnpm start
+pnpm lint
+pnpm check-locales
+pnpm db:pull      # 反向内省数据库 schema（不产迁移）
+pnpm db:clean-logs
+```
+
+`dev` 脚本显式指定了 `-p 3100`。
+
+## 环境变量
+
+服务端专属（绝不暴露给浏览器）：
+
+```dotenv
+DATABASE_URL=
+JWT_SECRET=
+JWT_REFRESH_SECRET=
+JWT_EXPIRES_IN=
+REFRESH_EXPIRES_IN=
+REFRESH_EXPIRES_IN_SHORT=
+SUPABASE_URL=
+SUPABASE_SECRET_KEY=      # sb_secret_ 前缀
+LOG_RETENTION_DAYS=
+```
+
+浏览器可见（必须带 `NEXT_PUBLIC_` 前缀）：
+
+```dotenv
+NEXT_PUBLIC_APP_NAME=
+NEXT_PUBLIC_APP_DESC=
+```
+
+<Callout title="Supabase 密钥只在服务端出现">
+
+头像上传走服务端中转：浏览器把文件交给 Server API，由服务端持密钥写入 Supabase Storage，再把地址返回。**浏览器端不接触任何密钥、也不直接读写 Storage。**
+
+</Callout>

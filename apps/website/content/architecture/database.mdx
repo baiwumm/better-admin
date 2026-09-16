@@ -1,0 +1,117 @@
+---
+title: 数据库设计
+description: 17 张表如何分域、关键字段怎么设计、权限位存储在哪。
+---
+
+<TableGroupsDiagram />
+
+## 设计原则
+
+| 原则 | 做法 |
+| --- | --- |
+| **统一 ORM** | 全部表由 Drizzle ORM 定义，真源是 `apps/nest/src/db/schema/` 的 barrel `index.ts` |
+| **服务端生成主键** | `text` 主键 + `nanoid()`，不使用自增整数，避免 ID 可枚举 |
+| **软删除** | 统一用 `deletedAt`（timestamptz，可空）；唯一约束写成**部分唯一索引**，只对未删除记录生效 |
+| **时间戳带时区** | 一律 `timestamp(..., { withTimezone: true })`，`updatedAt` 用 `$onUpdate` 自动维护 |
+| **权限不进关联表** | 权限点不是"行 + 关联表"，而是编译期常量 + 整型位掩码，存在桥接表的 `permissions` 字段上 |
+
+## 授权链的核心
+
+<RbacChainDiagram />
+
+整个 RBAC 只靠三张桥接表/主体表串起来，**权限位挂在"角色 × 菜单"这一层**，而不是挂在权限行上。
+
+```ts
+// apps/nest/src/db/schema/role_menus.schema.ts
+export const roleMenus = pgTable(
+  'role_menus',
+  {
+    roleId: text('role_id')
+      .notNull()
+      .references(() => roles.id, { onDelete: 'cascade' }),
+    menuId: text('menu_id')
+      .notNull()
+      .references(() => menus.id, { onDelete: 'cascade' }),
+    permissions: bigint('permissions', { mode: 'bigint' })
+      .notNull()
+      .default(sql`0`),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.roleId, table.menuId] }),
+    index('role_menus_role_idx').on(table.roleId),
+    index('role_menus_menu_idx').on(table.menuId),
+  ],
+);
+```
+
+<Callout title="一个 bigint 装下一个菜单上的所有操作">
+
+`role_menus.permissions` 是一个 bigint 位掩码：这一个角色在这一个菜单上被授予了哪些操作，全部按位存在同一个数字里。**不需要为每个权限点建一行记录**。
+
+</Callout>
+
+## 用户表关键设计
+
+```ts
+// apps/nest/src/db/schema/users.schema.ts（节选）
+export const users = pgTable(
+  'users',
+  {
+    id: text('id').primaryKey().$defaultFn(() => nanoid()),
+    username: text('username').notNull(),
+    email: text('email').notNull(),
+    passwordHash: text('password_hash').notNull(),
+    displayName: text('display_name').notNull(),
+    // … 组织与档案字段（deptId / employeeNo / employmentStatus / entryDate / gender）
+    status: text('status').notNull().default('active'),
+    /**
+     * 令牌版本号：签发 JWT 时写入 payload（ver claim）。
+     * 改密码 / 封禁时 +1，使该用户全部存量 access/refresh token 失效。
+     */
+    tokenVersion: integer('token_version').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+    deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('users_username_unique_active')
+      .on(table.username)
+      .where(sql`${table.deletedAt} is null`),
+    uniqueIndex('users_email_unique_active')
+      .on(table.email)
+      .where(sql`${table.deletedAt} is null`),
+  ],
+);
+```
+
+两个细节值得留意：
+
+**① 部分唯一索引让软删除变得可用。** 用户名和邮箱的唯一约束都带着 `where deleted_at is null` —— 账号被软删之后，原来的用户名和邮箱会被释放，可以被新账号复用。如果写成普通唯一索引，这里就死锁了。
+
+**② 一个字段实现全端强制下线。** `tokenVersion` 会作为 `ver` 声明写进 JWT。改密码或封禁账号时把它 +1，所有存量 Token 立刻失效。
+
+**③ 账号状态与在职状态是正交的两个维度。** `status`（`active` / `disabled`）管能不能登录，`employmentStatus`（`employed` / `resigned`）是人事属性。
+
+## 其余分组
+
+| 分组 | 表 | 要点 |
+| --- | --- | --- |
+| **组织中心** | `depts` · `posts` · `user_posts` | 部门是自引用树（`parent_id`，删除用 `restrict`）；`depts.leader_id` 与 `users.dept_id` 形成循环引用，靠 Drizzle 的 `AnyPgColumn` 惰性回调声明外键 |
+| **公告中心** | `notices` · `notice_scopes` · `notice_read_records` · `notice_remind_logs` | 公告本身、发布范围、已读记录、催办记录四张表；已读记录有 `(notice_id, user_id)` 唯一约束，重复阅读不会插新行 |
+| **数据字典** | `dict_types` · `dict_items` | `dict_items.type_code` 外键指向 `dict_types.code`；同一类型下 `value` 与 `label` 各自唯一 |
+| **审计与通知** | `logs` · `notifications` | 日志用 `type` + `action` 分类、`detail` 存 jsonb；用户删除后日志的 `user_id` 置空（`set null`）而不是级联删除，审计线索得以保留 |
+| **会话托管** | `refresh_tokens` | 只存 `token_hash`（唯一），不存明文；`expires_at` 控制时效，用户删除时级联清理 |
+
+## 跨端一致性约束
+
+数据库只有一份，四个前端共用。因此：
+
+- **Schema、数据模型、业务规则、数据类型、API Contract 五项必须一致**，不能因为某个前端框架"顺手"就改结构。
+- **迁移只能从 NestJS 端发起**（`db:generate` → `db:migrate`）。Next.js 端的 `db:pull` 只做反向内省、生成类型，不产迁移也不执行迁移；Nuxt 端没有数据库脚本。
+- 浏览器端**永远不允许**直连 PostgreSQL，连接串只存在于服务端环境变量。

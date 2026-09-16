@@ -1,0 +1,169 @@
+---
+title: API 契约
+description: 统一响应信封、分页约定、错误码规范与完整端点总览。
+---
+
+五个应用共用同一份 API 契约。**契约真源是 `apps/nest/openapi/openapi.yaml`** —— 先定义 Contract，再动手实现；不允许为了写起来顺手就自行改动契约。
+
+<ApiEnvelopeDiagram />
+
+## 统一响应信封
+
+成功响应**只包一层 `data`**，不额外塞 `code` / `msg` / `success` —— HTTP 状态码已经表达了结果状态。
+
+```json
+// 单个资源
+{ "data": { "id": "V1StGXR8_Z5j", "username": "admin" } }
+```
+
+```json
+// 列表：data + pagination
+{
+  "data": [],
+  "pagination": { "page": 1, "pageSize": 20, "total": 100 }
+}
+```
+
+失败响应用大写蛇形错误码：
+
+```json
+{ "code": "USER_NOT_FOUND", "message": "用户不存在" }
+```
+
+<Callout title="为什么成功不返回 code">
+
+只有一种成功，却有很多种失败。把 `code` 留给失败路径，前端判错只需要看 `response.ok`，少一层无意义的判断。
+
+</Callout>
+
+## 路径与命名约定
+
+| 约定 | 规则 |
+| --- | --- |
+| 前缀 | 统一 `/api` |
+| 风格 | RESTful，资源用复数名词（`/users`、`/roles`、`/notices`） |
+| 字段名 | 统一 **camelCase** |
+| 时间格式 | 统一 **ISO 8601** |
+| 认证头 | `Authorization: Bearer <accessToken>` |
+
+## 分页约定
+
+列表接口的查询参数是固定的几个：
+
+| 参数 | 默认值 | 说明 |
+| --- | --- | --- |
+| `page` | `1` | 页码 |
+| `pageSize` | `10` | 每页条数，枚举值 `10 / 20 / 30 / 40 / 50` |
+| `search` | — | 关键词搜索 |
+| `sort` | — | 排序字段 |
+| `order` | — | `asc` / `desc` |
+
+## 权限声明
+
+契约里用 **`x-permission`** 扩展标注每个端点所需的权限位。这既是给文档读的，也是服务端守卫的依据来源。
+
+```yaml
+/users:
+  get:
+    summary: 用户列表
+    x-permission: SEARCH
+```
+
+拿不到所需权限位时返回 **403**：
+
+```json
+{ "code": "FORBIDDEN", "message": "无权限" }
+```
+
+未携带或携带无效 Token 时返回 **401**（`code` 为 `UNAUTHORIZED`）。
+
+## 端点总览
+
+当前契约共 **44 条路径**，按模块分：
+
+<Tabs items={["认证与账户", "权限 · 用户 · 角色 · 菜单", "字典 · 日志", "组织 · 公告 · 通知"]}>
+
+<Tab value="认证与账户">
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/auth/login` | 登录，返回双 Token 与用户信息 |
+| `POST` | `/auth/refresh` | 刷新 accessToken（**refreshToken 会轮换，旧 token 作废**） |
+| `POST` | `/auth/logout` | 登出，撤销托管的 refreshToken，返回 `204` |
+| `GET` | `/auth/me` | 当前用户信息与聚合权限位 |
+| `GET` `PUT` | `/account/profile` | 个人资料 |
+| `PUT` | `/account/email` | 修改邮箱 |
+| `PUT` | `/account/password` | 修改密码（触发全端下线） |
+| `POST` | `/account/avatar` | 上传头像 |
+
+</Tab>
+
+<Tab value="权限 · 用户 · 角色 · 菜单">
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/permissions` | 权限点枚举字典（只读，界面不可增删改） |
+| `GET` `POST` | `/users` | 用户列表 / 新建 |
+| `GET` `PUT` `DELETE` | `/users/{id}` | 用户详情 / 更新 / 删除 |
+| `PUT` | `/users/{id}/reset-password` | 重置密码（需 `RESET_PASSWORD` 位） |
+| `PUT` | `/users/{id}/status` | 启用 / 停用 |
+| `GET` `POST` | `/roles` | 角色列表 / 新建 |
+| `GET` `PUT` `DELETE` | `/roles/{id}` | 角色详情 / 更新 / 删除 |
+| `GET` `PUT` | `/roles/{id}/menus` | 读取 / 保存角色菜单授权（需 `GRANT` 位） |
+| `GET` `POST` | `/menus` | 菜单列表 / 新建 |
+| `GET` | `/menus/tree` | 菜单树 |
+| `GET` `PUT` `DELETE` | `/menus/{id}` | 菜单详情 / 更新 / 删除 |
+| `POST` | `/menus/{id}/add-child` | 新增子菜单 |
+
+</Tab>
+
+<Tab value="字典 · 日志">
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` `POST` | `/dict/types` | 字典类型列表 / 新建 |
+| `GET` `PUT` `DELETE` | `/dict/types/{code}` | 字典类型详情 / 更新 / 删除 |
+| `GET` `POST` | `/dict/types/{code}/items` | 某类型下的字典项 |
+| `PUT` `DELETE` | `/dict/items/{id}` | 字典项更新 / 删除 |
+| `GET` | `/logs` | 日志列表（分页 + 过滤） |
+| `GET` `DELETE` | `/logs/{id}` | 日志详情 / 删除 |
+
+</Tab>
+
+<Tab value="组织 · 公告 · 通知">
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/org/depts/tree` | 部门树 |
+| `GET` `POST` | `/org/depts` | 部门列表 / 新建 |
+| `PUT` | `/org/depts/sort` | 部门排序 |
+| `GET` `PUT` `DELETE` | `/org/depts/{id}` | 部门详情 / 更新 / 删除 |
+| `GET` `POST` | `/org/posts` | 岗位列表 / 新建 |
+| `GET` `PUT` `DELETE` | `/org/posts/{id}` | 岗位详情 / 更新 / 删除 |
+| `GET` `PUT` | `/org/posts/{id}/members` | 岗位成员 |
+| `GET` | `/org/directory` | 人员通讯录 |
+| `GET` `POST` | `/notices` | 公告列表 / 新建 |
+| `GET` | `/notices/mine` | 我收到的公告 |
+| `GET` `PUT` `DELETE` | `/notices/{id}` | 公告详情 / 更新 / 删除 |
+| `POST` | `/notices/{id}/withdraw` | 撤回 |
+| `GET` | `/notices/{id}/read-stats` | 已读统计 |
+| `POST` | `/notices/{id}/remind` | 催办未读 |
+| `GET` | `/notifications` | 站内信列表 |
+| `GET` | `/notifications/unread-count` | 未读数 |
+| `PUT` | `/notifications/read-all` | 全部已读 |
+| `PUT` | `/notifications/{id}/read` | 单条已读 |
+
+</Tab>
+
+</Tabs>
+
+## 改契约的流程
+
+因为五端共用一份契约，改动的代价必须被看见：
+
+1. 先改 `openapi/openapi.yaml` —— 它是唯一真源；
+2. 逐端评估影响面：React、Vue、Next.js、Nuxt、NestJS **五端都要过一遍**；
+3. 再落到各端实现；
+4. 错误码统一登记，**禁止散落到各端**。
+
+交互式文档由 Scalar 渲染（原先的 Swagger UI 已替换），原始 JSON 仍保留在 `/docs-json` 供工具消费。
