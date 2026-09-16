@@ -2,6 +2,13 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Nuxt logs 模块源码重建（P0 销项）+ Playground 语言包措辞技术栈中立（2026-09-16）
+
+- **做了什么**：① **`apps/nuxt/app/features/logs/` 四文件按 Vue 端 `apps/vue/src/features/logs/` 逐字平移**（`LogsPage.vue` / `LogDetailDrawer.vue` / `log-api.ts` / `log-type.ts`，修复 2026-09-14 发现的 `.gitignore` 模板规则导致源码从未入库的 P0，`pages/(authenticated)/settings/logs.vue` 引用恢复，AGENTS §19 待办销项）。Nuxt 端适配三点：`getErrorMessage` 改走 `@/lib/i18n-bridge`（Vue 端为 `@/i18n`）；`vue-i18n` / `useToast` 去显式导入走 Nuxt 自动导入（`vue` / `@tanstack/*` 显式导入保留，与既有 feature 一致）；**Nuxt 端 eslint 比 Vue 端严格**——`resolveComponent` 调用必须在全部 import 之后（`import/first`）、table-types 类型导入合并为单条 `import type`（`import/no-duplicates` + `no-import-type-side-effects`），风格经 `eslint --fix` 收敛。①′ 顺手根治 **NUXT_B3011 重名警告**：`components/layout/prefs/ConfigDrawer.vue` 为仓库重组（`618e368`）时误入库的空文件（Vue 端 prefs/ 无对应物、全仓零引用），`git rm` 移除。② **Playground 语言包措辞技术栈中立（用户拍板）**：React 真源 2 键（zh-CN / en 各 2）——`features.playground.codeBlock.inlineLead`「在 React 端安装本页依赖：」→「安装本页依赖：」、`features.playground.numberFlow.description`「官方 @number-flow/react：」→「官方 Number Flow：」；Next 端手工同步同 2 键，Vue / Nuxt 端经各自 `sync-locales.mjs` 重新生成（非手工编辑）。
+- **验证**：Nuxt `nuxt typecheck` 通过（ConfigDrawer 重名警告经空文件移除后已消除）；`eslint .` 0 error（logs 目录经 `--fix` 后全绿）；vitest 9 文件 95 用例全绿；Next `check-locales` 14 文件与 React 完全一致；**用户本地 `nuxt build` 与页面预览通过（2026-09-16 确认）**。
+- **文档**：本条目 + `AGENTS.md` §19 当前待办销项（P0 移除，待办只剩 Nuxt M5 部署项）。
+- **明确不做**：不改动 3.6 执行清单相关内容（用户指示，Phase 0 待用户另行启动）。
+
 ### Playground 追加主题切换动画页：四端对齐完成（2026-09-16）
 
 - **做了什么**（第 8 个演示页，React 基准 `db5f48a` → Next `4935ce9` → Vue `6a17381` → Nuxt `dda2ad6`，每段独立提交）：引入 `theme-switch-animation@0.1.0`（作者 baiwumm，MIT；View Transitions 蒙版揭示，13 类型：Circle / Circle Blur / LTR / RTL / TTB / BTT / Square / Diamond / Rectangle / Hexagon / Triangle / Star + 圆形反向），`/playground/theme-switch-animation` 二级页面（菜单经 `apps/nest/scripts/migrate-menus-add-theme-switch-animation.ts` 幂等录入共用库：父 `menu.playground`、icon `sun-moon`、sort 4 排 GitHub Activity 之后、0 位 + super_admin 补录全量位）。演示页 4 区块对齐 React 端源码：动画类型清单（卡片 + 右侧圆形渐变描边触发钮，圆心即揭示中心）、动画时长 / 缓动选择、方向类型区块、重置区块；i18n `menu.playground.themeSwitchAnimation` + `features.playground.themeSwitchAnimation.*` 38 键经 React 真源同步。
