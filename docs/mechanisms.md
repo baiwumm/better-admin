@@ -946,3 +946,15 @@ Iconify CDN，实现运行时零外部网络依赖（DB 动态菜单图标名的
 **规则沉淀**：React / Next 端引入会自行输出 className 的第三方渲染组件时，先 grep 其可能输出的类名是否与 `@heroui/styles` 组件类（`.<component>` 单词级）撞名；能不透传 className 就不透传，必须保留时在组件根上加作用域并用 `[&_.tag]:...` 之类的后代选择器复位。
 
 - 验证：修复后 DOM 文本与像素级渲染均恢复空格；`display` 回到 `inline`。
+
+## 28. Vue `<Transition mode="out-in">` 遇高频 key 变化会让内容永久不可见：并行进出 + 离场 absolute 才是 popLayout 的等效写法（Vue / Nuxt 端，Playground Phase B）
+
+**现象**：Grid Reveal 演示页「模拟生成」期间，说明条应显示「AI 正在生成 X%」，实际完全看不到文字；生成前的「等待生成…」与生成后的「生成完成」均正常。用户本地 GUI 发现（2026-09-16）。
+
+**机制**：说明条文案切换写成 `<Transition mode="out-in"><span :key="caption">…</span></Transition>`。生成期间百分比每 80ms 递增一次，`caption` 与 key 随之变化。`out-in` 是**串行**语义——旧元素的 leave 过渡（0.14s）完成后才插入新元素；变化频率（80ms）快于 leave 时长，每次变化都在上一轮 leave 未结束时到来，挂起的新元素被更新的元素替换、始终不插入 DOM，即便 leave 偶尔完成、刚 enter 的元素也在 80ms 内再次被送去 leave。稳态就是文字长期处于 opacity 递减 / 未挂载状态。key 稳定的两个态不触发切换，故不受影响。React 端 rare-ui 用的是 `AnimatePresence mode="popLayout"`：新元素**立即插入并占位**，旧元素 `position: absolute` 脱离文档流并行淡出，任何变化频率下新文字都可见。
+
+**修复**：去掉 `mode="out-in"`（默认并行进出），`.gr-text-leave-active { position: absolute; left: <容器内边距> }` 让离场文字脱流、新文字立即占位（`apps/vue/src/features/playground/grid-reveal/GridReveal.vue`、Nuxt 端同款）。副作用是容器宽度随文字长度即时变化（React 端的 `layout` 宽度动画不复刻）。
+
+**规则沉淀**：Vue / Nuxt 端把 motion 的 `AnimatePresence mode="popLayout"` 翻译成 Vue Transition 时，等效写法是**默认并行模式 + `*-leave-active { position: absolute }`**，不是 `mode="out-in"`；`out-in` 只适用于 key 切换间隔明显大于 leave 时长的低频场景（如手动点击切换 Tab）。凡是由计时器 / 进度 / 实时数据驱动 key 变化的文案与数字，一律用并行模式。同理 `<TransitionGroup>` 的离场元素也应 absolute 脱流，其余元素的 FLIP 才能立即计算终点（AnimatedCounter 已按此实现）。
+
+- 验证：用户本地手动测试通过（Vue 端 5174，2026-09-16）。

@@ -2,6 +2,12 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Playground Grid Reveal 说明条修复 + Vue / Nuxt 端用户 GUI 验证通过（2026-09-16）
+
+- **做了什么**（提交 `92c3944`，Vue / Nuxt 两端 `GridReveal.vue`）：用户本地测试发现「模拟生成」期间说明条「AI 正在生成 X%」完全不可见。根因是文案切换用了 `<Transition mode="out-in">`，而生成期间百分比每 80ms 递增、`:key="caption"` 随之变化，串行 out-in 的旧文字淡出（0.14s）永远追不上变化频率，新文字始终未插入；React 端 rare-ui 用的是 `AnimatePresence mode="popLayout"`（并行、旧元素脱流）。修复为默认并行模式 + `.gr-text-leave-active { position: absolute; left: 0.625rem }`，机制与规则沉淀见 `mechanisms.md` §28（motion popLayout → Vue Transition 的等效写法是「并行 + 离场 absolute」，不是 out-in）。
+- **验证**：两端 lint 通过；**用户本地 GUI 手动验证通过**（Vue 端 5174），同时确认前一条目「待用户本地复核」的真实浏览器动画连续性——至此 Vue / Nuxt 端 Playground 的 GUI 验证由「任务内嵌浏览器冒烟」升级为「用户实测通过」。
+- **文档**：`mechanisms.md` 新增 §28；`AGENTS.md` §19 指针标注用户验证通过。
+
 ### Playground Phase B：Vue 端 + Nuxt 端对齐（2026-09-16，定时任务无人值守执行）
 
 - **做了什么**（`plan-dashboard-playground.md` §5.0 步骤 4 的 Vue / Nuxt 部分，用户 2026-09-15 授权跨两端串行；提交 `2405954`（Vue）/ `8c82327`（Nuxt））：
