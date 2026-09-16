@@ -145,7 +145,24 @@ info:
     删/停/重置已被 SELF_OPERATION_FORBIDDEN 拦死。转移超管按「先挂后摘」顺序执行
     （先为承接人添加绑定，再自摘）；roleIds 并发编辑按 PUT 全量替换 last-write-wins
     语义接受（记录在案）。POST /users 仅添加绑定，不涉及本守卫。
-  version: 1.9.0
+    v1.10.0 演示模式（Phase 0 演示上线准备，plan-dashboard-playground.md §3）：
+    新增 POST /auth/demo-login { kind: 'admin' | 'random' } 快捷登录（免鉴权、不接触密码，
+    响应结构复用 LoginResponse；admin 从「系统管理员」演示角色用户随机一人，random 对其余
+    演示角色先等概率选角色再随机选人，super_admin 永不进任何快捷池；DEMO_MODE 关闭时 404 NOT_FOUND，
+    候选池为空时 404 DEMO_USER_NOT_AVAILABLE）。
+    新增通用错误响应 403 DEMO_READONLY（components.responses.DemoReadonly）：服务端环境变量
+    DEMO_MODE=true 时全局只读守卫拦截**所有非 GET 请求**（POST / PUT / PATCH / DELETE，
+    含未登录请求，先于鉴权），仅白名单端点放行——POST /auth/login、/auth/refresh、
+    /auth/logout、/auth/demo-login、/notifications/read-all、/notifications/{id}/read
+    （只改自身会话或已读状态）。为避免逐端点重复声明，本响应作为全局语义登记于此，
+    各写端点不再单独列出；前端按 code 映射统一 i18n 提示，不预拦、不隐藏写按钮。
+    配套运行时行为（不改契约结构）：DEMO_READONLY 拦截不写 error 日志；LOG_API_SKIP_GET=true
+    时 GET 请求不记 api 日志；log-cleanup 跳过 detail.seed=true 的 faker 布景日志；
+    新增 refresh_tokens 过期行定时清理（每日 03:30）。
+    四端影响：React / Vue（消费 Nest）——登录页新增两个快捷登录按钮调用 demo-login、
+    请求拦截器识别 DEMO_READONLY 弹统一 toast；Next / Nuxt（独立全栈）——各自 route handler
+    同名实现 demo-login 与只读拦截，共用 DEMO_MODE 变量名与 DEMO_READONLY 错误码。
+  version: 1.10.0
 
 servers:
   - url: https://nest.baiwumm.com/api
@@ -250,6 +267,20 @@ components:
         refreshToken:
           type: string
           description: 可选。传入则仅撤销本设备托管的 refreshToken 会话；缺省撤销该用户全部设备会话。
+
+    # 演示快捷登录请求（v1.10.0）
+    DemoLoginRequest:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [admin, random]
+          description: >
+            admin：从「系统管理员」演示角色用户中随机一人；
+            random：先从其余演示角色等概率选一个，再从该角色用户中随机一人
+            （每个角色被登录概率均等）。super_admin 永不进任何快捷池。
+          example: admin
 
     # 认证用户视图（v1.5.0 由 LoginResponse.user 内联定义抽为独立 schema，
     # 供 LoginResponse.user 与 GET /auth/me 的 data 共用）
@@ -1709,6 +1740,19 @@ components:
           example:
             code: UNAUTHORIZED
             message: 未登录或 token 无效
+    DemoReadonly:
+      description: >
+        演示环境只读拦截（v1.10.0，全局语义）。服务端 DEMO_MODE=true 时，所有非 GET 请求
+        （POST / PUT / PATCH / DELETE，含未登录请求）除白名单端点外统一返回本响应；
+        白名单：POST /auth/login、/auth/refresh、/auth/logout、/auth/demo-login、
+        /notifications/read-all、/notifications/{id}/read。各写端点不再单独声明。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: DEMO_READONLY
+            message: 演示环境，禁止修改数据
     Forbidden:
       description: 无权限（位掩码校验失败）
       content:
@@ -1836,6 +1880,54 @@ paths:
                         type: string
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  /auth/demo-login:
+    post:
+      tags: [Auth]
+      summary: 演示快捷登录（v1.10.0）
+      description: >
+        演示环境快捷登录：服务端直接签发指定演示池内随机用户的会话，前端不接触任何密码。
+        仅 DEMO_MODE=true 时开放；关闭时返回 404（本地开发与常规部署无感）。
+        快捷登录统一为短会话（等价 rememberMe=false）；成功写 login 日志
+        （action=login.success.demo）。super_admin 永不进任何快捷池，只能通过用户名密码登录。
+      security: []
+      x-permission: NONE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoLoginRequest'
+      responses:
+        '200':
+          description: 登录成功（结构与 POST /auth/login 完全一致）
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: >
+            DEMO_MODE 未开启（NOT_FOUND）；或指定演示池内无可用用户
+            （DEMO_USER_NOT_AVAILABLE，演示数据未就位 / 候选用户全部停用）。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                demoModeOff:
+                  value:
+                    code: NOT_FOUND
+                    message: 接口不存在
+                poolEmpty:
+                  value:
+                    code: DEMO_USER_NOT_AVAILABLE
+                    message: 演示账号暂不可用，请稍后再试
 
   /auth/me:
     get:
