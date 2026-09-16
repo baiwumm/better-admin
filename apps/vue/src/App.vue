@@ -33,15 +33,7 @@ const uiLocale = computed(
       :locale="uiLocale"
       :toaster="{ position: 'top-center', duration: 2000 }"
     >
-      <UTheme
-        :ui="{
-          button: {
-            base: 'cursor-pointer',
-          },
-        }"
-      >
-        <AppShell />
-      </UTheme>
+      <AppShell />
     </UApp>
   </ProgressProvider>
 </template>
