@@ -9,9 +9,12 @@ export const Route = createFileRoute("/_authenticated")({
     const token = context.auth.getState().accessToken;
 
     if (!token) {
+      // 根路径不带 redirect（与 Next proxy buildSignInRedirect / Nuxt
+      // auth.global.ts 同构）：首页本就是登录后的默认落点，回跳 "/" 无意义；
+      // 其余路径保留 redirect 供登录后回到原页面。
       throw redirect({
         to: "/sign-in",
-        search: { redirect: location.href },
+        search: location.pathname === "/" ? {} : { redirect: location.href },
       });
     }
   },

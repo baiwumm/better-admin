@@ -45,8 +45,14 @@ export function setupRouterGuards(router: Router) {
       return true;
     }
 
-    // ① 登录拦截（带 redirect 回跳参数）
+    // ① 登录拦截（根路径不带 redirect，其余路径带回跳参数——与 Next 端
+    // proxy.ts buildSignInRedirect / Nuxt 端 auth.global.ts 同构：首页本就是
+    // 登录后的默认落点，回跳 "/" 无意义；业务路径保留 redirect 供登录后回到原页面）
     if (!auth.accessToken) {
+      if (to.path === "/") {
+        return { path: "/sign-in" };
+      }
+
       return { path: "/sign-in", query: { redirect: to.fullPath } };
     }
 
