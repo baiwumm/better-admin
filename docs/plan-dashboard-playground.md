@@ -255,10 +255,11 @@
 │   ├── Fluid Orb          （三级页面  /playground/ai-kit/fluid-orb）
 │   ├── Grid Reveal        （三级页面  /playground/ai-kit/grid-reveal）
 │   └── Matrix Orb         （三级页面  /playground/ai-kit/matrix-orb）
-└── GitHub Activity         （二级页面  /playground/github-activity）
+├── GitHub Activity         （二级页面  /playground/github-activity）
+└── 主题切换动画 / Theme Switch Animation（二级页面  /playground/theme-switch-animation）
 ```
 
-- 页面节点 `keepAlive` 开启、目录节点关闭（演示页纯静态、无写库副作用）；三级菜单同时作为侧边栏深层级渲染的真实演示。图标（lucide kebab-case，已核对同时存在于 lucide-react 1.x 与 @iconify-json/lucide）：演示场 `flask-conical` / 代码块 `square-code` / 数字动画 `hash` / Number Flow `arrow-up-1-0` / Animated Counter `tally-5` / Ai Kit `sparkles` / Fluid Orb `orbit` / Grid Reveal `grid-2x2` / Matrix Orb `atom` / GitHub Activity `calendar-days`（lucide-react 1.x 已移除品牌图标 `github`，改用热力图语义）。
+- 页面节点 `keepAlive` 开启、目录节点关闭（演示页纯静态、无写库副作用）；三级菜单同时作为侧边栏深层级渲染的真实演示。图标（lucide kebab-case，已核对同时存在于 lucide-react 1.x 与 @iconify-json/lucide）：演示场 `flask-conical` / 代码块 `square-code` / 数字动画 `hash` / Number Flow `arrow-up-1-0` / Animated Counter `tally-5` / Ai Kit `sparkles` / Fluid Orb `orbit` / Grid Reveal `grid-2x2` / Matrix Orb `atom` / GitHub Activity `calendar-days`（lucide-react 1.x 已移除品牌图标 `github`，改用热力图语义）/ 主题切换动画 `sun-moon`（2026-09-16 追加，sort 4 排 GitHub Activity 之后，经 `apps/nest/scripts/migrate-menus-add-theme-switch-animation.ts` 幂等录入）。
 - 三级菜单验证点：**展开态四端已代码级核实递归渲染**——React / Next `SidebarGroup → MenuLevel` 递归、Vue / Nuxt `toNavLeaf` 递归映射 + Nuxt UI 4.11 `NavigationMenu` vertical 模式经 `ReuseItemTemplate(level + 1)` 递归渲染子级手风琴；**折叠态**（React / Next 折叠菜单；Nuxt UI 折叠态 `UPopover` 仅平铺一层子项，第三级形态待实测）、面包屑、命令面板搜索仍需 GUI 逐项过检，发现未覆盖即补齐。
 - [ ] 演示页通用规范：React 路由 `src/routes/_authenticated/playground/<demo>.tsx`（三级页为 `playground/count-to/<demo>.tsx`）、实现 `src/features/playground/<demo-name>/`，其余三端按各自路由约定建同名路径；页首固定 `PlaygroundIntro` 信息卡（规范见 §5.2）；开启 `keepAlive`；i18n 全量跟进；Nuxt 端 canvas / 动画组件以 `<ClientOnly>` 包裹防 SSR 水合报错。
 
@@ -315,6 +316,7 @@ type DemoMeta = {
 | Ai Kit › Grid Reveal（三级页） | rare-ui `grid-reveal` | 自定义重写 | 网格揭示动画 |
 | Ai Kit › Matrix Orb（三级页） | rare-ui `matrix-orb` | 自定义重写 | 矩阵光球动画 |
 | GitHub Activity | rare-ui `github-activity`（`motion`） | 自定义重写 | 贡献热力图（静态数据，不连外部 API） |
+| 主题切换动画（2026-09-16 追加，非 rare-ui 清单） | `theme-switch-animation`（第三方库 `/react` 子导出，View Transitions 蒙版揭示） | 官方 `/vue` 子导出（getter 对象传参）+ `/nuxt` 模块自动导入 | 13 种蒙版揭示主题切换动画演示：类型清单 / 时长 / 缓动选择 / 方向类型 / 重置 |
 
 - **旧清单整体移除（2026-09-14 拍板）**：Smart Ticker / 拖拽 / 富文本 / 加载态集 / 轮播 / 列表自动动画 / 图片 Lightbox / 二维码不再纳入——拖拽（`@dnd-kit`）、富文本（`@tiptap`）业务功能已上线无需重复演示，其余不再计划。
 - 旧项目 `file-viewer`（Excel/PDF/Word viewer）**不做**：重依赖且偏离 Admin 场景（原决策保留）。
@@ -332,6 +334,7 @@ type DemoMeta = {
 | `clsx` + `tailwind-merge` | Phase A/B（Vue / Nuxt）**——两端已引入 2.1.1 / 3.7.0（2026-09-16）** | 各端新增约 3 行 `cn` 工具函数（React / Next 用 `@heroui/react` 导出的 `cn`，无需安装；`@nuxt/ui` v4 已核实**不**向业务代码导出 `cn`）；合计约 8KB，shadcn 生态事实标准 | 轻 |
 | `prismjs`（+ `@types/prismjs` dev） | Phase A/B（Vue / Nuxt）**——两端已引入 1.30.0（2026-09-16）** | 代码块高亮：`prism-react-renderer` 为 React 专属渲染器，Vue 侧用 prism 核心直接 tokenize 后逐行渲染；语言按需注册（tsx / css / json / sql / python / bash），`Prism.manual` 关闭自动高亮 | 轻（Vue 端实测落在 code-block 按需 chunk 约 56KB，index 不含） |
 | `motion-v` | Phase A/B（Vue / Nuxt）**——已评审：不引入（2026-09-16）** | rare-ui 动画重写候选（Motion 官方 Vue 版）；对齐时逐页评估，全部以 CSS transition / `<Transition>` / `<TransitionGroup>` FLIP / Canvas RAF 等效满足（唯一未复刻的是 github-activity 头像 `layoutId` 共享元素飞行，降级为淡入淡出） | 无 |
+| `theme-switch-animation` | Phase B 追加（React / Next / Vue / Nuxt 四端）**——四端已引入 0.1.0（2026-09-16）** | 主题切换蒙版揭示动画库（作者 baiwumm，MIT）；React / Next 用 `/react`，Vue 用 `/vue`，Nuxt 用 `/nuxt` 模块自动导入；与项目既有 View Transition 路由 / 主题过渡并存（演示页内由库独占编排权，store 走 `applyThemeModeInstant` 让渡） | 轻（各端独立分包约 22 kB） |
 | `recharts` | Phase C | Dashboard 图表（`AGENTS.md` §19 已定 Recharts）；Next / Vue / Nuxt 端各自对齐等价方案 | 图表类标准选择，体积可按需 tree-shake |
 
 > 已移除（2026-09-14 随旧清单）：`@tombcato/smart-ticker`、`swiper`、`@formkit/auto-animate`、`yet-another-react-lightbox`、`qrcode`。

@@ -2,6 +2,13 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Playground 追加主题切换动画页：四端对齐完成（2026-09-16）
+
+- **做了什么**（第 8 个演示页，React 基准 `db5f48a` → Next `4935ce9` → Vue `6a17381` → Nuxt `dda2ad6`，每段独立提交）：引入 `theme-switch-animation@0.1.0`（作者 baiwumm，MIT；View Transitions 蒙版揭示，13 类型：Circle / Circle Blur / LTR / RTL / TTB / BTT / Square / Diamond / Rectangle / Hexagon / Triangle / Star + 圆形反向），`/playground/theme-switch-animation` 二级页面（菜单经 `apps/nest/scripts/migrate-menus-add-theme-switch-animation.ts` 幂等录入共用库：父 `menu.playground`、icon `sun-moon`、sort 4 排 GitHub Activity 之后、0 位 + super_admin 补录全量位）。演示页 4 区块对齐 React 端源码：动画类型清单（卡片 + 右侧圆形渐变描边触发钮，圆心即揭示中心）、动画时长 / 缓动选择、方向类型区块、重置区块；i18n `menu.playground.themeSwitchAnimation` + `features.playground.themeSwitchAnimation.*` 38 键经 React 真源同步。
+- **关键决策**：① `design-theme-store` 新增 `applyThemeModeInstant(mode)`（只写 DOM class / localStorage / store，不跑 `runViewTransition`）——库的 mask 揭示必须独占 View Transition 编排权，若走 `setThemeMode` 其内部二次 `startViewTransition` 会抢占并使库动画失效；② 新增 `html[data-theme-demo-vt] [data-vt-name]`（Vue / Nuxt 端为 `.route-vt-main`）摘名规则——库只动画 `::view-transition-new(root)`，`main-content` 具名快照组会静止叠放遮挡 mask；React 提交时已沉淀 `mechanisms.md` §29（HeroUI layer(components) vs Tailwind utilities 级联层序）；③ 库的 Vue 受控模式 `options` 必须传 getter 对象使内部 `computed` 追踪响应源（普通字面量只是 setup 快照）；`onChange` 内同步写 `<html>.dark` 供 `waitForThemeSync` 立即解析；④ Nuxt 端经 `theme-switch-animation/nuxt` 模块自动导入（`useThemeAnimation` / `ThemeAnimationType` 不显式 import），Next 端 `<main>` 无具名快照组故不挂摘名属性；⑤ 摘名与「动画期间禁用」按「本次时长 + 150ms 缓冲」模块级单例计时，不消费库返回的 `finished`（state 闭包读到上一轮 promise）。
+- **验证**：React `tsc` / `vite build`（独立分包 22.19 kB）/ lint / `check-locales` / vitest 93 用例通过；Next `next build` 通过（61 静态页含新路由，lint 0 error）；Vue lint / `vue-tsc` / `vite build`（独立分包 22.56 kB）/ test 95 用例通过；Nuxt lint / test 95 用例通过，`nuxt build` 在 DEBUG 日志下 1,820 模块全量转换、唯一错误为既有 `app/features/logs/LogsPage.vue` 缺失 P0（AGENTS §19 已登记，非本次引入；另发现该 P0 在非 TTY 下会导致 `nuxt build` 静默挂起不打印错误，需 `DEBUG=nuxt:*` 才能看到 UNLOADABLE_DEPENDENCY）。**待用户本地 GUI 验证**：四端页面视觉与 13 动画实际效果、深浅色、快速连点不同触发钮。
+- **文档**：本条目 + `plan-dashboard-playground.md` §5.1 菜单树补节点 / §6 表格补行 / §7 依赖清单补行；`feature-matrix.md` Playground 行更新为 8 页并登记四端对齐；`AGENTS.md` §19 指针同步。
+
 ### 登录页品牌文案口径统一为「五端」（2026-09-16）
 
 - **背景**：四端登录页品牌区文案（「一套产品，四种实现」）与官网文档站 Hero（「一套 Admin 系统，五种技术栈实现」）及 README / AGENTS 的全栈定位口径不一致——登录页是早期只有四端时的遗留表述，产品级口径应为 React / Vue / Next.js / Nuxt / NestJS 五端。经用户拍板按方案 A 统一为五端口径。
