@@ -1,7 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { type AuthUser, type LoginResponse } from "@/lib/api-types";
+import {
+  type AuthUser,
+  type DemoLoginKind,
+  type LoginResponse,
+} from "@/lib/api-types";
 import { fetchApi, ApiClientError, bindAuthSnapshot } from "@/lib/api-client";
 import { fetchMenus } from "@/lib/menu-fetch";
 import { queryClient } from "@/lib/query-client";
@@ -32,6 +36,12 @@ interface AuthState {
     password: string,
     rememberMe?: boolean,
   ) => Promise<void>;
+  /**
+   * 演示快捷登录：POST /api/auth/demo-login（契约 v1.10.0）。
+   * 服务端按 kind 随机签发演示账号（响应同 /auth/login）；固定短会话
+   * （refreshToken 仅内存，不持久化），返回登录用户供页面 toast 展示姓名。
+   */
+  demoLogin: (kind: DemoLoginKind) => Promise<AuthUser>;
   /** 真实退出：POST /api/auth/logout（带 token），成功后清本地会话。 */
   logout: () => Promise<void>;
   /** 供 api-client 刷新流程写入新 accessToken（不触发持久化副作用之外的行为）。 */
@@ -81,6 +91,39 @@ export const useAuthStore = create<AuthState>()(
             queryFn: fetchMenus,
             staleTime: 60_000,
           });
+        } catch (error) {
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+
+      demoLogin: async (kind) => {
+        set({ isLoading: true });
+        try {
+          const res = await fetchApi<LoginResponse>("/auth/demo-login", {
+            method: "POST",
+            auth: false,
+            body: { kind },
+          });
+
+          set({
+            user: res.user,
+            accessToken: res.accessToken,
+            refreshToken: res.refreshToken,
+            // 演示会话固定短会话：refreshToken 仅内存，不跨浏览器会话持久化
+            rememberMe: false,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+
+          // 与 login 相同：预取菜单缓存，路由 beforeLoad 可同步判定权限
+          void queryClient.prefetchQuery({
+            queryKey: MENUS_QUERY_KEY,
+            queryFn: fetchMenus,
+            staleTime: 60_000,
+          });
+
+          return res.user;
         } catch (error) {
           set({ isLoading: false });
           throw error;

@@ -7,6 +7,7 @@
   "errors.account.passwordContainsUsername": "New password must not contain your username",
   "errors.account.passwordSameAsOld": "New password must differ from the current password",
   "errors.account.validation": "Invalid request. Please check the form and retry",
+  "errors.api.demoReadonly": "Demo environment: data changes are disabled",
   "errors.api.loginExpired": "Login expired. Please sign in again.",
   "errors.api.refreshFailed": "Refresh failed. Please sign in again.",
   "errors.api.requestFailed": "Request failed ({{status}})",

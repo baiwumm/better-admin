@@ -1,4 +1,9 @@
-import type { AuthUser, LoginResponse, MenuNode } from "@/lib/api-types";
+import type {
+  AuthUser,
+  DemoLoginKind,
+  LoginResponse,
+  MenuNode,
+} from "@/lib/api-types";
 
 import { ref, watch } from "vue";
 import { defineStore } from "pinia";
@@ -114,6 +119,37 @@ export const useAuthStore = defineStore("auth", () => {
       // 登录成功后立即预取菜单缓存：路由守卫可同步判定权限
       // （避免首次进入业务页时因菜单未就绪而多一次 loading 跳转）。
       void queryClient.prefetchQuery(menusQueryOptions());
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * 演示快捷登录：POST /auth/demo-login（契约 v1.10.0）。
+   * 服务端按 kind 随机签发演示账号（响应同 /auth/login）；固定短会话
+   * （refreshToken 仅内存，不持久化），返回登录用户供页面 toast 展示姓名。
+   */
+  async function demoLogin(kind: DemoLoginKind): Promise<AuthUser> {
+    isLoading.value = true;
+
+    try {
+      const res = await fetchApi<LoginResponse>("/auth/demo-login", {
+        method: "POST",
+        auth: false,
+        body: { kind },
+      });
+
+      user.value = res.user;
+      accessToken.value = res.accessToken;
+      refreshToken.value = res.refreshToken;
+      // 演示会话固定短会话：refreshToken 仅内存，不跨浏览器会话持久化
+      rememberMe.value = false;
+      isAuthenticated.value = true;
+
+      // 与 login 相同：预取菜单缓存，路由守卫可同步判定权限
+      void queryClient.prefetchQuery(menusQueryOptions());
+
+      return res.user;
     } finally {
       isLoading.value = false;
     }
@@ -256,6 +292,7 @@ export const useAuthStore = defineStore("auth", () => {
     isAuthenticated,
     isLoading,
     login,
+    demoLogin,
     logout,
     setTokens,
     setUser,

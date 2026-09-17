@@ -59,6 +59,12 @@ export interface LoginResponse {
   user: AuthUser;
 }
 
+/**
+ * 演示快捷登录种类（契约 v1.10.0 POST /auth/demo-login）：
+ * admin = 「系统管理员」演示角色随机一人；random = 其余演示角色两级随机。
+ */
+export type DemoLoginKind = "admin" | "random";
+
 /** 刷新响应（v1.2：refreshToken 轮换，旧 token 作废） */
 export interface RefreshResponse {
   accessToken: string;
