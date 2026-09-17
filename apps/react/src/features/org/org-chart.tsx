@@ -11,7 +11,7 @@ import { useMemo } from "react";
 
 import "@xyflow/react/dist/style.css";
 
-import { CHART_ROOT_ID, layoutDeptForest } from "./org-chart-layout";
+import { layoutDeptForest } from "./org-chart-layout";
 import { DeptChartNode, type DeptNodeData } from "./org-chart-node";
 
 import { useResolvedTheme } from "@/stores/design-theme-store";
@@ -33,7 +33,7 @@ import { useResolvedTheme } from "@/stores/design-theme-store";
 const NODE_TYPES = { dept: DeptChartNode };
 
 export interface OrgChartProps {
-  /** 全量组织树（GET /org/depts/tree） */
+  /** 全量组织树（GET /org/depts/tree，顶级组织为根层） */
   tree: DeptTreeNode[];
   /** 收起节点 id 集合（空集 = 全展开） */
   collapsed: Set<string>;
@@ -85,7 +85,6 @@ export function OrgChart({
             dept: node,
             expandable: node.children.length > 0,
             isCollapsed: collapsed.has(node.id),
-            isRoot: node.id === CHART_ROOT_ID,
             onToggle,
           },
           id: node.id,

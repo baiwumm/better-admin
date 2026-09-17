@@ -7,16 +7,9 @@ import {
   Card,
   Chip,
   Tooltip,
-  cn,
   Description,
 } from "@heroui/react";
-import {
-  ChevronDown,
-  ChevronUp,
-  Landmark,
-  Network,
-  UserRound,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Network, UserRound } from "lucide-react";
 import { Handle, Position } from "@xyflow/react";
 import { memo } from "react";
 
@@ -33,9 +26,7 @@ import { useTranslation } from "@/i18n";
  *   防止误触 React Flow 的节点跳转（onPress 走 React Aria press 语义）；
  * - 节点点击（跳转通讯录）由 ReactFlow 的 onNodeClick 统一处理；
  * - Handle 隐藏（只读图谱无连线交互，仅作连线锚点）；
- * - 停用组织整卡去饱和 + 降透明（沿用组织树置灰语义）；
- * - isRoot 为图谱虚拟根节点（Better Admin，非真实组织）：
- *   主色渐变品牌卡，点击不跳转通讯录（由 org-chart-page 过滤）。
+ * - 停用组织整卡去饱和 + 降透明（沿用组织树置灰语义）。
  */
 
 /** 节点 data（type 字面量类型以满足 React Flow v12 的 Record 约束） */
@@ -46,8 +37,6 @@ export type DeptNodeData = {
   isCollapsed: boolean;
   /** 有下级组织才显示折叠按钮 */
   expandable: boolean;
-  /** 图谱虚拟根节点（Better Admin） */
-  isRoot: boolean;
   onToggle: (id: string) => void;
 };
 
@@ -78,8 +67,8 @@ export const DeptChartNode = memo(function DeptChartNode({
   data,
 }: NodeProps<DeptChartNode>) {
   const { t } = useTranslation();
-  const { dept, childCount, isCollapsed, expandable, isRoot, onToggle } = data;
-  const isDisabled = !isRoot && dept.status === "disabled";
+  const { dept, childCount, isCollapsed, expandable, onToggle } = data;
+  const isDisabled = dept.status === "disabled";
   const leaderName = dept.leaderName;
 
   return (
@@ -105,12 +94,7 @@ export const DeptChartNode = memo(function DeptChartNode({
       <Card.Header className="flex min-w-0 flex-row items-center gap-2 p-0">
         <Tooltip>
           <Tooltip.Trigger>
-            <Card.Title
-              className={cn(
-                "min-w-0 truncate",
-                isRoot ? "text-sm font-semibold" : "text-[13px] font-semibold",
-              )}
-            >
+            <Card.Title className="min-w-0 truncate text-[13px] font-semibold">
               {dept.name}
             </Card.Title>
           </Tooltip.Trigger>
@@ -118,15 +102,13 @@ export const DeptChartNode = memo(function DeptChartNode({
         </Tooltip>
         <Chip
           className="ms-auto shrink-0"
-          color={isRoot ? "default" : isDisabled ? "default" : "success"}
+          color={isDisabled ? "default" : "success"}
           size="sm"
           variant="soft"
         >
-          {isRoot
-            ? t("features.chart.rootBadge")
-            : isDisabled
-              ? t("features.depts.status.disabled")
-              : t("features.depts.status.enabled")}
+          {isDisabled
+            ? t("features.depts.status.disabled")
+            : t("features.depts.status.enabled")}
         </Chip>
       </Card.Header>
 
@@ -173,19 +155,13 @@ export const DeptChartNode = memo(function DeptChartNode({
         )}
       </Card.Content>
 
-      {/* 底部：归属信息（根节点 = 顶级组织数；普通节点 = 下级数 / 末级标记） */}
+      {/* 底部：归属信息（下级数 / 末级标记） */}
       <Card.Footer className="flex items-center gap-1">
-        {isRoot ? (
-          <Landmark aria-hidden className="size-3 shrink-0" />
-        ) : (
-          <Network aria-hidden className="size-3 shrink-0" />
-        )}
+        <Network aria-hidden className="size-3 shrink-0" />
         <Description className="truncate">
-          {isRoot
-            ? t("features.chart.rootSubtitle", { count: childCount })
-            : childCount > 0
-              ? t("features.chart.childCountLine", { count: childCount })
-              : t("features.chart.leafNode")}
+          {childCount > 0
+            ? t("features.chart.childCountLine", { count: childCount })
+            : t("features.chart.leafNode")}
         </Description>
       </Card.Footer>
 

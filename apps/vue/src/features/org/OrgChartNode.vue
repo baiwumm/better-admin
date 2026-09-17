@@ -16,8 +16,7 @@ import { CHART_NODE_HEIGHT, CHART_NODE_WIDTH } from "./org-chart-layout";
  *   防止误触 vue-flow 的节点点击跳转；
  * - 节点点击（跳转通讯录）由 VueFlow 的 @node-click 统一处理；
  * - Handle 隐藏（只读图谱无连线交互，仅作连线锚点）；
- * - 停用组织整卡去饱和 + 降透明（沿用组织树置灰语义）；
- * - isRoot 为图谱虚拟根节点（Better Admin）：主色品牌卡，点击不跳转。
+ * - 停用组织整卡去饱和 + 降透明（沿用组织树置灰语义）。
  */
 export interface DeptNodeData {
   dept: DeptTreeNode;
@@ -26,8 +25,6 @@ export interface DeptNodeData {
   isCollapsed: boolean;
   /** 有下级组织才显示折叠按钮 */
   expandable: boolean;
-  /** 图谱虚拟根节点（Better Admin） */
-  isRoot: boolean;
 }
 
 const props = defineProps<{
@@ -39,26 +36,18 @@ const emit = defineEmits<{ toggle: [id: string] }>();
 const { t } = useI18n();
 
 const dept = computed(() => props.data.dept);
-const isDisabled = computed(
-  () => !props.data.isRoot && dept.value.status === "disabled",
-);
+const isDisabled = computed(() => dept.value.status === "disabled");
 const statusLabel = computed(() =>
-  props.data.isRoot
-    ? t("features.chart.rootBadge")
-    : isDisabled.value
-      ? t("features.depts.status.disabled")
-      : t("features.depts.status.enabled"),
+  isDisabled.value
+    ? t("features.depts.status.disabled")
+    : t("features.depts.status.enabled"),
 );
 
-const footerLine = computed(() => {
-  if (props.data.isRoot) {
-    return t("features.chart.rootSubtitle", { count: props.data.childCount });
-  }
-
-  return props.data.childCount > 0
+const footerLine = computed(() =>
+  props.data.childCount > 0
     ? t("features.chart.childCountLine", { count: props.data.childCount })
-    : t("features.chart.leafNode");
-});
+    : t("features.chart.leafNode"),
+);
 </script>
 
 <script lang="ts">
@@ -93,17 +82,12 @@ export default { name: "OrgChartNode" };
     <!-- 头部：组织名称（截断时 Tooltip 全名）+ 状态标签 -->
     <div class="flex min-w-0 flex-row items-center gap-2">
       <UTooltip :text="dept.name" :delay-duration="0">
-        <span
-          :class="
-            data.isRoot ? 'text-sm font-semibold' : 'text-[13px] font-semibold'
-          "
-          class="min-w-0 truncate"
-        >
+        <span class="min-w-0 truncate text-[13px] font-semibold">
           {{ dept.name }}
         </span>
       </UTooltip>
       <UBadge
-        :color="data.isRoot ? 'neutral' : isDisabled ? 'neutral' : 'success'"
+        :color="isDisabled ? 'neutral' : 'success'"
         :label="statusLabel"
         class="ms-auto shrink-0"
         size="sm"
@@ -150,13 +134,9 @@ export default { name: "OrgChartNode" };
       </div>
     </div>
 
-    <!-- 底部：归属信息（根节点 = 顶级组织数；普通节点 = 下级数 / 末级标记） -->
+    <!-- 底部：归属信息（下级数 / 末级标记） -->
     <div class="text-muted flex items-center gap-1 text-xs">
-      <UIcon
-        :name="data.isRoot ? 'i-lucide-landmark' : 'i-lucide-network'"
-        aria-hidden
-        class="size-3 shrink-0"
-      />
+      <UIcon aria-hidden class="size-3 shrink-0" name="i-lucide-network" />
       <span class="truncate">{{ footerLine }}</span>
     </div>
 

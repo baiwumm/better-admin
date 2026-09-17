@@ -94,8 +94,6 @@
   "features.chart.noLeader": "暂无负责人",
   "features.chart.node.collapse": "收起下级组织",
   "features.chart.node.expand": "展开下级组织",
-  "features.chart.rootBadge": "根组织",
-  "features.chart.rootSubtitle": "{{count}} 个顶级组织",
   "features.depts.action.add": "新增子组织",
   "features.depts.action.addRoot": "新增顶级组织",
   "features.depts.column.childCount": "下级组织",

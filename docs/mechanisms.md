@@ -314,7 +314,7 @@ SUPER_ADMIN_USER_PROTECTED）；前端只做入口隐藏止损，后端为契约
 
 ## 7. 组织架构图谱与通讯录 Excel 导出（React 端，阶段 4）
 
-> 更新日期：2026-09-03。对应代码：`apps/react/src/features/org/org-chart*.ts(x)`、
+> 更新日期：2026-09-17。对应代码：`apps/react/src/features/org/org-chart*.ts(x)`、
 > `directory-export.ts`、`directory-page.tsx`、`routes/_authenticated/org/{chart,directory}.tsx`。
 
 ### 7.1 React Flow v12 只读配置（@xyflow/react 12.11）
@@ -323,16 +323,21 @@ SUPER_ADMIN_USER_PROTECTED）；前端只做入口隐藏止损，后端为契约
   `elementsSelectable={false}`、`edgesFocusable={false}`、`zoomOnDoubleClick={false}`；
   Controls 用 `showInteractive={false}` 隐藏「锁定交互」按钮，只留 Zoom In / Out / Fit View。
 - `nodeTypes` 必须是模块级常量——组件内字面量会随渲染重建触发 React Flow 性能警告。
-- 折叠 / 展开 = 受控 nodes/edges 重算：`collapsed: Set<string>`（空集 = 全展开），
-  按可见子树 relayout（父节点居中于子树 span），不自动 fitView（保持用户视角）；
-  节点 data中的 `onToggle` 由页面 `useCallback` 提供（functional setState 保证引用稳定）。
+- 折叠 / 展开 = 受控 nodes/edges 重算：`collapsed: Set<string>` 按可见子树 relayout
+  （父节点居中于子树 span），不自动 fitView（保持用户视角）；初始值 = 深度 ≥ 1 的全部
+  节点 id（默认仅展开前两级；2026-09-17 起移除顶部「Better Admin」虚拟根节点，
+  顶级组织直接作为根层）。初始化时序：React / Next 以 `OrgChartView` 子组件在树数据
+  就绪后才挂载、惰性 `useState` 求值（避免树异步到达前首帧全展开闪现）；Vue / Nuxt 用
+  `watch(tree, …, { immediate: true })` + `collapsedInitialized` 标志一次性初始化
+  （树刷新不重置用户已展开 / 收起的状态）。
+  节点 data 中的 `onToggle` 由页面 `useCallback` 提供（functional setState 保证引用稳定）。
 - Handle 隐藏后仍可锚定连线：`style={{ visibility: "hidden" }}` + `isConnectable={false}`。
 - 懒加载：`React.lazy(() => import("./org-chart"))`，@xyflow/react 及其 CSS 独立 chunk
   （约 180KB / gzip 58KB），不进主包；`import "@xyflow/react/dist/style.css"` 写在图谱组件模块内。
 
 ### 7.2 手写树布局替代 d3-hierarchy
 
-- 组织树为严格树 + 固定节点尺寸（220×84），「子树宽度先序分配」即可：
+- 组织树为严格树 + 固定节点尺寸（240×112），「子树宽度先序分配」即可：
   叶子宽 = 节点宽；内部节点宽 = max(自身, Σ子树宽 + 兄弟间距)；子树布完后父节点居中于子树 span。
   约 60 行零依赖，不引入 d3-hierarchy（阶段 4 选型评审约束：确认需要前不提前引入）。
 - 正确性前提：节点 DOM 尺寸必须与布局常量一致（org-chart-node 用 style width/height 锁定）。

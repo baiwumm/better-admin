@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import type { DeptTreeNode } from "@/lib/api-types";
 
-import { computed, defineAsyncComponent, ref } from "vue";
+import { computed, defineAsyncComponent, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useQuery } from "@tanstack/vue-query";
 import { keepPreviousData } from "@tanstack/vue-query";
 
 import { DEPTS_TREE_QUERY_KEY, fetchDeptTree } from "./dept-api";
-import { CHART_ROOT_ID } from "./org-chart-layout";
 
 // 图谱重组件懒加载（vue-flow + CSS 仅在进入本页时拉取）
 const OrgChart = defineAsyncComponent(() => import("./OrgChart.vue"));
@@ -17,8 +16,8 @@ const OrgChart = defineAsyncComponent(() => import("./OrgChart.vue"));
  * 组织架构图谱页（对应 React 端 org-chart-page.tsx）：vue-flow 只读可视化。
  *
  * - 数据源复用 GET /org/depts/tree（与组织管理 / 通讯录共享缓存），无新契约；
- * - 顶部为图谱虚拟根节点「Better Admin」（品牌入口，非真实组织，点击不跳转），
- *   其下挂全量组织森林；画布撑满主体区域（h-full 链路）；
+ * - 不设图谱虚拟根节点，顶级组织直接作为根层；默认仅展开前两级，
+ *   更深层级收起（点击节点底部折叠钮展开）；
  * - 图谱组件随页面懒加载（@vue-flow/core 不进主包）；
  * - 节点点击跳转通讯录统一 URL Query（/org/directory?deptId=xxx，
  *   支持刷新 / 分享 / 前进后退，四端一致的跳转规范）；
@@ -36,30 +35,39 @@ const treeQuery = useQuery({
 });
 const tree = computed<DeptTreeNode[]>(() => treeQuery.data.value ?? []);
 
-/** 顶部虚拟根节点（Better Admin）：非真实组织，仅作为图谱品牌入口 */
-const chartTree = computed<DeptTreeNode[]>(() => {
-  if (tree.value.length === 0) {
-    return [];
+/** 收起节点集合（折叠仅影响图谱视图，不改动组织数据） */
+const collapsed = ref<Set<string>>(new Set());
+
+/** 默认折叠集合：仅展示前两级——深度 ≥ 1 的节点统一视为收起（下级默认隐藏） */
+function collectDefaultCollapsed(
+  nodes: DeptTreeNode[],
+  depth = 0,
+  acc: Set<string> = new Set(),
+): Set<string> {
+  for (const node of nodes) {
+    if (depth >= 1) {
+      acc.add(node.id);
+    }
+    collectDefaultCollapsed(node.children, depth + 1, acc);
   }
 
-  return [
-    {
-      id: CHART_ROOT_ID,
-      parentId: null,
-      name: "Better Admin",
-      code: null,
-      leaderId: null,
-      leaderName: null,
-      leaderAvatar: null,
-      sort: 0,
-      status: "enabled",
-      children: tree.value,
-    },
-  ];
-});
+  return acc;
+}
 
-/** 收起节点集合（空集 = 全展开；折叠仅影响图谱视图，不改动组织数据） */
-const collapsed = ref<Set<string>>(new Set());
+// 树首次到达后按「仅展开前两级」初始化折叠集合，此后树刷新不重置用户操作
+let collapsedInitialized = false;
+
+watch(
+  tree,
+  (value) => {
+    if (collapsedInitialized || value.length === 0) {
+      return;
+    }
+    collapsedInitialized = true;
+    collapsed.value = collectDefaultCollapsed(value);
+  },
+  { immediate: true },
+);
 
 function toggleCollapse(id: string) {
   const next = new Set(collapsed.value);
@@ -73,11 +81,8 @@ function toggleCollapse(id: string) {
   collapsed.value = next;
 }
 
-/** 节点点击 → 通讯录按组织筛选（URL Query 规范）；虚拟根节点不跳转 */
+/** 节点点击 → 通讯录按组织筛选（URL Query 规范） */
 function handleNodeClick(deptId: string) {
-  if (deptId === CHART_ROOT_ID) {
-    return;
-  }
   void router.push({ path: "/org/directory", query: { deptId } });
 }
 </script>
@@ -117,7 +122,7 @@ export default { name: "OrgChartPage" };
       <div v-else class="h-full w-full">
         <OrgChart
           :collapsed="collapsed"
-          :tree="chartTree"
+          :tree="tree"
           @node-click="handleNodeClick"
           @toggle="toggleCollapse"
         />

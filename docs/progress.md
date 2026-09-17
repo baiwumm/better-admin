@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 架构图谱去虚拟根 + 默认仅展开前两级（四端，2026-09-17）
+
+- **背景**：用户反馈 `/org/chart` 组织层级太多导致图谱看不清，提出两点调整：① 组织已有真实顶级组织，去掉图谱顶部「Better Admin」虚拟根节点；② 初始只展示前两级，更深层级默认收起。
+- **做了什么**（四端 `features/org` 图谱四文件同步）：① 删除页面构造的虚拟根——`CHART_ROOT_ID` 常量、节点 `isRoot` 字段及其全部 UI 分支（「根组织」徽章 / Landmark 图标 /「N 个顶级组织」文案 / 根字号）移除，顶级组织直接作为根层（`layoutDeptForest` 森林多根布局天然支持，节点点击跳通讯录无需再过滤虚拟根 id）；② 折叠集合初始值改为 `collectDefaultCollapsed`（深度 ≥ 1 的节点 id 全部收起 = 仅展示前两级，折叠钮展示「+N」可展开）。初始化时序：React / Next 新增 `OrgChartView` 子组件在树数据就绪后才挂载、惰性 `useState` 求值（避免树异步到达前首帧全展开闪现，树刷新不重置用户操作）；Vue / Nuxt 用 `watch(tree, …, { immediate: true })` + `collapsedInitialized` 标志一次性初始化。**无契约变更**（数据源仍为 GET /org/depts/tree）。
+- **语言包**：四端 × 2 删除 `features.chart.rootBadge` / `features.chart.rootSubtitle`（虚拟根专属文案，已无引用）；check-locales（next vs react）通过。
+- **验证**：React `tsc --noEmit` / eslint / vitest 8 文件 93 用例；Next `tsc --noEmit` / eslint；Vue `type-check` / eslint / prettier / vitest 9 文件 95 用例；Nuxt `typecheck` / eslint / vitest 9 文件 95 用例——四端全绿。GUI 效果留用户本地复核。
+- **文档**：本条目；`ui-spec.md` §1.3 交互更新 + 变更记录 v1.6；`mechanisms.md` §7.1 collapsed 语义更新、§7.2 节点尺寸事实修正（220×84 → 240×112）；`feature-matrix.md` 无状态变化（仍全 ✅）。
+
 ### 公告详情抽屉按钮叠压修复 + 一键催办移入 Drawer.Footer（React / Next，2026-09-17）
 
 - **背景**：用户反馈 `/org/notices`「查看详情」抽屉里「加载更多」「一键催办」按钮叠在未读名单条目上随滚动浮动，Vue / Nuxt 端正常；用户查 DOM 定位到名单容器 `min-h-40` 未随内容撑开。

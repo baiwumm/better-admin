@@ -98,7 +98,7 @@
 **组织架构图谱（阶段 4，React 端实施中——本阶段 UI 与交互基准）**：
 
 - **定位**：只读可视化。允许画布平移、缩放、Fit View、点击节点、折叠 / 展开组织节点；禁用节点自由拖拽、连线创建 / 编辑、拖拽改变组织结构——图谱可视化引擎，不做成流程编辑器。
-- **交互**：节点点击跳转通讯录统一 URL Query `/org/directory?deptId=xxx`（禁用路由 state）；第一版控件提供 Zoom Controls / Fit View / 画布平移，Minimap 不默认必备，按实际节点规模决定。
+- **交互**：节点点击跳转通讯录统一 URL Query `/org/directory?deptId=xxx`（禁用路由 state）；第一版控件提供 Zoom Controls / Fit View / 画布平移，Minimap 不默认必备，按实际节点规模决定；不设图谱虚拟根节点（顶级组织直接作为根层），初始默认仅展开前两级，更深层级点击节点底部折叠钮展开（2026-09-17 调整）。
 - **视觉**：节点卡片用项目 Design Tokens + HeroUI 组件（React / Next 端）渲染，停用组织沿用置灰；连线与画布背景提供 light / dark 两套值（对齐 §17.2）；数据加载 / 空状态对齐 §14 / §13。
 - **四端一致性原则**：统一「数据模型 + 节点字段 / 状态 + 节点 / 连线视觉 + 交互规范」，实现库各端自选（React / Next → `@xyflow/react`；Vue / Nuxt → `@vue-flow/core`，届时确认维护状态），一致性靠本规范保证而非同一实现库。
 - **实现约束**：`@xyflow/react` 随图谱页面懒加载（React.lazy / `next/dynamic`），默认不做 SSR；`write-excel-file` 在用户触发导出时动态 `import()`（不占通讯录页初始包体积）；d3-hierarchy 等布局库在确认布局需求前不引入；数据源复用 `GET /org/depts/tree`（无契约变更）。
@@ -759,6 +759,7 @@ C:\Users\Administrator\.workbuddy\binaries\python\envs\default\Scripts\python.ex
 
 | 日期 | 版本 | 说明 |
 | --- | --- | --- |
+| 2026-09-17 | v1.6 | 架构图谱去虚拟根 + 默认折叠（§1.3 交互）：移除顶部「Better Admin」虚拟根节点（顶级组织直接作为根层），初始仅展开前两级、更深层级默认收起，四端同步；语言包删除 rootBadge / rootSubtitle 键 |
 | 2026-09-14 | v1.5 | 补齐 Next 端文件约定图标：`apps/next/src/app/{favicon.ico,icon0.svg,icon1.png,apple-icon.png}` 纳入脚本生成与 §19.3 登记（该组优先级高于 `metadata.icons`，此前只换 `public/` 会残留旧品牌图标）；§19.4 / §19.6 同步 |
 | 2026-09-14 | v1.4 | 新增 §19 品牌标识资源（Logo / Favicon）：登记方案 03「Monogram B」精修定稿的几何常量、双几何策略（品牌 64–192 / 图标 52–204）、`assets/logo/` 与 `apps/*/public/` 的命名对照、硬性规则与验收结果；原 §19 变更记录顺延为 §20 |
 | 2026-08-21 | v0.1 | 基于 Shadcn Admin v2.2.1 源码分析产出初版 UI Spec |

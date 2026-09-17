@@ -11,9 +11,6 @@ import type { DeptTreeNode } from "@/lib/api-types";
  * 坐标为 React Flow 画布坐标（节点左上角），y 由层级深度决定。
  */
 
-/** 图谱虚拟根节点 id（Better Admin，非真实组织；点击不跳转通讯录） */
-export const CHART_ROOT_ID = "__chart_root__";
-
 /** 节点卡片固定尺寸（与 org-chart-node 的 Card 样式保持一致，布局正确性的前提） */
 export const CHART_NODE_WIDTH = 240;
 export const CHART_NODE_HEIGHT = 112;

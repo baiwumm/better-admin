@@ -10,7 +10,7 @@ import { useColorMode } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
 
 import OrgChartNode from "./OrgChartNode.vue";
-import { CHART_ROOT_ID, layoutDeptForest } from "./org-chart-layout";
+import { layoutDeptForest } from "./org-chart-layout";
 
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/controls/dist/style.css";
@@ -29,7 +29,7 @@ import "@vue-flow/controls/dist/style.css";
  * resolved 值驱动（与 <html> 类一致），而非 OS 偏好。
  */
 const props = defineProps<{
-  /** 全量组织树（GET /org/depts/tree，含顶部虚拟根节点） */
+  /** 全量组织树（GET /org/depts/tree，顶级组织为根层） */
   tree: DeptTreeNode[];
   /** 收起节点 id 集合（空集 = 全展开） */
   collapsed: Set<string>;
@@ -91,7 +91,6 @@ const nodes = computed<Node[]>(() => {
           dept: node,
           expandable: node.children.length > 0,
           isCollapsed: props.collapsed.has(node.id),
-          isRoot: node.id === CHART_ROOT_ID,
         },
         id: node.id,
         position,

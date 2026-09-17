@@ -94,8 +94,6 @@
   "features.chart.noLeader": "No leader yet",
   "features.chart.node.collapse": "Collapse sub-departments",
   "features.chart.node.expand": "Expand sub-departments",
-  "features.chart.rootBadge": "Root",
-  "features.chart.rootSubtitle": "{{count}} top-level departments",
   "features.depts.action.add": "Add Sub-department",
   "features.depts.action.addRoot": "Add Root Department",
   "features.depts.column.childCount": "Sub-depts",
