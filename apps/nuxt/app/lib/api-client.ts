@@ -269,17 +269,23 @@ export async function fetchApiRaw(
 
     if (!response.ok) {
       const err = (json ?? {}) as ApiErrorBody
+
+      // 演示只读守卫（契约 v1.10.0）：DEMO_MODE 下所有非白名单写请求均返回此码。
+      // 在拦截器层统一本地化 message，各页面既有的错误 toast（未知 code 回退
+      // error.message）即可原样呈现，无需逐页映射、也不额外弹全局 toast 造成重复。
       const apiError = new ApiClientError(
         response.status,
         err.code,
-        err.message
-        ?? getErrorMessage(
-          'errors.api.requestFailed',
-          '请求失败（{{status}}）',
-          {
-            status: response.status
-          }
-        )
+        err.code === 'DEMO_READONLY'
+          ? getErrorMessage('errors.api.demoReadonly', '演示环境，禁止修改数据')
+          : err.message
+            ?? getErrorMessage(
+              'errors.api.requestFailed',
+              '请求失败（{{status}}）',
+              {
+                status: response.status
+              }
+            )
       )
 
       notifyErrorHandler(apiError)

@@ -1,9 +1,9 @@
-import type { AuthUser } from '../../../app/lib/api-types'
+import type { AuthUser, DemoLoginKind } from '../../../app/lib/api-types'
 
 import { createHash } from 'node:crypto'
 
 import bcrypt from 'bcryptjs'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, notInArray } from 'drizzle-orm'
 
 import { db } from '../../db/client'
 import {
@@ -15,6 +15,7 @@ import {
   users
 } from '../../db/schema'
 import { normalizePermissionBits } from '../permissions'
+import { DEMO_ADMIN_ROLE_CODE, DEMO_RANDOM_EXCLUDED_ROLE_CODES, isDemoMode } from '../demo'
 import { ServerApiError } from '../http'
 import {
   decodeTokenExp,
@@ -206,6 +207,26 @@ export async function login(
   }
 
   const rememberMe = dto.rememberMe === true
+
+  return issueSession(
+    user,
+    rememberMe,
+    meta,
+    rememberMe ? 'login.success.remember' : 'login.success'
+  )
+}
+
+/**
+ * 签发会话并落托管、最近登录时间、用户视图与登录日志
+ * （login 与 demo-login 共用，保证响应结构与审计行为一致；
+ * 与 Nest 端 issueSession 一一对齐）。
+ */
+async function issueSession(
+  user: { id: string, username: string, tokenVersion: number },
+  rememberMe: boolean,
+  meta?: ClientMeta,
+  logAction = 'login.success'
+): Promise<LoginResult> {
   const tokens = await signTokens(user, rememberMe)
 
   await storeRefreshToken(user.id, tokens.refreshToken)
@@ -224,13 +245,116 @@ export async function login(
   // 记录登录成功日志（含 IP / UA，便于审计）
   await writeLog({
     type: 'login',
-    action: rememberMe ? 'login.success.remember' : 'login.success',
+    action: logAction,
     userId: user.id,
     ip: meta?.ip ?? null,
     userAgent: meta?.userAgent ?? null
   })
 
   return { ...tokens, user: view }
+}
+
+/**
+ * 演示快捷登录（契约 v1.10.0 POST /auth/demo-login，与 Nest 端一一对齐）：
+ * - DEMO_MODE 关闭时 404（本地开发与常规部署无感）；
+ * - admin：「系统管理员」演示角色用户随机一人；
+ *   random：其余演示角色两级随机（先等概率选角色，再从该角色用户中随机），
+ *   保证每个角色被登录概率均等；
+ * - 超管永不进任何快捷池（候选直接排除绑定 super_admin 的用户）；
+ * - 演示密码 demo1234 仅服务端脚本与登录校验使用，本端点不接触任何密码，
+ *   签发响应结构与 /auth/login 完全一致（cookie 模式由 route 写入）。
+ */
+export async function demoLogin(
+  kind: DemoLoginKind,
+  meta?: ClientMeta
+): Promise<LoginResult> {
+  if (!isDemoMode()) {
+    throw new ServerApiError(404, 'NOT_FOUND', '接口不存在')
+  }
+
+  const picked
+    = kind === 'admin'
+      ? await pickDemoUser([DEMO_ADMIN_ROLE_CODE])
+      : await pickRandomDemoUser()
+
+  if (!picked) {
+    throw new ServerApiError(
+      404,
+      'DEMO_USER_NOT_AVAILABLE',
+      '演示账号暂不可用，请稍后再试'
+    )
+  }
+
+  // 快捷登录统一短会话（不记住我），访客会话隔日自然过期
+  return issueSession(picked, false, meta, 'login.success.demo')
+}
+
+/**
+ * 演示池候选用户：指定角色 code 集合内 enabled 角色的 active 未删除用户，
+ * 排除任何绑定了 super_admin 的用户（超管永不进池）。
+ */
+async function listDemoUsers(roleCodes: readonly string[]) {
+  if (roleCodes.length === 0) return []
+
+  const superAdminBindings = await db
+    .select({ userId: userRoles.userId })
+    .from(userRoles)
+    .innerJoin(
+      roles,
+      and(eq(roles.id, userRoles.roleId), eq(roles.code, 'super_admin'))
+    )
+  const exclude = new Set(superAdminBindings.map(row => row.userId))
+
+  const rows = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      tokenVersion: users.tokenVersion
+    })
+    .from(users)
+    .innerJoin(userRoles, eq(userRoles.userId, users.id))
+    .innerJoin(roles, and(eq(roles.id, userRoles.roleId), eq(roles.enabled, true)))
+    .where(
+      and(
+        inArray(roles.code, [...roleCodes]),
+        eq(users.status, 'active'),
+        isNull(users.deletedAt)
+      )
+    )
+    .groupBy(users.id, users.username, users.tokenVersion)
+
+  return rows.filter(row => !exclude.has(row.id))
+}
+
+/** 两级随机的 random 池：先从其余演示角色（排除 super_admin 与 admin 池角色）等概率选一个 */
+async function pickRandomDemoUser() {
+  const roleRows = await db
+    .select({ code: roles.code })
+    .from(roles)
+    .where(
+      and(
+        eq(roles.enabled, true),
+        notInArray(roles.code, [...DEMO_RANDOM_EXCLUDED_ROLE_CODES])
+      )
+    )
+
+  const roleCode = randomPick(roleRows.map(row => row.code))
+
+  if (!roleCode) return null
+
+  return pickDemoUser([roleCode])
+}
+
+async function pickDemoUser(roleCodes: readonly string[]) {
+  const candidates = await listDemoUsers(roleCodes)
+
+  return randomPick(candidates)
+}
+
+function randomPick<T>(items: T[]): T | null {
+  if (items.length === 0) return null
+
+  return items[Math.floor(Math.random() * items.length)]
 }
 
 export interface RefreshResult {

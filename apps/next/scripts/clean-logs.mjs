@@ -36,13 +36,16 @@ const sql = postgres(connectionString, {
 });
 
 try {
+  // 跳过 faker 布景日志（detail.seed=true，契约 v1.10.0，与 Nest 端
+  // log-cleanup 一致）：演示数据集的永久布景不随保留窗口滚动清除
   const result = await sql`
     DELETE FROM logs
     WHERE created_at < now() - (${RETENTION_DAYS} || ' days')::interval
+      AND coalesce(detail->>'seed', '') <> 'true'
   `;
 
   console.log(
-    `[clean-logs] 已清理 ${result.count} 条 ${RETENTION_DAYS} 天前的日志`,
+    `[clean-logs] 已清理 ${result.count} 条 ${RETENTION_DAYS} 天前的日志（seed 布景除外）`,
   );
 } catch (error) {
   console.error("[clean-logs] 清理失败:", error);

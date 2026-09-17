@@ -1,6 +1,10 @@
 import { create } from "zustand";
 
-import { type AuthUser, type LoginResponse } from "@/lib/api-types";
+import {
+  type AuthUser,
+  type DemoLoginKind,
+  type LoginResponse,
+} from "@/lib/api-types";
 import { fetchApi, ApiClientError } from "@/lib/api-client";
 import { queryClient } from "@/lib/query-client";
 
@@ -33,6 +37,12 @@ interface AuthState {
     password: string,
     rememberMe?: boolean,
   ) => Promise<void>;
+  /**
+   * 演示快捷登录：POST /api/auth/demo-login（契约 v1.10.0）。
+   * 服务端按 kind 随机签发演示账号（响应同 /auth/login，双令牌经 httpOnly
+   * Cookie 下发，本 store 不持有），返回登录用户供页面 toast 展示姓名。
+   */
+  demoLogin: (kind: DemoLoginKind) => Promise<AuthUser>;
   /** 真实退出：POST /api/auth/logout，服务端撤销托管会话并清除 Cookie。 */
   logout: () => Promise<void>;
   /** 覆盖当前用户快照（useAuthSync 的 /auth/me 同步通道，保持 permissions 新鲜）。 */
@@ -65,6 +75,33 @@ export const useAuthStore = create<AuthState>()((set) => ({
       });
       // 登录成功后立即失效用户快照缓存（N2 布局期接管重取）
       queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY });
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  demoLogin: async (kind) => {
+    set({ isLoading: true });
+
+    try {
+      const res = await fetchApi<LoginResponse>("/auth/demo-login", {
+        method: "POST",
+        auth: false,
+        body: { kind },
+      });
+
+      set({
+        user: res.user,
+        // 演示会话固定短会话：rememberMe=false，Cookie 档位由服务端决定
+        rememberMe: false,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+      // 与 login 相同：立即失效用户快照缓存（N2 布局期接管重取）
+      queryClient.removeQueries({ queryKey: AUTH_ME_QUERY_KEY });
+
+      return res.user;
     } catch (error) {
       set({ isLoading: false });
       throw error;

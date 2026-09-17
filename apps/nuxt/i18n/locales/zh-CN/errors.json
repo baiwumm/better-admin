@@ -7,6 +7,7 @@
   "errors.account.passwordContainsUsername": "新密码不能包含用户名",
   "errors.account.passwordSameAsOld": "新密码不能与当前密码相同",
   "errors.account.validation": "请求参数不合法，请检查表单后重试",
+  "errors.api.demoReadonly": "演示环境，禁止修改数据",
   "errors.api.loginExpired": "登录已过期，请重新登录",
   "errors.api.refreshFailed": "刷新失败，请重新登录",
   "errors.api.requestFailed": "请求失败（{{status}}）",
