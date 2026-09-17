@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Phase 0 T3：React / Vue 登录页演示快捷登录 + DEMO_READONLY 统一提示（2026-09-17）
+
+- **做了什么**（`4cb3436`，按 `plan-phase0-execution.md` §3 T3 卡执行计划 §3.6 Step 4 / 5）：① 登录页移除 GitHub / Google 占位按钮（含内联 SVG 图标组件与 `oauthPlaceholder`），换为「管理员」「随机用户」两按钮（lucide `shield-check` / `dices`）调 `POST /auth/demo-login`；pending 态按按钮独立（本地 `demoKind` 决定哪个按钮转圈，其余按钮与密码登录提交按钮仅禁用、不显示「登录中…」）；成功 toast「登录成功，欢迎 {姓名}」（计划 §3.3 拍板不带角色）；404 统一提示「演示登录暂不可用」（覆盖 `DEMO_MODE` 关闭 `NOT_FOUND` 与候选池空 `DEMO_USER_NOT_AVAILABLE`）；回跳抽 `finishSignIn()` 与密码登录共用。② auth store 新增 `demoLogin(kind)`（固定短会话 `rememberMe=false`、同 login 预取菜单、返回 `AuthUser` 供 toast），`api-types` 新增 `DemoLoginKind`。③ `api-client` 在 `!response.ok` 分支识别 `code === 'DEMO_READONLY'` → message 替换为 i18n `errors.api.demoReadonly`。④ i18n 新增 5 键（`auth.signIn.demoAdmin` / `demoRandom` / `demoUnavailable` / `demoWelcome`、`errors.api.demoReadonly`，zh-CN / en）：React 真源 + Vue + **Next 手工同步**（`check-locales` CI 强制 React ↔ Next 逐键一致；Next 功能实现留 T4）。⑤ CSS 类 `.sign-in-oauth` → `.sign-in-demo`（两端语义重命名，规则不变）。
+- **关键决策：DEMO_READONLY「统一 toast」落地为「拦截器本地化 message + 页面既有错误 toast 呈现」**——两端所有写操作页面均已有各自错误 toast（`getXxxErrorMessage` 未知 code 回退 `error.message`），拦截器若再弹全局 toast 会双重提示；改为在拦截器层替换 message，零页面改动、零重复，Next / Nuxt 照做即可。Vue 端既有 `setApiErrorHandler` 桥（5xx）不动；React 端未引入全局错误桥。
+- **保留旧键**：`auth.signIn.githubDeveloping` / `googleDeveloping` 两端已无引用，但 Next / Nuxt 登录页仍在用，语言包暂留，**T4 完成后统一清理**。
+- **验证**：React `lint` 0 error / vitest 93 用例 / `build`（tsc + vite）三绿；Vue `lint` 0 error / vitest 95 用例 / `build`（vite + vue-tsc）三绿；Next `check-locales` 14 文件一致。React 浏览器冒烟（用户本地 Nest 已开 `DEMO_MODE`）：两按钮渲染正确、点「管理员」pending 态正确 → 以 faker 用户「季智宸」（`sys_admin`）登录跳首页、头像 / 全菜单正常；用户管理 → 行操作「停用」→ 确认 → 弹出「演示环境，禁止修改数据」toast。**随机用户 kind、Vue 端 GUI、写表单打开与校验由用户本地手动验证**（用户指示）。
+- **文档**：本条目；`plan-phase0-execution.md` §0 T3 置 ✅、§4 追加 T3 报告；`plan-dashboard-playground.md` §3.6 Step 4 / 5 打钩。
+
 ### demo-reset 用户数据中国化（2026-09-17）
 
 - **背景**：用户反馈生成用户的英文用户名与 `@demo.better-admin.com` 邮箱过长、不贴合国内用户画像。

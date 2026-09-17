@@ -132,17 +132,17 @@
 - [x] `.env.example` 登记 `DEMO_MODE` / `LOG_API_SKIP_GET`
 - [x] 验证：本地开 `DEMO_MODE`，curl 逐条过白名单放行 / 其余非 GET 全拦 / 超管保护 / 登录-刷新-退出链路完整；**e2e 测试未补齐**——项目无测试基建，备案 `code-review-backlog.md`
 
-**Step 4 — React 端**（半天）
+**Step 4 — React 端**（半天）**——2026-09-17 完成（`4cb3436`）**
 
-- [ ] 登录页移除 GitHub / Google 占位按钮 → 「管理员」「随机用户」两按钮（调 demo-login）
-- [ ] 请求拦截器识别 `DEMO_READONLY` → 统一 toast（i18n 键 zh-CN / en）
-- [ ] 登录成功 toast 带「姓名 · 角色」（可选）
-- [ ] 验证：两种 kind 登录成功；写表单可打开、校验可见、提交被拦 toast
+- [x] 登录页移除 GitHub / Google 占位按钮 → 「管理员」「随机用户」两按钮（调 demo-login）
+- [x] 请求拦截器识别 `DEMO_READONLY` → 统一 toast（i18n 键 zh-CN / en）——落地为拦截器本地化 message、由页面既有错误 toast 呈现（避免双重提示，见执行手册 §4 T3 报告）
+- [x] 登录成功 toast 带「姓名 · 角色」（可选）——按 §3.3 拍板仅带姓名
+- [x] 验证：两种 kind 登录成功；写表单可打开、校验可见、提交被拦 toast——自动化三绿 + React 浏览器冒烟（admin kind / 写拦截 toast）通过；**其余项用户本地手动复核**
 
-**Step 5 — Vue 端**（半天，与 Step 4 同构平移）
+**Step 5 — Vue 端**（半天，与 Step 4 同构平移）**——2026-09-17 完成（`4cb3436`）**
 
-- [ ] 登录页两按钮 + 拦截器 toast + i18n
-- [ ] 验证同 Step 4
+- [x] 登录页两按钮 + 拦截器 toast + i18n
+- [x] 验证同 Step 4——自动化三绿（lint / vitest 95 / build 含 vue-tsc）；**GUI 用户本地手动复核**
 
 **Step 6 — Next 端**（1 天，独立全栈）
 

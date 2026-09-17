@@ -8,7 +8,7 @@
 | --- | --- | --- | --- | --- |
 | T1 | OpenAPI 契约 v1.10.0 + Nest 服务端改造 | 定时任务 A | 2026-09-17 00:00 | ✅ 完成（`d7b7bb3` + `4147654`；e2e 子项 ⚠️ 备案，见 §4） |
 | T2 | faker 重置脚本开发 + 首次真实执行 + 幂等复验 | 定时任务 A | 2026-09-17 00:00(紧随 T1) | ✅ 完成（`1e5d48f`） |
-| T3 | React + Vue 前端(快捷登录 + DEMO_READONLY toast) | **用户手动** | 2026-09-17 白天 | ⬜ 未开始 |
+| T3 | React + Vue 前端(快捷登录 + DEMO_READONLY toast) | **用户手动** | 2026-09-17 白天 | ✅ 完成（`4cb3436`;GUI 复核由用户本地执行,见 §4） |
 | T4 | Next + Nuxt 前端(server API + 登录页 + toast) | **用户手动** | 2026-09-17 白天 | ⬜ 未开始 |
 | T5 | 全链路验收 + 文档收尾 | 定时任务 B(待建) | 2026-09-18 00:00 | ⬜ 未开始 |
 
@@ -102,6 +102,13 @@
 **提交点**:`docs: Phase 0 验收与文档同步` 类提交;§4 追加验收报告。
 
 ## 4. 执行报告区(任务运行时追加,倒序)
+
+### T3 执行报告(2026-09-17 白天,AI 协助开发,用户本地 GUI 复核)
+
+- **范围**:计划 §3.6 Step 4 / 5 全部开发项,提交 `4cb3436`。React 为基准实现,Vue 同构平移;Next 仅同步语言包(`check-locales` CI 强制 React ↔ Next 逐键一致),功能实现留 T4。
+- **实现口径**:① 登录页「管理员」「随机用户」替代 GitHub / Google 占位(lucide `shield-check` / `dices`),pending 态按按钮独立,404 统一提示「演示登录暂不可用」;② auth store `demoLogin(kind)` 固定短会话(`rememberMe=false`,refreshToken 仅内存);③ **DEMO_READONLY 统一提示落地为「拦截器本地化 message + 页面既有错误 toast 呈现」**——两端所有写操作页面均已有错误 toast(未知 code 回退 `error.message`),拦截器再弹全局 toast 会双重提示,故 `api-client` 只把 message 替换为 `errors.api.demoReadonly`,零页面改动、Next / Nuxt 可照做;④ 成功 toast 按计划 §3.3 拍板仅带姓名;⑤ 旧键 `githubDeveloping` / `googleDeveloping` 两端已无引用但 Next / Nuxt 登录页仍在用,语言包暂留,**T4 完成后清理**;⑥ CSS 类 `.sign-in-oauth` → `.sign-in-demo`(两端)。
+- **验证(已完成部分)**:React `lint` 0 error / vitest 93 用例 / `build` 三绿;Vue `lint` 0 error / vitest 95 用例 / `build`(含 vue-tsc)三绿;Next `check-locales` 14 文件一致。React 浏览器冒烟(用户本地 Nest 已开 `DEMO_MODE`):两按钮渲染、「管理员」pending 态正确、以 faker 用户登录跳首页且头像 / 全菜单正常;用户管理行操作「停用」→ 确认 → 弹出「演示环境,禁止修改数据」。
+- **留用户本地手动验证(用户指示)**:随机用户 kind 登录;Vue 端 GUI 全流程;写表单可打开、校验可见、提交被拦 toast。
 
 ### 任务 A 执行报告(2026-09-17 00:00 触发,约 1 小时,T1 ✅ / T2 ✅)
 
