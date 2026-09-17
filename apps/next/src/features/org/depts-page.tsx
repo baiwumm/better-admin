@@ -2,6 +2,7 @@
 
 import type { Dept, DeptSortItem, DeptTreeNode } from "@/lib/api-types";
 import type { AppColumnDef } from "@/components/common/data-table/table-types";
+import type { UserInfoUser } from "@/components/common/user-info/user-info";
 import type { DeptFormMode } from "./dept-form-dialog";
 
 import {
@@ -32,6 +33,7 @@ import {
 } from "@/components/common/data-table";
 import { appTableFeatures } from "@/components/common/data-table/table-types";
 import { EmptyContent } from "@/components/common/empty-content/empty-content";
+import { UserInfo } from "@/components/common/user-info/user-info";
 import { useMenuPermissions } from "@/hooks/use-permissions";
 import { useTranslation } from "@/i18n";
 import { useAuthStore } from "@/stores/auth-store";
@@ -51,6 +53,21 @@ interface FormContext {
   dept: Dept | null;
   /** create：预设父级（新增子组织）；create-root 为 null */
   parentNode: DeptTreeNode | null;
+}
+
+/**
+ * 负责人摘要（UserInfo 入参，与侧边栏 / 日志操作人同一展示形式）：树节点只有
+ * 姓名与头像，username 复用姓名使 UserInfo 次行与主行相同而不重复展示；
+ * 未设负责人或其账号已删除（leaderName 为 null）时返回 null → 显示 —。
+ */
+function deptLeader(node: DeptTreeNode): UserInfoUser | null {
+  return node.leaderName
+    ? {
+        username: node.leaderName,
+        displayName: node.leaderName,
+        avatar: node.leaderAvatar,
+      }
+    : null;
 }
 
 export function DeptsPage() {
@@ -198,11 +215,7 @@ export function DeptsPage() {
         id: "leaderName",
         enableSorting: false,
         header: t("features.depts.column.leader"),
-        cell: ({ row }) => (
-          <Typography type="body-sm">
-            {row.original.leaderName ?? "—"}
-          </Typography>
-        ),
+        cell: ({ row }) => <UserInfo user={deptLeader(row.original)} />,
       },
       {
         id: "childCount",

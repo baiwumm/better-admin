@@ -21,6 +21,7 @@ import DeptFormDialog from "./DeptFormDialog.vue";
 import DeptTreePanel from "./DeptTreePanel.vue";
 
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
+import UserInfo from "@/components/common/UserInfo.vue";
 import DataTable from "@/components/data-table/DataTable.vue";
 import DataTableViewOptions from "@/components/data-table/DataTableViewOptions.vue";
 import { type AppTable } from "@/components/data-table/table-types";
@@ -212,8 +213,23 @@ const columns = computed<AppColumnDef<DeptTreeNode>[]>(() => [
     id: "leaderName",
     enableSorting: false,
     header: () => t("features.depts.column.leader"),
-    cell: ({ row }) =>
-      h("span", { class: "text-sm" }, row.original.leaderName ?? "—"),
+    // 负责人与侧边栏 / 日志操作人同一展示形式（头像 + 姓名）：树节点只有姓名与
+    // 头像，username 复用姓名使 UserInfo 副行与主行相同而不渲染；未设负责人或
+    // 其账号已删除（leaderName 为 null）时显示 —
+    cell: ({ row }) => {
+      const { leaderName, leaderAvatar } = row.original;
+
+      return leaderName
+        ? h(UserInfo, {
+            user: {
+              avatar: leaderAvatar,
+              displayName: leaderName,
+              username: leaderName,
+              email: null,
+            },
+          })
+        : h("span", { class: "text-muted text-sm" }, "—");
+    },
   },
   {
     id: "childCount",

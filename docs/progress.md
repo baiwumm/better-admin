@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 组织管理「负责人」列改为 UserInfo 头像形式（四端，2026-09-17）
+
+- **背景**：用户指示 `/org/depts` 子组织列表的「负责人」列改用侧边栏用户头像形式（头像 + 姓名），四端统一。
+- **做了什么**：四端 `DeptsPage` 负责人列由纯文本 `leaderName ?? "—"` 改为复用各端既有 `UserInfo` 组件（React / Next：新增模块级 `deptLeader(node)` 辅助函数，形态同日志页 `logOperator`；Vue / Nuxt：cell 三元分支，同日志页操作人列写法）。**无契约变更**：列表数据源本就是树接口 `DeptTreeNode`，`leaderAvatar` 为契约 v1.7.0 既有字段。负责人只有姓名与头像，`username` 复用姓名传入——React 版 `UserInfo` 次行与主行相同时本就不渲染；**Vue / Nuxt `UserInfo.vue` 顺带补齐同一逻辑**（副行为空或与主行相同时不渲染，对齐 React 基准），否则会显示两行相同姓名。未设负责人或其账号已删除（`leaderName` 为 null）时显示 `—`。
+- **取证**：Nuxt 组件自动导入只对模板生效，`h()` 渲染函数中引用须显式 `import`（既有 LogsPage / UsersPage 亦如此），首轮 `typecheck` 报 `Cannot find name 'UserInfo'` 后补导入。
+- **验证**：React `tsc` / eslint / vitest 93 用例；Next `tsc` / eslint；Vue `type-check` / eslint / prettier / vitest 95 用例；Nuxt `typecheck` / eslint / vitest 95 用例——四端全绿。GUI 效果留用户本地复核。
+- **文档**：本条目；`feature-matrix.md` 组织管理行追加现状。
+
 ### Vue / Nuxt 命令面板菜单组改为保持树形（2026-09-17）
 
 - **背景**：用户指示 `searchGroups` 的菜单不必对齐 React 端 `collectMenuSections` 的拍平（「父级 › 页面」平铺），`UDashboardSearch` 对 `children` 有内置处理，Vue / Nuxt 两端同步修改——属组件库能力带来的**有意差异**，后续勿再改回拍平。
