@@ -110,7 +110,7 @@
 - **T1 ⚠️ 备案**:e2e 未补齐。项目无任何测试基建(无 spec / jest 配置 / `test` 脚本 / `@nestjs/testing`),手册判据「`pnpm test` / e2e 补齐」前提不成立;从零引入测试框架(4~5 个新 devDependency + 测试库策略)属 `AGENTS.md` §18 架构级决策,无人值守不自行拍板。curl 全链路已提供同等验证覆盖;已登记 `code-review-backlog.md`,待用户决定测试框架选型后补。
 - **T2 结果**:脚本 `1e5d48f`。真实执行 53.4s(头像 150/150),复跑 45.6s,11 表指纹逐表一致;超管哈希未变;保留 admin / test2 / test3(三者均绑定 `super_admin`,按「保留超管用户」口径整体保留)。真实数据端到端:admin 池 5/5 `sys_admin`,random 池 24 次覆盖四角色无超管,`demo1234` 可登录。
 - **遗留给用户(不阻塞 T3/T4)**:① 超管 `admin` 仍为种子默认密码 `admin123`,**上线前必改**;② `test2` / `test3` 是否清理;③ 矩阵按计划字面执行,部门主管 / HR 不含演示场,可在角色管理调整;④ `super_admin` role_menus 24/28(重置前即如此,聚合免检不受影响)。
-- **后续处理(2026-09-17 白天,用户拍板)**:② 已销项——保留口径收窄为仅内置 `admin`(`username` 判据 + 须绑定 super_admin,否则拒绝执行),脚本修正后重跑 31.9s,test2 / test3 已物理清除,活跃用户 151,超管绑定仅 admin,无孤儿引用。
+- **后续处理(2026-09-17 白天,用户拍板)**:② 已销项——保留口径收窄为仅内置 `admin`(`username` 判据 + 须绑定 super_admin,否则拒绝执行),脚本修正后重跑 31.9s,test2 / test3 已物理清除,活跃用户 151,超管绑定仅 admin,无孤儿引用。① 已销项——用户已改密,curl 确认 `admin123` 返回 401 `INVALID_CREDENTIALS`。
 - **T3/T4 提示**:库内已是 faker 数据集,白天可直接用快捷登录实测;本地 Nest 需 `DEMO_MODE=true` 才开放 demo-login。
 
 *(下一条:任务 B 执行报告)*
