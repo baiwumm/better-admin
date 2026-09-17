@@ -182,10 +182,10 @@ function AnimationTypeCard({
         }}
       >
         <Button
-          isDisabled={isAnimating}
           isIconOnly
           aria-label={`${type} · ${actionLabel}`}
           className="rounded-full bg-surface text-foreground shadow-sm hover:shadow-md"
+          isDisabled={isAnimating}
           variant="ghost"
           onPress={toggle}
         >
