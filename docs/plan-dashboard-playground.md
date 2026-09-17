@@ -144,16 +144,16 @@
 - [x] 登录页两按钮 + 拦截器 toast + i18n
 - [x] 验证同 Step 4——自动化三绿（lint / vitest 95 / build 含 vue-tsc）；**GUI 用户本地手动复核**
 
-**Step 6 — Next 端**（1 天，独立全栈）
+**Step 6 — Next 端**（1 天，独立全栈）**——2026-09-17 完成（GUI 由用户本地验证）**
 
-- [ ] server API：`demo-login` route handler + 只读拦截（共用 `DEMO_MODE` / `DEMO_READONLY`）+ 白名单
-- [ ] 登录页两按钮 + 拦截器 toast + i18n；`.env.example` 登记
-- [ ] 验证同 Step 3 + Step 4
+- [x] server API：`demo-login` route handler + 只读拦截（共用 `DEMO_MODE` / `DEMO_READONLY`）+ 白名单——拦截落在 `requireAuthUser` 前置检查（proxy 覆盖 `/api` 会破坏 POST 路由，Next 16 实测，见执行手册 §4 T4 报告）
+- [x] 登录页两按钮 + 拦截器 toast + i18n；`.env.example` 登记
+- [x] 验证同 Step 3 + Step 4——`lint` / `build` 绿 + curl 全链路 7/7（两 kind 登录 / 非法 kind 400 / 未登录写 403 先于鉴权 / 白名单放行 / GET 不受影响）；**GUI 用户本地复核**
 
-**Step 7 — Nuxt 端**（1 天，与 Step 6 同构）
+**Step 7 — Nuxt 端**（1 天，与 Step 6 同构）**——2026-09-17 完成（GUI 由用户本地验证）**
 
-- [ ] server API 同名实现 + 登录页 + toast + i18n；`.env.example` 登记
-- [ ] 验证同 Step 6
+- [x] server API 同名实现 + 登录页 + toast + i18n；`.env.example` 登记——拦截走 `server/middleware`（h3 中间件放行必须返回 undefined，`null` 也会短路成 204，见执行手册 §4 T4 报告）
+- [x] 验证同 Step 6——`lint` / vitest 95 / `typecheck` / `build` 四绿；**curl 与 GUI 由用户本地复核**
 
 **Step 8 — 统一验收与上线**
 

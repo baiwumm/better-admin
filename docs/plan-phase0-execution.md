@@ -9,7 +9,7 @@
 | T1 | OpenAPI 契约 v1.10.0 + Nest 服务端改造 | 定时任务 A | 2026-09-17 00:00 | ✅ 完成（`d7b7bb3` + `4147654`；e2e 子项 ⚠️ 备案，见 §4） |
 | T2 | faker 重置脚本开发 + 首次真实执行 + 幂等复验 | 定时任务 A | 2026-09-17 00:00(紧随 T1) | ✅ 完成（`1e5d48f`） |
 | T3 | React + Vue 前端(快捷登录 + DEMO_READONLY toast) | **用户手动** | 2026-09-17 白天 | ✅ 完成（`4cb3436`;GUI 复核由用户本地执行,见 §4） |
-| T4 | Next + Nuxt 前端(server API + 登录页 + toast) | **用户手动** | 2026-09-17 白天 | ⬜ 未开始 |
+| T4 | Next + Nuxt 前端(server API + 登录页 + toast) | **用户手动** | 2026-09-17 白天 | ✅ 完成（代码就绪,GUI 由用户本地验证,见 §4） |
 | T5 | 全链路验收 + 文档收尾 | 定时任务 B(待建) | 2026-09-18 00:00 | ⬜ 未开始 |
 
 状态标记:⬜ 未开始 / 🔄 进行中 / ✅ 完成 / ⛔ 失败中止(原因见 §4 报告区)。
@@ -102,6 +102,17 @@
 **提交点**:`docs: Phase 0 验收与文档同步` 类提交;§4 追加验收报告。
 
 ## 4. 执行报告区(任务运行时追加,倒序)
+
+### T4 执行报告(2026-09-17 白天,AI 协助开发,用户本地 GUI 复核)
+
+- **范围**:计划 §3.6 Step 6 / 7 全部开发项。Next / Nuxt 独立全栈各自实现 server API `demo-login` + 只读拦截 + 白名单 + 登录页两按钮 + toast + i18n + `.env.example` 登记;语言包零新增(React 真源已在 T3 同步 Next,Nuxt 经 `sync-locales` 自动同步)。
+- **Next 只读拦截实现口径(方案变更,重要)**:最初把拦截放进 `proxy.ts`(matcher 纳入 `/api`),A/B 实测发现 **Next 16 dev 下 proxy 覆盖 `/api` 会让所有 POST 路由 404**(GET 正常;连既有 `/api/auth/login` 也 404),此路不通。最终方案:`lib/server/demo.ts` 导出 `assertDemoReadonly(request)`,在 `route-auth.ts` 的 `requireAuthUser` 顶部前置调用——效果与 Nest 全局守卫先于 AuthGuard 完全一致(未登录写请求 403 `DEMO_READONLY` 而非 401);经排查全部写路由均经 `requireAuthUser`,仅 auth 四端点(demo-login / login / logout / refresh)免鉴权天然放行,白名单只需放行 notifications read-all 与 `{id}/read`。`proxy.ts` 还原为零改动。
+- **Nuxt 只读拦截实现口径**:新增 `server/middleware/demo-readonly.ts`(Nitro server middleware,先于全部 Route Handler)。**踩坑:h3 中间件返回 `null` 也会被当作响应体短路(全站 204)**——h3 对任何非 undefined 返回值都会序列化并结束请求链,放行分支必须显式 `return`(undefined)。403 分支 `setResponseStatus(403)` + 返回 `{ code, message }` 对象,形状与 `route-helpers.jsonError` 完全一致。该坑修复后**未经运行验证**(端口冲突导致前两轮误打到 Nest 3000,修正后构建通过即停,GUI 与 curl 留用户)。
+- **server demo-login(两端同构)**:`session.ts` 抽出 `issueSession`(与 Nest 同名共用链路语义一致)+ `demoLogin(kind)`(DEMO_MODE 关 404 / 池空 404 `DEMO_USER_NOT_AVAILABLE` / 两级随机 / 超管永不进池)+ route handler(非法 kind 400 `VALIDATION_ERROR`,响应复用 login 并写 httpOnly Cookie);演示常量收敛于 `lib/server/demo.ts`。cookie 模式差异仅传输层,客户端仍按契约解析响应体。
+- **验证(已完成部分)**:Next `lint` 0 error / `build` 绿(含 tsc);Nuxt `lint` 0 error / vitest 95 用例 / `typecheck` / `build` 四绿(demo-login 路由确认进产物)。**Next curl 全链路 7/7 过**(admin 登录 200 → faker 用户 sys_admin;random 200 → employee;非法 kind 400;未登录写 403 `DEMO_READONLY` 先于鉴权;白名单 login 401 放行到 handler;GET 401 不受影响;通知已读白名单 401 非 403)。Nuxt curl 因端口冲突误测 Nest 一轮、修正后未复测。
+- **顺带一致性修复**:两端 `scripts/clean-logs.mjs`(GitHub Actions cron 载体)补 `coalesce(detail->>'seed','') <> 'true'` 条件——对齐 Nest 端 log-cleanup(T1 已改),否则布景日志会被保留窗口滚动清除,Dashboard 趋势图数据源消失。
+- **LOG_API_SKIP_GET 不适用说明**:Next / Nuxt 无 Nest 的 LoggingInterceptor(api 日志)机制,该开关仅 Nest 端登记,两端 `.env.example` 不含此项(与契约"不改契约结构的配套运行时行为"口径一致)。
+- **留用户本地验证(用户指示)**:两端 GUI 全流程(两 kind 登录 / 写表单被拦 toast);Nuxt 端 curl 复测(`DEMO_MODE=true` 启动后重点验 middleware 放行不被 204 短路)。
 
 ### T3 执行报告(2026-09-17 白天,AI 协助开发,用户本地 GUI 复核)
 
