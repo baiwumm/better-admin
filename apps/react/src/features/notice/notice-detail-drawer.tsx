@@ -163,7 +163,12 @@ export function NoticeDetailDrawer({
                 {detail?.title ?? t("features.notices.detail.titleFallback")}
               </Drawer.Heading>
             </Drawer.Header>
-            <Drawer.Body className="flex flex-col gap-4">
+            {/* space-y 而非 flex 列：Body 是高度受限的滚动容器，若同时作为 flex
+                容器，高度不足时子项会按 flex-shrink 收缩——名单容器（min-h-40
+                覆盖了 min-height:auto）被压到 160px 致条目溢出叠到按钮上，正文
+                （overflow-y-auto，min-height 为 0）被压成一行；块流下各段保持
+                自然高度、由 Body 整体滚动 */}
+            <Drawer.Body className="space-y-4">
               {detail ? (
                 <>
                   {/* 公告信息 */}
@@ -239,7 +244,7 @@ export function NoticeDetailDrawer({
                     />
                   )}
 
-                  {/* 已读/未读 Tab + 催办 */}
+                  {/* 已读/未读 Tab（催办按钮见 Drawer.Footer） */}
                   <Tabs
                     aria-label={t("features.notices.detail.readTabs")}
                     selectedKey={readTab}
@@ -336,44 +341,18 @@ export function NoticeDetailDrawer({
                     )}
                   </div>
 
-                  {pagination &&
-                    pagination.total > pagination.pageSize &&
-                    readTab === "unread" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onPress={() => setUnreadPage((p) => p + 1)}
-                      >
-                        {t("features.notices.detail.loadMore")}
-                      </Button>
-                    )}
-                  {pagination &&
-                    pagination.total > pagination.pageSize &&
-                    readTab === "read" && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onPress={() => setReadPage((p) => p + 1)}
-                      >
-                        {t("features.notices.detail.loadMore")}
-                      </Button>
-                    )}
-
-                  {readTab === "unread" && canEdit && (
+                  {pagination && pagination.total > pagination.pageSize && (
                     <Button
-                      isDisabled={
-                        !detail ||
-                        detail.status !== "published" ||
-                        entries.length === 0
-                      }
-                      isPending={remindMutation.isPending}
+                      fullWidth
+                      size="sm"
                       variant="outline"
-                      onPress={handleRemind}
+                      onPress={() =>
+                        readTab === "unread"
+                          ? setUnreadPage((p) => p + 1)
+                          : setReadPage((p) => p + 1)
+                      }
                     >
-                      <BellRing className="size-4" />
-                      {remindMutation.isPending
-                        ? t("features.notices.detail.reminding")
-                        : t("features.notices.detail.remind")}
+                      {t("features.notices.detail.loadMore")}
                     </Button>
                   )}
                 </>
@@ -383,6 +362,28 @@ export function NoticeDetailDrawer({
                 </Description>
               )}
             </Drawer.Body>
+
+            {/* 一键催办置于 Footer（滚动区之外固定底部；仅未读 Tab 且有编辑权限） */}
+            {readTab === "unread" && canEdit && (
+              <Drawer.Footer>
+                <Button
+                  fullWidth
+                  isDisabled={
+                    !detail ||
+                    detail.status !== "published" ||
+                    entries.length === 0
+                  }
+                  isPending={remindMutation.isPending}
+                  variant="outline"
+                  onPress={handleRemind}
+                >
+                  <BellRing className="size-4" />
+                  {remindMutation.isPending
+                    ? t("features.notices.detail.reminding")
+                    : t("features.notices.detail.remind")}
+                </Button>
+              </Drawer.Footer>
+            )}
           </Drawer.Dialog>
         </Drawer.Content>
       </Drawer.Backdrop>

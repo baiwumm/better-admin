@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 公告详情抽屉按钮叠压修复 + 一键催办移入 Drawer.Footer（React / Next，2026-09-17）
+
+- **背景**：用户反馈 `/org/notices`「查看详情」抽屉里「加载更多」「一键催办」按钮叠在未读名单条目上随滚动浮动，Vue / Nuxt 端正常；用户查 DOM 定位到名单容器 `min-h-40` 未随内容撑开。
+- **根因**：HeroUI `Drawer.Body` 本身是 `flex-1 min-h-0 overflow-y-auto` 的高度受限滚动容器，React 端又给它写了 `flex flex-col gap-4`——内容超高时子项先按 flex-shrink 收缩：名单容器的显式 `min-h-40` 覆盖了 `min-height: auto` 保护被压到 160px（条目溢出叠到按钮上），正文 `max-h-96 overflow-y-auto` 的 `min-height` 为 0 同样可被压缩。中途只给名单容器加 `shrink-0` 实测把压缩全部转嫁给正文（只剩一行），故最终改 Body 为块流。完整机制见 `mechanisms.md` §30。
+- **做了什么**（React / Next 两端 `notice-detail-drawer.tsx` 同步）：① `Drawer.Body` 由 `flex flex-col gap-4` 改 `space-y-4`；② 「一键催办」按用户建议移入 `Drawer.Footer`（Dialog 直接子级，滚动区之外固定底部，`fullWidth`），条件仍为未读 Tab 且有编辑权限；③ 两个按 Tab 分写的「加载更多」合并为一个 `fullWidth` 按钮置于名单末尾（呈现与 Vue 端 `block` 按钮一致）。其他 `flex flex-col` 的 Body（`post-members-drawer.tsx`）子项无显式 `min-h` / overflow 容器不触发，未动。
+- **验证**：React / Next `tsc --noEmit` / eslint 全绿；React 端浏览器复现（演示管理员登录 → 打开「新员工入职培训计划（6月批次）」详情）：正文完整多行、名单 10 条正常、「加载更多」全宽在名单末尾、「一键催办」固定 Footer，滚动无叠压。**Next 端运行时效果由用户本地验证**（用户指示）。
+- **文档**：本条目；`mechanisms.md` 新增 §30；`feature-matrix.md` 公告管理行追加修复记录。
+
 ### 组织管理「负责人」列改为 UserInfo 头像形式（四端，2026-09-17）
 
 - **背景**：用户指示 `/org/depts` 子组织列表的「负责人」列改用侧边栏用户头像形式（头像 + 姓名），四端统一。

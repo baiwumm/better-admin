@@ -976,3 +976,15 @@ Iconify CDN，实现运行时零外部网络依赖（DB 动态菜单图标名的
 **规则沉淀**：React / Next 端要改 HeroUI 组件外观（背景、圆角、尺寸、图标大小）时，**直接用 Tailwind 工具类**，按需叠加层序保证；不要在组件上写 `!important` 或内联样式兜底。但改动前先想清楚「是否会连带顶掉状态样式」，交互反馈另找属性或显式声明状态变体。
 
 - 依据：`apps/react/node_modules/@heroui/styles/dist/index.css`（层声明）与 `components/button.css`（变体 / 尺寸 / 状态规则）实读；本轮改动 `tsc --noEmit` / eslint / `check-locales` / vitest（8 文件 93 用例）全绿。页面对应运行时视觉（渐变环是否被正确遮出、亮暗两态观感）待用户本地目视确认。
+
+## 30. HeroUI `Drawer.Body` 是高度受限的滚动容器：再让它兼任 flex 列容器，子项会被 flex-shrink 压缩溢出（React / Next 端，公告详情抽屉）
+
+**现象**：公告管理「查看详情」抽屉里，「加载更多」与「一键催办」两个按钮叠在未读名单的条目上、随滚动浮动；Vue / Nuxt 端同结构的抽屉正常。用户查 DOM 定位到：名单容器 `min-h-40` 没有随内容撑开，按钮就排在 160px 之后，条目溢出画到按钮上方。
+
+**机制**（读自 `@heroui/styles/dist/components/drawer.css`）：`.drawer__dialog` 为 `flex flex-col`，`.drawer__body` 为 `flex-1 min-h-0 overflow-y-auto`——Body 是**高度受限**（跟随抽屉高度）的滚动容器。React 端又给它加了 `className="flex flex-col gap-4"`，Body 同时成为 flex 列容器；当内容总高超过 Body 高度时，flex 布局先按 `flex-shrink` 压缩子项再谈滚动。子项默认 `min-height: auto` 本可阻止压到比内容还小，但两类子项失去这层保护：① **显式 `min-h-*`** 覆盖了 `auto`（名单容器 `min-h-40` → 被压到 160px，条目 overflow visible 溢出）；② **`overflow` 非 visible** 的子项 `min-height: auto` 按规范解析为 0（正文 `max-h-96 overflow-y-auto` → 可被压到一行）。只给名单容器加 `shrink-0` 会把全部压缩转嫁给正文（实测正文只剩一行），治标不治本。
+
+**Vue / Nuxt 端为何正常**：`USlideover` 的 `#body` 内容是 body 滚动容器里的普通 div，高度不受限，其子项不参与收缩。
+
+**规则沉淀**：`Drawer.Body` 内容布局用块流（`space-y-*`）或在 Body 内包一层内容 div，**不要把 Body 自身写成 `flex flex-col`**；需要固定在底部的操作（如「一键催办」）放 `Drawer.Footer`（Dialog 直接子级，位于滚动区之外，`.drawer__body + .drawer__footer` 自带 `mt-5` 间距）。已有的 `flex flex-col` Body（`post-members-drawer.tsx`）子项无显式 `min-h` / overflow 容器，受 `min-height: auto` 保护不触发，可不动，但新写抽屉一律按本条执行。
+
+- 依据：`drawer.css` 实读 + React 端浏览器复现（修 `space-y-4` 后正文完整显示、名单不再溢出、「加载更多」在名单末尾、「一键催办」固定底部）；React / Next `tsc --noEmit` / eslint 全绿。Next 端运行时效果由用户本地验证。
