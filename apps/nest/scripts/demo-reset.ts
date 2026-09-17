@@ -1,9 +1,10 @@
 // 置顶加载 .env：client.ts 在模块加载期即读取 process.env.DATABASE_URL。
 import 'dotenv/config';
 import 'reflect-metadata';
-import { fakerZH_CN as faker, fakerEN } from '@faker-js/faker';
+import { fakerZH_CN as faker } from '@faker-js/faker';
 import { createClient } from '@supabase/supabase-js';
 import { hash } from 'bcrypt';
+import { pinyin } from 'pinyin-pro';
 import { and, count, eq, inArray, ne, notInArray, sql, type SQL } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
 import { db, pool } from '../src/db/client';
@@ -422,6 +423,25 @@ function roleSlots(): RoleCode[] {
 
 const TAG_POOL = ['全栈', '技术分享', '跑步', '摄影', '读书会', '开源', '设计', '篮球', '咖啡', '产品思维', '数据', '英语角'];
 
+/**
+ * 分性别常用名字池：faker zh_CN 没有 male / female 名字数据，`firstName(sex)` 会静默回退到
+ * 通用列表，导致名字与性别（以及按性别匹配的头像）错位；姓氏仍取 faker 百家姓（含复姓）。
+ */
+const MALE_GIVEN_NAMES = [
+  '伟', '强', '磊', '军', '洋', '勇', '杰', '涛', '超', '鹏', '浩', '宇', '博', '昊', '轩', '然', '泽', '辰', '睿', '阳',
+  '志强', '建华', '建国', '俊杰', '浩然', '宇航', '子轩', '思远', '明轩', '家豪', '天宇', '昊天', '文博', '梓豪', '嘉懿',
+  '俊熙', '宏伟', '国庆', '振华', '德华', '立伟', '振东', '海涛', '国良', '鹏飞', '志远', '文杰', '晨阳', '宇轩', '一鸣',
+  '浩宇', '子墨', '靖宇', '铭轩', '政君', '智宸', '梓睿', '沐宸', '奕辰', '景行', '致远', '明哲', '鸿飞', '旭尧', '鹤轩',
+  '绍辉', '伟诚', '嘉伟', '世杰', '宇森', '浩辰', '梓轩', '泓宇', '烨伟', '聪健', '重阳', '立果', '晓东', '云飞',
+];
+const FEMALE_GIVEN_NAMES = [
+  '芳', '娟', '敏', '静', '丽', '艳', '霞', '玲', '娜', '婷', '雪', '悦', '莉', '倩', '慧', '洁', '萍', '琴', '蕾', '璐',
+  '薇', '琳', '妍', '晴', '菲', '颖', '丹', '月', '秀英', '桂兰', '凤英', '玉兰', '雨欣', '梓涵', '欣怡', '诗涵', '紫涵',
+  '梦琪', '雅静', '思涵', '若曦', '语嫣', '雨桐', '佳怡', '子怡', '梓萱', '可欣', '馨月', '沐瑶', '一诺', '晓彤', '雨萱',
+  '怡然', '诗雨', '婉婷', '美琳', '嘉怡', '晨曦', '静怡', '海燕', '玉梅', '金凤', '秋月', '春梅', '冬梅', '素芬', '玉珍',
+  '丹丹', '雅婷', '思思', '梦瑶', '雨薇', '清雅', '书瑶', '小红', '志玲', '晓燕', '丽华', '慧敏', '思颍',
+];
+
 function buildUsers(postRows: PostRow[]): UserRow[] {
   const slots = roleSlots();
   const usedNames = new Set<string>();
@@ -432,11 +452,20 @@ function buildUsers(postRows: PostRow[]): UserRow[] {
     const pool = postRows.filter((p) => p.def.pool.includes(role));
     const post = faker.helpers.arrayElement(pool);
     const gender = faker.helpers.arrayElement(['male', 'female'] as const);
-    const displayName = faker.person.fullName({ sex: gender });
+    const lastName = faker.person.lastName();
+    const firstName = faker.helpers.arrayElement(gender === 'male' ? MALE_GIVEN_NAMES : FEMALE_GIVEN_NAMES);
+    const displayName = `${lastName}${firstName}`;
 
-    let username = fakerEN.internet.username().toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 18);
-    if (username.length < 3) username = `user${username}`;
-    while (usedNames.has(username)) username = `${username}${faker.number.int({ min: 1, max: 99 })}`;
+    // 国内常见账号形态：姓名全拼为主（xiaoyewei）、少量「姓.名」（xiao.yewei）；
+    // 姓氏用 surname 模式处理多音字（曾 → zeng、单 → shan），重名追加两位数字
+    const surnamePy = pinyin(lastName, { toneType: 'none', type: 'array', mode: 'surname' }).join('');
+    const givenPy = pinyin(firstName, { toneType: 'none', type: 'array' }).join('');
+    const base = faker.helpers.weightedArrayElement([
+      { weight: 8, value: `${surnamePy}${givenPy}` },
+      { weight: 2, value: `${surnamePy}.${givenPy}` },
+    ]);
+    let username = base;
+    while (usedNames.has(username)) username = `${base}${faker.number.int({ min: 10, max: 99 })}`;
     usedNames.add(username);
 
     // 最近 12 人为近 30 天新入职（其中后 4 人在近 7 天），供 Dashboard KPI「今日 / 近 7 日新增」有活数据
@@ -459,7 +488,7 @@ function buildUsers(postRows: PostRow[]): UserRow[] {
       id: id(),
       seq: i + 1,
       username,
-      email: `${username}@demo.better-admin.com`,
+      email: `${username}@better-admin.com`,
       displayName,
       gender,
       phone: phone(),
@@ -564,7 +593,6 @@ async function main() {
   const confirm = process.argv.includes('--confirm');
   const started = Date.now();
   faker.seed(FAKER_SEED);
-  fakerEN.seed(FAKER_SEED);
 
   const dbUrl = process.env.DATABASE_URL!;
   console.log(`[demo-reset] 目标数据库：${new URL(dbUrl).host}`);

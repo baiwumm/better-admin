@@ -108,6 +108,9 @@ importers:
       eslint:
         specifier: 9.18.0
         version: 9.18.0(supports-color@8.1.1)
+      pinyin-pro:
+        specifier: 3.29.4
+        version: 3.29.4
       ts-node:
         specifier: 10.9.2
         version: 10.9.2(@types/node@22.18.1)(typescript@5.8.3)
@@ -2332,6 +2335,9 @@ packages:
   picomatch@4.0.7:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
+
+  pinyin-pro@3.29.4:
+    resolution: {integrity: sha512-SPXpDT2cHEy+d26V1RXYMlVzXN42hotFAak1fzyWPi4o2dKXb61UqD4pzxDJHwk6gbv8vQ6EfErd+hYX0Qhzug==}
 
   pluralize@8.0.0:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
@@ -4859,6 +4865,8 @@ snapshots:
   picomatch@4.0.4: {}
 
   picomatch@4.0.7: {}
+
+  pinyin-pro@3.29.4: {}
 
   pluralize@8.0.0: {}
 

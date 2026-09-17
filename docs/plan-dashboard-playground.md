@@ -330,7 +330,8 @@ type DemoMeta = {
 
 | 包 | 阶段 | 理由 | 引入影响 |
 | --- | --- | --- | --- |
-| `@faker-js/faker` | Phase 0（devDependency） | 演示数据生成，`zh_CN` locale；仅脚本使用，不进运行时 | 无运行时影响 |
+| `@faker-js/faker` | Phase 0（devDependency）**——已引入 10.6.0（2026-09-17）** | 演示数据生成，`zh_CN` locale；仅脚本使用，不进运行时。**注意 zh_CN 无分性别名字库**（`firstName(sex)` 静默回退通用列表），脚本内置分性别名字池补齐 | 无运行时影响 |
+| `pinyin-pro` | Phase 0（devDependency）**——已引入 3.29.4（2026-09-17）** | 演示用户名中国化：中文姓名 → 拼音账号（`surname` 模式处理姓氏多音字，如曾 → zeng）；纯 JS 零依赖 MIT，仅 `demo-reset.ts` 使用，不进运行时。替代方案（手工维护姓名拼音映射表）覆盖不全且维护成本更高，故引入 | 无运行时影响 |
 | `motion` | Phase A/B（React / Next）**——React / Next 已引入 13.2.0（2026-09-15）** | rare-ui 全部组件的动画底座；**仅限 Playground 演示组件内部使用，不进业务代码**——`AGENTS.md` §20 路由 / 主题过渡动画仍走 View Transition API，不因此破例 | 中（按需 tree-shake；实测落在演示页按需共享包 122KB，首屏不受影响） |
 | `prism-react-renderer` | Phase A/B（React / Next）**——React / Next 已引入 2.4.1（2026-09-15）** | code-block 语法高亮，较 shiki 轻量；内置 tsx / css / json / sql / python / yaml 等，**不含 bash**（未知语言降级为纯文本） | 轻 |
 | `@number-flow/react` | Phase A/B（先行，Playground 引入）**——React / Next 已引入 0.6.2（2026-09-15）** | KPI 数字滚动点睛，约 10KB；Dashboard（Phase C）直接复用，依赖评审一次过 | 轻 |
