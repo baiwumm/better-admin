@@ -55,6 +55,18 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2026-06-30',
 
+  // Nitro esbuild target：默认 es2019 低于 BigInt 字面量所需的 ES2020，
+  // server/lib 权限位掩码（bigint `0n` / `-1n`）会触发大量构建警告。服务端
+  // 只运行在受控 Node（本地 Node 20+ / Vercel node preset），esnext 直通
+  // 不做降级转换。
+  nitro: {
+    esbuild: {
+      options: {
+        target: 'esnext'
+      }
+    }
+  },
+
   // 关闭 noUncheckedIndexedAccess（对 app / server / shared 全部生成的
   // tsconfig 生效）：Next / Vue 端 tsconfig 均未开启该选项，M1 服务端约
   // 6,400 行逐字平移代码（`const [row] = await db.select()` 模式）在开启时
