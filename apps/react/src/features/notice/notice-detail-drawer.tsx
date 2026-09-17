@@ -14,6 +14,7 @@ import {
   Drawer,
   ProgressBar,
   Skeleton,
+  Spinner,
   Tab,
   Tabs,
   Typography,
@@ -108,6 +109,24 @@ export function NoticeDetailDrawer({
     readTab === "read" ? readStatsQuery : unreadStatsQuery;
   const entries = activeStatsQuery.data?.data ?? [];
   const pagination = activeStatsQuery.data?.pagination;
+  // isFetching 而非 isLoading：加载更多触发翻页请求时，名单区回到骨架屏
+  // 给出页面内反馈（keepPreviousData 只保数据，不提供加载态）
+  const statsFetching = activeStatsQuery.isFetching;
+  const hasMoreStats = pagination
+    ? pagination.page * pagination.pageSize < pagination.total
+    : false;
+
+  const loadMore = useCallback(() => {
+    if (statsFetching || !hasMoreStats) {
+      return;
+    }
+
+    if (readTab === "unread") {
+      setUnreadPage((p) => p + 1);
+    } else {
+      setReadPage((p) => p + 1);
+    }
+  }, [statsFetching, hasMoreStats, readTab]);
 
   const remindMutation = useMutation({
     mutationFn: () => remindNotice(notice!.id),
@@ -267,7 +286,7 @@ export function NoticeDetailDrawer({
                   </Tabs>
 
                   <div className="flex min-h-40 flex-col gap-1">
-                    {activeStatsQuery.isLoading ? (
+                    {statsFetching ? (
                       /* 骨架屏：与名单行同形（头像圆 + 双行文本） */
                       <div aria-hidden className="flex flex-col gap-2">
                         {Array.from({ length: 4 }, (_, index) => (
@@ -341,18 +360,24 @@ export function NoticeDetailDrawer({
                     )}
                   </div>
 
-                  {pagination && pagination.total > pagination.pageSize && (
+                  {hasMoreStats && (
                     <Button
                       fullWidth
-                      size="sm"
+                      isDisabled={statsFetching}
+                      isPending={statsFetching}
                       variant="outline"
-                      onPress={() =>
-                        readTab === "unread"
-                          ? setUnreadPage((p) => p + 1)
-                          : setReadPage((p) => p + 1)
-                      }
+                      onPress={loadMore}
                     >
-                      {t("features.notices.detail.loadMore")}
+                      {({ isPending }) =>
+                        isPending ? (
+                          <>
+                            <Spinner color="current" size="sm" />
+                            {t("features.notices.detail.loadMore")}
+                          </>
+                        ) : (
+                          t("features.notices.detail.loadMore")
+                        )
+                      }
                     </Button>
                   )}
                 </>
@@ -363,27 +388,47 @@ export function NoticeDetailDrawer({
               )}
             </Drawer.Body>
 
-            {/* 一键催办置于 Footer（滚动区之外固定底部；仅未读 Tab 且有编辑权限） */}
-            {readTab === "unread" && canEdit && (
-              <Drawer.Footer>
-                <Button
-                  fullWidth
-                  isDisabled={
-                    !detail ||
-                    detail.status !== "published" ||
-                    entries.length === 0
-                  }
-                  isPending={remindMutation.isPending}
-                  variant="outline"
-                  onPress={handleRemind}
-                >
-                  <BellRing className="size-4" />
-                  {remindMutation.isPending
-                    ? t("features.notices.detail.reminding")
-                    : t("features.notices.detail.remind")}
+            {/* Footer 恒显「关闭」（可编辑权限时与一键催办两列并排）；
+                催办只对未读名单有意义——切到已读 Tab 时按钮禁用但保留占位，
+                避免两列布局塌成单列跳动 */}
+            <Drawer.Footer>
+              <div
+                className={`grid w-full gap-3 ${canEdit ? "grid-cols-2" : "grid-cols-1"}`}
+              >
+                <Button fullWidth onPress={state.close}>
+                  {t("common.close")}
                 </Button>
-              </Drawer.Footer>
-            )}
+                {canEdit && (
+                  <Button
+                    fullWidth
+                    isDisabled={
+                      readTab === "read" ||
+                      !detail ||
+                      detail.status !== "published" ||
+                      entries.length === 0 ||
+                      remindMutation.isPending
+                    }
+                    isPending={remindMutation.isPending}
+                    variant="outline"
+                    onPress={handleRemind}
+                  >
+                    {({ isPending }) =>
+                      isPending ? (
+                        <>
+                          <Spinner color="current" size="sm" />
+                          {t("features.notices.detail.reminding")}
+                        </>
+                      ) : (
+                        <>
+                          <BellRing className="size-4" />
+                          {t("features.notices.detail.remind")}
+                        </>
+                      )
+                    }
+                  </Button>
+                )}
+              </div>
+            </Drawer.Footer>
           </Drawer.Dialog>
         </Drawer.Content>
       </Drawer.Backdrop>

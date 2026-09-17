@@ -129,12 +129,22 @@ const activeStats = computed(() =>
 const entries = computed<NoticeReadStatEntry[]>(
   () => activeStats.value.data.value?.data ?? []
 )
-const statsLoading = computed(() => activeStats.value.isLoading.value)
+const statsLoading = computed(() => activeStats.value.isFetching.value)
 const statsPagination = computed(
   () => activeStats.value.data.value?.pagination
 )
 
 function loadMore() {
+  const pagination = statsPagination.value
+
+  if (
+    statsLoading.value
+    || !pagination
+    || pagination.page * pagination.pageSize >= pagination.total
+  ) {
+    return
+  }
+
   if (readTab.value === 'read') {
     readPage.value += 1
   } else {
@@ -378,19 +388,43 @@ export default { name: 'NoticeDetailDrawer' }
 
         <UButton
           v-if="
-            statsPagination && statsPagination.total > statsPagination.pageSize
+            statsPagination
+              && statsPagination.page * statsPagination.pageSize < statsPagination.total
           "
+          :disabled="statsLoading"
           :label="t('features.notices.detail.loadMore')"
+          :loading="statsLoading"
           block
-          size="sm"
           variant="outline"
           @click="loadMore"
         />
+      </div>
+      <p
+        v-else
+        class="text-muted text-sm"
+      >
+        {{ t("features.notices.detail.titleFallback") }}
+      </p>
+    </template>
 
+    <template #footer>
+      <div
+        class="grid w-full gap-3"
+        :class="canEdit ? 'grid-cols-2' : 'grid-cols-1'"
+      >
         <UButton
-          v-if="readTab === 'unread' && canEdit"
+          :label="t('common.close')"
+          block
+          @click="close"
+        />
+        <UButton
+          v-if="canEdit"
           :disabled="
-            !detail || detail.status !== 'published' || entries.length === 0
+            readTab === 'read'
+              || !detail
+              || detail.status !== 'published'
+              || entries.length === 0
+              || remindMutation.isPending.value
           "
           :icon="
             remindMutation.isPending.value ? undefined : 'i-lucide-bell-ring'
@@ -406,20 +440,6 @@ export default { name: 'NoticeDetailDrawer' }
           @click="handleRemind"
         />
       </div>
-      <p
-        v-else
-        class="text-muted text-sm"
-      >
-        {{ t("features.notices.detail.titleFallback") }}
-      </p>
-    </template>
-
-    <template #footer>
-      <UButton
-        :label="t('common.close')"
-        class="w-full justify-center"
-        @click="close"
-      />
     </template>
   </USlideover>
 </template>
