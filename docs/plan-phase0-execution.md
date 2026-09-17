@@ -83,7 +83,7 @@
 
 ### T3 / T4 — 用户手动(2026-09-17 白天,定时任务不执行)
 
-按计划 §3.6 Step 4~7 执行:React / Vue(Step 4~5)与 Next / Nuxt(Step 6~7)各端:登录页移除 GitHub / Google 占位 → 「管理员」「随机用户」两按钮;请求拦截器识别 `DEMO_READONLY` 统一 toast(i18n zh-CN / en);Next / Nuxt 另做 server API `demo-login` route handler + 同名只读拦截 + `.env.example` 登记。完成后自行提交,并回填本文件 §0 状态为 ✅。
+按计划 §3.6 Step 4~7 执行:React / Vue(Step 4~5)与 Next / Nuxt(Step 6~7)各端:登录页移除 GitHub / Google 占位 → 「管理员」「随机用户」两按钮;请求拦截器识别 `DEMO_READONLY` 统一 toast(i18n zh-CN / en);登录成功 toast 口径「登录成功,欢迎 {姓名}」**不带角色**(计划 §3.3,2026-09-17 拍板);Next / Nuxt 另做 server API `demo-login` route handler + 同名只读拦截 + `.env.example` 登记。完成后自行提交,并回填本文件 §0 状态为 ✅。
 
 > 提示:T2 已完成,白天可直接用 faker 数据实测两 kind 登录与写操作被拦 toast;需要管理操作时用超管账号密码登录(refresh_tokens 已被重置清空,需重新登录)。
 
