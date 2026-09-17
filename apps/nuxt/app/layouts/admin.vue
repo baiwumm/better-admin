@@ -124,13 +124,6 @@ function menuLabel(node: MenuNode): string {
   return node.i18nKey ? t(node.i18nKey) : node.label
 }
 
-/** 命令面板条目：Nuxt UI CommandPaletteItem + 自定义过滤文本（fuse keys 追加 searchText） */
-interface CommandItem extends CommandPaletteItem {
-  label: string
-  /** 过滤文本：祖先链 + 自身名 + 分组名，搜「用户管理」或「系统管理」都能命中 */
-  searchText: string
-}
-
 /**
  * 主题切换条目（labelKey 经 t() 取词；keywords 供英文关键字搜索）。
  * M4 起经 design-theme-store 的 setThemeMode 切换（带主题揭示动画，
@@ -149,48 +142,52 @@ const THEME_COMMANDS: {
 const designTheme = useDesignThemeStore()
 
 /**
- * 命令面板分组（对齐 React 端 command-menu 的 collectMenuSections）：
- * - 顶层分组节点 → 一节（标题为分组名），其下叶子递归拍平；多级时条目名显示「父级 › 页面」；
+ * 命令面板分组：保持菜单树形，不拍平——这点与 React 端 command-menu 的
+ * collectMenuSections（「父级 › 页面」平铺）不同，UDashboardSearch 对 children
+ * 有内置钻取交互（CommandPalette：带 children 的条目渲染 chevron，点击/回车
+ * navigate 进入子级，Backspace 返回上级），无需外部展平。
+ * - 顶层分组节点 → 一节（标题为分组名），children 树形直传；
  * - 顶层叶子节点（如控制台）→ 无标题单条目节；
  * - 快捷链接组（外链新窗口）+ 主题组（切换明暗三态）。
  * 数据源与侧边栏同一份 hideInMenu 过滤后的菜单树。
  */
+function toCommandItem(node: MenuNode): CommandPaletteItem | null {
+  const label = menuLabel(node)
+
+  if (node.children?.length) {
+    const children = node.children
+      .map(toCommandItem)
+      .filter((item): item is CommandPaletteItem => item !== null)
+
+    return children.length > 0
+      ? {
+          label,
+          icon: node.icon ? `i-lucide-${node.icon}` : undefined,
+          children
+        }
+      : null
+  }
+
+  if (!node.to) return null
+
+  return {
+    label,
+    icon: node.icon ? `i-lucide-${node.icon}` : undefined,
+    to: node.to
+  }
+}
+
 const searchGroups = computed<CommandPaletteGroup[]>(() => {
   const groups: CommandPaletteGroup[] = []
-
-  const walk = (
-    nodes: MenuNode[],
-    trail: string[],
-    rootLabel: string,
-    out: CommandItem[]
-  ) => {
-    for (const node of nodes) {
-      const label = menuLabel(node)
-
-      if (node.children?.length) {
-        walk(node.children, [...trail, label], rootLabel, out)
-        continue
-      }
-      if (!node.to) continue
-
-      const parent = trail.at(-1)
-
-      out.push({
-        label: parent ? `${parent} › ${label}` : label,
-        icon: node.icon ? `i-lucide-${node.icon}` : undefined,
-        to: node.to,
-        searchText: `${[...trail, label].join(' ')} ${rootLabel}`.trim()
-      })
-    }
-  }
 
   for (const node of filterHiddenMenus(menus.value ?? [])) {
     const rootLabel = menuLabel(node)
 
     if (node.children?.length) {
-      const items: CommandItem[] = []
+      const items = node.children
+        .map(toCommandItem)
+        .filter((item): item is CommandPaletteItem => item !== null)
 
-      walk(node.children, [], rootLabel, items)
       if (items.length > 0) {
         groups.push({ id: `menu-${node.id}`, label: rootLabel, items })
       }
@@ -201,8 +198,7 @@ const searchGroups = computed<CommandPaletteGroup[]>(() => {
           {
             label: rootLabel,
             icon: node.icon ? `i-lucide-${node.icon}` : undefined,
-            to: node.to,
-            searchText: rootLabel
+            to: node.to
           }
         ]
       })
@@ -328,8 +324,9 @@ function retryMenus() {
       </template>
     </UDashboardSidebar>
 
-    <!-- 命令面板（Cmd/Ctrl+K）：分组数据见 searchGroups；fuse 追加 searchText 键
-         使祖先链 / 分组名 / 主题英文关键字可被搜索；主题组自建（关闭内置 colorMode 组）。
+    <!-- 命令面板（Cmd/Ctrl+K）：分组数据见 searchGroups（菜单树保持 children
+         结构，钻取交互由组件内置）；fuse 追加 searchText 键使主题英文关键字可被
+         搜索；主题组自建（关闭内置 colorMode 组）。
          title / description 必须显式传入：Nuxt UI 4.11.0 的 locale 包（zh_cn / en）
          该分组只提供 theme 键，组件回退 `t('dashboardSearch.title')` 会把原始键名
          直接渲染到面板顶部（上游缺键，非应用文案问题）。 -->

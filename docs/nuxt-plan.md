@@ -61,7 +61,7 @@
 | 偏好设置抽屉（9 项） | ✅ | ✅ | `design-theme-store`（Pinia）+ `themes/*` + `components/layout/prefs/*` 整体平移；`initDesignTheme` 改在 Nuxt plugin（client）中于挂载前应用 | P1 |
 | 多标签页 + KeepAlive | ✅ | ✅ | `tabs-model`（32 用例）+ `tabs-store` 平移；`KeepAliveOutlet` 宿主组件机制需按 Nuxt `<NuxtPage keepalive>` 语义重写（Vue 端按路径包宿主组件的做法在 Nuxt 下需评估保留或替换） | P2 |
 | DataTable 列设置 | ✅ | ✅ | `column-setting.ts`（9 用例）+ `DataTableViewOptions.vue` 整体平移；`useColumnSettingKey` 改用 Nuxt 路由 | P2 |
-| 命令面板 | ✅ | ✅ | `UDashboardSearch` + React 语义的菜单分组拍平（Vue M3-6 成果平移）+ 自建主题组（走 design-theme-store）；**必须显式传 `title` / `description`**（Nuxt UI 4.11 locale 包缺键，见 `mechanisms.md` §16.3） | P1 |
+| 命令面板 | ✅ | ✅ | `UDashboardSearch` + 菜单分组（Vue M3-6 成果平移；**2026-09-17 起保持树形 `children` 交组件内置钻取，不再按 React 语义拍平**，见 `progress.md` 同日条目）+ 自建主题组（走 design-theme-store）；**必须显式传 `title` / `description`**（Nuxt UI 4.11 locale 包缺键，见 `mechanisms.md` §16.3） | P1 |
 | 错误页（403/404/500） | ✅ | ✅ | `error.vue` + `components/common/error-pages/*` 平移；Nuxt 原生 `createError` / `showError` 接线；文档标题用 `errors.*.title`（同 React `staticData.titleKey`）；**登录要求口径待统一**（见 `feature-matrix.md` 错误页行 ⚠️） | P0 |
 | 异常页菜单（/exception/*） | ✅ | ✅ | `pages/exception/{403,404,500}.vue` + AdminLayout 全宽白名单 + 文档标题键 | P0 |
 | 路由权限守卫 | ✅ | ✅ | 三层守卫用 Nuxt 全局 route middleware（`app/middleware/auth.global.ts`）重写（逻辑照抄 `apps/vue/src/router/guards.ts`）；**权威仍是 API 层鉴权** | P0 |

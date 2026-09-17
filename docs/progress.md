@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Vue / Nuxt 命令面板菜单组改为保持树形（2026-09-17）
+
+- **背景**：用户指示 `searchGroups` 的菜单不必对齐 React 端 `collectMenuSections` 的拍平（「父级 › 页面」平铺），`UDashboardSearch` 对 `children` 有内置处理，Vue / Nuxt 两端同步修改——属组件库能力带来的**有意差异**，后续勿再改回拍平。
+- **做了什么**：`apps/vue/src/layouts/AdminLayout.vue` / `apps/nuxt/app/layouts/admin.vue` 删除 `walk` 拍平递归与本地 `CommandItem` 接口，改为 `toCommandItem` 树形映射——顶层分组节点仍各成一节（标题为分组名），组内条目保持 `children` 嵌套直传（`CommandPaletteItem` 自带 `children?` 字段，无需扩展类型）；带 children 的父节点不设 `to`（组件 `onSelect` 对其 `preventDefault` 并 `navigate`，`to` 不会生效）。菜单条目移除 `searchText`，fuse keys 不变（`searchText` 键仅剩主题英文关键字与快捷链接使用）。
+- **组件行为取证（`@nuxt/ui` 4.11 `CommandPalette.vue` 源码，`UDashboardSearch` 仅透传）**：带 `children` 的条目渲染尾部 chevron（`childrenIcon`），点击 / 回车 push 进 `history` 显示子级并出现返回按钮，空搜索词时 Backspace 返回上级；**fuse 只索引当前层级 `group.items` 顶层、不递归 `children`**——二级叶子页面（绝大多数页面）仍可在顶层直搜直达，三级页（如演示场的三级菜单）需先钻入二级分组再搜。
+- **验证**：Vue `type-check` / eslint / prettier 绿；Nuxt `typecheck` / eslint / vitest 9 文件 95 用例绿。GUI 钻取交互留用户本地复核。
+- **文档**：本条目；`feature-matrix.md` 命令面板行追加现状；`nuxt-plan.md` 功能对齐表命令面板备注同步。
+
 ### Phase 0 T4：Next / Nuxt 独立全栈演示模式（server demo-login + 只读拦截 + 登录页）（2026-09-17）
 
 - **做了什么**（按 `plan-phase0-execution.md` §3 T4 卡执行计划 §3.6 Step 6 / 7）：① **server 端**：两端 `session.ts` 抽出 `issueSession`（login 与 demo-login 共用签发链路，与 Nest 端同名函数语义一致）并新增 `demoLogin(kind)`（DEMO_MODE 关 404 `NOT_FOUND` / 池空 404 `DEMO_USER_NOT_AVAILABLE` / admin 池 + random 两级随机 / 超管永不进池）；新增 route handler `demo-login`（非法 kind 400 `VALIDATION_ERROR`；响应复用 /auth/login 并写 httpOnly Cookie）；演示常量（`DEMO_ADMIN_ROLE_CODE` / `DEMO_RANDOM_EXCLUDED_ROLE_CODES` / `isDemoMode`）收敛于各自 `lib/server/demo.ts`。② **只读拦截**：Next 落在 `route-auth.ts` 的 `requireAuthUser` 前置调用 `assertDemoReadonly`；Nuxt 新增 `server/middleware/demo-readonly.ts`；白名单同为 auth 四端点 + notifications read-all / `{id}/read`。③ **客户端**：登录页 GitHub / Google 占位换「管理员」「随机用户」两按钮（图标 `shield-check` / `dices`，pending 按按钮独立），api-client 拦截器识别 `DEMO_READONLY` → i18n `errors.api.demoReadonly`，auth store 新增 `demoLogin`；`.env.example` 两端登记 `DEMO_MODE`（Next / Nuxt 无 Nest 的 api 日志机制，`LOG_API_SKIP_GET` 不适用不登记）。④ **顺带一致性修复**：两端 `scripts/clean-logs.mjs` 补 `coalesce(detail->>'seed','') <> 'true'`（对齐 Nest 端 log-cleanup，否则 faker 布景日志会被保留窗口清除，Dashboard 趋势数据源消失）。语言包零新增键：Next 在 T3 已同步，Nuxt 经 `sync-locales`（pretest / prebuild 钩子）自动同步。
