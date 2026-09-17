@@ -40,7 +40,7 @@
   - 定位是**日常可重跑的「洗数据」命令**而非一次性脚本：开发期写操作弄脏数据后，随时重跑即恢复标准演示数据集；
   - 批量插入按 50~100 条分批（Supabase 连接池限制）。
 - **依赖**：`@faker-js/faker`（devDependency，`zh_CN` locale）；不用 `drizzle-seed`（中文数据失真）。
-- **清理范围与顺序**（按外键依赖）：真实日志 → refresh_tokens → notifications / notices → user_roles（非超管）→ users（非超管，**含 `deletedAt` 非空的软删除用户，一并物理清除**，delete 不加软删过滤）→ posts → depts → roles（非超管）。**保留**：`super_admin` 角色、超管用户（**密码哈希原样保留，脚本不得重设**）、菜单、字典、settings。
+- **清理范围与顺序**（按外键依赖）：真实日志 → refresh_tokens → notifications / notices → user_roles（非超管）→ users（非超管，**含 `deletedAt` 非空的软删除用户，一并物理清除**，delete 不加软删过滤）→ posts → depts → roles（非超管）。**保留**：`super_admin` 角色、内置 `admin` 用户（**密码哈希原样保留，脚本不得重设**；2026-09-17 拍板：其余绑定 super_admin 的测试账号 test2 / test3 视为残留一并清理，脚本以 `username = 'admin'` 为唯一保留判据，admin 缺失或未绑定 super_admin 时拒绝执行）、菜单、字典（`settings` 表已随契约 v1.3 移除，不再列入）。
 - **生成规模与逼真度设计**：
 
 | 数据 | 规模 | 逼真要点 |

@@ -4,7 +4,7 @@ import 'reflect-metadata';
 import { fakerZH_CN as faker, fakerEN } from '@faker-js/faker';
 import { createClient } from '@supabase/supabase-js';
 import { hash } from 'bcrypt';
-import { count, eq, inArray, ne, notInArray, sql, type SQL } from 'drizzle-orm';
+import { and, count, eq, inArray, ne, notInArray, sql, type SQL } from 'drizzle-orm';
 import type { PgTable } from 'drizzle-orm/pg-core';
 import { db, pool } from '../src/db/client';
 import {
@@ -41,8 +41,8 @@ import {
  *   时间字段相对执行时刻分布（近 30 天日志 / 近 1~3 年入职），不参与一致性比对。
  * - 清理顺序（按外键依赖）：日志 → refresh_tokens → 站内信 / 公告全套 → user_posts →
  *   非超管用户（含软删除，物理清除）→ 岗位 → 组织（叶子优先循环）→ 非 super_admin 角色。
- * - 保留：super_admin 角色、全部绑定 super_admin 的用户（密码哈希原样保留，仅其 dept_id 置空）、
- *   菜单、字典。
+ * - 保留：super_admin 角色、**内置 admin 用户**（2026-09-17 拍板：其余绑定 super_admin 的测试账号
+ *   一并清理；admin 密码哈希原样保留，仅其 dept_id 置空）、菜单、字典。
  * - 头像：服务端下载真人风格照片（性别匹配）→ 转存 Storage avatars/demo/00xx.jpg（同名覆盖，
  *   文件名按 seed 序号确定，不随用户主键变化）→ 事务内落 URL；单张失败回退空头像。
  *   头像为网络 IO，放在事务之外先行完成。
@@ -50,6 +50,8 @@ import {
  */
 
 const FAKER_SEED = 20260917;
+/** 唯一保留的用户：系统内置超管账号（与 users.service 的 ADMIN_USERNAME / ADMIN_USER_PROTECTED 同一语义） */
+const ADMIN_USERNAME = 'admin';
 /** 统一演示密码（契约 v1.8.0 策略：8~20 位 ASCII、含字母与数字；仅服务端使用） */
 const DEMO_PASSWORD = 'demo1234';
 const BCRYPT_ROUNDS = 10;
@@ -567,16 +569,23 @@ async function main() {
   const dbUrl = process.env.DATABASE_URL!;
   console.log(`[demo-reset] 目标数据库：${new URL(dbUrl).host}`);
 
-  // 保留集合：全部绑定 super_admin 的用户（密码哈希与其余字段原样保留）
+  // 保留集合：仅内置 admin 用户（密码哈希与其余字段原样保留）；其余 super_admin 绑定账号视为测试残留一并清理。
+  // admin 缺失时拒绝执行——宁可不跑，也不能让库里没有任何可用超管。
   const kept = await db
     .select({ id: users.id, username: users.username, passwordHash: users.passwordHash })
     .from(users)
-    .innerJoin(userRoles, eq(userRoles.userId, users.id))
-    .innerJoin(roles, eq(roles.id, userRoles.roleId))
-    .where(eq(roles.code, SUPER_ADMIN_ROLE_CODE));
-  const keptIds = [...new Set(kept.map((k) => k.id))];
-  if (keptIds.length === 0) throw new Error('[demo-reset] 未找到任何 super_admin 绑定用户，拒绝执行（保护超管）');
-  console.log(`[demo-reset] 保留超管用户：${[...new Set(kept.map((k) => k.username))].join(', ')}`);
+    .where(eq(users.username, ADMIN_USERNAME))
+    .limit(1);
+  const keptIds = kept.map((k) => k.id);
+  if (keptIds.length === 0) throw new Error(`[demo-reset] 未找到内置 ${ADMIN_USERNAME} 用户，拒绝执行（保护超管）`);
+  const adminBoundSuper = await db
+    .select({ id: userRoles.userId })
+    .from(userRoles)
+    .innerJoin(roles, and(eq(roles.id, userRoles.roleId), eq(roles.code, SUPER_ADMIN_ROLE_CODE)))
+    .where(eq(userRoles.userId, keptIds[0]!))
+    .then((rows) => rows.length > 0);
+  if (!adminBoundSuper) throw new Error(`[demo-reset] ${ADMIN_USERNAME} 未绑定 super_admin 角色，状态异常，拒绝执行`);
+  console.log(`[demo-reset] 保留用户：${kept.map((k) => k.username).join(', ')}（其余 super_admin 绑定账号将一并清理）`);
 
   const estimate = await estimateDeletions(keptIds);
   console.log('[demo-reset] 将删除行数预估：', estimate);

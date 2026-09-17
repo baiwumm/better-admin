@@ -2,6 +2,12 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### demo-reset 超管保留口径收窄为仅 admin（2026-09-17）
+
+- **背景**：任务 A 按计划 §3.1「保留超管用户」字面保留了全部 super_admin 绑定账号（admin / test2 / test3），用户查看用户列表后拍板：只保留内置 `admin`，其余超管绑定的测试账号一并清理。
+- **做了什么**：`scripts/demo-reset.ts` 保留判据由「绑定 super_admin 的所有用户」改为 `username = 'admin'` 单一用户，并校验其已绑定 super_admin（缺失或未绑定即拒绝执行，宁可不跑也不让库里失去可用超管）。重跑 `pnpm db:demo-reset --confirm`（31.9s）：test2 / test3 物理清除，活跃用户 151（150 演示 + admin），超管绑定仅 admin，admin 密码哈希未变，depts.leader / notices.publisher 无孤儿引用。
+- **文档**：计划 §3.1 保留口径同步（并移除已不存在的 `settings` 表表述）；执行手册 §4 任务 A 遗留项 ② 销项。
+
 ### Phase 0 任务 A：契约 v1.10.0 + Nest 演示模式改造 + faker 重置脚本首次真实执行（2026-09-17，定时任务无人值守执行）
 
 - **执行口径**：按 `plan-phase0-execution.md` §1 协议执行 §2 任务 A（T1 / T2 独立检查点），三个提交：`d7b7bb3`（契约）→ `4147654`（Nest 实现）→ `1e5d48f`（faker 脚本）。前置检查偏差：密钥实际位于 `apps/nest/.env`（`DATABASE_URL` + `SUPABASE_SECRET_KEY`）而非手册所写 `.env.local`，协议意图（密钥就位、只检查不创建）满足，继续执行。
