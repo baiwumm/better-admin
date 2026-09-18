@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { DashboardPage } from "@/features/dashboard/dashboard-page";
+
 export const Route = createFileRoute("/_authenticated/")({
   staticData: { titleKey: "menu.pageTitle.console" },
-  component: () => <div aria-hidden className="h-full min-h-[50vh]" />,
+  component: DashboardPage,
 });

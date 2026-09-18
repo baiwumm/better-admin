@@ -51,6 +51,7 @@
     "react-easy-crop": "^6.2.3",
     "react-hook-form": "^7.86.0",
     "react-i18next": "^17.0.12",
+    "recharts": "3.10.1",
     "theme-switch-animation": "0.1.0",
     "write-excel-file": "^4.1.1",
     "zod": "^4.4.3",

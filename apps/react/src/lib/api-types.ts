@@ -578,3 +578,68 @@ export interface AppNotification {
   readAt: string | null;
   createdAt: string;
 }
+
+/** 概览统计序列点（/stats/overview，契约 v1.11.0；date 为 UTC+8 日界 YYYY-MM-DD） */
+export interface StatsSeriesPoint {
+  date: string;
+  count: number;
+}
+
+/** 概览统计 KPI 计数组（迷你序列固定近 7 日） */
+export interface StatsKpis {
+  /** 用户总数（未删除） */
+  usersTotal: number;
+  /** 今日新增用户数 */
+  usersTodayNew: number;
+  /** 近 7 日每日新增用户序列 */
+  usersDailyNew: StatsSeriesPoint[];
+  /** 今日登录次数（logs type=login） */
+  loginsToday: number;
+  /** 昨日登录次数（环比基准） */
+  loginsYesterday: number;
+  /** 近 7 日每日登录序列 */
+  loginsDailyNew: StatsSeriesPoint[];
+  /** 累计操作日志数（type=operation） */
+  logsTotal: number;
+  /** 今日操作日志数 */
+  logsToday: number;
+  /** 近 7 日每日操作日志序列 */
+  logsDailyNew: StatsSeriesPoint[];
+  /** 部门总数 */
+  deptsCount: number;
+  /** 岗位总数 */
+  postsCount: number;
+}
+
+/** 角色占比切片 */
+export interface StatsRoleSlice {
+  roleCode: string;
+  roleName: string;
+  count: number;
+}
+
+/** 最新公告条目（仅标题与时间，不含正文） */
+export interface StatsNoticeItem {
+  id: string;
+  title: string;
+  publishTime: string;
+}
+
+/** 最近操作日志条目（不含 email / IP / 头像） */
+export interface StatsLogItem {
+  id: string;
+  action: string;
+  username: string | null;
+  displayName: string | null;
+  createdAt: string;
+}
+
+/** Dashboard 概览统计（GET /stats/overview，只读聚合，任意已登录用户） */
+export interface StatsOverview {
+  kpis: StatsKpis;
+  /** 登录趋势序列（近 days 天，days=7|30） */
+  loginTrend: StatsSeriesPoint[];
+  roleDistribution: StatsRoleSlice[];
+  latestNotices: StatsNoticeItem[];
+  recentLogs: StatsLogItem[];
+}
