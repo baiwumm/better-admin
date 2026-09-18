@@ -18,6 +18,18 @@ if (!connectionString) {
   throw new Error('DATABASE_URL 环境变量未设置，无法初始化数据库连接。');
 }
 
-export const pool = new Pool({ connectionString, ssl: { rejectUnauthorized: false } });
+export const pool = new Pool({
+  connectionString,
+  ssl: { rejectUnauthorized: false },
+  // Supabase PgBouncer（pooler 6543）会回收空闲连接：复用半开连接会随机报
+  // "Failed query"（任何接口均可命中，与查询本身无关）。keepAlive 维持 TCP
+  // 探活、idleTimeoutMillis 主动收缩闲置连接、connectionTimeoutMillis 防止
+  // 拿连接无限等待——三者将死连接窗口收敛到秒级。
+  max: 10,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 10_000,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10_000,
+});
 
 export const db = drizzle(pool, { schema, logger: true });
