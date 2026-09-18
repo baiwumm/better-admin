@@ -162,7 +162,17 @@ info:
     四端影响：React / Vue（消费 Nest）——登录页新增两个快捷登录按钮调用 demo-login、
     请求拦截器识别 DEMO_READONLY 弹统一 toast；Next / Nuxt（独立全栈）——各自 route handler
     同名实现 demo-login 与只读拦截，共用 DEMO_MODE 变量名与 DEMO_READONLY 错误码。
-  version: 1.10.0
+    v1.11.0 Dashboard 概览（Phase C，plan-dashboard-playground.md §4.3）：
+    新增 GET /stats/overview 只读聚合端点（鉴权为任意已登录用户，仅 AuthGuard 不走
+    PermissionsGuard，x-permission: NONE；GET 天然不受 DEMO_READONLY 只读守卫影响）。
+    一次返回 Dashboard 全量数据：KPI 计数（用户总数/今日新增、今日登录/昨日环比、
+    累计操作日志/今日、部门与岗位数）、KPI 迷你序列（固定近 7 日按日）、登录趋势序列
+    （?days=7|30 按日）、角色占比、最新公告（≤5）、最近操作日志（≤10）。
+    序列 date 为 YYYY-MM-DD，按 **Asia/Shanghai（UTC+8）日界**聚合，无数据日补 0；
+    敏感字段（手机号 / 邮箱 / IP / User-Agent / 头像）一律不出现在响应中。
+    四端影响：React / Vue（消费 Nest）、Nest（实现方）；Next / Nuxt（独立全栈）
+    各自 server API 同名对齐（随 Phase C 各端对齐阶段实施）。
+  version: 1.11.0
 
 servers:
   - url: https://nest.baiwumm.com/api
@@ -197,6 +207,8 @@ tags:
     description: 公告管理（发布/范围/已读率/催办，v1.7.0；管理接口走位掩码，消费接口仅登录态）
   - name: Notifications
     description: 站内信铃铛（未读数/通知列表/已读，v1.7.0，仅登录态）
+  - name: Stats
+    description: Dashboard 概览统计（v1.11.0，只读聚合，任意已登录用户）
 
 security:
   - bearerAuth: []
@@ -1729,6 +1741,148 @@ components:
       properties:
         count:
           type: integer
+
+    # ===================== Stats（v1.11.0 Dashboard 概览） =====================
+    StatsSeriesPoint:
+      type: object
+      required: [date, count]
+      properties:
+        date:
+          type: string
+          format: date
+          description: 统计日（YYYY-MM-DD，按 Asia/Shanghai UTC+8 日界）
+        count:
+          type: integer
+          description: 当日计数（无数据日补 0）
+
+    StatsKpis:
+      type: object
+      required:
+        - usersTotal
+        - usersTodayNew
+        - usersDailyNew
+        - loginsToday
+        - loginsYesterday
+        - loginsDailyNew
+        - logsTotal
+        - logsToday
+        - logsDailyNew
+        - deptsCount
+        - postsCount
+      properties:
+        usersTotal:
+          type: integer
+          description: 用户总数（未删除，含停用）
+        usersTodayNew:
+          type: integer
+          description: 今日新增用户数（UTC+8 日界）
+        usersDailyNew:
+          type: array
+          description: 近 7 日每日新增用户序列（固定 7 点，无数据日补 0）
+          items:
+            $ref: '#/components/schemas/StatsSeriesPoint'
+        loginsToday:
+          type: integer
+          description: 今日登录次数（logs type=login，UTC+8 日界）
+        loginsYesterday:
+          type: integer
+          description: 昨日登录次数（环比基准）
+        loginsDailyNew:
+          type: array
+          description: 近 7 日每日登录序列（固定 7 点，KPI 迷你 sparkline）
+          items:
+            $ref: '#/components/schemas/StatsSeriesPoint'
+        logsTotal:
+          type: integer
+          description: 累计操作日志数（logs type=operation）
+        logsToday:
+          type: integer
+          description: 今日操作日志数
+        logsDailyNew:
+          type: array
+          description: 近 7 日每日操作日志序列（固定 7 点）
+          items:
+            $ref: '#/components/schemas/StatsSeriesPoint'
+        deptsCount:
+          type: integer
+          description: 部门总数
+        postsCount:
+          type: integer
+          description: 岗位总数
+
+    StatsRoleSlice:
+      type: object
+      required: [roleCode, roleName, count]
+      properties:
+        roleCode:
+          type: string
+          description: 角色编码（如 super_admin / sys_admin）
+        roleName:
+          type: string
+          description: 角色显示名
+        count:
+          type: integer
+          description: 绑定该角色的用户数
+
+    StatsNoticeItem:
+      type: object
+      required: [id, title, publishTime]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        publishTime:
+          type: string
+          format: date-time
+
+    StatsLogItem:
+      type: object
+      required: [id, action, createdAt]
+      properties:
+        id:
+          type: string
+        action:
+          type: string
+          description: 操作标识（如 user.create）
+        username:
+          type: string
+          nullable: true
+          description: 操作人用户名（用户已删除时为 null）
+        displayName:
+          type: string
+          nullable: true
+          description: 操作人显示名
+        createdAt:
+          type: string
+          format: date-time
+
+    StatsOverview:
+      type: object
+      required: [kpis, loginTrend, roleDistribution, latestNotices, recentLogs]
+      properties:
+        kpis:
+          $ref: '#/components/schemas/StatsKpis'
+        loginTrend:
+          type: array
+          description: 登录趋势序列（logs type=login 按日，近 days 天，days=7|30）
+          items:
+            $ref: '#/components/schemas/StatsSeriesPoint'
+        roleDistribution:
+          type: array
+          description: 角色占比（全部角色的绑定用户数，含 0 绑定角色）
+          items:
+            $ref: '#/components/schemas/StatsRoleSlice'
+        latestNotices:
+          type: array
+          description: 最新已发布公告（publish_time 倒序，≤5 条；仅标题与时间，不含正文）
+          items:
+            $ref: '#/components/schemas/StatsNoticeItem'
+        recentLogs:
+          type: array
+          description: 最近操作日志（type=operation，created_at 倒序，≤10 条；不含 email / IP / 头像）
+          items:
+            $ref: '#/components/schemas/StatsLogItem'
 
   responses:
     Unauthorized:
@@ -4748,5 +4902,44 @@ paths:
                   data:
                     type: object
                     nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ===================== Stats（v1.11.0 Dashboard 概览） =====================
+  /stats/overview:
+    get:
+      tags: [Stats]
+      summary: Dashboard 概览统计（只读聚合）
+      description: >
+        一次返回 Dashboard 全量数据：KPI 计数与迷你序列、登录趋势（按 days 参数）、
+        角色占比、最新公告、最近操作日志。鉴权为任意已登录用户（仅 AuthGuard，
+        不要求按钮位权限）；只读聚合，敏感字段（手机号 / 邮箱 / IP / User-Agent / 头像）
+        不出现在响应中。序列 date 按 Asia/Shanghai（UTC+8）日界聚合，无数据日补 0。
+        GET 请求不受 DEMO_READONLY 只读守卫影响。
+      security:
+        - bearerAuth: []
+      x-permission: NONE
+      parameters:
+        - name: days
+          in: query
+          required: false
+          description: 登录趋势序列天数（KPI 迷你序列固定近 7 日，不受本参数影响）
+          schema:
+            type: integer
+            enum: [7, 30]
+            default: 7
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/StatsOverview'
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
