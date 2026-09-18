@@ -625,12 +625,13 @@ export interface StatsNoticeItem {
   publishTime: string;
 }
 
-/** 最近操作日志条目（不含 email / IP / 头像） */
+/** 最近操作日志条目（不含 email / IP；avatar 为操作人头像 URL，公开信息） */
 export interface StatsLogItem {
   id: string;
   action: string;
   username: string | null;
   displayName: string | null;
+  avatar: string | null;
   createdAt: string;
 }
 

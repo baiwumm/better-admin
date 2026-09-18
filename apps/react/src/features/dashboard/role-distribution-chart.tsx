@@ -75,19 +75,25 @@ export default function RoleDistributionChart({
           </PieChart>
         </ResponsiveContainer>
       </div>
-      <ul className="flex flex-col gap-1.5">
+      <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
         {data.map((entry) => (
-          <li key={entry.roleCode} className="flex items-center gap-2 text-sm">
+          <li
+            key={entry.roleCode}
+            className="flex items-center gap-1.5 text-sm"
+          >
             <span
               aria-hidden
               className="size-2.5 shrink-0 rounded-full"
               style={{ background: entry.fill }}
             />
-            <span className="truncate" style={{ color: "var(--foreground)" }}>
+            <span
+              className="whitespace-nowrap"
+              style={{ color: "var(--foreground)" }}
+            >
               {entry.roleName}
             </span>
             <span
-              className="ml-auto shrink-0 text-xs tabular-nums"
+              className="shrink-0 text-xs tabular-nums"
               style={{ color: "var(--muted)" }}
             >
               {entry.count}

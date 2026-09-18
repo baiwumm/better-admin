@@ -172,6 +172,7 @@ function DashboardContent({
           })}
           badgeTone="accent"
           label={t("features.dashboard.kpi.users")}
+          series={kpis.usersDailyNew}
           value={kpis.usersTotal}
         />
         <KpiCard
@@ -190,6 +191,7 @@ function DashboardContent({
                 : "down"
           }
           label={t("features.dashboard.kpi.logins")}
+          series={kpis.loginsDailyNew}
           value={kpis.loginsToday}
         />
         <KpiCard
@@ -197,6 +199,7 @@ function DashboardContent({
             count: kpis.logsToday,
           })}
           label={t("features.dashboard.kpi.logs")}
+          series={kpis.logsDailyNew}
           value={kpis.logsTotal}
         />
         <KpiCard
@@ -220,16 +223,19 @@ function DashboardContent({
             </Card.Title>
             <Tabs
               aria-label={t("features.dashboard.range.label")}
+              className="shrink-0"
               selectedKey={String(days)}
               onSelectionChange={(key) => onDaysChange(Number(key) as 7 | 30)}
             >
               <Tabs.ListContainer>
                 <Tabs.List aria-label={t("features.dashboard.range.label")}>
-                  <Tabs.Tab id="7">
+                  <Tabs.Tab className="whitespace-nowrap" id="7">
                     {t("features.dashboard.range.days7")}
+                    <Tabs.Indicator />
                   </Tabs.Tab>
-                  <Tabs.Tab id="30">
+                  <Tabs.Tab className="whitespace-nowrap" id="30">
                     {t("features.dashboard.range.days30")}
+                    <Tabs.Indicator />
                   </Tabs.Tab>
                 </Tabs.List>
               </Tabs.ListContainer>
