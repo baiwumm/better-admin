@@ -169,9 +169,10 @@ info:
     累计操作日志/今日、部门与岗位数）、KPI 迷你序列（固定近 7 日按日）、登录趋势序列
     （?days=7|30 按日）、角色占比、最新公告（≤5）、最近操作日志（≤10）。
     序列 date 为 YYYY-MM-DD，按 **Asia/Shanghai（UTC+8）日界**聚合，无数据日补 0；
-    敏感字段（手机号 / 邮箱 / IP / User-Agent）一律不出现在响应中；唯一例外为
-    最近操作日志条目附带的操作人头像 URL（avatar，公开信息，对齐日志模块 v1.4.8 口径，
-    用户已删除或无头像时为 null）。
+    敏感字段（手机号 / 邮箱 / IP / User-Agent）一律不出现在响应中；例外为展示所需的
+    公开信息——最近操作日志条目附带的操作人头像 URL（avatar）与最新公告条目的
+    发布人显示名 / 头像（publisherName / publisherAvatar，均对齐日志模块 v1.4.8 口径，
+    用户已删除或未设置时为 null）。
     四端影响：React / Vue（消费 Nest）、Nest（实现方）；Next / Nuxt（独立全栈）
     各自 server API 同名对齐（随 Phase C 各端对齐阶段实施）。
   version: 1.11.0
@@ -1837,6 +1838,14 @@ components:
         publishTime:
           type: string
           format: date-time
+        publisherName:
+          type: string
+          nullable: true
+          description: 发布人显示名（发布人已删除或无发布人时为 null）
+        publisherAvatar:
+          type: string
+          nullable: true
+          description: 发布人头像 URL（公开信息，对齐 v1.4.8 日志口径；发布人已删除或未设置头像时为 null）
 
     StatsLogItem:
       type: object
