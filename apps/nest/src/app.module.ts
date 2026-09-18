@@ -12,6 +12,7 @@ import { DictModule } from './modules/dict/dict.module';
 import { LogsModule } from './modules/logs/logs.module';
 import { OrgModule } from './modules/org/org.module';
 import { NoticeModule } from './modules/notice/notice.module';
+import { StatsModule } from './modules/stats/stats.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -37,6 +38,7 @@ import { DemoReadonlyGuard } from './auth/guards/demo-readonly.guard';
     LogsModule,
     OrgModule,
     NoticeModule,
+    StatsModule,
   ],
   controllers: [],
   providers: [
