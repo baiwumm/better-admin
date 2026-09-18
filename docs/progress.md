@@ -2,6 +2,16 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Phase C 启动：契约 v1.11.0 + Nest stats 模块 + React Dashboard 基准版（2026-09-18）
+
+- **背景**：Phase 0 完成后按计划 §4 启动 Dashboard。用户指示：先完成 React 端，**经用户 GUI 验证通过后**再以 React 为基准开发 Next / Vue / Nuxt。
+- **契约 v1.11.0（`d677bb3`，契约先行）**：新增 `GET /stats/overview` 只读聚合端点——任意已登录用户（x-permission NONE，与 notice 消费接口口径一致）；一次返回 KPI 计数（用户总数/今日新增、今日登录/昨日环比、累计操作日志/今日、部门/岗位数）+ KPI 迷你序列（固定近 7 日）+ 登录趋势序列（`?days=7|30`）+ 角色占比 + 最新公告（≤5）+ 最近操作日志（≤10）；**序列 date 按 Asia/Shanghai（UTC+8）日界聚合、无数据日补 0**；敏感字段（手机号/邮箱/IP/UA/头像）不出现在响应中；四端影响评估写入 changelog。
+- **Nest stats 模块（`19b806c`）**：`modules/stats` 三件套 + app.module 注册；users.created_at 与 logs（type=login / operation）按日聚合（SQL `at time zone 'Asia/Shanghai'`）、roles left join user_roles 含 0 绑定角色、最新公告取已发布且发布时间到点、最近日志 left join users 仅取 username / displayName。curl 验证：结构/契约一致、敏感字段零出现、days=30 返回 30 点、未登录 401、非法 days 400、DEMO_MODE 下 GET 正常可用；build / lint 绿。**踩坑**：user_roles 复合主键无 id 列，`count(userRoles.id)` 编译期报错，改 `count(userRoles.userId)`。
+- **React Dashboard 基准版（`3159f8c`）**：`features/dashboard/` 七文件 + 路由占位替换。布局按计划 §4.1 骨架：页头行（时段问候 + displayName + 7/30 日 Tabs）→ KPI 4 卡（NumberFlow 数字滚动、内联 SVG sparkline——7 点序列不依赖 recharts chunk、语义色环比 badge、KPI 4 双数无序列）→ 登录趋势 AreaChart（2/3）+ 角色占比环形图（1/3，主色透明度阶梯不新增色值）→ 最近动态 + 最新公告（各 1/2）。性能：recharts@3.10.1（§7 评审通过）经 React.lazy 分包（独立 chunk 293KB / gzip 86KB 不进首屏）；动画：CSS stagger 入场（尊重 prefers-reduced-motion）+ NumberFlow 数据到达触发一次，不引第三方动画库；视觉全量复用既有 Design Tokens；整页 Skeleton 与真实布局一致 + 错误卡重试。i18n `features.dashboard.*` 25 键（zh-CN/en），Next 语言包逐键同步（T3 先例：纯数据先行，页面实现留对齐阶段）。
+- **验证**：React check-locales / lint 0 error / tsc 0 error / vitest 93 用例 / build 全绿；Nest build / lint 绿 + curl 全链路。HeroUI v3 API 适配两处：Button 无 startContent（图标作 children）、variant 无 soft（改 outline）。
+- **待用户 GUI 验证**（验证通过后推进第 4~7 步）：四端视觉与交互一致性、深浅色逐项过检、响应式断点；§9.3 Dashboard 验收清单（数字来自真实聚合 / Skeleton+重试 / 无敏感字段）。
+- **文档**：本条目；`feature-matrix.md` Dashboard 行（React ✅ / Nest ✅ / 其余 ❌）；计划 §4.4 实施顺序 1~3 打钩。
+
 ### Phase 0 演示上线准备全部完成（T1~T5，2026-09-17 ~ 09-18）
 
 - **背景**：演示站公开上线前的最后一块能力：faker 逼真数据集 + 全站只读守卫 + 快捷登录 + 日志降噪。执行全程见 [`plan-phase0-execution.md`](plan-phase0-execution.md) §0/§4（T1 契约 `d7b7bb3` + 实现 `4147654`、T2 脚本 `1e5d48f`、T3 `4cb3436`、T4 用户手动完成）。

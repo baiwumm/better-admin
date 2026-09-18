@@ -226,10 +226,12 @@
 
 ### 4.4 实施顺序
 
-1. [ ] OpenAPI v1.11.0 契约定稿（`stats/overview`）
-2. [ ] Nest `stats` 模块（只读 service + e2e 测试）
-3. [ ] React Dashboard（设计定稿基准版；`recharts` 按 §7 评审，`@number-flow/react` 已随 Phase A/B 引入直接复用）
-4. [ ] Next 端对齐（server API 同名实现 + 页面复刻）
+> 2026-09-18 启动 Phase C（React 基准先行，用户验证通过后推进其余端）。
+
+1. [x] OpenAPI v1.11.0 契约定稿（`stats/overview`）（`d677bb3`）
+2. [x] Nest `stats` 模块（只读 service；e2e 随 T1 备案口径以 curl 全链路覆盖，`19b806c`）
+3. [x] React Dashboard（设计定稿基准版；`recharts@3.10.1` 按 §7 评审引入，`@number-flow/react` 复用；`3159f8c`；**GUI 验证待用户本地执行**）
+4. [ ] Next 端对齐（server API 同名实现 + 页面复刻；语言包 25 键已随 React 提前同步）
 5. [ ] Vue 端对齐（Nuxt UI v4 + Recharts Vue 等价方案）
 6. [ ] Nuxt 端对齐（Nuxt 端最后一块功能，随 Phase C 一并补齐）
 7. [ ] 四端深浅色 / 响应式逐项过检 → `feature-matrix.md` 更新 → `progress.md` 记录
