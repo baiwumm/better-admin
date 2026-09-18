@@ -2,6 +2,19 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Next 端 Dashboard 全量对齐（含欢迎横幅，2026-09-19，未提交待审核）
+
+- **背景**：用户确认 React 横幅方案后指示「基于 React 基准先完成 Next 端开发，改完先不提交，等审核通过再提交；Vue / Nuxt 等指令」。
+- **服务端**：`lib/server/stats-service.ts`（Nest stats.service 逐条平移：UTC+8 日界序列补 0、14+1 路聚合、敏感字段不出现；时间列为 mode:"string"，比较边界传 ISO 字符串）+ `app/api/stats/overview/route.ts`（requireAuthUser 无权限位，与 notice 消费口径一致；days 缺省 7，非法值 400 `VALIDATION_ERROR` 与 Nest ValidationPipe 对齐）；同库同 schema（users/logs/notices/roles/userRoles/depts/posts）。
+- **客户端**（`features/dashboard/` 七文件 + `(authenticated)/page.tsx` 空壳替换）：stats-api / kpi-card / login-trend-chart / role-distribution-chart / recent-activity-card / latest-notices-card / welcome-banner 同源移植；差异点三处——① 导航用 next/navigation useRouter；② 菜单可见性过滤读 `useMenuStore`（RSC layout 注入 findMenuTree 结果，与侧边栏同源），不引入 useMenus；③ dashboard.css 放 `src/styles/` 经 globals.css `@import` 聚合（Next 特性 CSS 约定）；依赖引入 `recharts@3.10.1`（与 React 锁定同版本）；语言包横幅 9 键此前已随 React 同步。
+- **关键机制（mechanisms 候选）**：Next SSR 期 react-query 的**模块级单例 queryClient 会真实执行 queryFn**（debug 证实 fetchStatus=fetching）——stats 聚合 14 路并行查询在服务端重复承担，远程 Supabase pooler 拖慢时 HTML 流被拉长、水合被阻塞，页面呈「SSR 骨架冻结」假象（dev 日志可见 stats 200 in 60s~2.4min）。修复：DashboardPage 加 `mounted` 门闩 + `enabled: mounted`，SSR 恒输出骨架、水合一致，取数全部发生在客户端（与 React 纯 SPA 语义对齐）。
+- **stats 接口持续挂起根因（用户实测反馈「一直在请求也不成功」）**：`db/client.ts`（postgres.js）此前无任何池防护——事务池模式（6543）下闲置客户端连接被池端回收，复用半开连接的查询永不返回。独立脚本对照实验证实：6543 连发 14 并发，**每轮约 4/10 连接 wedged 且永不恢复**（轮 2 起尾随查询成批超时，开关 postgres.js 流水线 max_pipeline 无差别）；而 5432 session pooler 直连 4 轮全稳、热身后 14 查询仅 ~200ms。修复两层：① `db/client.ts` 补齐 Nest 98d7cad 同款池四项防护（postgres.js 单位为秒：idle_timeout 30 / keep_alive 30 / max_lifetime 1800 / connect_timeout 10）；② 本地 `.env.local` 连接串 6543→**5432（session pooler）**，`.env.example` 补端口选型说明（生产 Vercel 仍用平台注入的 6543）。验证：连续 6 轮 stats 全 200（稳定 1.9s，此前 8.8s~2.4min+90s 超时），闲置 35s 后首请求 200（5.4s，重连开销）、紧随二连 1.9s。
+- **路由过渡动画三连播（用户实测反馈）**：数据到达「骨架 → 整页内容」提交 + 两个 recharts 图表分包 Suspense 补位提交（dev 下分包按需编译必然晚于取数）+ 图表容器 ResizeObserver 首测后再提交，每处 DOM 变更都落在 AdminShell 的路由过渡 `<ViewTransition update>` 边界内 → 动画连播。修复：① chartsReady 门闩——分包 `Promise.all` 预取就绪（失败放行兜底）后才揭示内容，前两类提交合并为一次；② 两个图表套 `<ViewTransition update="none">` 嵌套边界（React 19.2，实验特性已由 next.config viewTransition 开启），图表容器首测尺寸 / Tabs 数据重绘等内部更新不再重复触发路由过渡。
+- **遗留（用户实测仍会重复一次，2026-09-19 记录，次日继续）**：上述修复后三连播已消（分包补位与揭示合并），但内容揭示后仍会**多播一次**动画。剩余疑点：recharts `ResponsiveContainer` 首帧不渲染 svg，ResizeObserver 首测后才插入——这次「空容器 → svg」的内部提交疑似未被嵌套 `update="none"` 抑制（该嵌套边界与揭示同帧创建，首次内容插入的 VT 语义待查证）。明日候选方案（按优先级）：① 给两处 `ResponsiveContainer` 传 `initialDimension`（recharts 3.10.1 已支持，实测类型存在），首帧即按预估尺寸渲染 svg、消除揭示后的补插提交；② 用最小 demo 查证 React 19.2 嵌套 ViewTransition 对「同帧新建内层边界首次插入」是否可被 `update="none"` 抑制，修正边界用法；③ 兜底：Next 端图表改静态 import（放弃分包，接受 chunk 体积）。验证手段：`document.startViewTransition` 打补丁计数激活次数（本自动化面板 rAF 冻结、CSS 动画可见，该计数法不受影响）。
+- **验证**：eslint 0 error（24 警告均为既有文件 console 提示）/ tsc --noEmit / next build（`/api/stats/overview` 注册）/ check-locales 全绿；浏览器实测（:3100 dev + 演示账号 changyewei）：登录跳转后欢迎横幅（问候/日期/天气 Chip/快捷入口按菜单过滤）、KPI 4 卡、登录趋势面积图 + 7/30 日 Tabs 切换、最近动态/最新公告直载渲染正常；角色占比环形图 DOM 几何完整（6 扇区、半径/填充正确），自动化浏览器面板 rAF 被冻结致入场动画停在第 0 帧，属环境假象，真实浏览器不受影响。
+- **既有问题（与本次无关，备案不修）**：① 侧边栏/登录页 Logo `<img src>` 依据主题在 SSR（logo.svg）与客户端（logo-dark.svg）不一致 → React 19 可恢复 hydration 警告，dev overlay「1 Issue」即此；② 本机到 Supabase ap-southeast-1 pooler 的连接在 dev 下偶发拖慢（既有的 PgBouncer 防护提交即为此背景）。
+- **文档**：本条目；`feature-matrix.md` Dashboard 行 Next ❌→✅。**工作区全部改动未提交，等用户 GUI 审核通过后按 §10 提交**。
+
 ### Dashboard 页头升级欢迎横幅（React 先行，2026-09-19）
 
 - **背景**：用户反馈控制台顶部「时段问候 + 副标题」两行纯文本过于单调，希望优化 UI 展示并可增加内容（内容允许虚拟，好看即可）。

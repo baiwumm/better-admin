@@ -1,0 +1,130 @@
+/*
+ * Dashboard 概览页专属样式（plan-dashboard-playground.md §4.1 视觉语言）。
+ *
+ * - 入场 stagger：区块透明度 + 位移，仅数据到达后的一次性编排；
+ *   尊重 prefers-reduced-motion（reduced-motion 下静默呈现）；
+ * - 欢迎横幅：主色径向光晕 + 同心圆环装饰（token 取色，无新色值）；
+ * - Tooltip 毛玻璃：backdrop-blur + 半透明 surface 色（token 复用，无新色值）；
+ * - 路由 / 主题过渡仍由全局 View Transition 编排（不在此域内）。
+ */
+
+/* 区块入场 stagger：页头 → KPI 行 → 主图 → 次图 → 动态/公告 依次浮现 */
+@keyframes dashboard-section-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+[data-dashboard-stagger] {
+  animation: dashboard-section-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+[data-dashboard-stagger="1"] { animation-delay: 0ms; }
+[data-dashboard-stagger="2"] { animation-delay: 60ms; }
+[data-dashboard-stagger="3"] { animation-delay: 120ms; }
+[data-dashboard-stagger="4"] { animation-delay: 180ms; }
+[data-dashboard-stagger="5"] { animation-delay: 240ms; }
+
+/* Recharts 悬浮 Tooltip：毛玻璃背景（半透明 overlay + blur） */
+.dashboard-chart-tooltip {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklch, var(--overlay) 82%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px 0 rgb(0 0 0 / 0.08);
+  padding: 8px 12px;
+}
+
+/* 主图表深色模式下的极弱主色光晕（主色 6% 透明度径向渐变，克制使用） */
+.dashboard-trend-glow {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    color-mix(in oklch, var(--accent) 6%, transparent),
+    transparent
+  );
+}
+
+:where([data-theme="dark"], .dark) .dashboard-trend-glow {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    color-mix(in oklch, var(--accent) 8%, transparent),
+    transparent
+  );
+}
+
+/*
+ * 欢迎横幅：主色径向光晕铺底 + 右上同心圆环装饰（纯 CSS，token 取色）。
+ * 浅色模式 12%/8% 光晕、20%/12% 环线；深色模式略增透明度保证可感知。
+ */
+.dashboard-welcome {
+  background:
+    radial-gradient(
+      ellipse 55% 130% at 82% 50%,
+      color-mix(in oklch, var(--accent) 12%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 35% 90% at 100% 0%,
+      color-mix(in oklch, var(--accent) 8%, transparent),
+      transparent 70%
+    ),
+    var(--surface);
+}
+
+.dashboard-welcome::before,
+.dashboard-welcome::after {
+  content: "";
+  position: absolute;
+  border: 1px solid color-mix(in oklch, var(--accent) 20%, transparent);
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.dashboard-welcome::before {
+  width: 320px;
+  height: 320px;
+  top: -170px;
+  right: 48px;
+}
+
+.dashboard-welcome::after {
+  width: 190px;
+  height: 190px;
+  top: -80px;
+  right: 128px;
+  border-color: color-mix(in oklch, var(--accent) 12%, transparent);
+}
+
+:where([data-theme="dark"], .dark) .dashboard-welcome {
+  background:
+    radial-gradient(
+      ellipse 55% 130% at 82% 50%,
+      color-mix(in oklch, var(--accent) 16%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 35% 90% at 100% 0%,
+      color-mix(in oklch, var(--accent) 10%, transparent),
+      transparent 70%
+    ),
+    var(--surface);
+}
+
+:where([data-theme="dark"], .dark) .dashboard-welcome::before {
+  border-color: color-mix(in oklch, var(--accent) 24%, transparent);
+}
+
+:where([data-theme="dark"], .dark) .dashboard-welcome::after {
+  border-color: color-mix(in oklch, var(--accent) 16%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-dashboard-stagger] {
+    animation: none;
+  }
+}
