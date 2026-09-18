@@ -137,8 +137,11 @@ export class StatsService {
           id: notices.id,
           title: notices.title,
           publishTime: notices.publishTime,
+          publisherName: users.displayName,
+          publisherAvatar: users.avatar,
         })
         .from(notices)
+        .leftJoin(users, eq(notices.publisherId, users.id))
         .where(
           and(
             eq(notices.status, 'published'),
