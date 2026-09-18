@@ -74,12 +74,18 @@ export function RecentActivityCard({ items }: RecentActivityCardProps) {
                 key={item.id}
                 className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-default"
               >
+                {/* key 随 avatar 变化重建子树：Radix Avatar 图片加载状态卸载后不重置
+                    （同 UserInfo 组件口径），避免头像加载失败后 Fallback 不回显 */}
                 <Avatar
+                  key={item.avatar ?? "fallback"}
                   className="shrink-0"
                   color="accent"
                   size="sm"
                   variant="soft"
                 >
+                  {item.avatar ? (
+                    <Avatar.Image alt={name} src={item.avatar} />
+                  ) : null}
                   <Avatar.Fallback>{name.slice(0, 1)}</Avatar.Fallback>
                 </Avatar>
                 <Typography className="min-w-0 flex-1 truncate" type="body-sm">

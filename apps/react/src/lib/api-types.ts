@@ -618,11 +618,15 @@ export interface StatsRoleSlice {
   count: number;
 }
 
-/** 最新公告条目（仅标题与时间，不含正文） */
+/** 最新公告条目（标题 + 时间 + 发布人显示名，不含正文） */
 export interface StatsNoticeItem {
   id: string;
   title: string;
   publishTime: string;
+  /** 发布人显示名（发布人已删除或无发布人时为 null） */
+  publisherName: string | null;
+  /** 发布人头像 URL（公开信息；发布人已删除或未设置头像时为 null） */
+  publisherAvatar: string | null;
 }
 
 /** 最近操作日志条目（不含 email / IP；avatar 为操作人头像 URL，公开信息） */

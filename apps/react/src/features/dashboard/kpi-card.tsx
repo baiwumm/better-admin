@@ -1,14 +1,14 @@
 import type { StatsSeriesPoint } from "@/lib/api-types";
 import type { ReactNode } from "react";
 
-import { Card } from "@heroui/react";
+import { Card, Chip } from "@heroui/react";
 import NumberFlow from "@number-flow/react";
 
 /**
- * KPI 统计卡（HeroUI Pro 风格 + 迷你趋势图）：左侧标题 + 大号数字
- * （NumberFlow 滚动，tabular-nums）+ 右上状态 badge；右侧近 7 日迷你
- * 渐变折线（内联 SVG，7 点序列不依赖 recharts 异步 chunk）。
- * 视觉全部复用项目级 Design Tokens（badge 用语义色浅底），无新色值。
+ * KPI 统计卡（HeroUI 语义结构）：Card.Header = 标题（左）+ 状态 Chip（右）；
+ * Card.Content = 大号数字（NumberFlow 滚动）+ 近 7 日迷你渐变折线（右侧，
+ * 内联 SVG + Catmull-Rom 平滑曲线，不依赖 recharts 异步 chunk）。
+ * 全部使用 HeroUI 内置组件与项目级 Design Tokens，无手写胶囊样式。
  */
 
 export type KpiBadgeTone = "up" | "down" | "accent" | "neutral";
@@ -16,39 +16,27 @@ export type KpiBadgeTone = "up" | "down" | "accent" | "neutral";
 interface KpiCardProps {
   label: string;
   value: number;
-  /** 右上角状态 badge（环比 / 今日增量等；缺省不展示） */
+  /** 状态文案（环比 / 今日增量等；缺省不展示） */
   badge?: ReactNode;
-  /** badge 色调（up=涨 / down=跌 / accent=主色浅底 / neutral=中性） */
+  /** badge 色调（up=涨 / down=跌 / accent=主色 / neutral=中性） */
   badgeTone?: KpiBadgeTone;
   /** 近 7 日序列（右侧迷你折线数据；缺省不渲染图区，如组织规模卡） */
   series?: StatsSeriesPoint[];
 }
 
-/** badge 色调 → 语义色 token（12% 浅底 + 语义色文字，无新色值） */
-const BADGE_TONE_STYLE: Record<
+/** badge 色调 → HeroUI Chip color */
+const BADGE_TONE_COLOR: Record<
   KpiBadgeTone,
-  { color: string; background: string }
+  "accent" | "danger" | "default" | "success"
 > = {
-  up: {
-    color: "var(--success)",
-    background: "color-mix(in oklch, var(--success) 12%, transparent)",
-  },
-  down: {
-    color: "var(--danger)",
-    background: "color-mix(in oklch, var(--danger) 12%, transparent)",
-  },
-  accent: {
-    color: "var(--accent)",
-    background: "color-mix(in oklch, var(--accent) 12%, transparent)",
-  },
-  neutral: { color: "var(--default-foreground)", background: "var(--default)" },
+  up: "success",
+  down: "danger",
+  accent: "accent",
+  neutral: "default",
 };
 
-/** 7 点序列 → 迷你折线 path（y 轴按 min/max 归一，max=min 时拉平中线） */
-function buildSparklinePath(series: StatsSeriesPoint[]): {
-  line: string;
-  area: string;
-} {
+/** 7 点序列点坐标（y 轴按 min/max 归一，max=min 时拉平中线） */
+function seriesPoints(series: StatsSeriesPoint[]): { x: number; y: number }[] {
   const width = 100;
   const height = 40;
   const values = series.map((p) => p.count);
@@ -56,16 +44,33 @@ function buildSparklinePath(series: StatsSeriesPoint[]): {
   const min = Math.min(...values);
   const span = max - min || 1;
   const stepX = values.length > 1 ? width / (values.length - 1) : width;
-  const points = values.map((v, i) => {
-    const x = i * stepX;
-    const y = height - 2 - ((v - min) / span) * (height - 4);
 
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
-  });
-  const line = `M${points.join(" L")}`;
-  const area = `${line} L${width},${height} L0,${height} Z`;
+  return values.map((v, i) => ({
+    x: i * stepX,
+    y: height - 2 - ((v - min) / span) * (height - 4),
+  }));
+}
 
-  return { line, area };
+/** Catmull-Rom → 三次贝塞尔平滑折线（相邻点切手中点控制，视觉光滑无过冲） */
+function smoothLinePath(points: { x: number; y: number }[]): string {
+  if (points.length < 2) return "";
+  const at = (i: number) => points[Math.min(Math.max(i, 0), points.length - 1)];
+  let d = `M${points[0].x.toFixed(2)},${points[0].y.toFixed(2)}`;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = at(i - 1);
+    const p1 = at(i);
+    const p2 = at(i + 1);
+    const p3 = at(i + 2);
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+
+    d += ` C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${p2.x.toFixed(2)},${p2.y.toFixed(2)}`;
+  }
+
+  return d;
 }
 
 /** 卡片实例自增序号 → 渐变 id（SVG defs 全局作用域，避免多卡同 id 冲突） */
@@ -78,37 +83,37 @@ export function KpiCard({
   badgeTone = "neutral",
   series,
 }: KpiCardProps) {
-  const sparkline = series ? buildSparklinePath(series) : null;
+  const points = series ? seriesPoints(series) : null;
+  const linePath = points ? smoothLinePath(points) : "";
+  const areaPath = points ? `${linePath} L100,40 L0,40 Z` : "";
   // 模块级自增序号保证唯一；组件不重挂载则 id 稳定，重挂载生成新 id 亦无冲突
   const gradientId = `kpi-spark-${(sparklineSeq += 1)}`;
 
   return (
-    <Card className="transition-shadow hover:shadow-lg">
-      <Card.Content className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <div className="flex items-center justify-between gap-2">
-            <p className="truncate text-sm" style={{ color: "var(--muted)" }}>
-              {label}
-            </p>
-            {badge ? (
-              <span
-                className="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
-                style={BADGE_TONE_STYLE[badgeTone]}
-              >
-                {badge}
-              </span>
-            ) : null}
-          </div>
-          <NumberFlow
-            className="text-3xl font-semibold tabular-nums"
-            style={{ color: "var(--foreground)" }}
-            value={value}
-          />
-        </div>
-        {sparkline ? (
+    <Card>
+      <Card.Header className="flex-row items-center justify-between gap-2">
+        <Card.Title
+          className="truncate text-sm font-normal"
+          style={{ color: "var(--muted)" }}
+        >
+          {label}
+        </Card.Title>
+        {badge ? (
+          <Chip color={BADGE_TONE_COLOR[badgeTone]} size="sm" variant="soft">
+            {badge}
+          </Chip>
+        ) : null}
+      </Card.Header>
+      <Card.Content className="grid grid-cols-[1fr_1fr] items-end gap-3">
+        <NumberFlow
+          className="text-3xl font-semibold tabular-nums"
+          style={{ color: "var(--foreground)" }}
+          value={value}
+        />
+        {points && linePath ? (
           <svg
             aria-hidden
-            className="h-12 w-20 shrink-0"
+            className="h-12 w-full"
             preserveAspectRatio="none"
             viewBox="0 0 100 40"
           >
@@ -122,14 +127,13 @@ export function KpiCard({
                 <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
               </linearGradient>
             </defs>
-            <path d={sparkline.area} fill={`url(#${gradientId})`} />
+            <path d={areaPath} fill={`url(#${gradientId})`} />
             <path
-              d={sparkline.line}
+              d={linePath}
               fill="none"
               stroke="var(--accent)"
               strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
+              strokeWidth="1.5"
             />
           </svg>
         ) : null}

@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Typography } from "@heroui/react";
 
 import { useTranslation } from "@/i18n";
 
@@ -39,15 +40,12 @@ function TrendTooltip({
 
   return (
     <div className="dashboard-chart-tooltip">
-      <p className="text-xs" style={{ color: "var(--muted)" }}>
+      <Typography className="text-xs" color="muted">
         {label}
-      </p>
-      <p
-        className="text-sm font-semibold tabular-nums"
-        style={{ color: "var(--foreground)" }}
-      >
+      </Typography>
+      <Typography className="text-xs font-semibold tabular-nums">
         {t("features.dashboard.chart.logins")}：{payload[0]?.value}
-      </p>
+      </Typography>
     </div>
   );
 }

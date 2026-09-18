@@ -1,6 +1,7 @@
 import type { StatsRoleSlice } from "@/lib/api-types";
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Typography } from "@heroui/react";
 
 import { useTranslation } from "@/i18n";
 
@@ -32,15 +33,12 @@ function RoleTooltip({
 
   return (
     <div className="dashboard-chart-tooltip">
-      <p className="text-xs" style={{ color: "var(--muted)" }}>
+      <Typography className="text-xs" color="muted">
         {payload[0]?.name}
-      </p>
-      <p
-        className="text-sm font-semibold tabular-nums"
-        style={{ color: "var(--foreground)" }}
-      >
+      </Typography>
+      <Typography className="text-xs font-semibold tabular-nums">
         {t("features.dashboard.chart.members")}：{payload[0]?.value}
-      </p>
+      </Typography>
     </div>
   );
 }
@@ -79,7 +77,7 @@ export default function RoleDistributionChart({
         {data.map((entry) => (
           <li
             key={entry.roleCode}
-            className="flex items-center gap-1.5 text-sm"
+            className="flex items-center gap-1.5 text-xs"
           >
             <span
               aria-hidden

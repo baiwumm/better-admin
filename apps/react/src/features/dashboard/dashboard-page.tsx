@@ -1,8 +1,9 @@
 import type { AuthUser } from "@/lib/api-types";
 import type { StatsOverview } from "@/lib/api-types";
 
-import { Button, Card, Skeleton, Tabs, Typography } from "@heroui/react";
-import { useQuery } from "@tanstack/react-query";
+import { Button, Card, Chip, Skeleton, Tabs, Typography } from "@heroui/react";
+import NumberFlow from "@number-flow/react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
 import { Suspense, lazy, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -41,6 +42,17 @@ function greetingKey(hour: number): string {
   return "features.dashboard.greeting.evening";
 }
 
+/** 按时段返回副标题情绪文案 i18n 键（深夜/清晨/上午/午间/午后/晚间） */
+function subtitleKey(hour: number): string {
+  if (hour < 5) return "features.dashboard.subtitle.lateNight";
+  if (hour < 9) return "features.dashboard.subtitle.morning";
+  if (hour < 12) return "features.dashboard.subtitle.forenoon";
+  if (hour < 14) return "features.dashboard.subtitle.noon";
+  if (hour < 18) return "features.dashboard.subtitle.afternoon";
+
+  return "features.dashboard.subtitle.evening";
+}
+
 /** 环比昨日百分比（昨日为 0 时不计环比返回 null） */
 function loginDeltaPercent(kpis: StatsOverview["kpis"]): number | null {
   if (kpis.loginsYesterday === 0) return null;
@@ -67,32 +79,32 @@ function MetricStat({
   badge,
   badgeTone = "neutral",
 }: MetricStatProps) {
-  const toneColor =
-    badgeTone === "up"
-      ? "var(--success)"
-      : badgeTone === "down"
-        ? "var(--danger)"
-        : "var(--muted)";
-
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col items-center gap-0.5 text-center">
       <p
         className="flex items-center gap-1.5 text-lg font-semibold tabular-nums"
         style={{ color: "var(--foreground)" }}
       >
-        {value}
+        <NumberFlow value={value} />
         {badge ? (
-          <span
-            className="text-xs font-medium tabular-nums"
-            style={{ color: toneColor }}
+          <Chip
+            color={
+              badgeTone === "up"
+                ? "success"
+                : badgeTone === "down"
+                  ? "danger"
+                  : "default"
+            }
+            size="sm"
+            variant="soft"
           >
             {badge}
-          </span>
+          </Chip>
         ) : null}
       </p>
-      <p className="text-xs" style={{ color: "var(--muted)" }}>
+      <Typography color="muted" type="body-xs">
         {label}
-      </p>
+      </Typography>
     </div>
   );
 }
@@ -128,6 +140,8 @@ interface DashboardContentProps {
   data: StatsOverview;
   days: 7 | 30;
   onDaysChange: (days: 7 | 30) => void;
+  /** 切换时间范围后新数据拉取中（旧数据续显，图表区半透明提示） */
+  refreshing?: boolean;
 }
 
 /** 数据就绪后的完整内容（被 stagger 编排的各区块） */
@@ -136,6 +150,7 @@ function DashboardContent({
   data,
   days,
   onDaysChange,
+  refreshing = false,
 }: DashboardContentProps) {
   const { t } = useTranslation();
   const { kpis } = data;
@@ -157,7 +172,7 @@ function DashboardContent({
           {t(greetingKey(new Date().getHours()), { name: user.displayName })}
         </h1>
         <Typography color="muted" type="body-sm">
-          {t("features.dashboard.subtitle")}
+          {t(subtitleKey(new Date().getHours()))}
         </Typography>
       </div>
 
@@ -217,8 +232,8 @@ function DashboardContent({
         data-dashboard-stagger="3"
       >
         <Card className="flex flex-col lg:col-span-2">
-          <Card.Header className="flex flex-wrap items-center justify-between gap-3">
-            <Card.Title className="text-base">
+          <Card.Header className="flex-row flex-nowrap items-center justify-between gap-3">
+            <Card.Title className="min-w-0 truncate text-base">
               {t("features.dashboard.chart.loginTrend")}
             </Card.Title>
             <Tabs
@@ -262,13 +277,19 @@ function DashboardContent({
                 value={kpis.loginsToday}
               />
             </div>
-            <Suspense
-              fallback={
-                <Skeleton className="dashboard-trend-glow min-h-56 w-full flex-1 rounded-xl" />
-              }
+            <div
+              className={`flex min-h-0 flex-1 transition-opacity ${
+                refreshing ? "opacity-60" : "opacity-100"
+              }`}
             >
-              <LoginTrendChart series={data.loginTrend} />
-            </Suspense>
+              <Suspense
+                fallback={
+                  <Skeleton className="dashboard-trend-glow min-h-56 w-full flex-1 rounded-xl" />
+                }
+              >
+                <LoginTrendChart series={data.loginTrend} />
+              </Suspense>
+            </div>
           </Card.Content>
         </Card>
         <Card className="flex flex-col">
@@ -294,7 +315,8 @@ function DashboardContent({
         className="grid grid-cols-1 gap-4 md:grid-cols-2"
         data-dashboard-stagger="4"
       >
-        <RecentActivityCard items={data.recentLogs} />
+        {/* 动态取最近 5 条，与最新公告卡高度基本一致（契约 ≤10，前端截取） */}
+        <RecentActivityCard items={data.recentLogs.slice(0, 5)} />
         <LatestNoticesCard items={data.latestNotices} />
       </div>
     </div>
@@ -340,6 +362,8 @@ export function DashboardPage() {
     queryKey: [...STATS_OVERVIEW_QUERY_KEY, days],
     queryFn: () => fetchStatsOverview(days),
     staleTime: 60_000,
+    // 切换时间范围时保留上一份数据续显（仅图表区间变化），不整页回 Skeleton
+    placeholderData: keepPreviousData,
   });
 
   if (query.isError) {
@@ -360,6 +384,7 @@ export function DashboardPage() {
     <DashboardContent
       data={query.data}
       days={days}
+      refreshing={query.isPlaceholderData}
       user={user}
       onDaysChange={setDays}
     />
