@@ -3,7 +3,7 @@ import type { StatsOverview } from "@/lib/api-types";
 
 import { Button, Card, Skeleton, Tabs, Typography } from "@heroui/react";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, FileClock, LogIn, RotateCcw, Users } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { Suspense, lazy, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -19,8 +19,10 @@ import "./dashboard.css";
 /**
  * Dashboard 概览页（Phase C，契约 v1.11.0；plan-dashboard-playground.md §4）。
  *
- * 布局骨架（§4.1）：页头行（时段问候 + 时间范围 Tabs）→ KPI 行（4 卡）→
- * 主图表（2/3 登录趋势）+ 副图（1/3 角色占比）→ 最近动态 + 最新公告（各 1/2）。
+ * 布局骨架（§4.1，HeroUI Pro 风格基准）：页头行（时段问候 + 用户名）→
+ * KPI 行（4 张扁平卡：标题 + 大数字 + 右上状态 badge）→
+ * 主图表卡（登录趋势：卡头右侧时间范围 Tabs + 卡内三项小结指标）+
+ * 角色占比卡（等高自适应）→ 最近动态 + 最新公告（各 1/2）。
  *
  * - 数据：单一聚合接口 GET /stats/overview（react-query，days 变化仅 refetch）；
  * - 图表：recharts 经 React.lazy 分包（不进首屏 chunk），Skeleton 等高占位杜绝跳变；
@@ -31,7 +33,7 @@ import "./dashboard.css";
 const LoginTrendChart = lazy(() => import("./login-trend-chart"));
 const RoleDistributionChart = lazy(() => import("./role-distribution-chart"));
 
-/** 按当前小时返回问候 i18n 键（11 点前早安 / 18 点前午安 / 之后晚安） */
+/** 按当前小时返回问候 i18n 键（12 点前早安 / 18 点前午安 / 之后晚安） */
 function greetingKey(hour: number): string {
   if (hour < 12) return "features.dashboard.greeting.morning";
   if (hour < 18) return "features.dashboard.greeting.afternoon";
@@ -50,6 +52,51 @@ function loginDeltaPercent(kpis: StatsOverview["kpis"]): number | null {
   );
 }
 
+interface MetricStatProps {
+  label: string;
+  value: number;
+  /** 值右侧附加 badge（如今日环比） */
+  badge?: React.ReactNode;
+  badgeTone?: "up" | "down" | "neutral";
+}
+
+/** 主图卡小结指标（HeroUI Pro 风：值 + 灰标签；badge 仅今日项使用） */
+function MetricStat({
+  label,
+  value,
+  badge,
+  badgeTone = "neutral",
+}: MetricStatProps) {
+  const toneColor =
+    badgeTone === "up"
+      ? "var(--success)"
+      : badgeTone === "down"
+        ? "var(--danger)"
+        : "var(--muted)";
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <p
+        className="flex items-center gap-1.5 text-lg font-semibold tabular-nums"
+        style={{ color: "var(--foreground)" }}
+      >
+        {value}
+        {badge ? (
+          <span
+            className="text-xs font-medium tabular-nums"
+            style={{ color: toneColor }}
+          >
+            {badge}
+          </span>
+        ) : null}
+      </p>
+      <p className="text-xs" style={{ color: "var(--muted)" }}>
+        {label}
+      </p>
+    </div>
+  );
+}
+
 interface DashboardSkeletonProps {
   message: string;
 }
@@ -58,18 +105,15 @@ interface DashboardSkeletonProps {
 function DashboardSkeleton({ message }: DashboardSkeletonProps) {
   return (
     <div aria-busy="true" aria-label={message} className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-8 w-56 rounded-lg" />
-        <Skeleton className="h-9 w-40 rounded-lg" />
-      </div>
+      <Skeleton className="h-8 w-56 rounded-lg" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-40 rounded-xl" />
+          <Skeleton key={i} className="h-24 rounded-xl" />
         ))}
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Skeleton className="h-80 rounded-xl lg:col-span-2" />
-        <Skeleton className="h-80 rounded-xl" />
+        <Skeleton className="h-96 rounded-xl lg:col-span-2" />
+        <Skeleton className="h-96 rounded-xl" />
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Skeleton className="h-64 rounded-xl" />
@@ -79,7 +123,7 @@ function DashboardSkeleton({ message }: DashboardSkeletonProps) {
   );
 }
 
-interface DashboardPageProps {
+interface DashboardContentProps {
   user: AuthUser;
   data: StatsOverview;
   days: 7 | 30;
@@ -92,115 +136,146 @@ function DashboardContent({
   data,
   days,
   onDaysChange,
-}: DashboardPageProps) {
+}: DashboardContentProps) {
   const { t } = useTranslation();
   const { kpis } = data;
   const delta = loginDeltaPercent(kpis);
+  // 主图卡三项小结指标：周期总数 / 日均（序列求和与均值，纯前端计算）
+  const periodTotal = data.loginTrend.reduce((sum, p) => sum + p.count, 0);
+  const dailyAvg = data.loginTrend.length
+    ? Math.round(periodTotal / data.loginTrend.length)
+    : 0;
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 页头行：时段问候 + 时间范围切换 */}
-      <div
-        className="flex flex-wrap items-center justify-between gap-3"
-        data-dashboard-stagger="1"
-      >
-        <div>
-          <h1
-            className="text-xl font-semibold"
-            style={{ color: "var(--foreground)" }}
-          >
-            {t(greetingKey(new Date().getHours()), { name: user.displayName })}
-          </h1>
-          <Typography color="muted" type="body-sm">
-            {t("features.dashboard.subtitle")}
-          </Typography>
-        </div>
-        <Tabs
-          aria-label={t("features.dashboard.range.label")}
-          selectedKey={String(days)}
-          onSelectionChange={(key) => onDaysChange(Number(key) as 7 | 30)}
+      {/* 页头行：时段问候 */}
+      <div data-dashboard-stagger="1">
+        <h1
+          className="text-xl font-semibold"
+          style={{ color: "var(--foreground)" }}
         >
-          <Tabs.ListContainer>
-            <Tabs.List aria-label={t("features.dashboard.range.label")}>
-              <Tabs.Tab id="7">{t("features.dashboard.range.days7")}</Tabs.Tab>
-              <Tabs.Tab id="30">
-                {t("features.dashboard.range.days30")}
-              </Tabs.Tab>
-            </Tabs.List>
-          </Tabs.ListContainer>
-        </Tabs>
+          {t(greetingKey(new Date().getHours()), { name: user.displayName })}
+        </h1>
+        <Typography color="muted" type="body-sm">
+          {t("features.dashboard.subtitle")}
+        </Typography>
       </div>
 
-      {/* KPI 行（4 卡等宽网格） */}
+      {/* KPI 行（4 张扁平卡：标题 + 大数字 + 右上状态 badge） */}
       <div
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
         data-dashboard-stagger="2"
       >
         <KpiCard
-          icon={Users}
-          label={t("features.dashboard.kpi.users")}
-          series={kpis.usersDailyNew}
-          subline={t("features.dashboard.kpi.usersToday", {
+          badge={t("features.dashboard.kpi.usersToday", {
             count: kpis.usersTodayNew,
           })}
+          badgeTone="accent"
+          label={t("features.dashboard.kpi.users")}
           value={kpis.usersTotal}
         />
         <KpiCard
-          deltaPercent={delta}
-          icon={LogIn}
+          badge={
+            delta === null
+              ? undefined
+              : delta === 0
+                ? t("features.dashboard.kpi.deltaFlat")
+                : `${delta > 0 ? "↑" : "↓"} ${Math.abs(delta)}%`
+          }
+          badgeTone={
+            delta === null || delta === 0
+              ? "neutral"
+              : delta > 0
+                ? "up"
+                : "down"
+          }
           label={t("features.dashboard.kpi.logins")}
-          series={kpis.loginsDailyNew}
           value={kpis.loginsToday}
         />
         <KpiCard
-          icon={FileClock}
-          label={t("features.dashboard.kpi.logs")}
-          series={kpis.logsDailyNew}
-          subline={t("features.dashboard.kpi.logsToday", {
+          badge={t("features.dashboard.kpi.logsToday", {
             count: kpis.logsToday,
           })}
+          label={t("features.dashboard.kpi.logs")}
           value={kpis.logsTotal}
         />
         <KpiCard
-          icon={Building2}
-          label={t("features.dashboard.kpi.org")}
-          subline={t("features.dashboard.kpi.orgPosts", {
+          badge={t("features.dashboard.kpi.orgPosts", {
             count: kpis.postsCount,
           })}
+          label={t("features.dashboard.kpi.org")}
           value={kpis.deptsCount}
         />
       </div>
 
-      {/* 主图表（2/3）+ 角色占比（1/3） */}
+      {/* 主图表卡（2/3，卡头右侧时间范围切换）+ 角色占比卡（1/3，等高自适应） */}
       <div
         className="grid grid-cols-1 gap-4 lg:grid-cols-3"
         data-dashboard-stagger="3"
       >
-        <Card className="lg:col-span-2">
-          <Card.Header>
+        <Card className="flex flex-col lg:col-span-2">
+          <Card.Header className="flex flex-wrap items-center justify-between gap-3">
             <Card.Title className="text-base">
               {t("features.dashboard.chart.loginTrend")}
             </Card.Title>
+            <Tabs
+              aria-label={t("features.dashboard.range.label")}
+              selectedKey={String(days)}
+              onSelectionChange={(key) => onDaysChange(Number(key) as 7 | 30)}
+            >
+              <Tabs.ListContainer>
+                <Tabs.List aria-label={t("features.dashboard.range.label")}>
+                  <Tabs.Tab id="7">
+                    {t("features.dashboard.range.days7")}
+                  </Tabs.Tab>
+                  <Tabs.Tab id="30">
+                    {t("features.dashboard.range.days30")}
+                  </Tabs.Tab>
+                </Tabs.List>
+              </Tabs.ListContainer>
+            </Tabs>
           </Card.Header>
-          <Card.Content>
+          <Card.Content className="flex min-h-0 flex-1 flex-col gap-4">
+            <div className="grid grid-cols-3 gap-3">
+              <MetricStat
+                label={t("features.dashboard.chart.periodLogins")}
+                value={periodTotal}
+              />
+              <MetricStat
+                label={t("features.dashboard.chart.dailyAvgLogins")}
+                value={dailyAvg}
+              />
+              <MetricStat
+                badge={
+                  delta === null || delta === 0
+                    ? undefined
+                    : `${delta > 0 ? "↑" : "↓"} ${Math.abs(delta)}%`
+                }
+                badgeTone={delta !== null && delta > 0 ? "up" : "down"}
+                label={t("features.dashboard.kpi.logins")}
+                value={kpis.loginsToday}
+              />
+            </div>
             <Suspense
               fallback={
-                <Skeleton className="dashboard-trend-glow h-64 w-full rounded-xl" />
+                <Skeleton className="dashboard-trend-glow min-h-56 w-full flex-1 rounded-xl" />
               }
             >
               <LoginTrendChart series={data.loginTrend} />
             </Suspense>
           </Card.Content>
         </Card>
-        <Card>
+        <Card className="flex flex-col">
           <Card.Header>
             <Card.Title className="text-base">
               {t("features.dashboard.chart.roles")}
             </Card.Title>
           </Card.Header>
-          <Card.Content>
+          <Card.Content className="flex min-h-0 flex-1 flex-col">
             <Suspense
-              fallback={<Skeleton className="h-48 w-full rounded-xl" />}
+              fallback={
+                <Skeleton className="min-h-56 w-full flex-1 rounded-xl" />
+              }
             >
               <RoleDistributionChart slices={data.roleDistribution} />
             </Suspense>
@@ -238,7 +313,7 @@ function DashboardError({ message, detail, onRetry }: DashboardErrorProps) {
       <EmptyContent
         action={
           <Button size="sm" variant="outline" onPress={onRetry}>
-            <RotateCcw className="size-4" aria-hidden />
+            <RotateCcw aria-hidden className="size-4" />
             {t("common.retry")}
           </Button>
         }

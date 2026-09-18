@@ -54,8 +54,8 @@ export default function RoleDistributionChart({
   }));
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="h-48 w-full">
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      <div className="min-h-40 w-full flex-1">
         <ResponsiveContainer height="100%" width="100%">
           <PieChart>
             <Tooltip content={<RoleTooltip />} />

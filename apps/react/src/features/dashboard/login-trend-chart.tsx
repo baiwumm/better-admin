@@ -54,7 +54,7 @@ function TrendTooltip({
 
 export default function LoginTrendChart({ series }: LoginTrendChartProps) {
   return (
-    <div className="dashboard-trend-glow h-64 w-full rounded-xl">
+    <div className="dashboard-trend-glow h-full min-h-56 w-full flex-1 rounded-xl">
       <ResponsiveContainer height="100%" width="100%">
         <AreaChart
           data={series}
