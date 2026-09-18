@@ -154,6 +154,7 @@ export class StatsService {
           action: logs.action,
           username: users.username,
           displayName: users.displayName,
+          avatar: users.avatar,
           createdAt: logs.createdAt,
         })
         .from(logs)
