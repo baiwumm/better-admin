@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Phase 0 演示上线准备全部完成（T1~T5，2026-09-17 ~ 09-18）
+
+- **背景**：演示站公开上线前的最后一块能力：faker 逼真数据集 + 全站只读守卫 + 快捷登录 + 日志降噪。执行全程见 [`plan-phase0-execution.md`](plan-phase0-execution.md) §0/§4（T1 契约 `d7b7bb3` + 实现 `4147654`、T2 脚本 `1e5d48f`、T3 `4cb3436`、T4 用户手动完成）。
+- **T5 全链路验收（2026-09-18，定时任务 B 自动执行）**：① 以进程环境变量注入 `DEMO_MODE=true`（不改 `.env`、无残留）启动 Nest 构建产物，curl 全链路矩阵全过——白名单放行（login 401 到 handler / demo-login 200 / refresh / logout 204 / notifications read-all）、非 GET 直拦（未登录与已登录 POST/PUT/DELETE 均 403 `DEMO_READONLY`）、demo-login 两 kind 成功（admin → `sys_admin`；random 30 次覆盖全部 4 演示角色 guest / employee / dept_manager / hr_specialist，无超管混入）、登录-刷新-退出完整（旧 refresh 撤销后 401）；超管双保险为 handler 层逻辑经代码确认（DEMO 守卫先拦，与任务 A 口径一致）。② 查库确认：`DEMO_READONLY` 拦截 0 条 error 日志（过滤器硬编码特判）；`LOG_API_SKIP_GET=true` 下 GET 0 条 api 日志而 POST 正常记录，未登录 GET 的 401 error 日志正常保留。③ `demo-reset` 幂等复跑（D/E 两轮）：11 张业务表（roles / user_roles / role_menus / depts / posts / user_posts / notices / notice_scopes / notice_read_records / notice_remind_logs / notifications）业务字段 md5 指纹逐表一致；超管 `admin` 密码哈希四轮执行全同且为全库唯一 super_admin 绑定用户；users 表指纹差异仅 avatar 列（单轮 1~2 张头像下载失败回退空头像，命中 T2 降级预案，faker 序列不受影响——头像 URL 先于下载由 seed 确定）；头像 150 张全部为自家 Supabase Storage 域名零外链。
+- **T3 遗留清理**：四端语言包删除废弃键 `githubDeveloping` / `googleDeveloping`（全仓 grep 源码零引用后删；React 真源 + Next 手工同步 + Vue / Nuxt `sync-locales` 重新生成，两端 check-locales 14 文件一致通过，Nuxt locales 测试 3 用例过）。提交 `5dbd607`。
+- **文档收尾**：`feature-matrix.md` 核心业务模块新增「演示模式（快捷登录 / 只读守卫）」行（四端 + NestJS 全 ✅）；`ui-spec.md` §1.3 补 `/sign-in` 快捷登录口径与 `/playground/*` 行；计划 §8 一致性同步清单逐项核对打钩（Dashboard 两项如实标注待 Phase C）；`AGENTS.md` §19 当前待办指针同步（Phase 0 完成 → 下一步 Phase C Dashboard 与四端统一上线）。提交 `docs: Phase 0 验收与文档同步`。
+- **遗留给用户（不阻塞，随统一上线执行）**：① 线上环境配 `DEMO_MODE=true`（`LOG_API_SKIP_GET` 按需）；② §5 人工清单（数据观感 GUI 验收、§9.2 线上口径最终确认）；③ Playground 主题切换动画页 GUI 复核沿用户节奏。**下一步：Phase C Dashboard（Gate 后启动，faker 数据集为数据底座，契约 v1.11.0 stats 先行）**。
+
 ### 架构图谱去虚拟根 + 默认仅展开前两级（四端，2026-09-17）
 
 - **背景**：用户反馈 `/org/chart` 组织层级太多导致图谱看不清，提出两点调整：① 组织已有真实顶级组织，去掉图谱顶部「Better Admin」虚拟根节点；② 初始只展示前两级，更深层级默认收起。

@@ -81,7 +81,8 @@
 | `/org/chart` | 组织架构图谱 | 组织 | 图谱可视化模式（只读：平移 / 缩放 / Fit View / 节点点击 / 折叠展开） | ✅ 已实现（React / Next） |
 | `/my-notices` | 我的公告 | 组织 | 左列表右详情（URL `?noticeId=` 驱动） | ✅ 已实现 |
 | `/account` | 我的账户 | 用户 | 卡片式多分区设置 | ✅ 已实现 |
-| `/sign-in` 等 | 认证页 | 认证 | 认证模式（居中卡片布局） | ✅ 已实现 |
+| `/sign-in` 等 | 认证页 | 认证 | 认证模式（居中卡片布局）；`DEMO_MODE=true` 时展示「管理员 / 随机用户」快捷登录按钮（替代 GitHub / Google 占位；契约 v1.10.0 `POST /auth/demo-login`，写操作统一 403 `DEMO_READONLY` toast） | ✅ 已实现 |
+| `/playground/*` | Playground 演示场 | Playground | 演示模式（`PlaygroundIntro` 信息卡 + 组件演示区，8 页含三级菜单；详见 plan-dashboard-playground.md §5） | ✅ 已实现 |
 | `/403` `/404` `/500` | 错误页 | 系统 | 全屏错误模式 | ✅ 已实现 |
 
 > **UI 组件库差异说明**：React / Next.js 使用 **Hero UI** 组件（Button / Modal / Tabs 等），Vue / Nuxt 使用 **Nuxt UI** 组件（布局用 Dashboard 套件）；组件库不同，但**页面功能、布局结构、交互逻辑、数据流保持一致**。

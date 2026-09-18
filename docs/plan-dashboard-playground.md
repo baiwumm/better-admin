@@ -348,12 +348,14 @@ type DemoMeta = {
 
 ## 8. 一致性同步清单
 
-- [ ] `docs/feature-matrix.md`：新增演示模式（快捷登录 / 只读守卫）、Dashboard、Playground 相关行，随各端完成度更新 ✅/❌。
-- [ ] `docs/ui-spec.md` §1.3：Dashboard 状态「占位」→「已实现」；登录页快捷登录、Playground 模式补充。
-- [ ] `docs/progress.md`：每 Phase 完成置顶记录。
-- [ ] `AGENTS.md` §19：当前待办指针同步。
-- [ ] 契约 v1.10.0（demo-login / `DEMO_READONLY`）与 v1.11.0（stats）变更记录：`apps/nest/openapi/openapi.yaml` + `docs/progress.md`。
-- [ ] 各端 `.env.example`：`DEMO_MODE`、`LOG_API_SKIP_GET` 登记。
+> 2026-09-18 任务 B（T5）逐项核对。Dashboard 相关两项随 Phase C 完成后补勾，不提前打钩。
+
+- [x] `docs/feature-matrix.md`：新增演示模式（快捷登录 / 只读守卫）行（2026-09-18，四端 + NestJS 全 ✅）；Playground 行已有（✅）；Dashboard 行已有（❌ 各端均未实现，随 Phase C 更新）。
+- [x] `docs/ui-spec.md` §1.3：登录页快捷登录（`/sign-in` 行补 `DEMO_MODE` 快捷按钮口径）与 Playground 模式（`/playground/*` 行）已补充（2026-09-18）；Dashboard 状态「占位」→「已实现」**待 Phase C**。
+- [x] `docs/progress.md`：每 Phase 完成置顶记录（Phase 0 见 2026-09-18 条目；Playground / 各 Phase 均已按完成时点置顶记录）。
+- [x] `AGENTS.md` §19：当前待办指针同步（Phase 0 完成 → 下一步 Phase C Dashboard 与四端统一上线，2026-09-18）。
+- [x] 契约 v1.10.0（demo-login / `DEMO_READONLY`）变更记录：`apps/nest/openapi/openapi.yaml` changelog（T1 已录入，含四端影响评估）+ `docs/progress.md`（T5 条目）；v1.11.0（stats）**待 Phase C** 定义时录入。
+- [x] 各端 `.env.example`：`DEMO_MODE` 登记（nest / next / nuxt；react / vue 为纯静态 SPA 无服务端，不适用）；`LOG_API_SKIP_GET` 仅 nest 登记（Next / Nuxt 无 LoggingInterceptor 机制，见执行手册 T4 报告口径）。
 
 ## 9. 验收标准
 

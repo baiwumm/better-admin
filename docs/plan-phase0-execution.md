@@ -10,7 +10,7 @@
 | T2 | faker 重置脚本开发 + 首次真实执行 + 幂等复验 | 定时任务 A | 2026-09-17 00:00(紧随 T1) | ✅ 完成（`1e5d48f`） |
 | T3 | React + Vue 前端(快捷登录 + DEMO_READONLY toast) | **用户手动** | 2026-09-17 白天 | ✅ 完成（`4cb3436`;GUI 复核由用户本地执行,见 §4） |
 | T4 | Next + Nuxt 前端(server API + 登录页 + toast) | **用户手动** | 2026-09-17 白天 | ✅ 完成（代码就绪,GUI 由用户本地验证,见 §4） |
-| T5 | 全链路验收 + 文档收尾 | 定时任务 B(已排期) | 2026-09-18 01:00 | ⬜ 未开始 |
+| T5 | 全链路验收 + 文档收尾 | 定时任务 B(已排期) | 2026-09-18 01:00 | ✅ 完成（验收报告见 §4 任务 B 条目） |
 
 状态标记:⬜ 未开始 / 🔄 进行中 / ✅ 完成 / ⛔ 失败中止(原因见 §4 报告区)。
 
@@ -93,16 +93,31 @@
 
 **范围**:计划 §3.6 Step 8 可自动化部分 + §9.2 机器可验证项:
 
-- [ ] 以进程环境变量注入 `DEMO_MODE=true`(同任务 A 做法,不改 `.env`、无残留)启动 Nest 构建产物,curl 全链路:白名单放行 / 非 GET 直拦 / 超管保护 / demo-login 两 kind 成功且 random 多次覆盖全部演示角色 / 登录-刷新-退出完整。
-- [ ] `DEMO_READONLY` 拦截不产生 error 日志;GET 不产生 api 日志(查库确认)。
-- [ ] `demo-reset` 幂等复跑一次确认数据集一致(11 表业务字段指纹);超管 `admin` 密码哈希未变、仍为唯一 super_admin 绑定用户。
-- [ ] 清理 T3 遗留:四端语言包中 `githubDeveloping` / `googleDeveloping` 两个废弃键(全仓 grep 确认零引用后删除,React 真源改完经 Next 手工同步 / Vue · Nuxt `sync-locales` 重新生成,`check-locales` 通过)。
-- [ ] 文档收尾:`docs/feature-matrix.md` 新增演示模式行(快捷登录 / 只读守卫,四端状态);`docs/ui-spec.md` §1.3 登录页快捷登录补充;计划 §8 一致性同步清单逐项核对;`docs/progress.md` 置顶记录;`AGENTS.md` §19 当前待办指针同步(Phase 0 完成 → 下一步 Phase C Dashboard 与统一上线)。
-- [ ] 前端 toast 项(§9.2 第 2 条)已由用户白天验证通过,T5 只核对 `errors.api.demoReadonly` 等 i18n 键四端齐全。
+- [x] 以进程环境变量注入 `DEMO_MODE=true`(同任务 A 做法,不改 `.env`、无残留)启动 Nest 构建产物,curl 全链路:白名单放行 / 非 GET 直拦 / 超管保护 / demo-login 两 kind 成功且 random 多次覆盖全部演示角色 / 登录-刷新-退出完整。
+- [x] `DEMO_READONLY` 拦截不产生 error 日志;GET 不产生 api 日志(查库确认)。
+- [x] `demo-reset` 幂等复跑一次确认数据集一致(11 表业务字段指纹);超管 `admin` 密码哈希未变、仍为唯一 super_admin 绑定用户。
+- [x] 清理 T3 遗留:四端语言包中 `githubDeveloping` / `googleDeveloping` 两个废弃键(全仓 grep 确认零引用后删除,React 真源改完经 Next 手工同步 / Vue · Nuxt `sync-locales` 重新生成,`check-locales` 通过)。
+- [x] 文档收尾:`docs/feature-matrix.md` 新增演示模式行(快捷登录 / 只读守卫,四端状态);`docs/ui-spec.md` §1.3 登录页快捷登录补充;计划 §8 一致性同步清单逐项核对;`docs/progress.md` 置顶记录;`AGENTS.md` §19 当前待办指针同步(Phase 0 完成 → 下一步 Phase C Dashboard 与统一上线)。
+- [x] 前端 toast 项(§9.2 第 2 条)已由用户白天验证通过,T5 只核对 `errors.api.demoReadonly` 等 i18n 键四端齐全。
 
 **提交点**:`docs: Phase 0 验收与文档同步` 类提交(语言包清理可单独一笔);§4 追加验收报告;§0 T5 置 ✅。
 
 ## 4. 执行报告区(任务运行时追加,倒序)
+
+### 任务 B 执行报告(2026-09-18 08:48 触发,约 1 小时,T5 ✅)
+
+- **前置检查**:git 干净(HEAD `f621301`);§0 中 T1~T4 全部 ✅,满足任务 B 额外前置。
+- **T5-① curl 全链路(DEMO_MODE=true 进程注入,PORT=3900,构建产物 `node dist/main.js`,.env 未改无残留)**:
+  - 白名单放行:POST /auth/login 错误凭据 401 `INVALID_CREDENTIALS`(到 handler 而非 403)/ demo-login 200 / refresh 200 / logout 204 / POST notifications/read-all 200。
+  - 非 GET 直拦:未登录与已登录(demo 会话)的 POST /users、PUT /users/:id、DELETE /users/:id、PUT /dict/types/:code、POST /roles 等 → 全部 403 `DEMO_READONLY`;GET /users /roles 200 不受影响。
+  - demo-login:admin kind 登录到 `sys_admin` 角色用户;random kind 30 次 → guest 4 / employee 6 / dept_manager 7 / hr_specialist 13,覆盖全部 4 个演示角色,无超管混入;非法 kind 400。
+  - 登录-刷新-退出:demo-login → refresh 轮换新 token → logout 204 → 旧 refreshToken 重放 401 `REFRESH_TOKEN_INVALID`。
+  - 超管保护:DEMO 模式下写请求先被全局守卫拦截到不了 handler(HTTP 层无法直达),经代码确认 users.service `assertTargetOperable`(内置 admin 403 / super_admin 绑定 403 SUPER_ADMIN_USER_PROTECTED,删除/停用/重置密码三操作共用)与 roles.service SUPER_ADMIN_ROLE_PROTECTED 仍在位,与任务 A 口径一致。
+- **T5-② 日志查库(以 `DEMO_MODE=true LOG_API_SKIP_GET=true` 重启后打混合请求,窗口 00:55:42~45Z)**:① `DEMO_READONLY` error 日志全表 0 条(过滤器 `http-exception.filter.ts` 硬编码特判 return);② 窗口内 api 日志 GET 0 条、POST 1 条(demo-login,api 日志机制本身正常,`action` 为 `${method} ${path}`);③ 窗口内 error 日志仅未登录 GET 的 401 `UNAUTHORIZED`×3(真实错误正常保留)。注:`LOG_API_SKIP_GET` 默认 false(全记),演示口径需线上显式开启,已在 §8 清单备案。
+- **T5-③ demo-reset 幂等复跑(共真实执行 3 轮:B/C/D,授权范围同 T2)**:首对比轮(B)后经排查,与库内既有数据(含 T5-① 白名单测试 `read-all` 写入的 1 条真实已读记录)混比无意义,改做相邻两轮纯净对比(D vs E):**11 张业务表(roles / user_roles / role_menus / depts / posts / user_posts / notices / notice_scopes / notice_read_records / notice_remind_logs / notifications)业务字段 md5 指纹(排除 created_at / updated_at / deleted_at / last_login_at / publish_time / read_at 时间列)逐表一致**;时间列差异为脚本设计使然(last_login_at / 定时发布 publish_time / read_at 以执行时刻 `Date.now()` 为锚 + faker 确定性偏移,保证演示数据相对新鲜),faker 随机部分全确定。users 表指纹差异仅 avatar 列——B 轮 1 张 / E 轮 2 张头像下载失败回退空头像(T2 降级预案允许;头像 URL 先于并发下载由 seed 确定,失败不消耗 faker 序列,其余 149~150 张全为自家 Storage 域名 `cbqzqhiqjasshpmunpmo.supabase.co` 零外链)。超管 `admin` 密码哈希 A/C/D/E 四轮快照全同;全库 super_admin 绑定用户仅 admin(binding=1);行数口径 users 151 / roles 6 / role_menus 89 / depts 36 / posts 32 / notices 40 / notifications 163,与任务 A 报告一致。
+- **T5-④ 语言包清理**:全仓 grep 确认 `githubDeveloping` / `googleDeveloping` 源码零引用(仅 Next `.next` dev 构建产物残留,非源码)后删除;React 真源(2 文件)→ Next 手工同步(2 文件)→ Vue / Nuxt 各自 `sync-locales` 重新生成;React 与 Nuxt check-locales 14 文件一致双绿,Nuxt `locales.test.ts` 3 用例过。提交 `5dbd607`(8 文件 16 行删除,单独一笔)。
+- **T5-⑤ 文档收尾**:`feature-matrix.md` 核心业务模块新增「演示模式(快捷登录 / 只读守卫)」行(四端 + NestJS 全 ✅);`ui-spec.md` §1.3 `/sign-in` 行补 `DEMO_MODE` 快捷登录口径 + 新增 `/playground/*` 行(Dashboard 状态保持「占位」待 Phase C);计划 §8 一致性清单 6 项逐项核对打钩(Dashboard「占位→已实现」与契约 v1.11.0 两项如实标注待 Phase C,不提前打钩);`progress.md` 置顶 Phase 0 完成条目;`AGENTS.md` §19 当前待办指针同步(只改指针,架构规则未动)。
+- **收尾状态**:§0 T5 置 ✅。**Phase 0 全部完成**。遗留给用户(不阻塞):线上 `DEMO_MODE=true` 配置、§5 人工清单,均随四端统一上线执行;下一步 Phase C Dashboard(Gate 后启动)。
 
 ### T4 执行报告(2026-09-17 白天,AI 协助开发,用户本地 GUI 复核)
 
@@ -131,8 +146,6 @@
 - **遗留给用户(不阻塞 T3/T4)**:① 超管 `admin` 仍为种子默认密码 `admin123`,**上线前必改**;② `test2` / `test3` 是否清理;③ 矩阵按计划字面执行,部门主管 / HR 不含演示场,可在角色管理调整;④ `super_admin` role_menus 24/28(重置前即如此,聚合免检不受影响)。
 - **后续处理(2026-09-17 白天,用户拍板)**:② 已销项——保留口径收窄为仅内置 `admin`(`username` 判据 + 须绑定 super_admin,否则拒绝执行),脚本修正后重跑 31.9s,test2 / test3 已物理清除,活跃用户 151,超管绑定仅 admin,无孤儿引用。① 已销项——用户已改密,curl 确认 `admin123` 返回 401 `INVALID_CREDENTIALS`。
 - **T3/T4 提示**:库内已是 faker 数据集,白天可直接用快捷登录实测;本地 Nest 需 `DEMO_MODE=true` 才开放 demo-login。
-
-*(下一条:任务 B 执行报告)*
 
 ## 5. 人工清单(不在任何定时任务范围,用户后续执行)
 
