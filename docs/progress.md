@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Dashboard 页头升级欢迎横幅（React 先行，2026-09-19）
+
+- **背景**：用户反馈控制台顶部「时段问候 + 副标题」两行纯文本过于单调，希望优化 UI 展示并可增加内容（内容允许虚拟，好看即可）。
+- **做了什么**（仅 React，`features/dashboard/`）：新增 `welcome-banner.tsx` 替代纯文本页头——① 视觉：主色径向光晕铺底 + 右上同心圆环装饰的 Card（`dashboard.css`，全部 `color-mix(var(--accent))` token 取色零新色值，深色模式透明度 12%→16% 微增，overflow-hidden 裁切圆环）；② 左列：时段问候升为 `text-2xl` + 情绪副标题 + 信息 Chip 行——当日日期用 `Intl.DateTimeFormat` 按语言分段拼接（zh「9月19日 星期六」/ en「Saturday, September 19」），天气为**按日期确定性生成的虚拟演示数据**（暖/寒季现象池 + 各月基准气温 ±2°，种子 = 年月日，刷新不跳变；Chip `title` 标注「今日天气为演示数据」）；③ 右列：快捷入口按钮组（用户管理 primary / 公告管理 / 日志管理 outline，`useNavigate` 导航语义），**以 `collectMenuPaths` 按用户可见菜单过滤（与路由守卫同判据），无可见菜单整组不渲染**；问候细分时段补 `greeting.dawn` 键（0~5 点「凌晨好」/ en「Still up, {{name}}?」，修复凌晨「早上好」与「夜深了」副标题打架）。整页 Skeleton 页头占位同步 `h-8` → `h-32`；greeting/subtitleKey 函数移入横幅组件。
+- **语言包**：zh-CN/en 各 +9 键（`features.dashboard.banner.*` 8 键 + `greeting.dawn`），Next 端逐字同步（check-locales 14 文件一致通过）。
+- **验证**：React check-locales / lint 0 error / tsc / vitest 93 用例 / build 全绿；浏览器 GUI 实测（本地 dev + Nest + faker 库，演示账号 changyewei 登录）：深浅色两模式横幅光晕与圆环、日期/天气 Chip、快捷入口渲染与过滤、凌晨问候修正、移动端 390px 断点纵排换行、英文语言全量文案——逐项通过。
+- **文档**：本条目；`feature-matrix.md` Dashboard 行追加横幅备注（React 新增项，其余三端随各端 Dashboard 阶段对齐）；`plan-dashboard-playground.md` §4.1 布局骨架图与视觉语言拆解同步（新增第 4 条「欢迎横幅」、§4.1.8 逼真数据口径标注天气为唯一虚拟例外）。
+
 ### Phase C 启动：契约 v1.11.0 + Nest stats 模块 + React Dashboard 基准版（2026-09-18）
 
 - **背景**：Phase 0 完成后按计划 §4 启动 Dashboard。用户指示：先完成 React 端，**经用户 GUI 验证通过后**再以 React 为基准开发 Next / Vue / Nuxt。

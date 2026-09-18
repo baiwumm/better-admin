@@ -12,6 +12,7 @@ import { KpiCard } from "./kpi-card";
 import { LatestNoticesCard } from "./latest-notices-card";
 import { RecentActivityCard } from "./recent-activity-card";
 import { STATS_OVERVIEW_QUERY_KEY, fetchStatsOverview } from "./stats-api";
+import { WelcomeBanner } from "./welcome-banner";
 
 import { EmptyContent } from "@/components/common/empty-content/empty-content";
 import { useAuthStore } from "@/stores/auth-store";
@@ -20,7 +21,8 @@ import "./dashboard.css";
 /**
  * Dashboard 概览页（Phase C，契约 v1.11.0；plan-dashboard-playground.md §4）。
  *
- * 布局骨架（§4.1，HeroUI Pro 风格基准）：页头行（时段问候 + 用户名）→
+ * 布局骨架（§4.1，HeroUI Pro 风格基准）：欢迎横幅（时段问候 + 日期/天气
+ * Chip + 快捷入口，见 welcome-banner.tsx）→
  * KPI 行（4 张扁平卡：标题 + 大数字 + 右上状态 badge）→
  * 主图表卡（登录趋势：卡头右侧时间范围 Tabs + 卡内三项小结指标）+
  * 角色占比卡（等高自适应）→ 最近动态 + 最新公告（各 1/2）。
@@ -33,25 +35,6 @@ import "./dashboard.css";
 
 const LoginTrendChart = lazy(() => import("./login-trend-chart"));
 const RoleDistributionChart = lazy(() => import("./role-distribution-chart"));
-
-/** 按当前小时返回问候 i18n 键（12 点前早安 / 18 点前午安 / 之后晚安） */
-function greetingKey(hour: number): string {
-  if (hour < 12) return "features.dashboard.greeting.morning";
-  if (hour < 18) return "features.dashboard.greeting.afternoon";
-
-  return "features.dashboard.greeting.evening";
-}
-
-/** 按时段返回副标题情绪文案 i18n 键（深夜/清晨/上午/午间/午后/晚间） */
-function subtitleKey(hour: number): string {
-  if (hour < 5) return "features.dashboard.subtitle.lateNight";
-  if (hour < 9) return "features.dashboard.subtitle.morning";
-  if (hour < 12) return "features.dashboard.subtitle.forenoon";
-  if (hour < 14) return "features.dashboard.subtitle.noon";
-  if (hour < 18) return "features.dashboard.subtitle.afternoon";
-
-  return "features.dashboard.subtitle.evening";
-}
 
 /** 环比昨日百分比（昨日为 0 时不计环比返回 null） */
 function loginDeltaPercent(kpis: StatsOverview["kpis"]): number | null {
@@ -117,7 +100,7 @@ interface DashboardSkeletonProps {
 function DashboardSkeleton({ message }: DashboardSkeletonProps) {
   return (
     <div aria-busy="true" aria-label={message} className="flex flex-col gap-6">
-      <Skeleton className="h-8 w-56 rounded-lg" />
+      <Skeleton className="h-32 rounded-xl" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-24 rounded-xl" />
@@ -163,17 +146,9 @@ function DashboardContent({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* 页头行：时段问候 */}
+      {/* 页头：欢迎横幅（问候 + 日期/天气 + 快捷入口） */}
       <div data-dashboard-stagger="1">
-        <h1
-          className="text-xl font-semibold"
-          style={{ color: "var(--foreground)" }}
-        >
-          {t(greetingKey(new Date().getHours()), { name: user.displayName })}
-        </h1>
-        <Typography color="muted" type="body-sm">
-          {t(subtitleKey(new Date().getHours()))}
-        </Typography>
+        <WelcomeBanner user={user} />
       </div>
 
       {/* KPI 行（4 张扁平卡：标题 + 大数字 + 右上状态 badge） */}
