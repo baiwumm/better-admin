@@ -175,7 +175,23 @@ info:
     用户已删除或未设置时为 null）。
     四端影响：React / Vue（消费 Nest）、Nest（实现方）；Next / Nuxt（独立全栈）
     各自 server API 同名对齐（随 Phase C 各端对齐阶段实施）。
-  version: 1.11.0
+    v1.12.0 Dashboard 概览取数口径修正（不改聚合逻辑，只改参数归属）：
+    移除 GET /stats/overview 的 `days` 查询参数，`loginTrend` 改为**固定返回近 30 日**
+    序列，7 / 30 日区间切换下移到前端本地截取（`slice(-days)`）。
+    动因：`days` 在 v1.11.0 的实现里只作用于 `loginTrend` 一个字段（KPI 迷你序列固定
+    近 7 日、角色占比 / 公告 / 动态均与之无关），但它是**页面级**聚合接口的参数，
+    前端把它拼进 queryKey 后，用户点一下图表 Tabs 就重拉整包数据——服务端白算十余个
+    聚合只为换一条曲线，且配合 keepPreviousData 续显旧数据时，其它区块若在两次请求
+    之间发生变化，会表现为「只切了图表、KPI 数字却跳了」。控件作用域与请求作用域
+    不一致属取数形状问题，修正方式是让接口只返回页面级数据、区间成为纯视图状态。
+    等价性：`lastNDates(30)` 取后 7 项与 `lastNDates(7)` 结果恒等（同为 Asia/Shanghai
+    UTC+8 日界、无数据日补 0），故前端截取不改变任何数值口径。
+    兼容性：全局 ValidationPipe 为 `whitelist: true` + `forbidNonWhitelisted: false`，
+    存量客户端继续携带 `?days=` 不会 400，被静默忽略，可平滑过渡。
+    四端影响：Nest（实现方）与 React（消费方）本次同步修改；Next 需同步其自带
+    server API（`lib/server/stats-service.ts`）与前端；Vue / Nuxt 尚未实现 Dashboard，
+    直接按 v1.12.0 口径落地即可。
+  version: 1.12.0
 
 servers:
   - url: https://nest.baiwumm.com/api
@@ -1880,7 +1896,9 @@ components:
           $ref: '#/components/schemas/StatsKpis'
         loginTrend:
           type: array
-          description: 登录趋势序列（logs type=login 按日，近 days 天，days=7|30）
+          description: >
+            登录趋势序列（logs type=login 按日，固定近 30 日）；
+            7 / 30 日区间由前端本地截取（slice(-days)），v1.12.0 起不再由服务端参数决定
           items:
             $ref: '#/components/schemas/StatsSeriesPoint'
         roleDistribution:
@@ -4920,30 +4938,24 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  # ===================== Stats（v1.11.0 Dashboard 概览） =====================
+  # ===================== Stats（v1.11.0 Dashboard 概览；v1.12.0 去 days 参数） =====================
   /stats/overview:
     get:
       tags: [Stats]
       summary: Dashboard 概览统计（只读聚合）
       description: >
-        一次返回 Dashboard 全量数据：KPI 计数与迷你序列、登录趋势（按 days 参数）、
+        一次返回 Dashboard 全量数据：KPI 计数与迷你序列、登录趋势（固定近 30 日）、
         角色占比、最新公告、最近操作日志。鉴权为任意已登录用户（仅 AuthGuard，
         不要求按钮位权限）；只读聚合，敏感字段（手机号 / 邮箱 / IP / User-Agent）
         不出现在响应中，最近操作日志条目附带操作人头像 URL（avatar，公开信息，
         对齐日志模块 v1.4.8 口径）。序列 date 按 Asia/Shanghai（UTC+8）日界聚合，
         无数据日补 0。GET 请求不受 DEMO_READONLY 只读守卫影响。
+        自 v1.12.0 起**无查询参数**：7 / 30 日趋势区间由前端对 loginTrend 本地截取
+        （`slice(-days)`），不作为服务端取数维度——本接口是页面级聚合，任何只影响
+        单个区块的维度都不应成为它的参数，否则局部控件会驱动整页重取。
       security:
         - bearerAuth: []
       x-permission: NONE
-      parameters:
-        - name: days
-          in: query
-          required: false
-          description: 登录趋势序列天数（KPI 迷你序列固定近 7 日，不受本参数影响）
-          schema:
-            type: integer
-            enum: [7, 30]
-            default: 7
       responses:
         '200':
           description: 成功
@@ -4955,7 +4967,5 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/StatsOverview'
-        '400':
-          $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'

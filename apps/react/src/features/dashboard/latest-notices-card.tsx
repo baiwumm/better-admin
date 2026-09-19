@@ -1,4 +1,5 @@
 import type { StatsNoticeItem } from "@/lib/api-types";
+import type { ReactNode } from "react";
 
 import { Avatar, Card, Typography } from "@heroui/react";
 import { Megaphone } from "lucide-react";
@@ -15,14 +16,16 @@ import { formatDateTime } from "@/lib/format-date";
 
 interface LatestNoticesCardProps {
   items: StatsNoticeItem[];
+  /** 卡头右侧出口（由页面按菜单可见性判定后传入；缺省不渲染） */
+  action?: ReactNode;
 }
 
-export function LatestNoticesCard({ items }: LatestNoticesCardProps) {
+export function LatestNoticesCard({ items, action }: LatestNoticesCardProps) {
   const { t, i18n } = useTranslation();
 
   return (
-    <Card className="h-full">
-      <Card.Header>
+    <Card className="dashboard-card h-full">
+      <Card.Header className="flex-row items-center justify-between gap-2">
         <Card.Title className="flex items-center gap-2 text-base">
           <Megaphone
             aria-hidden
@@ -31,6 +34,7 @@ export function LatestNoticesCard({ items }: LatestNoticesCardProps) {
           />
           {t("features.dashboard.notices.title")}
         </Card.Title>
+        {action}
       </Card.Header>
       <Card.Content className="flex flex-col gap-1">
         {items.length === 0 ? (

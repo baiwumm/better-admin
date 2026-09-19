@@ -2,6 +2,15 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### React Dashboard 颜值二轮打磨 + 契约 v1.12.0 取数口径修正（2026-09-19）
+
+- **背景**：用户反馈概览页「颜值不够惊艳」，要求高颜值 / 干净简洁 / 有高级感。指示先改 React 基准、验收后再以此为基准推其他端。全程只动契约 + Nest + React（+ Next 语言包，见下），Vue / Nuxt 未动。
+- **契约 v1.11.0 → v1.12.0（唯一实质契约变更）**：`GET /stats/overview` 移除 `days` 查询参数，`loginTrend` 固定返回近 30 日，7/30 区间下移到前端 `slice(-days)`。**动因**：`days` 在服务端只作用于 `loginTrend` 一个字段（KPI 迷你序列固定 7 日、角色/公告/日志均无关），但它是页面级聚合接口的入参，前端把它拼进 queryKey 后，用户点一下图表 Tabs 就重算十余个聚合只为换一条曲线；配合 `keepPreviousData` 续显旧数据时，其它区块若在两次请求间发生变化会表现为「只切了图表、KPI 数字却跳了」——控件作用域与请求作用域不一致。**等价性**：`lastNDates(30)` 取后 7 项 ≡ `lastNDates(7)`（同 UTC+8 日界、无数据日补 0），数值口径不变。**兼容性**：`forbidNonWhitelisted=false`，存量客户端携带 `?days=` 静默忽略不 400；400 ValidationError 响应随参数一并移除；`dto/stats-query.dto.ts` 与 `dto/` 目录删除。实测连点 4 次 Tabs fetch 拦截计数为 0。
+- **视觉与交互修复（React）**：① KPI 卡补 plan §4.1.1 要求但此前缺失的左上角图标徽标（`bg-accent/10` + `text-accent`，项目既有工具类）；② sparkline 从「数字右侧 50/50」移到卡片底部通栏（同 §4.1.1），并以 `vector-effect="non-scaling-stroke"` 修掉 `preserveAspectRatio="none"` 非等比缩放导致的线宽随方向变化（横段粗竖段细）；③ 内容加 `mx-auto max-w-7xl`（对齐 ui-spec §1.2 非 fluid Main 限宽口径）；④ 卡片 hover 阴影微升（§4.1.3 补做，阴影几何复用本文件 Tooltip 既有的 `0 8px 24px`，不新增阴影值）；⑤ 主图卡小结删掉与 KPI 第 2 卡完全重复的「今日登录 + 环比」，只留周期/日均并改为随所选区间计算（此前恒按 30 日算，是顺带发现的正确性问题）；⑥ 动态 5→7 条对齐公告卡高度（单行约 50px×7 ≈ 两行公告 68px×5）；⑦ 环形图圆心显示成员总数；⑧ 零值 badge 降为中性色；⑨ 动态/公告卡补「查看全部」出口，与路由守卫同判据（`collectMenuPaths`）过滤。
+- **关键机制（mechanisms 候选）· recharts 扇区级 Tooltip 无法平滑跟随**：`Pie.js` 给每个扇区各挂一对 enter/leave，离开即 dispatch `mouseLeaveItem` 把 `hover.active` 置 false 且 `coordinate` 清空（`TooltipBoundingBox` 外层是 `top:0/left:0` + transform 定位，于是归零回容器左上角），进入下一扇区再置 true——**开位置动画必然每次从左上角飞入，关位置动画必然闪**，两种都不对；而轴类图表（面积/折线）走连续 axis index 更新、中途从不 deactivate，才表现为平滑滑行。二次踩坑：改用手绑扇区 `onMouseLeave` 收起也不可靠——`activeIndex` 一变 recharts 就把**所有**扇区的 shape 换成 `inactiveShapeProp`，指针下节点被替换，`mouseleave` 发不出来，Tooltip 卡在图上不走。最终方案：只监听容器一条 `mousemove`，用 `event.target.closest('[data-recharts-item-index]')` 反查命中扇区（该属性经 `svgPropertiesAndEvents` 显式保留 data-* 落到 `.recharts-sector` 的 path 上），Tooltip 元素常驻不卸载、只切 `data-visible` 的 opacity——单一事件源，无 enter/leave 竞态，也不依赖 rAF（rAF 在后台标签页 / 省电模式 / 内嵌面板会冻结）。
+- **已知限制 / 待办**：① **Next 端仍是 v1.11.0 旧取数形状**（`lib/server/stats-service.ts` 带 `days` 签名 + route handler 400 校验），且未含本轮打磨，需同步；语言包 3 个新键（`activity.viewAll` / `notices.viewAll` / `chart.totalMembers`）已因 `check-locales` 双向逐键比对先行写入 Next 四份文件；② Vue / Nuxt 尚未做 Dashboard，直接按 v1.12.0 落地；③ 两项设计决策挂起待用户拍板——角色环形图单色 accent 透明度阶梯导致相邻扇区难分辨（改配色要动 §4.1「四端同一 opacity 标度」约定）、两级卡片分层（浅色下 `--surface-secondary` 95.24% 比页面底色 97.02% 更深，会变成「凹陷」而非「分层」）；④ `ui-spec.md` §8 记录的 Card 圆角刻度（10/14px）与 HeroUI v3 实测 24px 不一致，本轮按实测值对齐骨架。
+- **验证**：React `tsc` / `eslint` 0 error / `vitest` 93 用例 / `check-locales` / `vite build` 全绿；Nest `tsc` / `eslint` / `nest build` 全绿；`openapi.yaml` 经 js-yaml 解析校验（version 1.12.0、parameters 空、responses 200/401）；curl 实测 `loginTrend` 30 点、KPI 序列仍 7 点、携带旧 `?days=` 返回 200。**像素级效果经用户 GUI 走查三轮确认**（截图面板 0×0 视口不可用，图表在零宽下不渲染，Tooltip 运行时命中未能自测，由用户实测验收）。
+
 ### Next 端 Dashboard 全量对齐（含欢迎横幅，2026-09-19，未提交待审核）
 
 - **背景**：用户确认 React 横幅方案后指示「基于 React 基准先完成 Next 端开发，改完先不提交，等审核通过再提交；Vue / Nuxt 等指令」。

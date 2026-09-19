@@ -1,4 +1,5 @@
 import type { StatsLogItem } from "@/lib/api-types";
+import type { ReactNode } from "react";
 
 import { Avatar, Card, Typography } from "@heroui/react";
 import { Activity } from "lucide-react";
@@ -15,6 +16,8 @@ import { formatRelativeTime } from "@/lib/format-date";
 
 interface RecentActivityCardProps {
   items: StatsLogItem[];
+  /** 卡头右侧出口（由页面按菜单可见性判定后传入；缺省不渲染） */
+  action?: ReactNode;
 }
 
 /**
@@ -43,12 +46,12 @@ const ACTION_I18N: Record<string, string> = {
   logout: "features.dashboard.action.logout",
 };
 
-export function RecentActivityCard({ items }: RecentActivityCardProps) {
+export function RecentActivityCard({ items, action }: RecentActivityCardProps) {
   const { t, i18n } = useTranslation();
 
   return (
-    <Card className="h-full">
-      <Card.Header>
+    <Card className="dashboard-card h-full">
+      <Card.Header className="flex-row items-center justify-between gap-2">
         <Card.Title className="flex items-center gap-2 text-base">
           <Activity
             aria-hidden
@@ -57,6 +60,7 @@ export function RecentActivityCard({ items }: RecentActivityCardProps) {
           />
           {t("features.dashboard.activity.title")}
         </Card.Title>
+        {action}
       </Card.Header>
       <Card.Content className="flex flex-col gap-1">
         {items.length === 0 ? (

@@ -1,14 +1,19 @@
 import type { StatsSeriesPoint } from "@/lib/api-types";
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Card, Chip } from "@heroui/react";
 import NumberFlow from "@number-flow/react";
 
 /**
- * KPI 统计卡（HeroUI 语义结构）：Card.Header = 标题（左）+ 状态 Chip（右）；
- * Card.Content = 大号数字（NumberFlow 滚动）+ 近 7 日迷你渐变折线（右侧，
- * 内联 SVG + Catmull-Rom 平滑曲线，不依赖 recharts 异步 chunk）。
- * 全部使用 HeroUI 内置组件与项目级 Design Tokens，无手写胶囊样式。
+ * KPI 统计卡（plan §4.1 视觉语言 1）：Card.Header = 左上角图标徽标 + 标题（左）
+ * + 状态 Chip（右）；Card.Content = 大号数字（NumberFlow 滚动）+ **底部通栏**
+ * 迷你 sparkline（内联 SVG + Catmull-Rom 平滑曲线，不依赖 recharts 异步 chunk）。
+ *
+ * sparkline 用 `preserveAspectRatio="none"` 铺满卡宽，因此描边必须带
+ * `vector-effect="non-scaling-stroke"`——否则非等比缩放会让线宽随方向变化
+ * （横段粗、竖段细），曲线也被压平看不出起伏。
+ * 无 series 的卡（组织规模）不留空带，改由数字在内容区垂直居中补齐高度。
  */
 
 export type KpiBadgeTone = "up" | "down" | "accent" | "neutral";
@@ -16,11 +21,13 @@ export type KpiBadgeTone = "up" | "down" | "accent" | "neutral";
 interface KpiCardProps {
   label: string;
   value: number;
+  /** 左上角图标徽标（主色 10% 底 + 主色图标） */
+  icon: LucideIcon;
   /** 状态文案（环比 / 今日增量等；缺省不展示） */
   badge?: ReactNode;
   /** badge 色调（up=涨 / down=跌 / accent=主色 / neutral=中性） */
   badgeTone?: KpiBadgeTone;
-  /** 近 7 日序列（右侧迷你折线数据；缺省不渲染图区，如组织规模卡） */
+  /** 近 7 日序列（底部迷你折线数据；缺省时数字在内容区垂直居中） */
   series?: StatsSeriesPoint[];
 }
 
@@ -35,19 +42,22 @@ const BADGE_TONE_COLOR: Record<
   neutral: "default",
 };
 
+/** sparkline 内部坐标系高度（viewBox 单位；与归一化取值范围配套） */
+const SPARK_HEIGHT = 40;
+const SPARK_WIDTH = 100;
+
 /** 7 点序列点坐标（y 轴按 min/max 归一，max=min 时拉平中线） */
 function seriesPoints(series: StatsSeriesPoint[]): { x: number; y: number }[] {
-  const width = 100;
-  const height = 40;
   const values = series.map((p) => p.count);
   const max = Math.max(...values);
   const min = Math.min(...values);
   const span = max - min || 1;
-  const stepX = values.length > 1 ? width / (values.length - 1) : width;
+  const stepX =
+    values.length > 1 ? SPARK_WIDTH / (values.length - 1) : SPARK_WIDTH;
 
   return values.map((v, i) => ({
     x: i * stepX,
-    y: height - 2 - ((v - min) / span) * (height - 4),
+    y: SPARK_HEIGHT - 2 - ((v - min) / span) * (SPARK_HEIGHT - 4),
   }));
 }
 
@@ -79,21 +89,30 @@ let sparklineSeq = 0;
 export function KpiCard({
   label,
   value,
+  icon: Icon,
   badge,
   badgeTone = "neutral",
   series,
 }: KpiCardProps) {
   const points = series ? seriesPoints(series) : null;
   const linePath = points ? smoothLinePath(points) : "";
-  const areaPath = points ? `${linePath} L100,40 L0,40 Z` : "";
+  const areaPath = points
+    ? `${linePath} L${SPARK_WIDTH},${SPARK_HEIGHT} L0,${SPARK_HEIGHT} Z`
+    : "";
   // 模块级自增序号保证唯一；组件不重挂载则 id 稳定，重挂载生成新 id 亦无冲突
   const gradientId = `kpi-spark-${(sparklineSeq += 1)}`;
 
   return (
-    <Card>
-      <Card.Header className="flex-row items-center justify-between gap-2">
+    <Card className="dashboard-card">
+      <Card.Header className="flex-row items-center gap-2.5">
+        <span
+          aria-hidden
+          className="grid size-8 shrink-0 place-items-center rounded-xl bg-accent/10 text-accent"
+        >
+          <Icon className="size-4" />
+        </span>
         <Card.Title
-          className="truncate text-sm font-normal"
+          className="min-w-0 flex-1 truncate text-sm font-normal"
           style={{ color: "var(--muted)" }}
         >
           {label}
@@ -104,18 +123,23 @@ export function KpiCard({
           </Chip>
         ) : null}
       </Card.Header>
-      <Card.Content className="grid grid-cols-[1fr_1fr] items-end gap-3">
+      {/*
+        数字一律顶部对齐：四卡同排时大数字必须共用一条基线，
+        无 sparkline 的卡（组织规模）宁可留底部空白也不要 justify-center
+        把数字推低——错位比留白更显眼。
+      */}
+      <Card.Content className="gap-2">
         <NumberFlow
           className="text-3xl font-semibold tabular-nums"
           style={{ color: "var(--foreground)" }}
           value={value}
         />
-        {points && linePath ? (
+        {linePath ? (
           <svg
             aria-hidden
-            className="h-12 w-full"
+            className="mt-auto h-8 w-full"
             preserveAspectRatio="none"
-            viewBox="0 0 100 40"
+            viewBox={`0 0 ${SPARK_WIDTH} ${SPARK_HEIGHT}`}
           >
             <defs>
               <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
@@ -133,7 +157,8 @@ export function KpiCard({
               fill="none"
               stroke="var(--accent)"
               strokeLinecap="round"
-              strokeWidth="1.5"
+              strokeWidth={1.5}
+              vectorEffect="non-scaling-stroke"
             />
           </svg>
         ) : null}
