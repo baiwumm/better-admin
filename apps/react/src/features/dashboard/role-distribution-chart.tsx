@@ -8,8 +8,8 @@ import { useRef, useState } from "react";
 import { useTranslation } from "@/i18n";
 
 /**
- * 角色占比环形图（plan §4.2 副图 1）：Recharts donut + 同色系透明度阶梯图例
- * （主色明度阶梯派生，不新增色值，四端以同一 opacity 标度对齐）。
+ * 角色占比环形图（plan §4.2 副图 1）：Recharts donut + 品牌色相轮转分类色图例
+ * （全部由 --accent 派生，不新增色值，四端以同一色相标度对齐）。
  *
  * Tooltip 自绘、且**由容器单条 mousemove 驱动**——不用 recharts 的 `<Tooltip>`，
  * 也不用扇区自己的 enter/leave，原因见下方 hover 段注释。
@@ -21,8 +21,26 @@ interface RoleDistributionChartProps {
   slices: StatsRoleSlice[];
 }
 
-/** 主色透明度阶梯（克制式同色系，plan §4.1 硬性约束：不新增色值） */
-const SLICE_OPACITIES = [1, 0.78, 0.58, 0.42, 0.28, 0.16, 0.08];
+/**
+ * 分类色标度：以 --accent 为锚做色相轮转，明度沿用品牌值、彩度统一取品牌彩度
+ * 的 0.72 倍（六段循环）。
+ *
+ * 替换掉原先的「主色透明度阶梯」——alpha 混合是往背后的卡片色里融，浅色卡片上
+ * 还读得出深浅，深色卡片上低 alpha 的扇区几乎与底色同化，标度本身在深色模式不
+ * 成立；相邻扇区难分辨只是表症。固定 L/C 的色相轮转在两种主题下感知距离一致，
+ * 且每个颜色仍是品牌色本身（oklch 相对色彩语法，项目 sign-in.css 已在用），
+ * 未新增任何色值（AGENTS §7.3）。彩度降到 0.72 倍是为把暖端色相留在 sRGB 域内
+ * 并让整组更克制，与 plan §4.1 的克制式高级感一致。
+ */
+const SLICE_HUE_OFFSETS = [0, 42, -42, 84, -84, 126];
+
+/** 第 i 个扇区填充色：仅改色相与彩度，明度与品牌色一致 */
+function sliceFill(i: number): string {
+  const offset = SLICE_HUE_OFFSETS[i % SLICE_HUE_OFFSETS.length];
+  const sign = offset < 0 ? "-" : "+";
+
+  return `oklch(from var(--accent) l calc(c * 0.72) calc(h ${sign} ${Math.abs(offset)}))`;
+}
 
 /** Tooltip 相对指针的偏移，避免压在光标正下方 */
 const TIP_OFFSET = 14;
@@ -38,10 +56,7 @@ export default function RoleDistributionChart({
   slices,
 }: RoleDistributionChartProps) {
   const { t } = useTranslation();
-  const data = slices.map((s, i) => ({
-    ...s,
-    fill: `color-mix(in oklch, var(--accent) ${Math.round(SLICE_OPACITIES[i % SLICE_OPACITIES.length] * 100)}%, transparent)`,
-  }));
+  const data = slices.map((s, i) => ({ ...s, fill: sliceFill(i) }));
   const total = slices.reduce((sum, s) => sum + s.count, 0);
 
   const boxRef = useRef<HTMLDivElement>(null);
