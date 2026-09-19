@@ -1038,3 +1038,17 @@ useEffect(() => {
 
 - 依据：`admin-shell.tsx` / `(authenticated)/layout.tsx` 代码实读 + 用户本地浏览器实测（过渡设为「无」后重播消失 → 定位病根；改为 `isFreshNavigation` 门控后重播消失且导航动画与方向感知照常）。Next `tsc --noEmit` / eslint 0 error / `next build` 全绿。
 - 关联：`docs/progress.md` 2026-09-19 条目；本条修正上一条 Next 对齐条目中「chartsReady 门闩后 VT 只播一次」的不完整结论（该门闩只合并了同一次揭示内的多次提交，管不了揭示本身相对导航是第二次提交）。
+
+## 32. Nuxt UI v4 无内置图表组件 + 组件样式本身就是 utilities 工具类：Vue / Nuxt 端特性 CSS 不能写进 `@layer components`（Vue 端，Dashboard 概览，2026-09-19）
+
+**结论一 · Nuxt UI v4 不再自带图表组件。** `@nuxt/ui@4.11.0` 的 `dist/runtime/components/` 全量列举无任何 `Chart*`，`dist/` 内也不出现 `chart.js` / `ChartArea` / `ChartDonut` 字样（v3 的图表系列已移除）。因此 Vue / Nuxt 端做图表只有两条路：**手写内联 SVG**（零依赖，Dashboard 概览采用），或新增 `chart.js` 依赖自行拼组件（触 `AGENTS.md` §15「不擅自引入依赖」，须先评审）。Nuxt 端 Dashboard 落地时同样适用，不要重复去 `node_modules` 里找 `UChart`。
+
+**结论二 · 与 §29 互为镜像的层叠陷阱。** §29 说的是 HeroUI：组件样式在 `components` 层，所以 Tailwind 工具类**能**覆盖它。Nuxt UI 恰好反过来——组件的外观是由 `cn()` 把主题类（`bg-default` / `divide-default` / `rounded-lg` / `p-4 sm:p-6`）作为**普通工具类**打到元素上，位于 `utilities` 层。于是：
+
+- 自定义规则写进 `@layer components`（`src/styles/sign-in.css` 的既有写法）**会被组件自带的工具类盖掉**——本次 `dashboard.css` 若套 layer，欢迎横幅的三层 `radial-gradient` 背景会被 `UCard` 根节点的 `bg-default` 直接吃掉，光晕整块消失，且肉眼看不出是哪条规则赢了下层。
+- 判据与写法：**需要覆盖组件自带工具类的特性 CSS，一律不套 `@layer`**。CSS 层叠里「层的顺序」优先于「选择器特异性」，而**未分层规则恒高于任何一层**，因此 `.dashboard-welcome { background: ... }` 写在层外才赢；验证手段是 `getComputedStyle(el).backgroundImage` 能读到三层渐变。不需要覆盖任何东西的纯动效 / 关键帧规则，套不套 layer 皆可（本项目历史写法保留）。
+
+**结论三 · `UCard` 卡体默认不是弹性容器。** 主题里 body 只有 `p-4 sm:p-6`，根节点也不是 flex。要做到「同排卡片等高 + 内容撑满剩余高度」（KPI 卡的底部通栏 sparkline、图表卡的面积图 / 环形图），必须同时给根 `class="flex flex-col"` 与 `:ui="{ body: 'flex min-h-0 flex-1 flex-col' }"`——只给根上的 flex 不生效，因为 body 不是 flex item 就长不满。`ui` prop 的覆盖优先级高于主题默认（skill core rule 4），是官方正道，不要用 `!important` 或 `class` 硬压。
+
+- 依据：`apps/vue/src/styles/dashboard.css` / `features/dashboard/{KpiCard,LoginTrendChart,RoleDistributionChart,DashboardPage}.vue` 落地实测（DOM `getComputedStyle` 取证：body class 为 `p-4 sm:p-6 flex flex-1 flex-col gap-2`、grow=1、欢迎横幅三层渐变可读出）；`@nuxt/ui@4.11.0` dist 目录与 `node_modules/.nuxt-ui/ui/*.ts` 主题文件实读。
+- 关联：`docs/progress.md` 2026-09-19「Vue 端 Dashboard 概览对齐 React 基准」条目；§29（HeroUI 层的镜像情形）；§15 / `docs/nuxt-ui-guide.md` §1 组件优先级。
