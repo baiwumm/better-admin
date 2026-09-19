@@ -573,3 +573,73 @@ export interface AppNotification {
   readAt: string | null;
   createdAt: string;
 }
+
+/** 概览统计序列点（/stats/overview，契约 v1.12.0；date 为 UTC+8 日界 YYYY-MM-DD） */
+export interface StatsSeriesPoint {
+  date: string;
+  count: number;
+}
+
+/** 概览统计 KPI 计数组（迷你序列固定近 7 日） */
+export interface StatsKpis {
+  /** 用户总数（未删除） */
+  usersTotal: number;
+  /** 今日新增用户数 */
+  usersTodayNew: number;
+  /** 近 7 日每日新增用户序列 */
+  usersDailyNew: StatsSeriesPoint[];
+  /** 今日登录次数（logs type=login） */
+  loginsToday: number;
+  /** 昨日登录次数（环比基准） */
+  loginsYesterday: number;
+  /** 近 7 日每日登录序列 */
+  loginsDailyNew: StatsSeriesPoint[];
+  /** 累计操作日志数（type=operation） */
+  logsTotal: number;
+  /** 今日操作日志数 */
+  logsToday: number;
+  /** 近 7 日每日操作日志序列 */
+  logsDailyNew: StatsSeriesPoint[];
+  /** 部门总数 */
+  deptsCount: number;
+  /** 岗位总数 */
+  postsCount: number;
+}
+
+/** 角色占比切片 */
+export interface StatsRoleSlice {
+  roleCode: string;
+  roleName: string;
+  count: number;
+}
+
+/** 最新公告条目（标题 + 时间 + 发布人显示名，不含正文） */
+export interface StatsNoticeItem {
+  id: string;
+  title: string;
+  publishTime: string;
+  /** 发布人显示名（发布人已删除或无发布人时为 null） */
+  publisherName: string | null;
+  /** 发布人头像 URL（公开信息；发布人已删除或未设置头像时为 null） */
+  publisherAvatar: string | null;
+}
+
+/** 最近操作日志条目（不含 email / IP；avatar 为操作人头像 URL，公开信息） */
+export interface StatsLogItem {
+  id: string;
+  action: string;
+  username: string | null;
+  displayName: string | null;
+  avatar: string | null;
+  createdAt: string;
+}
+
+/** Dashboard 概览统计（GET /stats/overview，只读聚合，任意已登录用户） */
+export interface StatsOverview {
+  kpis: StatsKpis;
+  /** 登录趋势序列（契约固定近 30 日；7/30 日区间由前端本地 slice 截取） */
+  loginTrend: StatsSeriesPoint[];
+  roleDistribution: StatsRoleSlice[];
+  latestNotices: StatsNoticeItem[];
+  recentLogs: StatsLogItem[];
+}

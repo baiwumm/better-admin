@@ -7,6 +7,8 @@
 @import "./sign-in.css";
 /* 多标签页栏：进场动效与横向滚动容器 */
 @import "./tags-bar.css";
+/* Dashboard 概览页：区块入场 stagger / 卡片 hover / 图表 Tooltip / 欢迎横幅光晕 */
+@import "./dashboard.css";
 /* 偏好设置（design-theme-store 驱动）：主题切换揭示动画 / 路由过渡预设 / 色彩模式滤镜 */
 @import "./theme-transition.css";
 @import "./route-transitions.css";
