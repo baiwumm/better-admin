@@ -55,6 +55,27 @@ export function AdminShell({ menuTree, user, children }: AdminShellProps) {
   const showTabs = useDesignThemeStore((s) => s.showTabs);
   const routeTransition = useDesignThemeStore((s) => s.routeTransition);
 
+  /**
+   * 路由过渡只属于「导航」这一次提交，不属于页内异步更新。
+   *
+   * 本边界跨导航持久存在，React 会把 <main> 子树的**每一次** DOM 提交都归给它
+   * 并触发 update 动画——于是概览页「骨架 → 数据 → 内容」的异步揭示、以及
+   * (authenticated)/layout.tsx 作为 async RSC 每次导航重新下发 user / menuTree
+   * （对象身份必新）触发 setUser / setMenus 二次渲染，都会再播一遍整页动画，
+   * 用户表现为「进页面动画播两遍」「异常页标签间偶发重播」。React 端无此现象，
+   * 因为它只在导航期手动 startViewTransition，页内更新不走过渡。
+   *
+   * 这里把 update 收窄为「pathname 刚变化的那一次提交」：导航照常播动画，
+   * 揭示 / 二次渲染不再播。animatedPath 在导航提交后的 effect 里追平，
+   * 因此后续任何非导航提交拿到的都是 "none"。
+   */
+  const [animatedPath, setAnimatedPath] = useState(pathname);
+  const isFreshNavigation = animatedPath !== pathname;
+
+  useEffect(() => {
+    if (isFreshNavigation) setAnimatedPath(pathname);
+  }, [isFreshNavigation, pathname]);
+
   // 当前用户快照同步：把 RSC 注入的服务端权威 user 覆盖进客户端 store，
   // 使管理员修改角色授权后「刷新页面生效」（等价 React 版 useAuthSync）。
   useEffect(() => {
@@ -144,7 +165,9 @@ export function AdminShell({ menuTree, user, children }: AdminShellProps) {
         <ViewTransition
           default="none"
           update={
-            routeTransition === "none" ? "none" : `rt rt-${routeTransition}`
+            !isFreshNavigation || routeTransition === "none"
+              ? "none"
+              : `rt rt-${routeTransition}`
           }
         >
           <main

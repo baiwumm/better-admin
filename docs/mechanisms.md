@@ -993,3 +993,48 @@ Iconify CDN，实现运行时零外部网络依赖（DB 动态菜单图标名的
 **规则沉淀**：`Drawer.Body` 内容布局用块流（`space-y-*`）或在 Body 内包一层内容 div，**不要把 Body 自身写成 `flex flex-col`**；需要固定在底部的操作（如「一键催办」）放 `Drawer.Footer`（Dialog 直接子级，位于滚动区之外，`.drawer__body + .drawer__footer` 自带 `mt-5` 间距）。已有的 `flex flex-col` Body（`post-members-drawer.tsx`）子项无显式 `min-h` / overflow 容器，受 `min-height: auto` 保护不触发，可不动，但新写抽屉一律按本条执行。
 
 - 依据：`drawer.css` 实读 + React 端浏览器复现（修 `space-y-4` 后正文完整显示、名单不再溢出、「加载更多」在名单末尾、「一键催办」固定底部）；React / Next `tsc --noEmit` / eslint 全绿。Next 端运行时效果由用户本地验证。
+
+---
+
+## 31. Next 端 layout 级 `<ViewTransition>` 会把 `<main>` 内的任何一次 DOM 提交都当作「路由更新」：页内异步揭示重播整页过渡（Next 端，概览页 / 异常页，2026-09-19）
+
+**现象**（三条，同一病根）：① 进入 Next 概览页动画播两遍——先播一次页面切换，内容出来后又播一次，「看着像刷新页面」；② 在概览页刷新必播；③ 在异常页 403 / 404 / 500 三个标签之间来回切，**偶发**（非必现）整页过渡重播。React 端同页面同操作完全正常。
+
+**机制**：Next 的路由过渡挂在 **layout 级、跨导航持久存在**的边界上（`src/app/(authenticated)/admin-shell.tsx`）：
+
+```tsx
+<ViewTransition default="none" update={`rt rt-${routeTransition}`}>
+  <main>{children}</main>
+</ViewTransition>
+```
+
+`admin-shell.tsx` 原注释即写明「导航时内部 children 被替换即触发 update」——**Next 端把「页面切换」实现成了这个边界的 `update`**。而 React 对 `update` 的语义是「该边界子树内发生了任意 DOM 提交」，不区分这次提交是导航带来的、还是页内异步数据带来的。于是任何落在 `<main>` 里的第二次提交都会再播一遍整页动画。
+
+两个具体的二次提交来源：
+
+1. **概览页必然两段式渲染**：SSR 恒出骨架 + `enabled: mounted` 门闩，等 `/api/stats/overview` 返回才换成内容。数据到达即第二次提交 → 必播。（与移植无关，概览页一上线就有，只是被后续视觉打磨放大到显眼。）
+2. **`(authenticated)/layout.tsx` 是 async RSC**，每次导航都重新 `await getSessionUser()` + `await findMenuTree(user)` 下发 `user` / `menuTree`，**对象身份每次都变** → `admin-shell.tsx` 里 `useEffect(…, [user])` / `useEffect(…, [menuTree])` 在导航提交之后再跑一轮 store 更新 → 第二次渲染。RSC 载荷到达时机是竞态的 → 表现为「偶发」。异常页组件本身是纯静态（零 state / 零 effect），所以二次提交不可能来自页面自身，只可能来自这条。
+
+**排查中排除掉的错误修法（重要，别再走一遍）**：在页面内部套一层 `<ViewTransition update="none">` 包住骨架 / 内容 / 错误三个分支，指望「DOM 变更归属最近的 ViewTransition 祖先」。**无效**——React 会把变更向上传给所有外层边界，外层 `update="rt-*"` 照样触发。用户实测确认动画仍重播。
+
+**规则沉淀**：路由过渡的开关必须绑定「路径刚变化」这一事实，而不是「边界内发生了提交」。落地写法（`admin-shell.tsx`）：
+
+```tsx
+const [animatedPath, setAnimatedPath] = useState(pathname);
+const isFreshNavigation = animatedPath !== pathname;
+useEffect(() => {
+  if (isFreshNavigation) setAnimatedPath(pathname);
+}, [isFreshNavigation, pathname]);
+
+<ViewTransition default="none"
+  update={!isFreshNavigation || routeTransition === "none" ? "none" : `rt rt-${routeTransition}`} />
+```
+
+导航提交时 `isFreshNavigation` 为真 → 照常播；effect 追平 `animatedPath` 后，任何非导航提交拿到的都是 `none`。中途把 `update` 从 `rt-*` 翻回 `none` 不会打断已在跑的过渡——React 是在**发起**过渡时一次性读取类的（用户实测验证）。
+
+**自查口诀**：Next 端「某个页面动画多播一次 / 偶发重播」→ 先找该页在导航之后还有没有第二次 DOM 提交（异步取数揭示、store 同步 effect、RSC props 身份变化引发的重渲染），而不是去查动画本身。把偏好设置里的路由过渡调成「无」若重播消失，即可确认是这个边界语义，而非别的原因。
+
+**附带结论**：`pruneTabs` / `openPath` 也在同一批导航后 effect 里，但它们改的是 TagsBar（`<main>` 之外），不会触发动画——判据是「变更是否落在 VT 边界子树内」。
+
+- 依据：`admin-shell.tsx` / `(authenticated)/layout.tsx` 代码实读 + 用户本地浏览器实测（过渡设为「无」后重播消失 → 定位病根；改为 `isFreshNavigation` 门控后重播消失且导航动画与方向感知照常）。Next `tsc --noEmit` / eslint 0 error / `next build` 全绿。
+- 关联：`docs/progress.md` 2026-09-19 条目；本条修正上一条 Next 对齐条目中「chartsReady 门闩后 VT 只播一次」的不完整结论（该门闩只合并了同一次揭示内的多次提交，管不了揭示本身相对导航是第二次提交）。

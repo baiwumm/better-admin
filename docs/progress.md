@@ -2,6 +2,15 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 修复 Next 端整页过渡动画重播（概览页必播 / 异常页偶发，2026-09-19）
+
+- **背景**：用户验收 Next Dashboard 时反馈「进入概览页动画播两遍，像刷新页面」，并补充「概览页刷新必播」「异常页 403/404/500 三标签间来回切偶发重播」「组织管理 / 用户管理等页面正常」「React 端全部正常」。
+- **定位过程**：先假设是概览页异步揭示（`enabled: mounted` 两段式渲染）撞上 layout 级 `<ViewTransition update="rt ...">`——该边界自身注释即写明「导航时内部 children 被替换即触发 update」，Next 把「页面切换」实现成了边界的 update，而 React 的 update 语义是「边界子树内任意 DOM 提交」，不区分来源。**第一版修法失败**：在页面内套一层 `<ViewTransition update="none">` 包住骨架/内容/错误三分支，假设「变更归属最近 ViewTransition 祖先」——用户实测仍重播，React 实际会把变更向上传给所有外层边界。**决定性验证**：把偏好设置里路由过渡调成「无」后重播消失，确认病根就是这个边界的 update 语义。异常页那条现象单独查：三个页面组件（`forbidden-error` / `result-page` / `illustration-*`）零 state 零 effect 纯静态，故二次提交不可能来自页面自身，只能来自 `(authenticated)/layout.tsx` 作为 async RSC 每次导航重新下发 `user` / `menuTree`（对象身份必新）→ `admin-shell.tsx:60-68` 的 `setUser` / `setMenus` effect 在导航提交后再跑一轮 → RSC 到达时机竞态 → 「偶发」。
+- **修复**（仅 `admin-shell.tsx` 一个文件）：把 `update` 从「只要开了偏好就永远 `rt-*`」收窄为「只有 pathname 刚变化的那次提交为 `rt-*`」——新增 `animatedPath` 状态与 `isFreshNavigation` 派生值，在导航提交后的 effect 里追平，此后任何非导航提交一律拿 `none`。导航动画照常播一次，数据揭示与 RSC 二次渲染不再触发动画。附带确认：中途把 `update` 从 `rt-*` 翻回 `none` 不打断已在跑的过渡，React 是在发起过渡时一次性读取类名。
+- **影响面**：未触碰 CSS、方向感知（`html[data-rt-direction]`）、速度档（`html[data-rt-speed]`）、主题切换 VT（`runViewTransition` 独立路径）、权限门控与 store 同步语义；`routeTransition === "none"` 偏好短路保留。预期内变化：若某次导航的 DOM 被 RSC 流式拆成两次提交，第二次不再播动画（React 端本来如此）。
+- **沉淀**：机制结论写入 [`docs/mechanisms.md`](./mechanisms.md) §31（含失败修法与「别再走一遍」标注、自查口诀：Next 端动画多播先找导航后的第二次 DOM 提交，而不是查动画本身）。本条同时修正上一条 Next 对齐条目中「chartsReady 门闩后 VT 只播一次」的不完整结论——该门闩只合并了同一次揭示内部的多次提交，管不了「揭示相对导航是第二次提交」。
+- **验证**：Next `eslint` 0 error / `tsc --noEmit` / `next build` 全绿；用户本地浏览器实测重播消失、导航与方向感知动画正常。⚠️ 本仓库自动化浏览器面板为 hidden（`visibilityState: hidden` 下 `document.startViewTransition` 空转、`ResponsiveContainer` 零宽不渲染），**VT 类问题在此环境不可测**，本轮曾因此产出过无效结论，后续一律以用户肉眼验证为准。
+
 ### Next 端同步契约 v1.12.0 与 Dashboard 新基准（2026-09-19）
 
 - **背景**：用户验收 React 基准（含环形图新配色）后指示「以 React 为基准开发 Next 端，Vue 和 Nuxt 先不要动」。本轮是纯对齐，无新增功能、无契约变更。
