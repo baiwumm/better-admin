@@ -1,3 +1,48 @@
+import { existsSync, readdirSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+// decimal.js-light / eventemitter3（vccs → recharts 内核的依赖）在 pnpm 虚拟
+// 目录下被 Vite dev 以 CJS 文件直链 serve（前者 browser 字段指向 CJS 的
+// decimal.js，后者 exports 的 import 条件未被 optimizeDeps esbuild 匹配而
+// 回退到 CJS 的 main），浏览器端 `import X from '包名'` 拿不到 default 导出，
+// 登录后进入概览页（首个用 nuxt-charts 的页面）即整页崩溃（The requested
+// module ... does not provide an export named 'default'）。
+// optimizeDeps.include 在 pnpm 布局下解析失败（NUXT_B7002），故用 alias 把
+// 两包精确指到各自的 ESM 入口，使 Vite 将其识别为可预打包的 ESM。
+// 两包是传递依赖，顶层与 nuxt-charts 的 node_modules 都没有可解析链接，只能
+// 到 .pnpm 虚拟目录按 vccs 的实际安装位置找；任何一步失败都保持 alias 为空，
+// 绝不让 config 加载本身崩溃。
+const require = createRequire(import.meta.url)
+const rootDir = path.dirname(fileURLToPath(import.meta.url))
+
+function esmEntry(pkgDirName: string, entry: string): string | null {
+  try {
+    // 先确认 nuxt-charts 可解析（模块未装时直接放弃 alias）
+    require.resolve('nuxt-charts')
+    const pnpmDir = path.join(rootDir, 'node_modules', '.pnpm')
+    const vccsDirName = readdirSync(pnpmDir).find(name =>
+      name.startsWith('vccs@')
+    )
+
+    if (!vccsDirName) return null
+
+    const candidate = path.join(pnpmDir, vccsDirName, 'node_modules', pkgDirName, entry)
+
+    return existsSync(candidate) ? candidate : null
+  } catch {
+    return null
+  }
+}
+
+const chartAlias = Object.fromEntries(
+  [
+    ['decimal.js-light', esmEntry('decimal.js-light', 'decimal.mjs')],
+    ['eventemitter3', esmEntry('eventemitter3', 'index.mjs')]
+  ].filter(([, target]) => Boolean(target))
+)
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   modules: [
@@ -10,7 +55,11 @@ export default defineNuxtConfig({
     // useThemeAnimation / ThemeAnimationType / observeThemeClass 等，并补一份
     // 全局 ThemeAnimationType 类型声明；未注册时页面需手写
     // `import ... from 'theme-switch-animation/vue'`（Vue 端即此写法）。
-    'theme-switch-animation/nuxt'
+    'theme-switch-animation/nuxt',
+    // Dashboard 图表（契约 v1.12.0）：AreaChart / DonutChart 组件自动导入，
+    // 内置 theme.css 以 --ui-* / .dark 对接 Nuxt UI Design Tokens（用户拍板引入，
+    // 评审记录见 docs/progress.md 2026-09-19 条目；锁精确版本 3.0.0）。
+    'nuxt-charts'
   ],
 
   // 渲染模式（nuxt-plan.md §5 D1 决策）：SPA 模式——与 Vue / React 行为完全一致，
@@ -64,6 +113,13 @@ export default defineNuxtConfig({
       options: {
         target: 'esnext'
       }
+    }
+  },
+
+  // 见顶部 chartAlias 说明；alias 同时作用于 dev 转换与依赖预打包。
+  vite: {
+    resolve: {
+      alias: chartAlias
     }
   },
 

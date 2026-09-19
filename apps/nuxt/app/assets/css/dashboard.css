@@ -1,0 +1,156 @@
+/*
+ * Dashboard 概览页专属样式（与 React / Vue 端 features/dashboard/dashboard.css
+ * 同源；取色为 Nuxt UI Design Tokens --ui-*，暗色由 .dark class 策略驱动）。
+ *
+ * 相比 Vue 端裁剪了自绘图表 Tooltip 规则（.dashboard-chart-tooltip /
+ * .dashboard-hover-tooltip）——本端图表为 nuxt-charts，Tooltip 由组件内置
+ * theme（--vc-tooltip-*，同为 token 驱动的毛玻璃）提供。
+ *
+ * 全部规则**不套 @layer**：UCard 根节点自带 `bg-default`（utilities 层）等
+ * 工具类，而 CSS 层叠层的优先级高于选择器特异性——写进 components 层会被
+ * 工具类盖掉，未分层规则恒高于任何一层，这里需要的正是后者。
+ */
+
+/*
+ * 卡片 hover 微升：Nuxt UI Card 默认阴影极轻（outline variant 仅 ring），
+ * 整页卡片视觉重量相同、无交互反馈。此处只加阴影、不做位移，
+ * 避免暗示「可点击」而卡片本身不可点；深色模式下提高黑色透明度才看得见。
+ */
+.dashboard-card {
+  transition: box-shadow 200ms ease;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 8px 24px 0 rgb(0 0 0 / 0.08);
+}
+
+.dark .dashboard-card:hover {
+  box-shadow: 0 8px 24px 0 rgb(0 0 0 / 0.3);
+}
+
+/* 区块入场 stagger：页头 → KPI 行 → 主图 → 次图 → 动态/公告 依次浮现 */
+@keyframes dashboard-section-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+[data-dashboard-stagger] {
+  animation: dashboard-section-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+[data-dashboard-stagger="1"] {
+  animation-delay: 0ms;
+}
+
+[data-dashboard-stagger="2"] {
+  animation-delay: 60ms;
+}
+
+[data-dashboard-stagger="3"] {
+  animation-delay: 120ms;
+}
+
+[data-dashboard-stagger="4"] {
+  animation-delay: 180ms;
+}
+
+/* 主图表容器底部的极弱主色光晕（主色 6% / 深色 8% 透明度径向渐变） */
+.dashboard-trend-glow {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    color-mix(in oklch, var(--ui-primary) 6%, transparent),
+    transparent
+  );
+}
+
+.dark .dashboard-trend-glow {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    color-mix(in oklch, var(--ui-primary) 8%, transparent),
+    transparent
+  );
+}
+
+/*
+ * 欢迎横幅：主色径向光晕铺底 + 右上同心圆环装饰。
+ * UCard 根节点不是定位上下文，这里补 relative（环 ::before/::after 依它定位，
+ * 并被组件自带的 overflow-hidden 裁切）。
+ */
+.dashboard-welcome {
+  position: relative;
+  background:
+    radial-gradient(
+      ellipse 55% 130% at 82% 50%,
+      color-mix(in oklch, var(--ui-primary) 12%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 35% 90% at 100% 0%,
+      color-mix(in oklch, var(--ui-primary) 8%, transparent),
+      transparent 70%
+    ),
+    var(--ui-bg);
+}
+
+.dashboard-welcome::before,
+.dashboard-welcome::after {
+  content: "";
+  position: absolute;
+  border: 1px solid color-mix(in oklch, var(--ui-primary) 20%, transparent);
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.dashboard-welcome::before {
+  width: 320px;
+  height: 320px;
+  top: -170px;
+  right: 48px;
+}
+
+.dashboard-welcome::after {
+  width: 190px;
+  height: 190px;
+  top: -80px;
+  right: 128px;
+  border-color: color-mix(in oklch, var(--ui-primary) 12%, transparent);
+}
+
+.dark .dashboard-welcome {
+  background:
+    radial-gradient(
+      ellipse 55% 130% at 82% 50%,
+      color-mix(in oklch, var(--ui-primary) 16%, transparent),
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 35% 90% at 100% 0%,
+      color-mix(in oklch, var(--ui-primary) 10%, transparent),
+      transparent 70%
+    ),
+    var(--ui-bg);
+}
+
+.dark .dashboard-welcome::before {
+  border-color: color-mix(in oklch, var(--ui-primary) 24%, transparent);
+}
+
+.dark .dashboard-welcome::after {
+  border-color: color-mix(in oklch, var(--ui-primary) 16%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-dashboard-stagger] {
+    animation: none;
+  }
+
+  .dashboard-card {
+    transition: none;
+  }
+}

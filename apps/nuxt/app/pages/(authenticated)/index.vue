@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { ENV } from '@/lib/env'
+import DashboardPage from '@/features/dashboard/DashboardPage.vue'
 
-// Dashboard 概览：各端均未实现（feature-matrix 口径），保持占位
+// Dashboard 概览：对齐 React 基准（契约 v1.12.0，GET /stats/overview 单查询；
+// 图表用 nuxt-charts v3）
 </script>
 
 <template>
-  <PlaceholderPage
-    icon="i-lucide-layout-dashboard"
-    title-key="menu.pageTitle.console"
-    :description="ENV.appDesc"
-  />
+  <DashboardPage />
 </template>
