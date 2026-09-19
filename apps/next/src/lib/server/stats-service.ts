@@ -14,7 +14,7 @@ import {
 } from "@/db/schema";
 
 /**
- * Dashboard 概览统计（契约 v1.11.0，只读聚合；与 Nest 端 stats.service 同源）。
+ * Dashboard 概览统计（契约 v1.12.0，只读聚合；与 Nest 端 stats.service 同源）。
  *
  * - 全部数据实时聚合，无缓存（演示站规模小，聚合成本低）；
  * - 序列 date 按 Asia/Shanghai（UTC+8）日界聚合，无数据日补 0；
@@ -24,6 +24,17 @@ import {
 
 /** 序列聚合时区（契约 v1.11.0 定稿口径） */
 const STATS_TIMEZONE = "Asia/Shanghai";
+
+/** KPI 迷你序列天数：契约固定近 7 日，与登录趋势区间无关 */
+const KPI_SERIES_DAYS = 7;
+
+/**
+ * 登录趋势天数：v1.12.0 起固定返回 30 日。
+ * 7 / 30 日区间切换是单张图表的视图状态，不该成为页面级聚合接口的参数
+ * （否则点一下图表 Tabs 会重算全部区块）；前端对这条序列做 slice(-days) 截取，
+ * 与 lastNDates(7) 结果恒等（同 UTC+8 日界、无数据日补 0）。
+ */
+const TREND_SERIES_DAYS = 30;
 
 const UTC8_OFFSET_MS = 8 * 60 * 60 * 1000;
 
@@ -74,11 +85,11 @@ function fillSeries(
   return dates.map((date) => ({ date, count: counts.get(date) ?? 0 }));
 }
 
-/** GET /api/stats/overview — Dashboard 概览（一次返回全量区块数据） */
-export async function getStatsOverview(days: 7 | 30) {
+/** GET /api/stats/overview — Dashboard 概览（一次返回全量区块数据，无取数参数） */
+export async function getStatsOverview() {
   const nowMs = Date.now();
-  const kpiDates = lastNDates(7, nowMs);
-  const trendDates = lastNDates(days, nowMs);
+  const kpiDates = lastNDates(KPI_SERIES_DAYS, nowMs);
+  const trendDates = lastNDates(TREND_SERIES_DAYS, nowMs);
   const kpiSince = seriesSince(kpiDates);
   const trendSince = seriesSince(trendDates);
   const todayStart = new Date(

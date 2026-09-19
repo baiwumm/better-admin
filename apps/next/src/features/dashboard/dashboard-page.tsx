@@ -3,11 +3,19 @@
 import type { AuthUser } from "@/lib/api-types";
 import type { StatsOverview } from "@/lib/api-types";
 
-import { Button, Card, Chip, Skeleton, Tabs, Typography } from "@heroui/react";
+import { Button, Card, Skeleton, Tabs, Typography } from "@heroui/react";
 import NumberFlow from "@number-flow/react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { RotateCcw } from "lucide-react";
-import { Suspense, lazy, useEffect, useState, ViewTransition } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Building2, History, LogIn, RotateCcw, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useMemo,
+  useState,
+  ViewTransition,
+} from "react";
 import { useTranslation } from "react-i18next";
 
 import { KpiCard } from "./kpi-card";
@@ -17,25 +25,41 @@ import { STATS_OVERVIEW_QUERY_KEY, fetchStatsOverview } from "./stats-api";
 import { WelcomeBanner } from "./welcome-banner";
 
 import { EmptyContent } from "@/components/common/empty-content/empty-content";
+import { collectMenuPaths } from "@/lib/menu-utils";
 import { useAuthStore } from "@/stores/auth-store";
+import { useMenuStore } from "@/stores/menu-store";
 
 /**
- * Dashboard 概览页（契约 v1.11.0；React 基准同源移植，plan-dashboard-playground.md §4.1）。
+ * Dashboard 概览页（契约 v1.12.0；React 基准 2026-09-19 同源移植，
+ * plan-dashboard-playground.md §4.1）。
  *
  * 布局骨架（§4.1，HeroUI Pro 风格基准）：欢迎横幅（时段问候 + 日期/天气
  * Chip + 快捷入口，见 welcome-banner.tsx）→
- * KPI 行（4 张扁平卡：标题 + 大数字 + 右上状态 badge）→
- * 主图表卡（登录趋势：卡头右侧时间范围 Tabs + 卡内三项小结指标）+
- * 角色占比卡（等高自适应）→ 最近动态 + 最新公告（各 1/2）。
+ * KPI 行（4 张卡：图标徽标 + 标题 + 右上状态 badge + 大数字 + 底部通栏
+ * sparkline）→
+ * 主图表卡（登录趋势：卡头右侧时间范围 Tabs + 卡内周期/日均小结带）+
+ * 角色占比卡（等高自适应，圆心显示成员总数）→ 最近动态 + 最新公告
+ * （各 1/2，卡头带查看全部入口）。
  *
- * - 数据：单一聚合接口 GET /api/stats/overview（react-query，days 变化仅 refetch）；
+ * - 数据：单一聚合接口 GET /api/stats/overview，**整页只有一个查询 key**；
+ *   趋势区间 7/30 日是图表的视图状态，对固定 30 点的 loginTrend 本地截取，
+ *   切 Tabs 不发请求（v1.11.0 曾把 days 拼进 queryKey，导致局部控件重拉整页）；
  * - 图表：recharts 经 React.lazy 分包（不进首屏 chunk），Skeleton 等高占位杜绝跳变；
- * - 动画：区块入场 stagger（CSS，尊重 prefers-reduced-motion）+ NumberFlow 数字滚动；
- * - 视觉：全部复用项目级 Design Tokens，不新增色值 / 圆角 / 阴影。
+ * - 视觉：全部复用项目级 Design Tokens，不新增色值 / 圆角 / 阴影；
+ * - 宽屏：内容限宽 max-w-7xl 居中（ui-spec §1.2 非 fluid Main 口径）；
+ * - 与 React 版差异三处——① 菜单可见性读 RSC 注入的 useMenuStore（Next 无
+ *   useMenus），② 导航用 next/navigation useRouter，③ dashboard.css 经
+ *   globals.css 聚合不在本页 import；另保留 Next 专有的 mounted / chartsReady
+ *   双门闩与图表 <ViewTransition update="none"> 边界（防 SSR 重复取数与路由
+ *   过渡连播，机制见 progress.md 2026-09-19 Next 对齐条目）。
  */
 
 const LoginTrendChart = lazy(() => import("./login-trend-chart"));
 const RoleDistributionChart = lazy(() => import("./role-distribution-chart"));
+
+/** 动态 / 公告「查看全部」目标路径（与 welcome-banner 快捷入口同源） */
+const ACTIVITY_PATH = "/settings/logs";
+const NOTICES_PATH = "/org/notices";
 
 /** 环比昨日百分比（昨日为 0 时不计环比返回 null） */
 function loginDeltaPercent(kpis: StatsOverview["kpis"]): number | null {
@@ -51,44 +75,24 @@ function loginDeltaPercent(kpis: StatsOverview["kpis"]): number | null {
 interface MetricStatProps {
   label: string;
   value: number;
-  /** 值右侧附加 badge（如今日环比） */
-  badge?: React.ReactNode;
-  badgeTone?: "up" | "down" | "neutral";
 }
 
-/** 主图卡小结指标（HeroUI Pro 风：值 + 灰标签；badge 仅今日项使用） */
-function MetricStat({
-  label,
-  value,
-  badge,
-  badgeTone = "neutral",
-}: MetricStatProps) {
+/**
+ * 主图卡小结指标（标签在上、值在下）：只承担「读图前的量级参考」，
+ * 不重复 KPI 行已有的今日登录与环比，把垂直空间让给图表本身。
+ */
+function MetricStat({ label, value }: MetricStatProps) {
   return (
-    <div className="flex flex-col items-center gap-0.5 text-center">
-      <p
-        className="flex items-center gap-1.5 text-lg font-semibold tabular-nums"
-        style={{ color: "var(--foreground)" }}
-      >
-        <NumberFlow value={value} />
-        {badge ? (
-          <Chip
-            color={
-              badgeTone === "up"
-                ? "success"
-                : badgeTone === "down"
-                  ? "danger"
-                  : "default"
-            }
-            size="sm"
-            variant="soft"
-          >
-            {badge}
-          </Chip>
-        ) : null}
-      </p>
+    <div className="flex flex-col gap-0.5">
       <Typography color="muted" type="body-xs">
         {label}
       </Typography>
+      <span
+        className="text-lg font-semibold leading-6 tabular-nums"
+        style={{ color: "var(--foreground)" }}
+      >
+        <NumberFlow value={value} />
+      </span>
     </div>
   );
 }
@@ -97,23 +101,31 @@ interface DashboardSkeletonProps {
   message: string;
 }
 
-/** 整页骨架：布局与真实内容一致（§4.1 视觉语言 4，杜绝跳变） */
+/**
+ * 整页骨架：布局与真实内容一致（§4.1 视觉语言 5，杜绝跳变）。
+ * 圆角必须与 HeroUI Card 相同（实测 `min(32px, --radius-3xl)` = 24px），
+ * 用 rounded-3xl 而非 rounded-xl，否则加载→内容替换瞬间圆角跳变。
+ */
 function DashboardSkeleton({ message }: DashboardSkeletonProps) {
   return (
-    <div aria-busy="true" aria-label={message} className="flex flex-col gap-6">
-      <Skeleton className="h-32 rounded-xl" />
+    <div
+      aria-busy="true"
+      aria-label={message}
+      className="mx-auto flex w-full max-w-7xl flex-col gap-6"
+    >
+      <Skeleton className="h-32 rounded-3xl" />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-24 rounded-xl" />
+          <Skeleton key={i} className="h-36 rounded-3xl" />
         ))}
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Skeleton className="h-96 rounded-xl lg:col-span-2" />
-        <Skeleton className="h-96 rounded-xl" />
+        <Skeleton className="h-96 rounded-3xl lg:col-span-2" />
+        <Skeleton className="h-96 rounded-3xl" />
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Skeleton className="h-64 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
+        <Skeleton className="h-80 rounded-3xl" />
+        <Skeleton className="h-80 rounded-3xl" />
       </div>
     </div>
   );
@@ -122,37 +134,52 @@ function DashboardSkeleton({ message }: DashboardSkeletonProps) {
 interface DashboardContentProps {
   user: AuthUser;
   data: StatsOverview;
-  days: 7 | 30;
-  onDaysChange: (days: 7 | 30) => void;
-  /** 切换时间范围后新数据拉取中（旧数据续显，图表区半透明提示） */
-  refreshing?: boolean;
 }
 
 /** 数据就绪后的完整内容（被 stagger 编排的各区块） */
-function DashboardContent({
-  user,
-  data,
-  days,
-  onDaysChange,
-  refreshing = false,
-}: DashboardContentProps) {
+function DashboardContent({ user, data }: DashboardContentProps) {
   const { t } = useTranslation();
+  const router = useRouter();
   const { kpis } = data;
   const delta = loginDeltaPercent(kpis);
-  // 主图卡三项小结指标：周期总数 / 日均（序列求和与均值，纯前端计算）
-  const periodTotal = data.loginTrend.reduce((sum, p) => sum + p.count, 0);
-  const dailyAvg = data.loginTrend.length
-    ? Math.round(periodTotal / data.loginTrend.length)
+  // 趋势区间是图表的视图状态：接口固定给 30 点，这里本地截取，切 Tabs 不发请求
+  const [days, setDays] = useState<7 | 30>(7);
+  const trendSeries = useMemo(
+    () => data.loginTrend.slice(-days),
+    [data.loginTrend, days],
+  );
+  // 主图卡两项小结指标随所选区间变化（序列求和与均值，纯前端计算）
+  const periodTotal = trendSeries.reduce((sum, p) => sum + p.count, 0);
+  const dailyAvg = trendSeries.length
+    ? Math.round(periodTotal / trendSeries.length)
     : 0;
 
+  // 「查看全部」入口与 403 门卫同判据：无该模块可见菜单时不出入口
+  const menuTree = useMenuStore((s) => s.menus);
+  const viewAllActions = useMemo(() => {
+    const visiblePaths = collectMenuPaths(menuTree ?? []);
+
+    const build = (path: string, label: string) =>
+      visiblePaths.has(path) ? (
+        <Button size="sm" variant="ghost" onPress={() => router.push(path)}>
+          {label}
+        </Button>
+      ) : null;
+
+    return {
+      activity: build(ACTIVITY_PATH, t("features.dashboard.activity.viewAll")),
+      notices: build(NOTICES_PATH, t("features.dashboard.notices.viewAll")),
+    };
+  }, [menuTree, router, t]);
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
       {/* 页头：欢迎横幅（问候 + 日期/天气 + 快捷入口） */}
       <div data-dashboard-stagger="1">
         <WelcomeBanner user={user} />
       </div>
 
-      {/* KPI 行（4 张扁平卡：标题 + 大数字 + 右上状态 badge） */}
+      {/* KPI 行（4 张卡：图标徽标 + 标题 + 右上 badge + 大数字 + 底部通栏趋势带） */}
       <div
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"
         data-dashboard-stagger="2"
@@ -161,7 +188,9 @@ function DashboardContent({
           badge={t("features.dashboard.kpi.usersToday", {
             count: kpis.usersTodayNew,
           })}
-          badgeTone="accent"
+          /* 零值不该占用主色语义（看起来像坏数据），归零时降为中性灰 */
+          badgeTone={kpis.usersTodayNew === 0 ? "neutral" : "accent"}
+          icon={Users}
           label={t("features.dashboard.kpi.users")}
           series={kpis.usersDailyNew}
           value={kpis.usersTotal}
@@ -181,6 +210,7 @@ function DashboardContent({
                 ? "up"
                 : "down"
           }
+          icon={LogIn}
           label={t("features.dashboard.kpi.logins")}
           series={kpis.loginsDailyNew}
           value={kpis.loginsToday}
@@ -189,6 +219,7 @@ function DashboardContent({
           badge={t("features.dashboard.kpi.logsToday", {
             count: kpis.logsToday,
           })}
+          icon={History}
           label={t("features.dashboard.kpi.logs")}
           series={kpis.logsDailyNew}
           value={kpis.logsTotal}
@@ -197,6 +228,7 @@ function DashboardContent({
           badge={t("features.dashboard.kpi.orgPosts", {
             count: kpis.postsCount,
           })}
+          icon={Building2}
           label={t("features.dashboard.kpi.org")}
           value={kpis.deptsCount}
         />
@@ -207,7 +239,7 @@ function DashboardContent({
         className="grid grid-cols-1 gap-4 lg:grid-cols-3"
         data-dashboard-stagger="3"
       >
-        <Card className="flex flex-col lg:col-span-2">
+        <Card className="dashboard-card flex flex-col lg:col-span-2">
           <Card.Header className="flex-row flex-nowrap items-center justify-between gap-3">
             <Card.Title className="min-w-0 truncate text-base">
               {t("features.dashboard.chart.loginTrend")}
@@ -216,7 +248,7 @@ function DashboardContent({
               aria-label={t("features.dashboard.range.label")}
               className="shrink-0"
               selectedKey={String(days)}
-              onSelectionChange={(key) => onDaysChange(Number(key) as 7 | 30)}
+              onSelectionChange={(key) => setDays(Number(key) as 7 | 30)}
             >
               <Tabs.ListContainer>
                 <Tabs.List aria-label={t("features.dashboard.range.label")}>
@@ -232,46 +264,38 @@ function DashboardContent({
               </Tabs.ListContainer>
             </Tabs>
           </Card.Header>
-          <Card.Content className="flex min-h-0 flex-1 flex-col gap-4">
-            <div className="grid grid-cols-3 gap-3">
+          <Card.Content className="flex min-h-0 flex-1 flex-col gap-3">
+            {/* 小结带：浅底成组，与下方图表拉开层次（值随所选区间变化） */}
+            <div className="flex items-center gap-6 rounded-2xl bg-surface-secondary/60 px-4 py-2.5">
               <MetricStat
                 label={t("features.dashboard.chart.periodLogins")}
                 value={periodTotal}
+              />
+              <span
+                aria-hidden
+                className="h-8 w-px"
+                style={{ background: "var(--border)" }}
               />
               <MetricStat
                 label={t("features.dashboard.chart.dailyAvgLogins")}
                 value={dailyAvg}
               />
-              <MetricStat
-                badge={
-                  delta === null || delta === 0
-                    ? undefined
-                    : `${delta > 0 ? "↑" : "↓"} ${Math.abs(delta)}%`
-                }
-                badgeTone={delta !== null && delta > 0 ? "up" : "down"}
-                label={t("features.dashboard.kpi.logins")}
-                value={kpis.loginsToday}
-              />
             </div>
-            <div
-              className={`flex min-h-0 flex-1 transition-opacity ${
-                refreshing ? "opacity-60" : "opacity-100"
-              }`}
-            >
+            <div className="flex min-h-0 flex-1">
               <Suspense
                 fallback={
-                  <Skeleton className="dashboard-trend-glow min-h-56 w-full flex-1 rounded-xl" />
+                  <Skeleton className="dashboard-trend-glow min-h-56 w-full flex-1 rounded-3xl" />
                 }
               >
                 {/* update="none"：图表容器首测尺寸 / 数据重绘等内部更新不重复触发路由过渡 */}
                 <ViewTransition update="none">
-                  <LoginTrendChart series={data.loginTrend} />
+                  <LoginTrendChart series={trendSeries} />
                 </ViewTransition>
               </Suspense>
             </div>
           </Card.Content>
         </Card>
-        <Card className="flex flex-col">
+        <Card className="dashboard-card flex flex-col">
           <Card.Header>
             <Card.Title className="text-base">
               {t("features.dashboard.chart.roles")}
@@ -280,7 +304,7 @@ function DashboardContent({
           <Card.Content className="flex min-h-0 flex-1 flex-col">
             <Suspense
               fallback={
-                <Skeleton className="min-h-56 w-full flex-1 rounded-xl" />
+                <Skeleton className="min-h-56 w-full flex-1 rounded-3xl" />
               }
             >
               {/* update="none"：同上，图表内部更新不重复触发路由过渡 */}
@@ -297,9 +321,18 @@ function DashboardContent({
         className="grid grid-cols-1 gap-4 md:grid-cols-2"
         data-dashboard-stagger="4"
       >
-        {/* 动态取最近 5 条，与最新公告卡高度基本一致（契约 ≤10，前端截取） */}
-        <RecentActivityCard items={data.recentLogs.slice(0, 5)} />
-        <LatestNoticesCard items={data.latestNotices} />
+        {/*
+          动态单行约 50px、公告两行约 68px，取 7 条与 5 条公告的内容高度
+          （≈335px）基本齐平，两卡并排时不再出现整块底部空白（契约 ≤10）。
+        */}
+        <RecentActivityCard
+          action={viewAllActions.activity}
+          items={data.recentLogs.slice(0, 7)}
+        />
+        <LatestNoticesCard
+          action={viewAllActions.notices}
+          items={data.latestNotices}
+        />
       </div>
     </div>
   );
@@ -359,16 +392,12 @@ export function DashboardPage() {
       .catch(() => setChartsReady(true));
   }, []);
 
-  // 登录趋势时间范围（query key 随 days 变化自动 refetch）
-  const [days, setDays] = useState<7 | 30>(7);
-
+  // 整页仅此一个查询：v1.12.0 起接口无取数参数，趋势区间在内容层本地切换
   const query = useQuery({
-    queryKey: [...STATS_OVERVIEW_QUERY_KEY, days],
-    queryFn: () => fetchStatsOverview(days),
+    queryKey: STATS_OVERVIEW_QUERY_KEY,
+    queryFn: fetchStatsOverview,
     staleTime: 60_000,
     enabled: mounted,
-    // 切换时间范围时保留上一份数据续显（仅图表区间变化），不整页回 Skeleton
-    placeholderData: keepPreviousData,
   });
 
   if (query.isError) {
@@ -385,13 +414,5 @@ export function DashboardPage() {
     return <DashboardSkeleton message={t("common.loading")} />;
   }
 
-  return (
-    <DashboardContent
-      data={query.data}
-      days={days}
-      refreshing={query.isPlaceholderData}
-      user={user}
-      onDaysChange={setDays}
-    />
-  );
+  return <DashboardContent data={query.data} user={user} />;
 }

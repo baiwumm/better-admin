@@ -581,7 +581,7 @@ export interface AppNotification {
   createdAt: string;
 }
 
-/** 概览统计序列点（/stats/overview，契约 v1.11.0；date 为 UTC+8 日界 YYYY-MM-DD） */
+/** 概览统计序列点（/stats/overview，契约 v1.12.0；date 为 UTC+8 日界 YYYY-MM-DD） */
 export interface StatsSeriesPoint {
   date: string;
   count: number;
@@ -644,7 +644,7 @@ export interface StatsLogItem {
 /** Dashboard 概览统计（GET /stats/overview，只读聚合，任意已登录用户） */
 export interface StatsOverview {
   kpis: StatsKpis;
-  /** 登录趋势序列（近 days 天，days=7|30） */
+  /** 登录趋势序列（契约固定近 30 日；7/30 日区间由前端本地 slice 截取） */
   loginTrend: StatsSeriesPoint[];
   roleDistribution: StatsRoleSlice[];
   latestNotices: StatsNoticeItem[];

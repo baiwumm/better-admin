@@ -1,6 +1,7 @@
 "use client";
 
 import type { StatsNoticeItem } from "@/lib/api-types";
+import type { ReactNode } from "react";
 
 import { Avatar, Card, Typography } from "@heroui/react";
 import { Megaphone } from "lucide-react";
@@ -10,21 +11,23 @@ import { EmptyContent } from "@/components/common/empty-content/empty-content";
 import { formatDateTime } from "@/lib/format-date";
 
 /**
- * 最新公告卡（plan §4.2 副图 2；React 基准同源移植）：已发布公告标题 +
- * 发布人 + 发布时间（服务端仅返回标题/时间/发布人显示名，不含正文与范围等
- * 敏感信息；每条两行布局与最近动态 5 条高度基本一致）。
+ * 最新公告卡（plan §4.2 副图 2）：已发布公告标题 + 发布人 + 发布时间
+ * （服务端仅返回标题/时间/发布人显示名，不含正文与范围等敏感信息；
+ * 每条两行布局与最近动态 5 条高度基本一致）。
  */
 
 interface LatestNoticesCardProps {
   items: StatsNoticeItem[];
+  /** 卡头右侧出口（由页面按菜单可见性判定后传入；缺省不渲染） */
+  action?: ReactNode;
 }
 
-export function LatestNoticesCard({ items }: LatestNoticesCardProps) {
+export function LatestNoticesCard({ items, action }: LatestNoticesCardProps) {
   const { t, i18n } = useTranslation();
 
   return (
-    <Card className="h-full">
-      <Card.Header>
+    <Card className="dashboard-card h-full">
+      <Card.Header className="flex-row items-center justify-between gap-2">
         <Card.Title className="flex items-center gap-2 text-base">
           <Megaphone
             aria-hidden
@@ -33,6 +36,7 @@ export function LatestNoticesCard({ items }: LatestNoticesCardProps) {
           />
           {t("features.dashboard.notices.title")}
         </Card.Title>
+        {action}
       </Card.Header>
       <Card.Content className="flex flex-col gap-1">
         {items.length === 0 ? (

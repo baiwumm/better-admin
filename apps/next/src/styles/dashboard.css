@@ -5,8 +5,29 @@
  *   尊重 prefers-reduced-motion（reduced-motion 下静默呈现）；
  * - 欢迎横幅：主色径向光晕 + 同心圆环装饰（token 取色，无新色值）；
  * - Tooltip 毛玻璃：backdrop-blur + 半透明 surface 色（token 复用，无新色值）；
+ * - 卡片 hover 微升：阴影几何复用 Tooltip 既有的 0 8px 24px，不新增阴影值；
+ * - 环形图 Tooltip 自绘跟随指针（recharts 扇区 hover 无法平滑，见下方注释）；
  * - 路由 / 主题过渡仍由全局 View Transition 编排（不在此域内）。
  */
+
+/*
+ * 卡片 hover 微升（plan §4.1 视觉语言 3）：HeroUI Card 默认阴影极轻
+ * （0 2px 4px / 4%），整页卡片视觉重量相同、无交互反馈。此处只加阴影、
+ * 不做位移，避免暗示「可点击」而卡片本身不可点。
+ * 阴影几何沿用本文件 Tooltip 的 0 8px 24px，深色模式下提高黑色透明度才看得见
+ * （与文件内既有的深浅色透明度微调口径一致）。
+ */
+.dashboard-card {
+  transition: box-shadow 200ms ease;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 8px 24px 0 rgb(0 0 0 / 0.08);
+}
+
+:where([data-theme="dark"], .dark) .dashboard-card:hover {
+  box-shadow: 0 8px 24px 0 rgb(0 0 0 / 0.3);
+}
 
 /* 区块入场 stagger：页头 → KPI 行 → 主图 → 次图 → 动态/公告 依次浮现 */
 @keyframes dashboard-section-in {
@@ -38,6 +59,39 @@
   backdrop-filter: blur(8px);
   box-shadow: 0 8px 24px 0 rgb(0 0 0 / 0.08);
   padding: 8px 12px;
+}
+
+/*
+ * 环形图自绘 Tooltip 的定位层（外观沿用上面的毛玻璃 .dashboard-chart-tooltip）。
+ *
+ * 为什么自绘：recharts 的扇区 hover 在 A→B 之间必然经历一次
+ * mouseLeaveItem(active=false) + coordinate 清空（外层 transform 归零回容器左上角），
+ * 于是开位置动画就每次从左上角飞入、关位置动画就闪一下——两种都是错的，
+ * 而轴类图表（登录趋势）走连续 axis index 更新、从不 deactivate，才显得平滑。
+ * 这里改为跟随指针定位，且命中判定由容器的一条连续 mousemove 完成
+ * （与登录趋势同模型）：元素常驻不卸载，只切 opacity，所以扇区间切换不闪、
+ * 移出即淡出，且收起不依赖 requestAnimationFrame
+ * （rAF 在后台标签页 / 省电模式 / 部分内嵌面板里会被冻结，押它做正确性会卡住不收）。
+ *
+ * - z-index 20：压在圆心「成员总数」层之上（同处一个堆叠上下文，圆心层 DOM 更靠后）；
+ * - transform 100ms：让 Tooltip 轻微跟尾，读起来是滑行而非硬贴；
+ * - opacity 120ms：淡出期间仍渲染上一份内容，玻璃盒不会先塌成一条内边距。
+ */
+.dashboard-hover-tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+  transition:
+    opacity 120ms ease-out,
+    transform 100ms ease-out;
+}
+
+.dashboard-hover-tooltip[data-visible="true"] {
+  opacity: 1;
 }
 
 /* 主图表深色模式下的极弱主色光晕（主色 6% 透明度径向渐变，克制使用） */
@@ -126,5 +180,13 @@
 @media (prefers-reduced-motion: reduce) {
   [data-dashboard-stagger] {
     animation: none;
+  }
+
+  .dashboard-card {
+    transition: none;
+  }
+
+  .dashboard-hover-tooltip {
+    transition: none;
   }
 }

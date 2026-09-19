@@ -1,6 +1,7 @@
 "use client";
 
 import type { StatsLogItem } from "@/lib/api-types";
+import type { ReactNode } from "react";
 
 import { Avatar, Card, Typography } from "@heroui/react";
 import { Activity } from "lucide-react";
@@ -10,13 +11,15 @@ import { EmptyContent } from "@/components/common/empty-content/empty-content";
 import { formatRelativeTime } from "@/lib/format-date";
 
 /**
- * 最近动态卡（HeroUI Pro 风格；React 基准同源移植）：用户首字头像 + 操作人 +
- * 动作人话文案 + 相对时间。数据为 type=operation 日志（服务端已剔除敏感字段；
- * 接口不返回头像时以姓名首字 Avatar fallback 呈现，风格与 HeroUI Pro 示例一致）。
+ * 最近动态卡（HeroUI Pro 风格）：用户首字头像 + 操作人 + 动作人话文案 +
+ * 相对时间。数据为 type=operation 日志（服务端已剔除敏感字段；接口不返回
+ * 头像，以姓名首字 Avatar fallback 呈现，风格与 HeroUI Pro 示例一致）。
  */
 
 interface RecentActivityCardProps {
   items: StatsLogItem[];
+  /** 卡头右侧出口（由页面按菜单可见性判定后传入；缺省不渲染） */
+  action?: ReactNode;
 }
 
 /**
@@ -45,12 +48,12 @@ const ACTION_I18N: Record<string, string> = {
   logout: "features.dashboard.action.logout",
 };
 
-export function RecentActivityCard({ items }: RecentActivityCardProps) {
+export function RecentActivityCard({ items, action }: RecentActivityCardProps) {
   const { t, i18n } = useTranslation();
 
   return (
-    <Card className="h-full">
-      <Card.Header>
+    <Card className="dashboard-card h-full">
+      <Card.Header className="flex-row items-center justify-between gap-2">
         <Card.Title className="flex items-center gap-2 text-base">
           <Activity
             aria-hidden
@@ -59,6 +62,7 @@ export function RecentActivityCard({ items }: RecentActivityCardProps) {
           />
           {t("features.dashboard.activity.title")}
         </Card.Title>
+        {action}
       </Card.Header>
       <Card.Content className="flex flex-col gap-1">
         {items.length === 0 ? (

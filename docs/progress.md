@@ -2,6 +2,15 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Next 端同步契约 v1.12.0 与 Dashboard 新基准（2026-09-19）
+
+- **背景**：用户验收 React 基准（含环形图新配色）后指示「以 React 为基准开发 Next 端，Vue 和 Nuxt 先不要动」。本轮是纯对齐，无新增功能、无契约变更。
+- **服务端**：`lib/server/stats-service.ts` 的 `getStatsOverview()` 去掉 `days` 形参，改由 `KPI_SERIES_DAYS = 7` / `TREND_SERIES_DAYS = 30` 两个常量驱动，趋势固定 30 点；`app/api/stats/overview/route.ts` 移除 `days` 解析与 400 `VALIDATION_ERROR` 分支（`ServerApiError` import 一并摘除），与 Nest 端 v1.12.0 完全同形。
+- **客户端**：`features/dashboard/` 六文件 + `styles/dashboard.css` + `lib/api-types.ts` 对齐 React 基准——KPI 卡图标徽标与底部通栏 sparkline（`vector-effect="non-scaling-stroke"`）、`days` 降级为 `DashboardContent` 本地状态 + `slice(-days)`（删 `keepPreviousData` / `refreshing`）、主图卡小结带去重并随区间计算、`max-w-7xl` 限宽、骨架 `rounded-3xl` 与高度校准、卡片 hover 微升、动态 7 条、圆心成员总数、环形图色相轮转分类色 + 容器单条 mousemove 自绘 Tooltip、动态/公告「查看全部」出口。
+- **保住 Next 专有机制（未被移植覆盖）**：① `mounted` 门闩 + `enabled: mounted`（SSR 期 react-query 模块级单例会真实执行 queryFn，14 路并行 DB 查询双重承担并拖长 HTML 流阻塞水合）；② `chartsReady` 分包预取门闩（防「骨架→内容」+ 两处 Suspense 补位 + 容器首测共多次提交导致路由过渡连播）；③ 两个图表外层 `<ViewTransition update="none">` 嵌套边界。与 React 的三处常规差异沿用：菜单可见性读 RSC 注入的 `useMenuStore`（非 `useMenus`）、导航用 `next/navigation` 的 `useRouter().push`、`dashboard.css` 经 `globals.css` `@import` 聚合故本页不 import。
+- **验证**：`eslint` 0 error / `tsc --noEmit` / `next build` / `check-locales` 全绿；运行时冒烟（dev :3100 + faker 账号 changyewei）——`GET /api/stats/overview` 返回 `loginTrend` 30 点（2026-08-21 → 09-19）而 KPI 序列仍 7 点、携带 `?days=7` 或 `?days=99` 均 200 静默忽略（与 Nest 行为一致）、DOM 侧 4 个图标徽标 / 3 条 non-scaling-stroke 折线 / 圆心 151 成员总数 / 2 个查看全部入口 / 动态 7 行全部到位、**六个图例色值 computed 后与 React 端逐位相同**（h = 253.825 / 295.825 / 211.825 / 337.825 / 169.825 / 19.8254，恒定 L 0.62039 / C 0.140388）、连点 3 次 Tabs fetch 拦截计数为 0、控制台无报错（仅既有 PressResponder warning 与 drizzle SQL 调试日志）。
+- **已知限制**：截图面板 0×0 视口不可用，**像素级观感与环形图 Tooltip 运行时命中仍需用户 GUI 走查**（零宽下 `ResponsiveContainer` 不渲染 SVG，无法自测 hover）；Vue / Nuxt 按用户指示未动，其 Dashboard 尚未开工，届时直接按 v1.12.0 + 本基准落地。
+
 ### React Dashboard 颜值二轮打磨 + 契约 v1.12.0 取数口径修正（2026-09-19）
 
 - **背景**：用户反馈概览页「颜值不够惊艳」，要求高颜值 / 干净简洁 / 有高级感。指示先改 React 基准、验收后再以此为基准推其他端。全程只动契约 + Nest + React（+ Next 语言包，见下），Vue / Nuxt 未动。
