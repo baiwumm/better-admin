@@ -9,6 +9,8 @@
 @import "./tags-bar.css";
 /* Dashboard 概览页：区块入场 stagger / 卡片 hover / 图表 Tooltip / 欢迎横幅光晕 */
 @import "./dashboard.css";
+/* Unovis 图表主题：把 --vis-* 变量接到项目 --ui-* token（随 color mode 联动） */
+@import "./chart-theme.css";
 /* 偏好设置（design-theme-store 驱动）：主题切换揭示动画 / 路由过渡预设 / 色彩模式滤镜 */
 @import "./theme-transition.css";
 @import "./route-transitions.css";

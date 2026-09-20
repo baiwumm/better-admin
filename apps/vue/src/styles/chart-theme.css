@@ -1,0 +1,44 @@
+/**
+ * Unovis 图表主题映射（选型见 AGENTS §21 与 mechanisms §32）
+ *
+ * Unovis 外观全部由 `--vis-*` 变量驱动且为 SVG 渲染，因此把它接到项目的
+ * `--ui-*` token 上就能随 color mode 自动联动——这正是选它而不是 canvas 类库
+ * （ECharts / Chart.js 必须在 JS 里 getComputedStyle 取色并随 `.dark` 重建实例）
+ * 的原因。变量名逐个对安装包校验过，未使用的库变量不要凭记忆添加。
+ *
+ * 作用域用自定义 `.chart-theme` 而非库内部类名（库根节点是
+ * `unovis-xy-container` / `unovis-single-container`，会随版本漂移）。
+ *
+ * ⚠️ 暗色模式不能指望库自己切：Unovis 的暗色规则挂在
+ * `html[data-theme="dark"], html.dark-theme, body.dark-theme, html.theme-dark,
+ * body.theme-dark`（见 `@unovis/ts/utils/theme.js` 的 darkThemeCssSelectors），
+ * **不含 Nuxt UI 使用的 `.dark`**，所以暗色下库仍输出浅色默认值。对策就是下面这张
+ * 表：图表实际用到的每个 `--vis-*` 都必须在这里映射到 `--ui-*`（token 自身随 `.dark`
+ * 翻转，映射一次即两模式正确）；漏映射的变量会退回库的浅色硬编码值。
+ */
+.chart-theme {
+  --vis-axis-font-family: inherit;
+  --vis-axis-tick-label-color: var(--ui-text-muted);
+  --vis-axis-tick-label-font-size: 11px;
+  --vis-axis-label-color: var(--ui-text-highlighted);
+  --vis-axis-domain-color: var(--ui-border);
+  --vis-axis-grid-color: var(--ui-border);
+
+  --vis-area-stroke-width: 2;
+  --vis-area-fill-opacity: 1;
+  --vis-area-cursor: var(--ui-primary);
+
+  --vis-crosshair-line-stroke-color: var(--ui-border);
+  --vis-crosshair-circle-stroke-color: var(--ui-bg-elevated);
+
+  --vis-tooltip-background-color: var(--ui-bg-elevated);
+  --vis-tooltip-border-color: var(--ui-border);
+  --vis-tooltip-text-color: var(--ui-text);
+  --vis-tooltip-border-radius: var(--ui-radius);
+  --vis-tooltip-padding: 0.375rem 0.625rem;
+  --vis-tooltip-shadow-color: transparent;
+
+  --vis-donut-central-label-text-color: var(--ui-text-highlighted);
+  --vis-donut-central-sub-label-text-color: var(--ui-text-muted);
+  --vis-donut-background-color: var(--ui-bg-elevated);
+}
