@@ -165,19 +165,3 @@ const total = computed(() =>
     </div>
   </div>
 </template>
-
-<style scoped>
-/*
- * 圆心读数与内置 Tooltip 的避让：vccs 把扇区 Tooltip 锚在扇区质心、再 clamp 回
- * viewBox，1/3 卡宽下浮层实测 128px 宽、六个扇区全部压住圆心总数，而 3.0.0 没有
- * 透出 position / offset 可改落点。Tooltip 未激活时它的 wrapper 只剩一个 v-if 注释
- * 节点（:empty 成立），据此在浮层可见期间淡出圆心，环心同时只留一份读数。
- */
-.role-donut-box :deep(.donut-chart__center) {
-  transition: opacity 120ms ease;
-}
-
-.role-donut-box:has(.v-charts-tooltip-wrapper:not(:empty)) :deep(.donut-chart__center) {
-  opacity: 0;
-}
-</style>
