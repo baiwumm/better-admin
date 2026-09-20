@@ -37,6 +37,14 @@ withDefaults(
     /** 注入容器 `<defs>` 的原始 SVG（渐变等），内容必须是静态串、不拼业务数据 */
     svgDefs?: string;
     curveType?: CurveType | string;
+    /** 面积顶部描边（库默认 false，即只有填充没有线） */
+    line?: boolean;
+    lineWidth?: number;
+    /**
+     * 描边色。库的默认值跟随 `color`，而渐变场景下 color 是 `url(#id)`——
+     * 不显式给实色，描边会被渐变染淡、底部几乎消失，所以传渐变时必须一起给。
+     */
+    lineColor?: string;
     /** y 轴量程；不传则由库自动 nice-ticks（计数类图表要显式给整数量程，否则会出现 3.5 这种刻度） */
     yDomain?: [number | undefined, number | undefined];
     margin?: Spacing;
@@ -47,6 +55,9 @@ withDefaults(
     color: () => "var(--ui-primary)",
     svgDefs: undefined,
     curveType: "monotoneX",
+    line: false,
+    lineWidth: 2,
+    lineColor: undefined,
     yDomain: undefined,
     margin: undefined,
     ariaLabel: undefined,
@@ -69,6 +80,9 @@ withDefaults(
         :y="y"
         :color="color"
         :curve-type="curveType"
+        :line="line"
+        :line-width="lineWidth"
+        :line-color="lineColor"
       />
       <VisAxis
         type="x"

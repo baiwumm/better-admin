@@ -39,6 +39,9 @@
   --vis-tooltip-shadow-color: transparent;
 
   --vis-donut-central-label-text-color: var(--ui-text-highlighted);
+  --vis-donut-central-label-font-size: 24px;
+  --vis-donut-central-label-font-weight: 600;
   --vis-donut-central-sub-label-text-color: var(--ui-text-muted);
+  --vis-donut-central-sub-label-font-size: 12px;
   --vis-donut-background-color: var(--ui-bg-elevated);
 }

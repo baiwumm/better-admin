@@ -26,17 +26,20 @@ export function chartColor(index: number): string {
  *
  * `VisTooltip.triggers` 允许直接返回 HTML 字符串，但角色名、公告标题这类是后台可
  * 编辑数据，拼进 innerHTML 等于开一个注入面 —— 一律走 createElement + textContent。
+ *
+ * 字号必须自己给：库的 Tooltip 没有 font-size 变量（只有背景/边框/圆角/内边距），
+ * 文字继承容器字号会到 16px，比三端基准的 12px 大一圈。
  */
 export function chartTooltipNode(label: string, value: string): HTMLElement {
   const box = document.createElement("div");
   const labelEl = document.createElement("p");
 
-  labelEl.className = "text-muted";
+  labelEl.className = "text-muted text-xs";
   labelEl.textContent = label;
 
   const valueEl = document.createElement("p");
 
-  valueEl.className = "text-highlighted font-semibold tabular-nums";
+  valueEl.className = "text-highlighted text-xs font-semibold tabular-nums";
   valueEl.textContent = value;
 
   box.append(labelEl, valueEl);

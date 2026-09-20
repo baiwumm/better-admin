@@ -55,6 +55,8 @@ const yDomain = computed<[number, number]>(() => {
 const x = (point: TrendPoint) => point.index;
 const y = (point: TrendPoint) => point.count;
 const color = () => `url(#${gradientId})`;
+/** 描边必须是实色：填充用了渐变，而库的 lineColor 缺省跟随 color 会被染淡 */
+const LINE_COLOR = "var(--ui-primary)";
 
 function xTickFormat(value: number): string {
   return props.series[Math.round(value)]?.date ?? "";
@@ -73,6 +75,8 @@ function tooltip(point: TrendPoint): HTMLElement {
     <AreaChart
       :color="color"
       :data="data"
+      :line="true"
+      :line-color="LINE_COLOR"
       :svg-defs="svgDefs"
       :tooltip="tooltip"
       :x="x"

@@ -48,7 +48,12 @@ const props = withDefaults(
 const padAngle = computed(() => (props.padAngleDeg * Math.PI) / 180);
 
 const tooltipTriggers = {
-  [VisDonutSelectors.segment]: (datum: Datum) => props.tooltip(datum),
+  /**
+   * 库给扇区触发器的是 d3 的 PieArcDatum（原始数据在 `.data`、数值在 `.value`），
+   * 直接当原始切片用会拿到 undefined。这里统一拆包，对外仍暴露原始 datum。
+   */
+  [VisDonutSelectors.segment]: (arc: { data: Datum }) =>
+    props.tooltip(arc.data),
 };
 </script>
 
