@@ -34,6 +34,8 @@ withDefaults(
     /** 注入容器 `<defs>` 的原始 SVG（渐变等），内容必须是静态串、不拼业务数据 */
     svgDefs?: string;
     curveType?: CurveType | string;
+    /** y 轴量程；不传则由库自动 nice-ticks（计数类图表要显式给整数量程，否则会出现 3.5 这种刻度） */
+    yDomain?: [number | undefined, number | undefined];
     margin?: Spacing;
     ariaLabel?: string;
   }>(),
@@ -42,6 +44,7 @@ withDefaults(
     color: () => "var(--ui-primary)",
     svgDefs: undefined,
     curveType: "monotoneX",
+    yDomain: undefined,
     margin: undefined,
     ariaLabel: undefined,
   },
@@ -54,6 +57,7 @@ withDefaults(
       :data="data"
       :margin="margin"
       :svg-defs="svgDefs"
+      :y-domain="yDomain"
       :aria-label="ariaLabel"
     >
       <VisArea :x="x" :y="y" :color="color" :curve-type="curveType" />

@@ -4,16 +4,26 @@ import type { TabsItem } from "@nuxt/ui";
 
 import NumberFlow from "@number-flow/vue";
 import { useQuery } from "@tanstack/vue-query";
-import { computed, ref } from "vue";
+import { computed, defineAsyncComponent, ref } from "vue";
 import { useI18n } from "vue-i18n";
 
 import KpiCard from "./KpiCard.vue";
 import LatestNoticesCard from "./LatestNoticesCard.vue";
-import LoginTrendChart from "./LoginTrendChart.vue";
 import RecentActivityCard from "./RecentActivityCard.vue";
-import RoleDistributionChart from "./RoleDistributionChart.vue";
 import { STATS_OVERVIEW_QUERY_KEY, fetchStatsOverview } from "./stats-api";
 import WelcomeBanner from "./WelcomeBanner.vue";
+
+/**
+ * 两张主图走异步组件：它们是唯一依赖 Unovis 的地方，静态导入会把 Unovis 打进
+ * `(authenticated)` 共享 chunk（实测 74KB gzip），让每个登录页都替 Dashboard 买单。
+ * 卡片占位高度由 min-h 固定，异步到位不跳版；口径对齐 React 端的 React.lazy 分包。
+ */
+const LoginTrendChart = defineAsyncComponent(
+  () => import("./LoginTrendChart.vue"),
+);
+const RoleDistributionChart = defineAsyncComponent(
+  () => import("./RoleDistributionChart.vue"),
+);
 
 import { useMenus } from "@/composables/use-menus";
 import { collectMenuPaths } from "@/lib/menu-utils";
@@ -31,9 +41,9 @@ import { useAuthStore } from "@/stores/auth-store";
  * - 数据：单一聚合接口 GET /stats/overview，**整页只有一个查询 key**；
  *   趋势区间 7/30 日是图表的视图状态，对固定 30 点的 loginTrend 本地截取，
  *   切 Tabs 不发请求；
- * - 图表：内联 SVG 手写（Nuxt UI v4 无图表组件，引图表库需新增 chart.js 依赖，
- *   按 nuxt-ui-guide §1 优先级走「自定义组件 + 注释说明原因」），故无需
- *   React 端的 lazy 分包，卡片占位高度由 min-h 固定、杜绝跳变；
+ * - 图表：Unovis（选型与实测见 AGENTS §21 / mechanisms §32），两张主图经
+ *   `defineAsyncComponent` 分包，避免库进共享 chunk；KPI 迷你 sparkline 仍手写
+ *   SVG（三端同口径，7 个点不值得为它配库）；
  * - 动画：区块入场 stagger（styles/dashboard.css，尊重 prefers-reduced-motion）
  *   + NumberFlow 数字滚动；
  * - 视觉：全部复用 Nuxt UI Design Tokens（--ui-*），不新增色值 / 圆角 / 阴影；

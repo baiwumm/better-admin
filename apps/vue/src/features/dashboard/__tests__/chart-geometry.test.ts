@@ -3,15 +3,16 @@ import { describe, expect, it } from "vitest";
 import {
   areaPath,
   axisScale,
-  donutSlicePath,
   relativePoints,
   smoothPath,
-  zeroBasedPoints,
 } from "../chart-geometry";
 
 /**
- * Dashboard 图表几何纯函数测试（手写 SVG 图表的正确性完全押在这几个函数上：
- * 坐标归一、面积闭合、环形扇区角度），与 React 端 recharts 的等价性靠这些断言守住。
+ * Dashboard 图表几何纯函数测试。
+ *
+ * 主图表已交给 Unovis 封装，这里覆盖剩下的两块自有逻辑：KPI sparkline 的坐标归一
+ * 与路径闭合，以及趋势图显式 y 轴量程的整数刻度（不用库 nice-ticks 的原因见
+ * LoginTrendChart 注释）。
  */
 
 const BOX = { x: 0, y: 0, width: 100, height: 40 };
@@ -47,15 +48,6 @@ describe("relativePoints", () => {
   });
 });
 
-describe("zeroBasedPoints", () => {
-  it("0 基线按轴量程归一（面积图自底部生长）", () => {
-    expect(zeroBasedPoints([6, 24], BOX, 24)).toEqual([
-      { x: 0, y: 30 },
-      { x: 100, y: 0 },
-    ]);
-  });
-});
-
 describe("smoothPath / areaPath", () => {
   it("少于两点不成线（单点卡不画趋势带）", () => {
     expect(smoothPath([{ x: 0, y: 0 }])).toBe("");
@@ -71,29 +63,5 @@ describe("smoothPath / areaPath", () => {
     expect(
       areaPath(line, points, 40).endsWith("L100.00,40.00 L0.00,40.00 Z"),
     ).toBe(true);
-  });
-});
-
-describe("donutSlicePath", () => {
-  it("半环从 12 点起、顺时针扫到 6 点，内外弧回程闭合（180° 不算大弧）", () => {
-    expect(donutSlicePath(0, 180, 44, 34, 50, 50)).toBe(
-      "M50.00,6.00 A44,44 0 0 1 50.00,94.00 L50.00,84.00 A34,34 0 0 0 50.00,16.00 Z",
-    );
-  });
-
-  it("起始角按 12 点方向顺时针：90° 落在 3 点位置", () => {
-    expect(donutSlicePath(0, 90, 44, 34, 50, 50)).toContain(
-      "A44,44 0 0 1 94.00,50.00",
-    );
-  });
-
-  it("跨越 180° 的大扇区置 large-arc-flag=1", () => {
-    expect(donutSlicePath(0, 270, 44, 34, 50, 50)).toContain(
-      "A44,44 0 1 1 6.00,50.00",
-    );
-  });
-
-  it("缝隙角吃掉整个扇区时不产出路径（零值扇区自然消失）", () => {
-    expect(donutSlicePath(10, 11, 44, 34, 50, 50, 2)).toBe("");
   });
 });

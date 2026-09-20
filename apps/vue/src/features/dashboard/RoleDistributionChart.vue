@@ -1,170 +1,90 @@
 <script setup lang="ts">
 import type { StatsRoleSlice } from "@/lib/api-types";
 
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
-import { donutSlicePath } from "./chart-geometry";
+import DonutChart from "@/components/chart/DonutChart.vue";
+import { chartColor, chartTooltipNode } from "@/lib/chart-theme";
 
 /**
- * 角色占比环形图（对齐 React 端 role-distribution-chart）：SVG 环形扇区 +
- * 圆心成员总数 + 色相轮转分类色图例。
+ * 角色占比环形图（对齐 React 端 role-distribution-chart）：环形扇区 + 圆心成员
+ * 总数 + 「圆点 + 名称 + 数量」图例。
  *
- * 圆心空心即信息区（卡片与左图等高时中心不再是空洞）。
- * Tooltip 自绘跟随指针：元素常驻不卸载，只切 data-visible 的透明度，
- * 扇区间切换不闪、移出即淡出（与 React 端同一实现，绕开图表库的事件竞态）。
+ * 图表本体交给 Unovis 封装，圆心读数走库的 centralLabel（由库按几何算圆心，天然
+ * 居中）；图例仍自绘——Unovis 不提供通用 Legend 组件（React / Vue 两侧都没有）。
  *
- * 分类色全部由主色派生（恒定明度 L、彩度取品牌 0.72 倍、色相六段轮转），
- * 与 React / Next 端同一色相标度，不新增色值。弃用「主色透明度阶梯」的原因：
- * alpha 是与卡片底色混合，深色模式下低 alpha 扇区几乎与底色同化，相邻扇区
- * 无法分辨。
+ * 分类色全部由主色派生（恒定明度、彩度取品牌 0.72 倍、色相六段轮转），与 React /
+ * Next 端同一色相标度，见 lib/chart-theme.ts 的弃用 alpha 阶梯原因。
  */
 
-/** 扇区色相轮转偏移（度，六段循环） */
-const SLICE_HUE_OFFSETS = [0, 42, -42, 84, -84, 126];
-/** 环形几何（viewBox 100 单位）：外径 / 内径 / 扇区间隙角 */
-const RING = { cx: 50, cy: 50, outer: 44, inner: 34, pad: 2 };
-/** Tooltip 相对指针的偏移，避免压在光标正下方 */
-const TIP_OFFSET = 14;
+/**
+ * 环带厚度（像素）。React 基准是 innerRadius 68% / outerRadius 88%，即厚度约为
+ * 外径的 30%；Unovis 的 arcWidth 只收像素值，按卡片典型尺寸（外径约 105px）取 32。
+ */
+const ARC_WIDTH = 32;
 
 const props = defineProps<{ slices: StatsRoleSlice[] }>();
 
 const { t } = useI18n();
-const box = ref<HTMLElement | null>(null);
-const hoverIndex = ref<number | null>(null);
-const lastIndex = ref(0);
-const tipPos = ref({ x: 0, y: 0 });
 
-/** 第 i 个扇区填充色：仅改色相与彩度，明度与品牌色一致 */
-function sliceFill(index: number): string {
-  const offset = SLICE_HUE_OFFSETS[index % SLICE_HUE_OFFSETS.length];
-  const sign = offset < 0 ? "-" : "+";
-
-  return `oklch(from var(--ui-primary) l calc(c * 0.72) calc(h ${sign} ${Math.abs(offset)}))`;
-}
-
-const sectors = computed(() => {
-  const list = props.slices.filter((slice) => slice.count > 0);
-  const sum = list.reduce((acc, slice) => acc + slice.count, 0);
-  let angle = 0;
-
-  return list.map((slice, index) => {
-    const start = angle;
-    const sweep = (slice.count / (sum || 1)) * 360;
-
-    angle += sweep;
-
-    return {
-      ...slice,
-      color: sliceFill(index),
-      path: donutSlicePath(
-        start,
-        start + sweep,
-        RING.outer,
-        RING.inner,
-        RING.cx,
-        RING.cy,
-        RING.pad,
-      ),
-    };
-  });
-});
+/** 有成员的角色才出扇区与图例（零值扇区在图上不可见） */
+const sectors = computed(() => props.slices.filter((slice) => slice.count > 0));
 
 const total = computed(() =>
-  props.slices.reduce((acc, slice) => acc + slice.count, 0),
+  sectors.value.reduce((acc, slice) => acc + slice.count, 0),
 );
 
-const shown = computed(() => {
-  const slice = sectors.value[hoverIndex.value ?? lastIndex.value];
+const value = (slice: StatsRoleSlice) => slice.count;
+const color = (_slice: StatsRoleSlice, index: number) => chartColor(index);
 
-  return {
-    roleName: slice?.roleName ?? "",
-    count: slice?.count ?? 0,
-    visible: hoverIndex.value !== null,
-  };
-});
-
-function focusSlice(index: number) {
-  lastIndex.value = index;
-  hoverIndex.value = index;
-}
-
-function onMove(event: MouseEvent) {
-  const rect = box.value?.getBoundingClientRect();
-
-  if (rect) {
-    tipPos.value = {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    };
-  }
+function tooltip(slice: StatsRoleSlice): HTMLElement {
+  return chartTooltipNode(
+    slice.roleName,
+    `${t("features.dashboard.chart.members")}：${slice.count}`,
+  );
 }
 </script>
 
 <template>
   <div class="flex h-full min-h-0 flex-col gap-3">
-    <div
-      ref="box"
-      class="relative min-h-40 w-full flex-1"
-      @mouseleave="hoverIndex = null"
-      @mousemove="onMove"
-    >
-      <svg
-        aria-hidden
-        class="h-full w-full"
-        preserveAspectRatio="xMidYMid meet"
-        viewBox="0 0 100 100"
-      >
-        <path
-          v-for="(sector, index) in sectors"
-          :key="sector.roleCode"
-          :d="sector.path"
-          :style="`fill: ${sector.color}`"
-          @mouseenter="focusSlice(index)"
-        />
-      </svg>
+    <div class="min-h-40 w-full flex-1">
+      <DonutChart
+        v-if="sectors.length > 0"
+        :arc-width="ARC_WIDTH"
+        :central-label="String(total)"
+        :central-sub-label="t('features.dashboard.chart.totalMembers')"
+        :color="color"
+        :data="sectors"
+        :tooltip="tooltip"
+        :value="value"
+        :aria-label="t('features.dashboard.chart.roles')"
+      />
 
-      <div class="pointer-events-none absolute inset-0 grid place-items-center">
-        <div class="flex flex-col items-center">
-          <span class="text-highlighted text-2xl font-semibold tabular-nums">
-            {{ total }}
-          </span>
-          <span class="text-muted text-xs">
-            {{ t("features.dashboard.chart.totalMembers") }}
-          </span>
-        </div>
-      </div>
-
+      <!-- 全部角色零成员时的空态（复用 DataTable 通用空态键，语言包由
+           sync-locales 以 React 端为真源覆盖，本端不自造键） -->
       <div
-        class="dashboard-chart-tooltip dashboard-hover-tooltip"
-        :data-visible="shown.visible"
-        :style="{
-          transform: `translate(${tipPos.x + TIP_OFFSET}px, ${tipPos.y + TIP_OFFSET}px)`,
-        }"
+        v-else
+        class="text-muted grid h-full w-full place-items-center text-sm"
       >
-        <p class="text-muted text-xs">{{ shown.roleName }}</p>
-        <p class="text-highlighted text-xs font-semibold tabular-nums">
-          {{ t("features.dashboard.chart.members") }}：{{ shown.count }}
-        </p>
+        {{ t("common.datatable.empty") }}
       </div>
     </div>
 
     <ul class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
       <li
-        v-for="sector in sectors"
-        :key="sector.roleCode"
+        v-for="(slice, index) in sectors"
+        :key="slice.roleCode"
         class="flex items-center gap-1.5 text-xs"
       >
         <span
           aria-hidden
           class="size-2.5 shrink-0 rounded-full"
-          :style="`background: ${sector.color}`"
+          :style="`background: ${chartColor(index)}`"
         />
-        <span class="text-default whitespace-nowrap">{{
-          sector.roleName
-        }}</span>
+        <span class="text-default whitespace-nowrap">{{ slice.roleName }}</span>
         <span class="text-muted shrink-0 text-xs tabular-nums">
-          {{ sector.count }}
+          {{ slice.count }}
         </span>
       </li>
     </ul>
