@@ -17,6 +17,9 @@ import {
  *
  * 尺寸走库默认 `Sizing.Fit`（容器内置 ResizeObserver），不需要外层再量像素；
  * 主题取色由 `.chart-theme` 把 `--vis-*` 接到 `--ui-*`（见 styles/chart-theme.css）。
+ *
+ * `data` 容器与叶子组件都挂一份：容器的 datamodel 驱动轴 / 十字准星 / Tooltip，
+ * 叶子组件自己的 datamodel 才画图形（库内取值是 `容器 data ?? 组件 data`）。
  */
 
 withDefaults(
@@ -60,7 +63,13 @@ withDefaults(
       :y-domain="yDomain"
       :aria-label="ariaLabel"
     >
-      <VisArea :x="x" :y="y" :color="color" :curve-type="curveType" />
+      <VisArea
+        :data="data"
+        :x="x"
+        :y="y"
+        :color="color"
+        :curve-type="curveType"
+      />
       <VisAxis
         type="x"
         :domain-line="false"

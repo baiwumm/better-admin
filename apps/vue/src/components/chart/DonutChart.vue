@@ -56,6 +56,7 @@ const tooltipTriggers = {
   <div class="chart-theme h-full min-h-0 w-full">
     <VisSingleContainer :data="data" :aria-label="ariaLabel">
       <VisDonut
+        :data="data"
         :value="value"
         :color="color"
         :arc-width="arcWidth"
