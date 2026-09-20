@@ -2,6 +2,15 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 角色管理「关联用户」列 + 名单穿透（契约 v1.13.0，React + Nest 先行，2026-09-20）
+
+- **需求与方案**：用户要求角色列表新增「关联用户」列，展现形式对齐公告管理「已读人员」（头像堆叠最多 3 个 + `+N`），并追加拍板：点击 `+N` 弹出抽屉查看完整名单，交互参考岗位管理「在职人数」穿透；排序口径取 `user_roles.created_at DESC`（最近分配的 3 个）；只在列表接口回填（详情不带）；分步实施——本轮 Nest + React，验证通过后 Vue / Next / Nuxt 逐端对齐。
+- **契约（v1.12.0 → v1.13.0）**：`Role` schema 新增 `userCount`（关联用户总数，仅在职且未删除）与 `readers`（`RoleReader[]`，形状对齐 `NoticeReader`：`{id, name, avatar}`）；新增 `GET /roles/{id}/users` 分页端点（`x-permission: SEARCH`，响应 `data` 为 `DirectoryEntry[]`，404 `ROLE_NOT_FOUND`，`pageSize` 枚举同全站 10/20/30/40/50）。
+- **Nest**：`roles.service` 新增 `loadUserCountsBatch`（`COUNT GROUP BY role_id`，`innerJoin users` 挂 `employedUserFilter`）与 `loadReadersBatch`（窗口函数 `PARTITION BY role_id ORDER BY ur.created_at DESC` 取 3，写法对齐 `notice.service.loadReadersBatch`；过滤条件为 `employedUserFilter` 的 SQL 形态）——列表整页恒定 2 组批量查询，无 N+1；`findUsers` 照 `posts.service.findMembers` 平移（`loadDirectoryExtras` 回填 deptPath）。控制器加 `@Get(':id/users')`（`SEARCH` 位）+ `RoleUsersQueryDto`。
+- **React**：`roles-page` 在「描述」后插入 `readers` 列（头像堆叠写法照公告列，`+N` 包 `<button>` 承接点击）；新建 `role-members-drawer.tsx`（照 `post-members-drawer`：`useOverlayState` + 右侧 Drawer，一次拉前 50 名 + 顶部总数，loading/error/empty 三态）；`role-api` 加 `fetchRoleUsers`；`api-types` 加 `RoleReader` 并扩展 `Role`；语言包 6 键 × 2 语言（zh-CN / en），`check-locales` 强制同步至 Next 端语言包（Next 功能本体待后续对齐）。
+- **验证**：Nest `tsc` / `lint` / `build` 三绿；React `tsc` / `lint` / `test`（93 用例）/ `build` / `check-locales` 全绿。运行时冒烟（watch 实例自动重编译后 curl）：`GET /roles` 六角色全部带回 `userCount`（普通员工 104）与 `readers`（最近 3 人）；`GET /roles/{id}/users` 分页正确（部门主管 total=15 与列表 userCount 一致、deptPath 回填、createdAt 降序）；不存在 id 返回 404 `ROLE_NOT_FOUND`；非法 `pageSize` 返回 `VALIDATION_ERROR`（枚举与契约一致）。GUI 走查（列表新列 + 点击 +N 抽屉）待用户本地验证。
+- **待办**：Vue / Next / Nuxt 三端逐端对齐（Next 语言包已先行同步；Nuxt 端注意其 server 侧需同步 `roles-service` 的列表字段与新端点）。
+
 ### 修复概览页 vccs 依赖 CJS 直链导致的整页崩溃（decimal.js-light / eventemitter3，2026-09-20，遗留问题次日继续）
 
 - **现象**：用户登录提示成功后 toast 同时报 `The requested module '.../decimal.js-light/decimal.js' does not provide an export named 'default'`，无法进入概览页。根因链：概览页是首个加载 nuxt-charts 的页面 → 其 vccs 引擎（Recharts 的 Vue 移植）的依赖在 **pnpm 虚拟目录下被 Vite dev 以 CJS 原文件 `@fs` 直链 serve**——decimal.js-light 的 `browser` 字段指向 CJS 的 `decimal.js`（Vite mainFields 默认 browser 优先），eventemitter3 的 exports `import` 条件未被 optimizeDeps esbuild 匹配而回退 CJS `main`——浏览器原生 ESM 拿不到 default 导出，模块加载崩溃即整页崩溃。

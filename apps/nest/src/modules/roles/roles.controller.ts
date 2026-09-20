@@ -6,6 +6,7 @@ import { CreateRoleDto } from './dto/role-create.dto';
 import { UpdateRoleDto } from './dto/role-update.dto';
 import { RoleMenusUpdateDto } from './dto/role-menus.dto';
 import { RoleQueryDto } from './dto/role-query.dto';
+import { RoleUsersQueryDto } from './dto/role-users-query.dto';
 import { Permissions } from '@/auth/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/auth/guards/permissions.guard';
 import { AuthUser } from '@/auth/auth.service';
@@ -31,6 +32,13 @@ export class RolesController {
   @Permissions('SEARCH')
   findOne(@Param('id') id: string): Promise<RoleView> {
     return this.rolesService.findOne(id);
+  }
+
+  /** GET /api/roles/:id/users — 关联用户名单穿透（契约 v1.13.0） */
+  @Get(':id/users')
+  @Permissions('SEARCH')
+  findUsers(@Param('id') id: string, @Query() query: RoleUsersQueryDto) {
+    return this.rolesService.findUsers(id, query);
   }
 
   /** GET /api/roles/:id/menus */

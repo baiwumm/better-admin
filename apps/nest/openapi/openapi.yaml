@@ -191,7 +191,16 @@ info:
     四端影响：Nest（实现方）与 React（消费方）本次同步修改；Next 需同步其自带
     server API（`lib/server/stats-service.ts`）与前端；Vue / Nuxt 尚未实现 Dashboard，
     直接按 v1.12.0 口径落地即可。
-  version: 1.12.0
+    v1.13.0 角色管理「关联用户」列与名单穿透（对齐公告已读人员 / 岗位在职人数穿透）：
+    GET /roles 的 Role 视图新增 `userCount`（关联用户总数，仅在职且未删除）与
+    `readers`（RoleReader[]，最近分配最多 3 个，按 user_roles.created_at 倒序；
+    管理列表接口回填，详情接口不带；形状对齐 NoticeReader）；
+    新增 GET /roles/{id}/users（角色关联用户名单分页，x-permission: SEARCH，
+    响应 data 为 DirectoryEntry[]，过滤口径与 /org/posts/{id}/members 一致——
+    未删除且非离职；404 ROLE_NOT_FOUND）。列表批量装载复用公告 loadReadersBatch
+    的窗口函数模式（PARTITION BY role_id）。
+    四端影响：Nest（实现方）与 React（消费方）本次同步；Vue / Next / Nuxt 待逐端对齐。
+  version: 1.13.0
 
 servers:
   - url: https://nest.baiwumm.com/api
@@ -799,6 +808,22 @@ components:
           description: 头像公开访问 URL（带缓存穿透时间戳查询参数）
 
     # ---------- Roles ----------
+    RoleReader:
+      type: object
+      description: 角色关联用户摘要（管理列表回填；按分配时间倒序最多 3 个，仅在职且未删除用户）
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          description: 用户 ID
+        name:
+          type: string
+          description: 用户姓名（display_name）
+        avatar:
+          type: string
+          nullable: true
+          description: 用户头像 URL（未设置时为 null）
+
     Role:
       type: object
       properties:
@@ -815,6 +840,14 @@ components:
           type: boolean
         sort:
           type: integer
+        userCount:
+          type: integer
+          description: 关联用户总数（仅在职且未删除；管理列表接口回填，详情接口不带；总数含 readers 已展示的 3 个）
+        readers:
+          type: array
+          description: 最近关联用户（按 user_roles.created_at 倒序最多 3 个；管理列表接口回填，总数用 userCount）
+          items:
+            $ref: '#/components/schemas/RoleReader'
         createdAt:
           type: string
           format: date-time
@@ -3016,6 +3049,53 @@ paths:
               example:
                 code: SUPER_ADMIN_ROLE_PROTECTED
                 message: 超级管理员为系统内置角色，其授权不可修改
+
+  /roles/{id}/users:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Roles]
+      summary: 角色关联用户名单（关联用户穿透，v1.13.0）
+      description: 仅返回在职（employment_status≠resigned）且未删除的用户；点击角色列表「关联用户」+N 时调用。
+      x-permission: SEARCH
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, default: 10, enum: [10, 20, 30, 40, 50] }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, pagination]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DirectoryEntry'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 角色不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: ROLE_NOT_FOUND
+                message: 角色不存在
 
   /roles/{id}/menus:
     parameters:

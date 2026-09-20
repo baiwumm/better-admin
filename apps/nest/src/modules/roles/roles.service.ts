@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
-import { roles, roleMenus, userRoles, menus, logs } from '@/db/schema';
+import { roles, roleMenus, userRoles, menus, logs, users } from '@/db/schema';
 import {
   Permissions,
   SUPER_ADMIN_BITS,
@@ -15,6 +15,12 @@ import {
   SUPER_ADMIN_ROLE_CODE,
   normalizePermissionBits,
 } from '@/db/schema/permissions.enum';
+import {
+  DirectoryEntryView,
+  employedUserFilter,
+  loadDirectoryExtras,
+  toDirectoryEntryView,
+} from '../org/org-views';
 import { CreateRoleDto } from './dto/role-create.dto';
 import { UpdateRoleDto } from './dto/role-update.dto';
 import { RoleMenusUpdateDto } from './dto/role-menus.dto';
@@ -27,8 +33,19 @@ export type RoleView = {
   description: string | null;
   enabled: boolean;
   sort: number;
+  /** 关联用户总数（仅在职且未删除；管理列表接口回填，详情接口不带） */
+  userCount?: number;
+  /** 最近关联用户（最多 3 个；管理列表接口回填，详情接口不带） */
+  readers?: RoleReaderView[];
   createdAt: Date;
   updatedAt: Date;
+};
+
+/** 角色关联用户摘要（与 openapi.yaml RoleReader 对齐；形状同 NoticeReader） */
+export type RoleReaderView = {
+  id: string;
+  name: string;
+  avatar: string | null;
 };
 
 /** 所有合法权限位的 OR 聚合（用于校验传入的位掩码是否越界） */
@@ -147,8 +164,136 @@ export class RolesService {
       .limit(pageSize)
       .offset((page - 1) * pageSize);
 
+    const views = rows.map(toView);
+    // 关联用户摘要整页两次批量（总数 1 组 + 最近 3 人 1 组），内存回填（契约 v1.13.0）
+    const roleIds = views.map((v) => v.id);
+    const countsByRole = await this.loadUserCountsBatch(roleIds);
+    const readersByRole = await this.loadReadersBatch(roleIds);
+    for (const view of views) {
+      view.userCount = countsByRole.get(view.id) ?? 0;
+      view.readers = readersByRole.get(view.id) ?? [];
+    }
+
     return {
-      data: rows.map(toView),
+      data: views,
+      pagination: { page, pageSize, total },
+    };
+  }
+
+  /** 批量统计多个角色的关联用户总数（仅在职且未删除，口径同 org-views.employedUserFilter） */
+  private async loadUserCountsBatch(roleIds: string[]): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    if (roleIds.length === 0) return map;
+
+    const rows = await db
+      .select({ roleId: userRoles.roleId, total: count() })
+      .from(userRoles)
+      .innerJoin(users, and(eq(userRoles.userId, users.id), employedUserFilter))
+      .where(inArray(userRoles.roleId, roleIds))
+      .groupBy(userRoles.roleId);
+    for (const row of rows) map.set(row.roleId, row.total);
+    return map;
+  }
+
+  /** 批量装载多个角色的最近关联用户（窗口函数每组取 3 条）：全页 1 组查询 */
+  private async loadReadersBatch(
+    roleIds: string[],
+  ): Promise<Map<string, RoleReaderView[]>> {
+    const map = new Map<string, RoleReaderView[]>();
+    if (roleIds.length === 0) return map;
+    for (const id of roleIds) map.set(id, []);
+
+    // 窗口函数写法与 notice.service.loadReadersBatch 一致；过滤条件为
+    // org-views.employedUserFilter 的 SQL 形态（未删除且非离职，存量 null 按在职）
+    const result = await db.execute(sql`
+      SELECT t.role_id, t.user_id, t.display_name, t.avatar
+      FROM (
+        SELECT ur.role_id, ur.user_id, u.display_name, u.avatar,
+               row_number() OVER (
+                 PARTITION BY ur.role_id
+                 ORDER BY ur.created_at DESC, ur.user_id
+               ) AS rn
+        FROM user_roles ur
+        INNER JOIN users u ON u.id = ur.user_id
+        WHERE ur.role_id IN (${sql.join(roleIds.map((id) => sql`${id}`), sql`, `)})
+          AND u.deleted_at IS NULL
+          AND (u.employment_status IS NULL OR u.employment_status <> 'resigned')
+      ) t
+      WHERE t.rn <= 3
+    `);
+    const rows = result.rows as {
+      role_id: string;
+      user_id: string;
+      display_name: string;
+      avatar: string | null;
+    }[];
+
+    for (const row of rows) {
+      map.get(row.role_id)?.push({
+        id: row.user_id,
+        name: row.display_name,
+        avatar: row.avatar,
+      });
+    }
+    return map;
+  }
+
+  /**
+   * GET /roles/:id/users — 角色关联用户名单（关联用户穿透，契约 v1.13.0）。
+   * 过滤口径与 /org/posts/:id/members 一致（未删除且非离职）；
+   * 形状同岗位成员穿透：DirectoryEntry 分页 + loadDirectoryExtras 回填部门路径。
+   */
+  async findUsers(
+    id: string,
+    query: { page?: number; pageSize?: number },
+  ): Promise<{
+    data: DirectoryEntryView[];
+    pagination: { page: number; pageSize: number; total: number };
+  }> {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 10;
+
+    const role = await db.query.roles.findFirst({ where: eq(roles.id, id) });
+    if (!role) {
+      throw new NotFoundException({
+        code: 'ROLE_NOT_FOUND',
+        message: '角色不存在',
+      });
+    }
+
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(userRoles)
+      .innerJoin(users, and(eq(userRoles.userId, users.id), employedUserFilter))
+      .where(eq(userRoles.roleId, id));
+
+    const rows = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        displayName: users.displayName,
+        avatar: users.avatar,
+        employeeNo: users.employeeNo,
+        phone: users.phone,
+        email: users.email,
+        entryDate: users.entryDate,
+        employmentStatus: users.employmentStatus,
+        createdAt: users.createdAt,
+      })
+      .from(userRoles)
+      .innerJoin(users, and(eq(userRoles.userId, users.id), employedUserFilter))
+      .where(eq(userRoles.roleId, id))
+      // 与全站列表口径一致：创建时间降序 + id 兜底保证分页稳定
+      .orderBy(desc(users.createdAt), desc(users.id))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize);
+
+    const extrasMap = await loadDirectoryExtras(rows.map((r) => r.id));
+
+    return {
+      data: rows.map((row) =>
+        toDirectoryEntryView(row, extrasMap.get(row.id)),
+      ),
       pagination: { page, pageSize, total },
     };
   }
