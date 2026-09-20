@@ -15,6 +15,11 @@ import * as schema from './schema'
  * 配置 ssl: { rejectUnauthorized: false }，与 Nest 端（pg 驱动）行为一致。
  *
  * prepare: false：transaction pooler 不支持预编译语句复用，必须禁用。
+ *
+ * 池防护四项与 next/src/db/client.ts 完全对齐（平移时曾漏掉，见 docs/progress.md
+ * 「stats 接口持续挂起根因」条目）：事务池模式（6543）下空闲连接被池端回收后，
+ * 复用半开连接的查询永不返回且不发错误，stats 概览的 14 并发查询会把故障率放大到
+ * 几乎必挂。postgres.js 这几个参数单位均为秒。
  */
 const connectionString = process.env.DATABASE_URL
 
@@ -25,7 +30,11 @@ if (!connectionString) {
 export const sql = postgres(connectionString, {
   prepare: false,
   ssl: { rejectUnauthorized: false },
-  max: 10
+  max: 10,
+  idle_timeout: 30,
+  keep_alive: 30,
+  max_lifetime: 60 * 30,
+  connect_timeout: 10
 })
 
 export const db = drizzle(sql, {
