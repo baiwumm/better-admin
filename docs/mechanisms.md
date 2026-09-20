@@ -1041,7 +1041,22 @@ useEffect(() => {
 
 ## 32. Nuxt UI v4 无内置图表组件 + 组件样式本身就是 utilities 工具类：Vue / Nuxt 端特性 CSS 不能写进 `@layer components`（Vue 端，Dashboard 概览，2026-09-19）
 
-**结论一 · Nuxt UI v4 不再自带图表组件。** `@nuxt/ui@4.11.0` 的 `dist/runtime/components/` 全量列举无任何 `Chart*`，`dist/` 内也不出现 `chart.js` / `ChartArea` / `ChartDonut` 字样（v3 的图表系列已移除）。因此 Vue / Nuxt 端做图表只有两条路：**手写内联 SVG**（零依赖，Dashboard 概览采用），或新增 `chart.js` 依赖自行拼组件（触 `AGENTS.md` §15「不擅自引入依赖」，须先评审）。Nuxt 端 Dashboard 落地时同样适用，不要重复去 `node_modules` 里找 `UChart`。
+**结论一 · Nuxt UI v4 不再自带图表组件，图表按「非 UI 组件库」单独选型。** `@nuxt/ui@4.11.0` 的 `dist/runtime/components/` 全量列举无任何 `Chart*`，`dist/` 内也不出现 `chart.js` / `ChartArea` / `ChartDonut` 字样（v3 的图表系列已移除），**不要去 `node_modules` 里找 `UChart`**。但「Nuxt UI 没有」不等于「只能手写」：图表库不属于 `AGENTS.md` §21「UI 组件库唯一」的约束对象，走 §21 三级评审（记录理由 + 替代方案评估）后可引入第三方库。本条即该评审记录，它推翻了本条早期版本「Vue / Nuxt 端做图表只有手写内联 SVG 或新增 chart.js 两条路」的结论。
+
+两端现状：**Nuxt 端 = nuxt-charts 3.0.0**（底层 vccs，Recharts 的 Vue 移植，与 React 基准同源）；**Vue 端 = Unovis 1.7.0**（d3 + SVG）。两端不强求同源引擎，图表只对齐功能与信息口径（同一数据 / 同一交互语义 / 同一 `--ui-*` 取色），不对齐像素级观感——这是用户明确拍板的取舍。
+
+选型实测数据（隔离目录 `pnpm add` + 读安装包 `.d.ts` + Vite 8 构建量产物，非文档转述）：
+
+| 候选 | Dashboard 两图 gzip | 通用 Legend | 渲染 | 安装体积 | npm 月下载 |
+| --- | --- | --- | --- | --- | --- |
+| Unovis 1.7.0 | 93 KB | ❌ 无（需自写列表） | SVG | 167 MB | `@unovis/vue` 60 万 |
+| Chart.js 4.5.1 + vue-chartjs | 87 KB | ✅ | canvas | — | 373 万 |
+| ECharts 6.1.0 + vue-echarts | 237 KB | ✅ | canvas | — | 157 万 |
+| vue-chrts 2.2.3（nuxt-charts 的 Vue 姊妹包） | 不可用 | — | — | — | 8 万 |
+
+淘汰理由：`vue-chrts` **没有 v3**（npm `latest` 停在 2.2.3，3.x 版本数 0，上游 `packages/vue` 仍带 DagreGraph / GanttChart / Maps，未迁 vccs），仍是当年被否决的 Unovis 之外另一套不同源引擎；Highcharts 商用授权；ApexCharts 官方 Vue 封装 peer 仍是 `vue ^2.5` 且许可证非标准 SPDX；直接引 vccs 要在 Vue 端重写 nuxt-charts 的 token 映射与 Legend/Tooltip 适配层，并复制 `docs/progress.md` 记过的 Vite alias 兜底成本。Chart.js 与 ECharts 之间最终选 Unovis，判据是**用户后续菜单只需要饼 / 柱 / 面积这类常规图**（Unovis 全覆盖）+ 轻量优先 + **SVG 可用纯 CSS 把 `--vis-*` 映射到 `--ui-*`**（canvas 类库必须 `getComputedStyle` 取 JS 值并随 `.dark` 重建实例）。
+
+Unovis 已确认的代价（落地时按已知项接受，不要当成 bug 排查）：无通用 Legend、无 Radar / Funnel / Gauge / 日历热力；`VisArea` 无 gradient 属性（渐变要自写 `<linearGradient>` defs）；包内无任何 `.css` 文件、样式由 `@emotion/css` 运行时注入（`import '@unovis/ts/style.css'` 实测解析失败）；地图/3D 库列为 dependencies（167MB 安装体积，但实测产物零泄漏）。API 细节见 `docs/nuxt-ui-guide.md` §9。
 
 **结论二 · 与 §29 互为镜像的层叠陷阱。** §29 说的是 HeroUI：组件样式在 `components` 层，所以 Tailwind 工具类**能**覆盖它。Nuxt UI 恰好反过来——组件的外观是由 `cn()` 把主题类（`bg-default` / `divide-default` / `rounded-lg` / `p-4 sm:p-6`）作为**普通工具类**打到元素上，位于 `utilities` 层。于是：
 

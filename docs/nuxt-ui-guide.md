@@ -21,7 +21,7 @@ Nuxt UI 内置组件（@nuxt/ui）
 可检查标准：
 
 1. 业务页面中出现的基础控件必须能对应到 `U*` 组件或「注释说明了原因的自定义组件」二者之一。
-2. 引入任何第三方 Vue 组件库（含无头库）前，必须有评审记录（进度条目或评审文档），未记录视为违规。
+2. 引入任何第三方 Vue 组件库（含无头库）前，必须有评审记录（进度条目或评审文档），未记录视为违规。**图表库不在此列的「UI 组件库」范畴**：Vue 端图表一律用 Unovis（`@unovis/vue` + `@unovis/ts`），Nuxt 端用 nuxt-charts，口径见 `AGENTS.md` §21 与本文 §9。
 3. **禁止引入** Vuetify、Quasar、Element Plus、PrimeVue、shadcn-vue 等替代 UI 库。
 
 ## 2. 代码生成前置检查（每次任务执行）
@@ -184,3 +184,17 @@ import ui from '@nuxt/ui/vue-plugin'
 
 - `nuxt/ui` Skill 与 antfu/skills 系列（`vue` / `vue-best-practices` / `vue-router-best-practices` / `vue-testing-best-practices` / `vueuse-functions` / `pinia` / `vitest` / `vite` 等）全局安装于用户级 `~/.agents/skills/`；验证命令：`npx skills ls -g`。
 - 代码生成任务开工前按 §2 前置检查执行；Skill 用法与官方文档冲突时以官方文档为准。
+
+## 9. 图表库（Unovis）使用事实（Vue 端，基线 1.7.0）
+
+以下均为**实测事实**（隔离安装 + 读安装包 `.d.ts` + Vite 8 构建量体积），不是文档转述；官方文档与本节冲突时以安装包为准并回写本节。
+
+- **安装**：`pnpm add -E @unovis/ts@1.7.0 @unovis/vue@1.7.0`（`@unovis/vue` peer 为 `vue ^3` + `@unovis/ts` 同版本号，**两者版本必须一致**）。按 §15 精确锁版。
+- **样式没有 CSS 文件**：包内不存在任何 `.css`，样式由 `@emotion/css` 运行时注入。网上常见的 `import '@unovis/ts/style.css'` 在 1.7.0 **解析直接失败**（实测），不要照抄；组件自带样式，无需手动引入。
+- **组件面**：容器 `VisXYContainer`（直角坐标：面积/折线/柱）与 `VisSingleContainer`（饼/环/雷达类）；图表组件共 25 个，含 `VisArea` / `VisLine` / `VisGroupedBar` / `VisStackedBar` / `VisRadialBar` / `VisDonut` / `VisNestedDonut` / `VisScatter` / `VisHeatmap` / `VisSankey` / `VisTreemap` / `VisGraph` / `VisBoxplot` / `VisTimeline` / `VisAxis` / `VisTooltip` / `VisCrosshair` / `VisXYLabels` / `VisPlotband` / `VisPlotline` / `VisBrush` / `VisFreeBrush` / `VisChordDiagram` / `VisAnnotations`。React 与 Vue 的导出面实测**完全一致**（各 25 个，无 Vue 滞后）。
+- **已确认的缺口**（选型时接受）：**没有通用 `Legend` 组件**（只有 bullet / flow / pin 三种地图专用图例）→ 图例列表要自己写；没有 Radar / Funnel / Gauge / 日历热力图（`VisHeatmap` 是矩阵热力，不是 GitHub 贡献图）。
+- **Tooltip 内容不是 slot**：走 `triggers: { [selector]: (data) => string | HTMLElement }`。⚠️ 返回 HTML 字符串等于 innerHTML 注入面——角色名 / 公告标题等**后台可编辑数据必须用 `createElement` + `textContent` 构造 DOM**，不要拼字符串。落点可用 `followCursor` / `horizontalPlacement` + `horizontalShift` / `verticalPlacement` + `verticalShift` 精确控制（nuxt-charts 那边没透出的能力，这里是一等配置）。
+- **环形图圆心**：`VisDonut` 自带 `centralLabel` / `centralSubLabel` / `centralLabelOffsetX` / `centralLabelOffsetY`，圆心标签由库按几何算出、天然居中（不需要在组件外测高度做补偿）；另有 `padAngle`（缝隙）、`cornerRadius`（扇区圆角）、`angleRange`、`minSegmentAngle`、`sortFunction`。
+- **面积图渐变**：`VisArea` 只有 `color` / `pattern` / `opacity` / `curveType` / `line*`，**没有 gradient 属性** → 垂直渐变要自己写 `<linearGradient>` defs，再把 `color` 指到 `url(#…)`。
+- **体积**：Dashboard 两图所需 7 个组件实测 gzip **93KB**；tree-shaking 有效（`three` / `maplibre-gl` / `leaflet` / `elkjs` 在产物中出现次数为 0）。但 `@unovis/ts` 把这些地图/3D 库列为 **dependencies**，node_modules 安装体积 **167MB**（只影响安装与 CI 冷装耗时，不进产物）。
+- **取色**：图表外观由 `--vis-*` CSS 变量驱动，SVG 渲染 → 可在 CSS 里直接映射到 Nuxt UI 的 `--ui-*` token（canvas 类库做不到这点）；分类色沿用项目既有的 `--ui-primary` 色相轮转标度。

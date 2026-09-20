@@ -432,6 +432,7 @@ Phase 7  统一测试 → 部署全部版本
 
 - **组件库唯一**：Vue（`apps/vue`）与 Nuxt（`apps/nuxt`）端 UI 组件库统一为 **Nuxt UI v4**（`@nuxt/ui`，Tailwind CSS v4 + Reka UI）。**禁止引入** Vuetify、Quasar、Element Plus、PrimeVue、shadcn-vue 等替代 UI 库。
 - **组件优先级（硬性）**：Nuxt UI 内置组件（`@nuxt/ui`）→ Nuxt UI 没有对应组件 / 不适合当前场景时用项目级自定义组件（基于 Nuxt UI 原子组件拼装，代码注释说明原因）→ 第三方 Vue 组件库（必须先评审：记录理由 + 替代方案评估，批准后方可引入）。
+- **图表库不属于「UI 组件库唯一」约束**（Nuxt UI v4 已无内置图表组件），按上一条走评审后单独选型：Vue 端 = **Unovis**（`@unovis/vue` + `@unovis/ts`，精确锁版），Nuxt 端 = **nuxt-charts**（底层 vccs，Recharts 的 Vue 移植）。两端**不强求同源引擎**；图表只对齐功能与信息口径（同一数据 / 同一交互语义 / 同一 Design Token 取色），不对齐像素级观感。选型实测数据与替代方案评估见 `docs/mechanisms.md` §32。
 - **布局硬约束**：侧边栏 / 顶部栏 / 命令面板必须优先使用官方 Dashboard 套件（`UDashboardGroup` / `UDashboardPanel` / `UDashboardSidebar` / `UDashboardNavbar` / `UDashboardSearch` / `UCommandPalette` 等），禁止从零手写布局。命名说明：`UDashboardLayout` 为 v3 名称，v4 对应组件为 `UDashboardGroup`。
 - **代码生成前置检查**：任何涉及 Vue / Nuxt 的代码生成任务，产出代码前必须：① 确认 Skill 可用（`npx skills ls -g` 应列出 `nuxt/ui` 与 antfu/skills 系列，全局安装于 `~/.agents/skills/`）；② 查阅 Nuxt UI 官方文档确认目标组件存在、API 用法正确；**禁止凭记忆或猜测使用 Nuxt UI API**。
 - **主题策略**：直接使用 Nuxt UI 默认 Design Tokens 与 Color System，暗色模式由其内置 color mode（`useColorMode`）提供；不从 React 端移植 `theme.css` token、不建立 `--ui-*` 映射层；品牌定制通过 Nuxt UI 的 `ui({ ui: { colors } })` 配置实现，禁止在业务代码中硬编码色值。
