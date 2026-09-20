@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { StatsRoleSlice } from "@/lib/api-types";
 
+import { VisBulletLegend } from "@unovis/vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
@@ -11,8 +12,8 @@ import { chartColor, chartTooltipNode } from "@/lib/chart-theme";
  * 角色占比环形图（对齐 React 端 role-distribution-chart）：环形扇区 + 圆心成员
  * 总数 + 「圆点 + 名称 + 数量」图例。
  *
- * 图表本体交给 Unovis 封装，圆心读数走库的 centralLabel（由库按几何算圆心，天然
- * 居中）；图例仍自绘——Unovis 不提供通用 Legend 组件（React / Vue 两侧都没有）。
+ * 图表与图例都用库内置件：圆心读数走 `VisDonut.centralLabel`（按几何算圆心，天然
+ * 居中），图例走 `VisBulletLegend`。
  *
  * 分类色全部由主色派生（恒定明度、彩度取品牌 0.72 倍、色相六段轮转），与 React /
  * Next 端同一色相标度，见 lib/chart-theme.ts 的弃用 alpha 阶梯原因。
@@ -38,6 +39,17 @@ const total = computed(() =>
 const value = (slice: StatsRoleSlice) => slice.count;
 const color = (_slice: StatsRoleSlice, index: number) => chartColor(index);
 
+/**
+ * 图例项。`VisBulletLegend` 的 item 只有 name（库源码用 d3 `.text(d => d.name)`
+ * 渲染，没有 value / extra 字段），所以成员数并进 name 文本。
+ */
+const legendItems = computed(() =>
+  sectors.value.map((slice, index) => ({
+    color: chartColor(index),
+    name: `${slice.roleName} ${slice.count}`,
+  })),
+);
+
 function tooltip(slice: StatsRoleSlice): HTMLElement {
   return chartTooltipNode(
     slice.roleName,
@@ -48,6 +60,9 @@ function tooltip(slice: StatsRoleSlice): HTMLElement {
 
 <template>
   <div class="flex h-full min-h-0 flex-col gap-3">
+    <!-- 图表容器必须有确定高度：库取高是 `clientHeight || config.height || 0`，
+         而 flex 子项没有 flex-1 时高度是内容高、内层 h-full 又解析成 auto → 0，
+         环形图会整个不画。故这里用 flex-1 撑 + min-h-40 兜底。 -->
     <div class="min-h-40 w-full flex-1">
       <DonutChart
         v-if="sectors.length > 0"
@@ -71,22 +86,14 @@ function tooltip(slice: StatsRoleSlice): HTMLElement {
       </div>
     </div>
 
-    <ul class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
-      <li
-        v-for="(slice, index) in sectors"
-        :key="slice.roleCode"
-        class="flex items-center gap-1.5 text-xs"
-      >
-        <span
-          aria-hidden
-          class="size-2.5 shrink-0 rounded-full"
-          :style="`background: ${chartColor(index)}`"
-        />
-        <span class="text-default whitespace-nowrap">{{ slice.roleName }}</span>
-        <span class="text-muted shrink-0 text-xs tabular-nums">
-          {{ slice.count }}
-        </span>
-      </li>
-    </ul>
+    <!-- 图例根节点是块级 flex、内容左对齐：用 flex!（Tailwind v4 的 important 后缀）
+         压过 emotion 未分层的 display，再 justify-center 居中。项间距由库的
+         `margin-right: var(--vis-legend-item-spacing)` 决定，不要再叠 gap——
+         两者会相加成双重间距，且末项的 margin-right 会让居中偏左。 -->
+    <VisBulletLegend
+      v-if="legendItems.length"
+      :items="legendItems"
+      class="flex! flex-wrap justify-center"
+    />
   </div>
 </template>

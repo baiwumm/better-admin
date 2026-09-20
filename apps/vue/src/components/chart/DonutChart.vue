@@ -17,7 +17,8 @@ import { chartColor } from "@/lib/chart-theme";
  * 手写 SVG 的收益之一：nuxt-charts 的 default slot 覆盖层恒在容器 50%，内置图例又
  * 会把圆心 cy 顶上去，得在组件外测图例高度做补偿。
  *
- * 库没有通用 Legend 组件（React / Vue 两侧都没有），图例列表仍由调用方渲染。
+ * 图例不在本封装内：库的 `VisBulletLegend` 是独立件、官方示例也放在图表容器之外
+ * （放外面正好不占图表几何，不会把圆心顶偏），由调用方直接用它。
  */
 
 const props = withDefaults(

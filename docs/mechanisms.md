@@ -1056,7 +1056,7 @@ useEffect(() => {
 
 淘汰理由：`vue-chrts` **没有 v3**（npm `latest` 停在 2.2.3，3.x 版本数 0，上游 `packages/vue` 仍带 DagreGraph / GanttChart / Maps，未迁 vccs），仍是当年被否决的 Unovis 之外另一套不同源引擎；Highcharts 商用授权；ApexCharts 官方 Vue 封装 peer 仍是 `vue ^2.5` 且许可证非标准 SPDX；直接引 vccs 要在 Vue 端重写 nuxt-charts 的 token 映射与 Legend/Tooltip 适配层，并复制 `docs/progress.md` 记过的 Vite alias 兜底成本。Chart.js 与 ECharts 之间最终选 Unovis，判据是**用户后续菜单只需要饼 / 柱 / 面积这类常规图**（Unovis 全覆盖）+ 轻量优先 + **SVG 可用纯 CSS 把 `--vis-*` 映射到 `--ui-*`**（canvas 类库必须 `getComputedStyle` 取 JS 值并随 `.dark` 重建实例）。
 
-Unovis 已确认的代价（落地时按已知项接受，不要当成 bug 排查）：无通用 Legend、无 Radar / Funnel / Gauge / 日历热力；`VisArea` 无 gradient 属性（渐变要自写 `<linearGradient>` defs）；包内无任何 `.css` 文件、样式由 `@emotion/css` 运行时注入（`import '@unovis/ts/style.css'` 实测解析失败）；地图/3D 库列为 dependencies（167MB 安装体积，但实测产物零泄漏）。API 细节见 `docs/nuxt-ui-guide.md` §9。
+Unovis 已确认的代价（落地时按已知项接受，不要当成 bug 排查）：无 Radar / Funnel / Gauge / 日历热力；`VisArea` 无 gradient 属性（渐变要自写 `<linearGradient>` defs，经库的 `svgDefs` 注入）；包内无任何 `.css` 文件、样式由 `@emotion/css` 运行时注入（`import '@unovis/ts/style.css'` 实测解析失败）；地图/3D 库列为 dependencies（167MB 安装体积，但实测产物零泄漏）。图例是内置的 `VisBulletLegend`（本条早期版本曾误判为「无通用 Legend」，实际它就是官方 Donut 示例所用；其 item 只有 `name`、无 value 字段，数值需并进 name）。API 细节见 `docs/nuxt-ui-guide.md` §9。
 
 **结论二 · 与 §29 互为镜像的层叠陷阱。** §29 说的是 HeroUI：组件样式在 `components` 层，所以 Tailwind 工具类**能**覆盖它。Nuxt UI 恰好反过来——组件的外观是由 `cn()` 把主题类（`bg-default` / `divide-default` / `rounded-lg` / `p-4 sm:p-6`）作为**普通工具类**打到元素上，位于 `utilities` 层。于是：
 
