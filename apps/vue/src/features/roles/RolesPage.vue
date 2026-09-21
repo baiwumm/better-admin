@@ -227,9 +227,10 @@ const columns = computed<AppColumnDef<Role>[]>(() => [
 
       // 无关联用户占位；有则 UAvatarGroup 堆叠（最多 3 个），超出部分 +N
       // （N = userCount - 3），点击 +N 打开关联用户名单抽屉（契约 v1.13.0）。
-      // 组根是 flex-row-reverse：children 顺序 [+N, 倒序头像] 渲染为视觉
-      // [头像正序..., +N]；+N 须自绘（组内置计数基于 children 数，
-      // 服务端只回 3 个不会触发），UAvatar 透传点击与键盘可达性
+      // +N 须自绘（组内置计数基于 children 数，服务端只回 3 个不会触发）；
+      // 组件内部先对 children reverse 再以 flex-row-reverse 渲染，双重反转
+      // 后视觉顺序 == children 传入顺序，故按 [头像正序..., +N] 传即得
+      // React 端形态（+N 在尾部）；UAvatar 透传点击与键盘可达性
       if (readers.length === 0) {
         return h("span", { class: "text-muted text-sm" }, "—");
       }
@@ -241,6 +242,14 @@ const columns = computed<AppColumnDef<Role>[]>(() => [
       const open = () => openMembers(row.original);
 
       return h(UAvatarGroup, { size: "sm" }, () => [
+        ...shown.map((reader) =>
+          h(UAvatar, {
+            key: reader.id,
+            alt: reader.name,
+            src: reader.avatar ?? undefined,
+            text: reader.name.slice(0, 1),
+          }),
+        ),
         ...(extra > 0
           ? [
               h(UAvatar, {
@@ -261,17 +270,6 @@ const columns = computed<AppColumnDef<Role>[]>(() => [
               }),
             ]
           : []),
-        ...shown
-          .slice()
-          .reverse()
-          .map((reader) =>
-            h(UAvatar, {
-              key: reader.id,
-              alt: reader.name,
-              src: reader.avatar ?? undefined,
-              text: reader.name.slice(0, 1),
-            }),
-          ),
       ]);
     },
   },
