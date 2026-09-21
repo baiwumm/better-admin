@@ -17,6 +17,7 @@ import {
 } from "./role-api";
 import RoleFormDialog from "./RoleFormDialog.vue";
 import RoleGrantDrawer from "./RoleGrantDrawer.vue";
+import RoleMembersDrawer from "./RoleMembersDrawer.vue";
 import RolesRowActions from "./RolesRowActions.vue";
 
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
@@ -103,6 +104,15 @@ const grantRole = ref<Role | null>(null);
 const deleteOpen = ref(false);
 const deleteTarget = ref<Role | null>(null);
 const deleteSubmitting = ref(false);
+
+const membersOpen = ref(false);
+const membersRole = ref<Role | null>(null);
+
+/** 关联用户穿透：点击列表「关联用户」列 +N 打开（契约 v1.13.0） */
+function openMembers(role: Role) {
+  membersRole.value = role;
+  membersOpen.value = true;
+}
 
 function openForm(mode: "create" | "edit", role: Role | null) {
   formMode.value = mode;
@@ -207,6 +217,63 @@ const columns = computed<AppColumnDef<Role>[]>(() => [
         { class: "text-muted max-w-64 truncate text-sm" },
         row.original.description || "—",
       ),
+  },
+  {
+    id: "readers",
+    enableSorting: false,
+    header: () => t("features.roles.column.readers"),
+    cell: ({ row }) => {
+      const readers = row.original.readers ?? [];
+
+      // 无关联用户占位；有则 UAvatarGroup 堆叠（最多 3 个），超出部分 +N
+      // （N = userCount - 3），点击 +N 打开关联用户名单抽屉（契约 v1.13.0）。
+      // 组根是 flex-row-reverse：children 顺序 [+N, 倒序头像] 渲染为视觉
+      // [头像正序..., +N]；+N 须自绘（组内置计数基于 children 数，
+      // 服务端只回 3 个不会触发），UAvatar 透传点击与键盘可达性
+      if (readers.length === 0) {
+        return h("span", { class: "text-muted text-sm" }, "—");
+      }
+      const shown = readers.slice(0, 3);
+      const extra = Math.max(
+        (row.original.userCount ?? shown.length) - shown.length,
+        0,
+      );
+      const open = () => openMembers(row.original);
+
+      return h(UAvatarGroup, { size: "sm" }, () => [
+        ...(extra > 0
+          ? [
+              h(UAvatar, {
+                text: `+${extra}`,
+                class: "cursor-pointer transition-opacity hover:opacity-80",
+                role: "button",
+                tabindex: 0,
+                "aria-label": t("features.roles.members.title", {
+                  name: row.original.name,
+                }),
+                onClick: open,
+                onKeydown: (event: KeyboardEvent) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    open();
+                  }
+                },
+              }),
+            ]
+          : []),
+        ...shown
+          .slice()
+          .reverse()
+          .map((reader) =>
+            h(UAvatar, {
+              key: reader.id,
+              alt: reader.name,
+              src: reader.avatar ?? undefined,
+              text: reader.name.slice(0, 1),
+            }),
+          ),
+      ]);
+    },
   },
   {
     id: "sort",
@@ -322,8 +389,10 @@ const table: AppTable<Role> = useVueTable({
 
 import { resolveComponent } from "vue";
 
-// UBadge 组件引用（供 h() 使用）
+// 组件引用（供 h() 使用）
 const UBadge = resolveComponent("UBadge");
+const UAvatar = resolveComponent("UAvatar");
+const UAvatarGroup = resolveComponent("UAvatarGroup");
 </script>
 
 <template>
@@ -392,6 +461,8 @@ const UBadge = resolveComponent("UBadge");
       "
       @saved="handleGrantSaved"
     />
+
+    <RoleMembersDrawer v-model:open="membersOpen" :role="membersRole" />
 
     <ConfirmDialog
       v-model:open="deleteOpen"

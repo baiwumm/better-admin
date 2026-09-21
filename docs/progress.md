@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 角色关联用户 + 成员抽屉分页 + AvatarGroup 对齐 Vue 端（2026-09-21，消费 Nest 接口）
+
+- **范围**：Next 验证通过后用户拍板对齐 Vue 端。Vue 消费 NestJS API（v1.13.0 已就绪），本轮仅动前端；语言包经 `sync-locales`（pretest/prebuild 挂载）从 React 端自动同步（5 新键），零手工。
+- **组件换型（Nuxt UI v4 等价件，API 均经端内 `node_modules/.nuxt-ui/ui/` 主题与组件源码取证）**：HeroUI `AvatarGroup.Count` → **UAvatarGroup + 自绘 `+N` UAvatar**——组内置计数基于默认 slot 的 children 数（服务端只回 3 个不会触发），且组根是 `flex-row-reverse justify-end`，children 须按 `[+N, 倒序头像]` 传入才渲染为视觉 `[头像正序..., +N]`；角色列 +N 的点击/键盘可达性直接挂 UAvatar（attrs 透传）。HeroUI `Drawer` → **USlideover**（端内既有抽屉件）：`title` + `description`（总数副文案，加载完成且非空才显示）+ `#footer` 分页；HeroUI `Pagination` + 自算页码 → **UPagination**（`:page`/`:total`/`:items-per-page`/`:sibling-count`，内置省略号，无需 getPageItems）；USlideover 主题类是 utilities 层（§32 结论），footer 内 `class="justify-center"` 直接生效，无 React 端 §33 的未分层覆盖问题。
+- **文件**：`lib/api-types` 加 `RoleReader` / 扩展 `Role`；`role-api` 加 `fetchRoleUsers`；新建 `RoleMembersDrawer.vue`（pageSize=20、关闭重置页码、isPlaceholderData 降透明 + Spinner 反馈）；`RolesPage.vue` description 后插 readers 列（+N 点击 + Enter/空格键盘可达）+ 抽屉接线；`NoticesPage.vue` 已读人员列同款 UAvatarGroup（纯展示）；`PostMembersDrawer.vue` 分页化重写（与角色抽屉同构，去原底部关闭按钮对齐 React 形态——USlideover 自带右上角 close）。
+- **Vue 端既有模式跟随**：列 cell 里 h() 的组件引用走文件底部 `resolveComponent` 声明（RolesPage 为 UAvatar/UAvatarGroup 补声明时初版误用自动导入标识符，vue-tsc TS2304 揪出——端内 unimport 不覆盖 h() 中的裸标识符，须显式 resolveComponent）。
+- **验证**：`type-check` / `lint`（0 error）/ `test`（10 文件 101 用例）/ `build` 四绿；server 无改动（直连 Nest）。GUI 走查（角色 +N 抽屉翻页 / 公告与岗位堆叠视觉）待用户本地确认。
+
 ### 角色关联用户 + 抽屉分页 + HeroUI 3.2.6 同步 Next 端（2026-09-21，React 基准平移）
 
 - **范围**：用户验证 React 端通过后拍板「同步 Next，Vue / Nuxt 不动」。Next 端本轮补齐三块：①契约 v1.13.0 关联用户功能（此前仅语言包先行）；②HeroUI 3.2.6 + AvatarGroup 两列；③两个成员穿透抽屉分页化。
