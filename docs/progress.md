@@ -2,6 +2,18 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Playground「加载动画」页对齐 Vue 端（2026-09-21，motion 关键帧改 CSS 等效）
+
+- **范围**：React 基准 `d12f190` → Next `37be50a` → 本轮 Vue 端。按 §21 端内约定**不引入 motion-v**，故本页是「功能等效移植」而非逐行平移：17 变体与信息口径不变，动画引擎换成 CSS `@keyframes`。**零新依赖**（`meta.packages = []`，页首信息卡显示「零新依赖」，与 grid-reveal 页同口径）。
+- **CSS 等效映射**：几何仍由 `size` 在 JS 侧按 React 同公式计算（笔画 / 间距 / 字号 / 顶点），动画参数经自定义属性下发——根节点 `--dur`（周期秒）、元素级 `--d`（相位差 × 周期）、`--jump` / `--amp` / `--out`（位移量）；缓动统一 `cubic-bezier(0.77, 0, 0.175, 1)`（上游 `EASE_IN_OUT`）。
+- **morph 改用 `clip-path: polygon()`**：五形状按 React 同款 24 点同构采样生成多边形，经 `--s0…--s4` 下发给静态 keyframes（keyframes 内 `clip-path: var(--sN)` 在元素侧解析）；11 停点（每形状连续两停 = 成形后停留）与 React `MORPH_SEQ / ROT / SCALE` 同表。**否决 CSS `d: path()` 方案**——Firefox 不支持 `d` 属性动画，polygon 跨浏览器可插值且无需 rAF 逐帧驱动。
+- **消掉 React 端的 `key={speed}` 重挂载**：motion 不重应用「循环中」的 transition 才需要重挂载，CSS 改 `animation-duration` 即时生效，Vue 页面不传 key。
+- **JS 驱动三类**（ASCII × 5 / scramble / percent）：`setInterval` 逻辑平移，另经 `useDemoActive` 随 KeepAlive 切走停摆（端内其它演示组件同口径），并把 `variant` 纳入 watch 依赖 + 回调早退，切走变体即清定时器（React 端靠子组件卸载达成同一效果）。
+- **reduced-motion 降级**：CSS 侧一条 `@media (prefers-reduced-motion: reduce) { .ld-a { animation: ld-breathe 1.4s … } }` 覆盖全部关键帧变体（与 `.ld-morph[data-v]` 等规则同特异性，靠源序在末尾取胜，产物 CSS 已核对顺序）；ASCII 系仅 2.5× 减速、percent 周期 ×2、scramble 显示静态文案（脚本侧 `usePreferredReducedMotion`）。
+- **登记口径**：`lib/route-access.ts` 的 `MENU_REQUIRED_PATHS` 与 `ROUTE_TITLE_KEYS` 按 7 个原始演示页口径登记本页（菜单路由须受菜单权限守卫 + 文档标题兜底）；`typed-router.d.ts` 随构建重生成；语言包经 `sync-locales` 从 React 拉齐 8 键。
+- **验证**：`eslint` 0 error（7 条既有 warning 不在本轮文件）/ `vue-tsc` 零错误 / `vitest` 10 文件 101 用例 / `vite build` 成功（loaders 分包 CSS 3.03 kB、JS 11.58 kB）。另写一次性 26 项挂载冒烟（17 变体渲染、morph 24 顶点、comet 六段尾迹、metaballs 滤镜 id 逐实例唯一、spinner 笔画派生、三类定时器推进）全部通过后**按端内「零组件测试」现状删除**，未改 `vitest.config.ts`（其缺 `@vitejs/plugin-vue`，保留组件测试需先动该配置，留待另轮拍板）。用户 GUI 走查通过。
+- **Nuxt 端按用户指示未动。**
+
 ### Playground 追加「加载动画」演示页：React 基准 + Next 对齐（2026-09-21）
 
 - **范围**：第 9 个演示页 `/playground/loaders`——vendor beUI（MIT）registry 的 `loader` 组件（快照来源 https://beui.dev/r/loader.json ），单组件 **17 种加载动效变体**（spinner / dots / bars / dot-matrix / dither / morph / comet / scramble / metaballs / newton / helix / percent + ASCII 系 5 种）。React 基准 `d12f190`（用户 GUI 走查通过）→ 本轮按基准平移 Next 端。**零新依赖**：`motion@13.2.0` 两端均已随 Playground Phase B 引入。
