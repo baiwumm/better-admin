@@ -106,7 +106,7 @@ better-admin/
 - **样式变量**：React / Next.js 以 Hero UI Design System 为参考形成一套项目级 Design Tokens，Hero UI + Shadcn UI + 自定义组件共用（见 §7.3）。
 - **整个项目**：React 仍然是 UI / UX Source of Truth；不同技术栈可以使用不同 UI 组件库，但最终页面必须保持统一的视觉、交互、结构和用户体验。
 - **细则单源**：组件选择规则、选型对照、禁止事项、渐进式调整的完整细则以 [`docs/ui-spec.md`](docs/ui-spec.md) §18.3 为准（本节自 2026-09-12 起只留策略级，避免双源漂移）。
-- **HeroUI 文档**：HeroUI v3 文档索引位于 `./.heroui-docs/react`，任何 HeroUI 组件任务**先查文档再动手**（凭记忆写 HeroUI v3 API 极易出错）；本文档的自动索引块已移除，需要时可用 `heroui agents-md --react --output AGENTS.md` 重新生成。
+- **HeroUI 文档**：HeroUI v3 文档索引位于 `./.heroui-docs/react`，任何 HeroUI 组件任务**先查文档再动手**（凭记忆写 HeroUI v3 API 极易出错）；本文档的自动索引块已移除，需要时可用 `heroui agents-md --react --output AGENTS.md` 重新生成。⚠️ 该索引由 CLI 拉取、可能滞后于依赖版本（2026-09-21 实测依赖已 3.2.6 而索引停在 3.2.4），新组件（如 `AvatarGroup`）查不到时以官方站文档 + `node_modules` 内 `.d.ts` / 源码取证为准。
 - **浮层开合状态必须用 `useOverlayState`（禁止裸 `useState` 布尔量控制）**：React / Next.js 中所有由布尔值控制的浮层（Modal / AlertDialog / Drawer / Popover / 任意 Overlay 等），其 open 状态**统一使用 Hero UI 导出的 `useOverlayState()` hook 管理**，并严格遵循官方受控写法——`isOpen` / `onOpenChange` 挂在浮层的最外层 Overlay 组件（如 `<AlertDialog.Backdrop isOpen={state.isOpen} onOpenChange={state.setOpen}>`）上，触发用 `state.open()` / `state.close()` / `state.toggle()`。禁止自行用 `useState(true/false)` 把 `isOpen` 挂在 Root/Trigger 上（会导致 react-aria 受控流不匹配、弹窗不显示或控制台报错）。开放状态即「with useOverlayState」，关闭即「禁止裸 useState 布尔量」。
 
 ### 7.3 样式变量 / Design Tokens 规则

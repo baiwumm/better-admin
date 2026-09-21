@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense } from "react";
 import {
   Avatar,
+  AvatarGroup,
   Button,
   Chip,
   Dropdown,
@@ -371,7 +372,9 @@ export function NoticesPage() {
           const notice = row.original;
           const readers = notice.readers ?? [];
 
-          // 无已读人员占位；有则头像堆叠（最多 3 个），超出部分 +N（N = readCount - 3）
+          // 无已读人员占位；有则 AvatarGroup 堆叠（最多 3 个），超出部分 +N
+          // （N = readCount - 3）。总数服务端已知，溢出计数用显式
+          // AvatarGroup.Count（v3.2.6）；纯展示，无点击交互
           if (readers.length === 0) {
             return (
               <Typography color="muted" type="body-sm">
@@ -383,13 +386,9 @@ export function NoticesPage() {
           const extra = Math.max(notice.readCount - shown.length, 0);
 
           return (
-            <div className="flex -space-x-2">
+            <AvatarGroup max={3} size="sm">
               {shown.map((reader) => (
-                <Avatar
-                  key={reader.id}
-                  className="ring-2 ring-background"
-                  size="sm"
-                >
+                <Avatar key={reader.id}>
                   {reader.avatar ? (
                     <Avatar.Image alt={reader.name} src={reader.avatar} />
                   ) : null}
@@ -397,13 +396,11 @@ export function NoticesPage() {
                 </Avatar>
               ))}
               {extra > 0 && (
-                <Avatar className="ring-2 ring-background" size="sm">
-                  <Avatar.Fallback className="text-xs">
-                    +{extra}
-                  </Avatar.Fallback>
-                </Avatar>
+                <AvatarGroup.Count className="text-xs">
+                  +{extra}
+                </AvatarGroup.Count>
               )}
-            </div>
+            </AvatarGroup>
           );
         },
       },

@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTable } from "@tanstack/react-table";
 import {
   Avatar,
+  AvatarGroup,
   Button,
   Chip,
   Dropdown,
@@ -260,8 +261,9 @@ export function RolesPage() {
         cell: ({ row }) => {
           const readers = row.original.readers ?? [];
 
-          // 无关联用户占位；有则头像堆叠（最多 3 个），超出部分 +N
-          // （N = userCount - 3），点击 +N 打开关联用户名单抽屉（契约 v1.13.0）
+          // 无关联用户占位；有则 AvatarGroup 堆叠（最多 3 个），超出部分 +N
+          // （N = userCount - 3）点击打开关联用户名单抽屉（契约 v1.13.0）。
+          // 总数服务端已知，溢出计数用显式 AvatarGroup.Count（v3.2.6）
           if (readers.length === 0) {
             return (
               <Typography color="muted" type="body-sm">
@@ -276,13 +278,9 @@ export function RolesPage() {
           );
 
           return (
-            <div className="flex -space-x-2">
+            <AvatarGroup max={3} size="sm">
               {shown.map((reader) => (
-                <Avatar
-                  key={reader.id}
-                  className="ring-2 ring-background"
-                  size="sm"
-                >
+                <Avatar key={reader.id}>
                   {reader.avatar ? (
                     <Avatar.Image alt={reader.name} src={reader.avatar} />
                   ) : null}
@@ -290,22 +288,25 @@ export function RolesPage() {
                 </Avatar>
               ))}
               {extra > 0 && (
-                <button
+                <AvatarGroup.Count
                   aria-label={t("features.roles.members.title", {
                     name: row.original.name,
                   })}
-                  className="rounded-full transition-opacity hover:opacity-80"
-                  type="button"
+                  className="cursor-pointer transition-opacity hover:opacity-80"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => openMembers(row.original)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openMembers(row.original);
+                    }
+                  }}
                 >
-                  <Avatar className="ring-2 ring-background" size="sm">
-                    <Avatar.Fallback className="text-xs">
-                      +{extra}
-                    </Avatar.Fallback>
-                  </Avatar>
-                </button>
+                  +{extra}
+                </AvatarGroup.Count>
               )}
-            </div>
+            </AvatarGroup>
           );
         },
       },

@@ -2,6 +2,15 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### HeroUI 3.2.6 + AvatarGroup 两列 + 双抽屉分页对齐（2026-09-21，React 端）
+
+- **背景**：用户走查角色关联用户功能后三项反馈：①升级 HeroUI 至 3.2.6 并改用新增的 `AvatarGroup` 组件（角色「关联用户」与公告「已读人员」两列同步）；②关联用户抽屉一次拉 50 条看不到全量，加分页；③抽屉内「共 N 名」随名单滚动，移到 Header。用户确认岗位管理「在职人数」穿透抽屉与之同构，一并同步。
+- **依赖升级**：`@heroui/react` / `@heroui/styles` 3.2.5 → **3.2.6**（精确锁版）；按 v3.2.6 release notes 的 peer 要求同步 `react-aria-components` 1.20.0 → **1.21.1**（`@internationalized/date@3.12.4` 已显式声明满足新 peer）。⚠️ `heroui agents-md --react` 拉取的 `.heroui-docs` 索引仍停在 3.2.4 文档（无 avatar-group / releases v3-2-6），AvatarGroup API 以官方站 + `node_modules` 内 `.d.ts` / 源码取证为准。
+- **AvatarGroup 替换手写堆叠**（`roles-page.tsx` / `notices-page.tsx`）：`AvatarGroup max={3} size="sm"` + 显式 `AvatarGroup.Count` 渲染 `+N`（总数服务端已知场景，Count 不受 max 截断，替代 v2 的 total prop）；角色列的 Count 透传 `onClick` + `role="button"` + `tabIndex` + Enter/空格（源码确认 props 落到底层元素），键盘可达；去掉手写 `-space-x-2` 与 `ring-2`（clip 月牙遮罩为库默认，用户已验收）。
+- **双抽屉分页同构**（`role-members-drawer.tsx` / `post-members-drawer.tsx`）：一次拉 50 → 服务端分页 `pageSize=20`（全站枚举档位）；「共 N 名」移入 `Drawer.Header`（标题副标题模式，对齐 role-grant-drawer）；分页入 `Drawer.Footer`，页码序列复用 DataTable 的 `getPageItems`（带省略号），多于一页才渲染 Footer；关闭抽屉重置回第 1 页；翻页反馈用 `isPlaceholderData`（keepPreviousData 显示旧页期间）列表降透明 40% + 禁点 + 居中叠加 Spinner。
+- **坑与沉淀（→ mechanisms §33）**：分页居中最初怎么都不生效——`drawer.css` / `pagination.css` 是**未分层 CSS**（`.drawer__footer` 的 justify-end、`.pagination` 的 w-full + justify-between、`.pagination__content` 的 self-start 全部压过 utilities 层）；且 `.pagination` 根 `w-full` 使 Footer 的 justify 无效、`<sm` 断点 nav 纵向时水平位置由 content 的 `self-*` 决定。终态：`<Pagination className="justify-center!">` + `<Pagination.Content className="self-center!">` 双 important 后缀。§29 的「工具类无条件覆盖」仅对 layer 内组件（button 等）成立，覆盖前先查目标 CSS 是否在层内。
+- **验证**：`tsc` / eslint（0 error）/ vitest（8 文件 93 用例）/ `build` 全绿；角色抽屉分页居中与翻页反馈经用户本地 GUI 验证通过（岗位抽屉与角色抽屉代码同构，待走查）。
+
 ### 角色管理「关联用户」列 + 名单穿透（契约 v1.13.0，React + Nest 先行，2026-09-20）
 
 - **需求与方案**：用户要求角色列表新增「关联用户」列，展现形式对齐公告管理「已读人员」（头像堆叠最多 3 个 + `+N`），并追加拍板：点击 `+N` 弹出抽屉查看完整名单，交互参考岗位管理「在职人数」穿透；排序口径取 `user_roles.created_at DESC`（最近分配的 3 个）；只在列表接口回填（详情不带）；分步实施——本轮 Nest + React，验证通过后 Vue / Next / Nuxt 逐端对齐。

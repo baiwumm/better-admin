@@ -1067,3 +1067,27 @@ Unovis 已确认的代价（落地时按已知项接受，不要当成 bug 排�
 
 - 依据：`apps/vue/src/styles/dashboard.css` / `features/dashboard/{KpiCard,LoginTrendChart,RoleDistributionChart,DashboardPage}.vue` 落地实测（DOM `getComputedStyle` 取证：body class 为 `p-4 sm:p-6 flex flex-1 flex-col gap-2`、grow=1、欢迎横幅三层渐变可读出）；`@nuxt/ui@4.11.0` dist 目录与 `node_modules/.nuxt-ui/ui/*.ts` 主题文件实读。
 - 关联：`docs/progress.md` 2026-09-19「Vue 端 Dashboard 概览对齐 React 基准」条目；§29（HeroUI 层的镜像情形）；§15 / `docs/nuxt-ui-guide.md` §1 组件优先级。
+
+---
+
+## 33. HeroUI 的组件 CSS 并非全部在 `@layer components`：`drawer.css` / `pagination.css` 等是未分层规则，普通工具类压不过、须用 important 后缀（React 端，关联用户 / 在职人员抽屉分页，2026-09-21）
+
+**现象**：`Drawer.Footer` 里放 `Pagination` 想水平居中，`className="justify-center"`（Footer 上）与 `className="justify-center"`（Pagination 上）都不生效；两处都换 Tailwind v4 important 后缀（`justify-center!` / `self-center!`）才赢。
+
+**机制**（读自 `@heroui/styles/dist/components/{drawer,pagination}.css`）：§29 的「HeroUI 组件样式在 `components` 层、工具类无条件覆盖」**并不覆盖全部组件**——`@heroui/styles` 产物里 `button.css` 等经 `layer(components)` 引入，但 `drawer.css` / `pagination.css` 是**无 `@layer` 包裹的普通规则**（文件头无 layer 声明）。CSS 级联规则：**未分层规则恒高于任何 layer 内的规则**（层序只比较层与层之间，unlayered 永远最后且优先）。于是 `.drawer__footer { justify-end }`、`.pagination { w-full justify-between }`、`.pagination__content { self-start }` 全部赢过 utilities 层的同名属性工具类。
+
+**叠加的两个几何事实**（居中问题容易归因错）：
+1. `.pagination` 根是 `w-full`——Footer（flex 容器）上的任何 justify 对它无效，必须进 nav 内部解决；
+2. `.pagination__content` 是 `self-start`，且 nav 在 `<sm` 断点是 `flex-col`（主轴垂直）——420px 抽屉命中此档，水平位置由交叉轴的 `self-*` 决定，改 nav 的主轴 justify 没用。
+
+**正确写法**（两处 important 后缀，缺一不可）：
+
+```tsx
+<Pagination className="justify-center!">
+  <Pagination.Content className="self-center!">
+```
+
+**规则沉淀**：React / Next 端覆盖 HeroUI 组件样式前，先查该组件的 CSS 文件是否在 `@layer` 内（`@heroui/styles/dist/components/<组件>.css` 头部）：在层内（button 等）→ 直接工具类（§29）；未分层（drawer / pagination 等）→ 用 Tailwind v4 important 后缀（`类!`），或组件有结构槽位 prop（如 Nuxt UI 的 `ui`）时优先走槽位。**判据先行，别按 §29 一刀切。**
+
+- 依据：`drawer.css` L251-254（`.drawer__footer`）、`pagination.css` L6-18（`.pagination` / `.pagination__content`）实读；角色 / 岗位成员抽屉落地实测（仅 Footer 加 important 不生效，nav + content 双 important 后居中）。`tsc` / eslint / vitest（93 用例）/ build 全绿。
+- 关联：§29（components 层的正例与本文的反例互为补充）；§30（Drawer.Footer 位于滚动区外的结构事实）。
