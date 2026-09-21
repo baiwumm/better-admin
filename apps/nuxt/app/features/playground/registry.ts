@@ -5,6 +5,7 @@ import { codeBlockMeta } from './code-block/meta'
 import { fluidOrbMeta } from './fluid-orb/meta'
 import { githubActivityMeta } from './github-activity/meta'
 import { gridRevealMeta } from './grid-reveal/meta'
+import { loadersMeta } from './loaders/meta'
 import { matrixOrbMeta } from './matrix-orb/meta'
 import { numberFlowMeta } from './number-flow/meta'
 import { themeSwitchAnimationMeta } from './theme-switch-animation/meta'
@@ -53,5 +54,6 @@ export const PLAYGROUND_DEMOS: readonly PlaygroundDemo[] = [
     id: 'theme-switch-animation',
     to: '/playground/theme-switch-animation',
     meta: themeSwitchAnimationMeta
-  }
+  },
+  { id: 'loaders', to: '/playground/loaders', meta: loadersMeta }
 ]

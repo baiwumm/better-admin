@@ -1100,9 +1100,29 @@ Unovis 已确认的代价（落地时按已知项接受，不要当成 bug 排�
 
 - **React**（`layouts/admin-layout.tsx`）：可达集合 `allowedPaths` 由菜单树经 `collectMenuPaths` 实时派生，判定式是「**凡不在 `LOGIN_REQUIRED_PATHS` / `LOGIN_REQUIRED_PREFIXES` 白名单内的认证路由，一律要求命中菜单树本身或其父路径**」→ **默认拒绝**，新页面天然受控，白名单漏项只会「多拦」（可见、可查）。
 - **Vue**（`lib/route-access.ts` + `router/guards.ts`）：`MENU_REQUIRED_PATHS` 是「需要菜单权限校验的路径」**显式枚举表**，`guards.ts` 仅在 `isMenuRequiredPath(pathname) && !isLoginRequiredPath(pathname)` 为真时才查菜单树并跳 `/403` → **默认放行（登录即可）**，新菜单页**必须登记**，漏登即越权可达。
-- **Nuxt**：`MENU_REQUIRED_PATHS` / `ROUTE_TITLE_KEYS` 与 Vue 同形态，同一口径适用（2026-09-21 已补 `/playground/theme-switch-animation` 两处登记；`/playground/loaders` 待该端页面落地时同批补，**不给尚未实现的页面预登记**——登记一条不存在的路径只是噪声，页面本身仍走 catch-all 404）。
+- **Nuxt**：`MENU_REQUIRED_PATHS` / `ROUTE_TITLE_KEYS` 与 Vue 同形态，同一口径适用（2026-09-21 已补 `/playground/theme-switch-animation` 与 `/playground/loaders` 两处登记）。**不要给尚未实现的页面预登记**——登记一条不存在的路径只是噪声，页面本身仍由 catch-all 404 兜底；登记须与页面文件同批提交。
 - **Next**：`lib/route-title.ts` 只是**非菜单路由**的标题兜底（菜单路由标题来自菜单树），门控在 `proxy.ts` 侧按菜单判定，漏登记不影响权限。
 
 **规则沉淀**：在 Vue / Nuxt 端新增「菜单树里存在的页面」时，页面文件与 `route-access.ts` 两张表（`MENU_REQUIRED_PATHS` + `ROUTE_TITLE_KEYS`）**必须同批提交**。自查口诀：**React 有白名单、Vue / Nuxt 有登记表；白名单漏项 = 多拦（可见缺陷），登记表漏项 = 少拦（安全缺陷）**——评审时优先看后者。
 
 - 依据：`apps/react/src/lib/route-access.ts`（全文件仅两张登录白名单）、`apps/react/src/layouts/admin-layout.tsx`（`allowedPaths` / `isWhitelisted` / `isAllowedByParentPath` 与无权即 `navigate("/403")` 分支）、`apps/vue/src/lib/route-access.ts` 文件头语义注释、`apps/vue/src/router/guards.ts` 第三层守卫。
+
+---
+
+## 35. pnpm 供应链策略 minimumReleaseAge：agent 工具链 pnpm 与用户 Volta pnpm 默认值不同，新包「本机能装、用户端被拦」（2026-09-21）
+
+**现象**：agent 环境 `pnpm add react-okr-tree@1.13.0` 成功（输出还带「✓ Lockfile passes supply-chain policies (verified 8h ago)」），用户端 `pnpm dev` 却失败：`ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION ... within the minimumReleaseAge cutoff`——lockfile 里已有该条目，用户端全新校验不放过。
+
+**机制**：两台 pnpm 版本不同、`minimumReleaseAge` 默认值不同——
+
+- agent 工具链（DSH 内置）pnpm **11.8.0**：`pnpm config get minimumReleaseAge` = `0`（无年龄限制），且安装时命中的是**数小时前的缓存校验结果**（"verified 8h ago"），新发布包直接写入 lockfile；
+- 用户 Volta pnpm **11.24.0**（`C:\Users\Administrator\AppData\Local\Volta\tools\image\packages\pnpm\node_modules\pnpm\bin\pnpm.cjs`）：`pnpm config list` 无 `minimumReleaseAge` 键 → 走**该版本默认 1440 分钟（24h）**，发布不足 24 小时的包在全新校验时被拒（cutoff = 校验时刻 − 24h，与报错时间戳可对账）。
+
+**解法（仓库既有模式）**：各端 `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude` 白名单按 `包名@版本` 精确放行——`apps/react` 早有 `@heroui/react@3.2.5` / `@heroui/styles@3.2.5` 两条同款先例，2026-09-21 为 `react-okr-tree@1.13.0` 补第三条。注意：
+
+- 放行条目是**精确版本**；升级到仍不足 24h 的新版本时要同步补条目；
+- agent 侧验证不要只跑自己的 pnpm——用 `node <Volta pnpm.cjs> install --frozen-lockfile` 复跑用户同款校验（补白名单前失败、后「✓ Lockfile passes supply-chain policies」即算过）；
+- 后续 Next / Vue / Nuxt 端对齐时装 `vue3-okr-tree@1.13.0`（同日早数分钟发布）会踩同一坑：发布 24h 内实施需在对应端 `pnpm-workspace.yaml` 同步补白名单；
+- lockfile 由低版本 pnpm 写入、高版本校验可过（frozen install 通过即证格式兼容），无需强制用 11.24 重写。
+
+- 依据：两台 pnpm 的 `--version` / `config list` 对比实跑；Volta pnpm `install --frozen-lockfile` 补白名单前后各一次（前 `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`、后 653 条目全过），随后 Volta pnpm `dev` 正常启动（Vite ready 5173）。

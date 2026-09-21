@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Playground「加载动画」页对齐 Nuxt 端（2026-09-21，四端 100% 收尾）
+
+- **范围**：Vue 端 `a8899d9` → 本轮 Nuxt 端（最后一端）。CSS `@keyframes` 等效那套整体平移（§21 不引入 motion-v、零新依赖、`meta.packages = []`），页面结构 / 两区块 / 变体清单与前三端一致；语言包经 `sync-locales` 拉 React 8 键。
+- **SSR 带来的一处端差异**：reduced-motion 下 metaballs 两球的「合拢姿态」不再由模板读 `useReducedMotion` 改 `cx`（那样服务端首帧恒按「不减弱」渲染，与水合后的客户端取值不一致），改由 CSS 媒体查询的静止 `transform: translateX(±10px)` 达成等价姿态，`cx` 固定 30 / 70；ASCII / scramble / percent 的降级留在脚本侧，其 `watch` 在 SSR 阶段不触发，`useId()` 用于融合滤镜 id（端内 GitHubActivity 已有先例）。
+- **`vue/multi-word-component-names` 单点豁免**：vendor 组件名 `Loader` 是单词，而 React / Next / Vue 三端同名文件为 `Loader.vue` / `loader.tsx`，四端命名一致优先（§7.4）→ 在 `eslint.config.mjs` 加**仅覆盖该文件**的规则关闭 + 原因注释，不改名、不全局关规则。
+- **登记**：`app/lib/route-access.ts` 两张表补 `/playground/loaders`（承接同日 §34 结论：Nuxt 守卫同 Vue 形态，登记与页面同批），`registry.ts` 登记第 9 项。
+- **验证**：`eslint` 0 error / `nuxt typecheck` 零错误 / `vitest` 10 文件 99 用例 / `nuxt build` 成功；产物 CSS 核对 12 组 `@keyframes ld-*` 齐备、`ld-morph` 的 `clip-path: var(--sN)` 未被压掉。用户 GUI 走查通过。**loaders 页四端（React / Next / Vue / Nuxt）至此 100% 对齐。**
+
 ### 补登记 Nuxt 端 theme-switch-animation 页的菜单权限与标题兜底（2026-09-21）
 
 - **范围**：Vue 端同类缺陷（下一条）修完后，按同一判据核对 Nuxt 端 `app/lib/route-access.ts`——`/playground/theme-switch-animation` 两张表皆缺，而页面 `app/pages/(authenticated)/playground/theme-switch-animation.vue` 已存在、`menu.playground.themeSwitchAnimation` 语言键已由 sync-locales 到位；`app/middleware/auth.global.ts` 第三层守卫与 Vue 同形（命中 `MENU_REQUIRED_PATHS` 才查菜单树并跳 `/403`），故同样是**越权可达**而非仅标题缺失。
