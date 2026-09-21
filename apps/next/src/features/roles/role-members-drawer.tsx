@@ -1,6 +1,6 @@
 "use client";
 
-import type { DirectoryEntry, Post } from "@/lib/api-types";
+import type { DirectoryEntry, Role } from "@/lib/api-types";
 
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -15,40 +15,40 @@ import {
 } from "@heroui/react";
 import { keepPreviousData } from "@tanstack/react-query";
 
-import { fetchPostMembers } from "./post-api";
+import { fetchRoleUsers } from "./role-api";
 
 import { getPageItems } from "@/components/common/data-table";
 import { useTranslation } from "@/i18n";
 
-/** 名单分页大小（pageSize 全站枚举 10/20/30/40/50），与角色关联用户抽屉一致 */
+/** 名单分页大小（pageSize 全站枚举 10/20/30/40/50） */
 const MEMBERS_PAGE_SIZE = 20;
 
 /**
- * 岗位在职人员抽屉（在职人数穿透，契约 v1.6.0 GET /org/posts/:id/members）：
- * 点击岗位列表「在职人数」时打开，服务端分页展示在职人员
- * （仅在职且未删除用户）。总数固定在 Header、分页固定在 Footer，
- * 名单滚动时两者不随动（与角色关联用户抽屉同构）。
+ * 角色关联用户抽屉（关联用户穿透，契约 v1.13.0 GET /roles/:id/users）：
+ * 点击角色列表「关联用户」列的 +N 时打开，服务端分页展示关联用户
+ * （过滤口径与岗位在职人员穿透一致——未删除且非离职）。
+ * 总数固定在 Header、分页固定在 Footer，名单滚动时两者不随动。
  * Avatar 加 key 重建子树，规避 Radix Avatar 图片加载状态残留（AGENTS §19）。
  */
-export function PostMembersDrawer({
+export function RoleMembersDrawer({
   state,
-  post,
+  role,
 }: {
   state: UseOverlayStateReturn;
-  post: Post | null;
+  role: Role | null;
 }) {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
 
-  // 关闭即回到第一页：下次打开（含同一岗位）都从头看名单
+  // 关闭即回到第一页：下次打开（含同一角色）都从头看名单
   useEffect(() => {
     if (!state.isOpen) setPage(1);
   }, [state.isOpen]);
 
   const membersQuery = useQuery({
-    queryKey: ["org", "posts", "members", post?.id ?? "", page],
-    queryFn: () => fetchPostMembers(post!.id, page, MEMBERS_PAGE_SIZE),
-    enabled: Boolean(post) && state.isOpen,
+    queryKey: ["roles", "users", role?.id ?? "", page],
+    queryFn: () => fetchRoleUsers(role!.id, page, MEMBERS_PAGE_SIZE),
+    enabled: Boolean(role) && state.isOpen,
     placeholderData: keepPreviousData,
     staleTime: 0,
   });
@@ -65,14 +65,14 @@ export function PostMembersDrawer({
             <Drawer.Header>
               <div className="flex flex-col gap-1">
                 <Drawer.Heading className="min-w-0 truncate font-bold">
-                  {post
-                    ? t("features.posts.members.title", { name: post.name })
-                    : t("features.posts.members.titleFallback")}
+                  {role
+                    ? t("features.roles.members.title", { name: role.name })
+                    : t("features.roles.members.titleFallback")}
                 </Drawer.Heading>
                 {/* 总数固定在头部：不随名单滚动（对齐 role-grant-drawer 的副标题模式） */}
                 {membersQuery.isSuccess && members.length > 0 && (
                   <Typography color="muted" type="body-xs">
-                    {t("features.posts.members.count", { count: total })}
+                    {t("features.roles.members.count", { count: total })}
                   </Typography>
                 )}
               </div>
@@ -84,11 +84,11 @@ export function PostMembersDrawer({
                 </div>
               ) : membersQuery.isError ? (
                 <Description>
-                  {t("features.posts.members.loadFailed")}
+                  {t("features.roles.members.loadFailed")}
                 </Description>
               ) : members.length === 0 ? (
                 <Description className="py-6 text-center">
-                  {t("features.posts.members.empty")}
+                  {t("features.roles.members.empty")}
                 </Description>
               ) : (
                 // 翻页期间 keepPreviousData 持续显示旧页数据：降透明度 + 叠加
@@ -138,7 +138,7 @@ export function PostMembersDrawer({
                   ))}
                   {membersQuery.isPlaceholderData && (
                     <div className="absolute inset-0 grid place-items-center">
-                      <Spinner size="sm" />
+                      <Spinner />
                     </div>
                   )}
                 </div>
@@ -153,7 +153,7 @@ export function PostMembersDrawer({
                   （<sm 交叉轴起点，420px 抽屉命中此档）。
                 */}
                 <Pagination
-                  aria-label={t("features.posts.members.titleFallback")}
+                  aria-label={t("features.roles.members.titleFallback")}
                   className="justify-center!"
                   size="sm"
                 >

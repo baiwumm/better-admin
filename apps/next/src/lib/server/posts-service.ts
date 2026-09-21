@@ -53,7 +53,7 @@ const SORTABLE = new Set([
 ]);
 
 /** 在职条件：未删除且未离职（employment_status 为 null 的存量数据视为在职） */
-const employedUserFilter = and(
+export const employedUserFilter = and(
   isNull(users.deletedAt),
   or(isNull(users.employmentStatus), ne(users.employmentStatus, "resigned")),
 );
@@ -453,7 +453,7 @@ interface DirectoryExtras {
  * 批量装载通讯录摘要：userId → { deptId, deptPath, mainPostId, mainPostName }。
  * deptPath 依赖全量组织路径映射；主岗取 user_posts.is_main 的那条。
  */
-async function loadDirectoryExtras(
+export async function loadDirectoryExtras(
   userIds: string[],
   deptPathMap?: Map<string, string>,
 ): Promise<Map<string, DirectoryExtras>> {
@@ -525,7 +525,7 @@ export interface DirectoryEntryView {
   employmentStatus: "employed" | "resigned";
 }
 
-function toDirectoryEntryView(
+export function toDirectoryEntryView(
   row: {
     id: string;
     username: string;

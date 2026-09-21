@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 角色关联用户 + 抽屉分页 + HeroUI 3.2.6 同步 Next 端（2026-09-21，React 基准平移）
+
+- **范围**：用户验证 React 端通过后拍板「同步 Next，Vue / Nuxt 不动」。Next 端本轮补齐三块：①契约 v1.13.0 关联用户功能（此前仅语言包先行）；②HeroUI 3.2.6 + AvatarGroup 两列；③两个成员穿透抽屉分页化。
+- **依赖**：`@heroui/react` / `@heroui/styles` 3.2.5 → 3.2.6、`react-aria-components` 1.20.0 → 1.21.1（与 React 端同批，peer 要求）。
+- **server 端**（Next 独立全栈，必须自带实现）：`roles-service` 增 `RoleReaderView` / `RoleView.userCount` / `readers`，`listRoles` 组装 `loadUserCountsBatch`（drizzle groupBy）+ `loadReadersBatch`（窗口函数 raw SQL）——⚠️ 端差异：postgres.js 驱动的 `db.execute` 直接返回行数组，映射写 `result as unknown as T[]`（对齐端内 notices-service 同款），不是 Nest pg 驱动的 `result.rows`；`listRoleUsers` 照 Nest `findUsers` 平移。跨模块复用改为从 `posts-service` 导出 `employedUserFilter` / `loadDirectoryExtras` / `toDirectoryEntryView`（Next 端无集中 org-views，各 service 自持——本条是首次跨 service 导入，取「导出共享」而非复制 ~150 行）。新路由 `app/api/roles/[id]/users/route.ts`（SEARCH 位，`jsonList` 包装，模式照 posts members route）。
+- **前端**：`api-types` 加 `RoleReader` / 扩展 `Role`；`role-api` 加 `fetchRoleUsers`；`role-members-drawer` / `post-members-drawer` 直接从 React 最终版平移（加 `"use client"` 头，无 Next 特有依赖）；`roles-page` 以 Next 版打底精准套用六处改动（import / state / readers 列 AvatarGroup / 依赖数组 / JSX 挂载——Next 版有 `@bprogress/next` 的 useRouter 等自有依赖，不全量覆盖）；公告 `notices-page` readers 列同 React 版改 AvatarGroup。语言包上轮已同步（check-locales 校验一致）。
+- **验证**：lint 0 error / `tsc --noEmit` 通过 / `next build` 成功 / check-locales 一致；dev 冒烟（3100）：`GET /api/roles` 六角色 userCount + readers 与 Nest 端数据逐项一致（普通员工 104），`GET /roles/:id/users` 分页正确（部门主管 total=15、deptPath 回填）、不存在 id 404 `ROLE_NOT_FOUND`。GUI 走查待用户本地确认。
+
 ### HeroUI 3.2.6 + AvatarGroup 两列 + 双抽屉分页对齐（2026-09-21，React 端）
 
 - **背景**：用户走查角色关联用户功能后三项反馈：①升级 HeroUI 至 3.2.6 并改用新增的 `AvatarGroup` 组件（角色「关联用户」与公告「已读人员」两列同步）；②关联用户抽屉一次拉 50 条看不到全量，加分页；③抽屉内「共 N 名」随名单滚动，移到 Header。用户确认岗位管理「在职人数」穿透抽屉与之同构，一并同步。

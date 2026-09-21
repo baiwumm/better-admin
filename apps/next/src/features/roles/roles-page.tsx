@@ -6,6 +6,8 @@ import type { AppColumnDef } from "@/components/common/data-table/table-types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTable } from "@tanstack/react-table";
 import {
+  Avatar,
+  AvatarGroup,
   Button,
   Chip,
   Dropdown,
@@ -35,6 +37,7 @@ import {
 } from "./role-api";
 import { RoleFormDialog, type RoleFormMode } from "./role-form-dialog";
 import { RoleGrantDrawer } from "./role-grant-drawer";
+import { RoleMembersDrawer } from "./role-members-drawer";
 
 import { DataTable } from "@/components/common/data-table";
 import {
@@ -129,12 +132,23 @@ export function RolesPage() {
   const roleDialog = useOverlayState();
   const grantDrawer = useOverlayState();
   const deleteDialog = useOverlayState();
+  const membersDrawer = useOverlayState();
   const [formContext, setFormContext] = useState<{
     mode: RoleFormMode;
     role: Role | null;
   }>({ mode: "create", role: null });
   const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
   const [grantRole, setGrantRole] = useState<Role | null>(null);
+  const [membersRole, setMembersRole] = useState<Role | null>(null);
+
+  /** 关联用户穿透：点击列表「关联用户」列 +N 打开（契约 v1.13.0） */
+  const openMembers = useCallback(
+    (role: Role) => {
+      setMembersRole(role);
+      membersDrawer.open();
+    },
+    [membersDrawer.open],
+  );
 
   const openForm = useCallback(
     (mode: RoleFormMode, role: Role | null) => {
@@ -240,6 +254,62 @@ export function RolesPage() {
             {row.original.description || "—"}
           </Typography>
         ),
+      },
+      {
+        id: "readers",
+        enableSorting: false,
+        header: t("features.roles.column.readers"),
+        cell: ({ row }) => {
+          const readers = row.original.readers ?? [];
+
+          // 无关联用户占位；有则 AvatarGroup 堆叠（最多 3 个），超出部分 +N
+          // （N = userCount - 3）点击打开关联用户名单抽屉（契约 v1.13.0）。
+          // 总数服务端已知，溢出计数用显式 AvatarGroup.Count（v3.2.6）
+          if (readers.length === 0) {
+            return (
+              <Typography color="muted" type="body-sm">
+                —
+              </Typography>
+            );
+          }
+          const shown = readers.slice(0, 3);
+          const extra = Math.max(
+            (row.original.userCount ?? shown.length) - shown.length,
+            0,
+          );
+
+          return (
+            <AvatarGroup max={3} size="sm">
+              {shown.map((reader) => (
+                <Avatar key={reader.id}>
+                  {reader.avatar ? (
+                    <Avatar.Image alt={reader.name} src={reader.avatar} />
+                  ) : null}
+                  <Avatar.Fallback>{reader.name.slice(0, 1)}</Avatar.Fallback>
+                </Avatar>
+              ))}
+              {extra > 0 && (
+                <AvatarGroup.Count
+                  aria-label={t("features.roles.members.title", {
+                    name: row.original.name,
+                  })}
+                  className="cursor-pointer transition-opacity hover:opacity-80"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openMembers(row.original)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openMembers(row.original);
+                    }
+                  }}
+                >
+                  +{extra}
+                </AvatarGroup.Count>
+              )}
+            </AvatarGroup>
+          );
+        },
       },
       {
         id: "sort",
@@ -386,6 +456,7 @@ export function RolesPage() {
       canDelete,
       canGrant,
       openForm,
+      openMembers,
       grantDrawer.open,
       deleteDialog.open,
       toggleStatus,
@@ -499,6 +570,8 @@ export function RolesPage() {
         onOpenChange={grantDrawer.setOpen}
         onSaved={handleGrantSaved}
       />
+
+      <RoleMembersDrawer role={membersRole} state={membersDrawer} />
 
       <ConfirmDialog
         destructive
