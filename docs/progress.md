@@ -2,6 +2,17 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Playground 追加「加载动画」演示页：React 基准 + Next 对齐（2026-09-21）
+
+- **范围**：第 9 个演示页 `/playground/loaders`——vendor beUI（MIT）registry 的 `loader` 组件（快照来源 https://beui.dev/r/loader.json ），单组件 **17 种加载动效变体**（spinner / dots / bars / dot-matrix / dither / morph / comet / scramble / metaballs / newton / helix / percent + ASCII 系 5 种）。React 基准 `d12f190`（用户 GUI 走查通过）→ 本轮按基准平移 Next 端。**零新依赖**：`motion@13.2.0` 两端均已随 Playground Phase B 引入。
+- **页面形态**：两区块共享 size / speed——① 变体墙 17 卡（xl 5 列、卡片 `min-h-24` 随 size 撑开而非写死行高，6 列在 size=96 时 percent 变体横向溢出）；② 参数调试（17 个变体选择钮 + 中央 `DemoStage` 大号实时预览）。变体名属技术专名保留英文不译，与主题切换动画页同口径。
+- **关键机制**：① ⚠️ **motion 对「循环中」的动画不应用新的 transition**——speed 变化须靠 `key={speed}` 重挂载才能重启（卡片与预览各一处）；② 尺寸全由单一 `size` 派生（笔画 / 间距 / 字号按系数计算）、着色一律 `currentColor`，故跟随组件所在上下文主题色；reduced-motion 下 transform 一律降级为缓慢透明度呼吸，ASCII 系（按帧换字，不属屏动）改为 2.5 倍减速而非停摆；③ morph 以 24 点同构采样生成命令结构一致的 SVG path、逐点 tween `d`（clip-path polygon 在 framer 下不可靠插值），每形状连续采样两次形成「成形后停留」再 morph，旋转 / 缩放只在 morph 段变化。
+- **vendor 本地改动仅三处**：`cn` 改自 `@heroui/react` 导入、`EASE_IN_OUT` 自上游 `lib/ease.ts` 内联（避免整份工具文件入库）、Next 端加回 `"use client"`（React 端移除）。
+- **端差异**：Next 与 React 源码逐行一致（`diff` 只有 `"use client"` 头 + vendor 注释措辞 + `meta.source` 路径三处）；Next `lib/route-title.ts` **不登记**——本页是菜单路由，标题与图标来自菜单树（与主题切换动画页口径一致，该表只兜底非菜单路由）。
+- **菜单与 i18n**：共用库幂等脚本 `apps/nest/scripts/migrate-menus-add-playground-loaders.ts`（父 `menu.playground`、icon `loader-circle`、sort 5 排主题切换动画之后、permissions 0n、super_admin 补全量位；重复执行不重复插入）。i18n 8 键（`menu.playground.loaders` + `features.playground.loaders.*` 7 键）以 React 为真源同步 Next，`check-locales` 校验一致。
+- **验证**：React `tsc` 零错误 / eslint 0 error / `check-locales` 通过（14 文件）/ vitest 8 文件 93 用例，**用户 GUI 走查通过**；Next `tsc --noEmit` 零错误 / eslint 0 error（3 条既有 warning 不在本轮文件）/ `next build` 成功（`/playground/loaders` 已入路由表）/ `check-locales` 一致，**GUI 走查待用户本地确认**。
+- **待办**：Vue / Nuxt 端尚未对齐，菜单四端共用故点入 404 属预期；feature-matrix 该行 Vue / Nuxt 暂标 🔧（仅指本页，前 8 页四端仍 ✅）。
+
 ### 角色关联用户 + 成员抽屉分页对齐 Nuxt 端（2026-09-21，功能四端 100% 收尾）
 
 - **范围**：Vue 验证通过后用户拍板对齐 Nuxt 端（四端最后一端）。Nuxt 为独立全栈，server 侧与前端同步补齐；语言包经 `sync-locales`（pretest/prebuild）自动同步。
