@@ -228,6 +228,15 @@ export interface User {
   posts: UserPostSummary[]
 }
 
+/** 角色关联用户摘要（管理列表回填；按分配时间倒序最多 3 个） */
+export interface RoleReader {
+  id: string
+  /** 用户姓名（display_name） */
+  name: string
+  /** 用户头像 URL（未设置时为 null） */
+  avatar: string | null
+}
+
 /** 角色（/roles） */
 export interface Role {
   id: string
@@ -236,6 +245,10 @@ export interface Role {
   description: string | null
   enabled: boolean
   sort: number
+  /** 关联用户总数（仅在职且未删除；管理列表接口回填，详情接口不带） */
+  userCount?: number
+  /** 最近关联用户（最多 3 个；管理列表接口回填，总数用 userCount） */
+  readers?: RoleReader[]
   createdAt: string
   updatedAt: string
 }

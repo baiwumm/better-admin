@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 角色关联用户 + 成员抽屉分页对齐 Nuxt 端（2026-09-21，功能四端 100% 收尾）
+
+- **范围**：Vue 验证通过后用户拍板对齐 Nuxt 端（四端最后一端）。Nuxt 为独立全栈，server 侧与前端同步补齐；语言包经 `sync-locales`（pretest/prebuild）自动同步。
+- **server 端**：`roles-service` 增 `RoleReaderView` / `RoleView.userCount` / `readers`，`listRoles` 组装 `loadUserCountsBatch` + `loadReadersBatch`（窗口函数 raw SQL；postgres.js 驱动 `db.execute` 直接返回行数组，`result as unknown as T[]` 映射对齐端内 notices-service 模式）；`listRoleUsers` 照 Nest `findUsers` 平移；从 `posts-service` 导出 `employedUserFilter` / `loadDirectoryExtras` / `toDirectoryEntryView` 复用（同 Next 端处理）；新路由 `server/api/roles/[id]/users.get.ts`（SEARCH 位，`jsonList`，模式照 posts members route）。
+- **前端**：`api-types` 加 `RoleReader` / 扩展 `Role`；`role-api` 加 `fetchRoleUsers`；新建 `RoleMembersDrawer.vue`（USlideover + description 副文案 + footer UPagination，pageSize=20、关闭重置页码、isPlaceholderData 降透明 + Spinner 反馈）；`PostMembersDrawer.vue` 分页化重写（与角色抽屉同构）；`RolesPage.vue` description 后插 readers 列（UAvatarGroup children 按视觉正序 `[头像正序..., +N]` 传——沿用 Vue 端 §走查修正结论，+N 点击/键盘可达性挂 UAvatar）+ 抽屉接线；公告 `NoticesPage.vue` readers 列同款 UAvatarGroup。端风格差异：Nuxt 文件单引号无分号，全部以 Nuxt 版打底精准套用（未整文件覆盖）。
+- **验证**：`typecheck` / `lint`（`@stylistic/quote-props` 6 error 经 `eslint --fix` 修复：对象含 `aria-label` 等引号键时全键须引号）/ `test`（10 文件 99 用例）/ `build` 四绿。运行时冒烟（构建产物 + `source .env` 供 DATABASE_URL，3005）：`GET /api/roles` 六角色 userCount + readers 与 Nest 端逐项一致（普通员工 104），`GET /roles/:id/users` 分页正确（部门主管 total=15、deptPath 回填）、404 `ROLE_NOT_FOUND`。GUI 走查待用户本地确认。
+- **契约冒烟脚本备注**：`scripts/contract-diff.mjs` 依赖 admin 密码登录（CONTRACT_USER/CONTRACT_PASSWORD env 可覆盖），本共享库 admin 密码已变更且脚本未接 demo-login，本轮以逐接口 curl 冒烟替代；后续如需跑全量契约 diff，先解决凭据注入。
+
 ### 修正 Vue 端头像组 +N 位置（走查反馈，2026-09-21）
 
 - **现象**：用户走查 Vue 端角色列表截图反馈「+N」显示在头像**前面**（左），React 端在尾部。

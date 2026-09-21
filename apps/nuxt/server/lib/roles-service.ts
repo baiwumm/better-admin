@@ -1,9 +1,10 @@
 import type { RoleMenuGrant, RoleMenusPayload } from '../../app/lib/api-types'
+import type { DirectoryEntryView } from './posts-service'
 
-import { and, count, desc, eq, ilike, inArray, or } from 'drizzle-orm'
+import { and, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 
 import { db } from '../db/client'
-import { logs, menus, roleMenus, roles, userRoles } from '../db/schema'
+import { logs, menus, roleMenus, roles, userRoles, users } from '../db/schema'
 import {
   ALL_PERMISSION_BITS,
   SUPER_ADMIN_BITS,
@@ -11,14 +12,27 @@ import {
   SUPER_ADMIN_ROLE_CODE,
   normalizePermissionBits
 } from './permissions'
+import {
+  employedUserFilter,
+  loadDirectoryExtras,
+  toDirectoryEntryView
+} from './posts-service'
 import { ServerApiError } from './http'
 import { generateRecordId } from './ids'
 import { normalizePaging } from './pagination'
 
 /**
  * 角色管理服务（与 nest/src/modules/roles/roles.service.ts 一一对齐）。
- * 完整 CRUD + 菜单授权（GRANT 位独立控制）+ super_admin 内置角色保护。
+ * 完整 CRUD + 菜单授权（GRANT 位独立控制）+ super_admin 内置角色保护
+ * + 关联用户列/名单穿透（契约 v1.13.0）。
  */
+
+/** 角色关联用户摘要（与 openapi.yaml RoleReader 对齐；形状同 NoticeReader） */
+export interface RoleReaderView {
+  id: string
+  name: string
+  avatar: string | null
+}
 
 export interface RoleView {
   id: string
@@ -27,6 +41,10 @@ export interface RoleView {
   description: string | null
   enabled: boolean
   sort: number
+  /** 关联用户总数（仅在职且未删除；管理列表接口回填，详情接口不带） */
+  userCount?: number
+  /** 最近关联用户（最多 3 个；管理列表接口回填，详情接口不带） */
+  readers?: RoleReaderView[]
   createdAt: string
   updatedAt: string
 }
@@ -170,8 +188,141 @@ export async function listRoles(params: {
     .limit(pageSize)
     .offset((page - 1) * pageSize)
 
+  const views = rows.map(toView)
+  // 关联用户摘要整页两次批量（总数 1 组 + 最近 3 人 1 组），内存回填（契约 v1.13.0）
+  const roleIds = views.map(v => v.id)
+  const countsByRole = await loadUserCountsBatch(roleIds)
+  const readersByRole = await loadReadersBatch(roleIds)
+
+  for (const view of views) {
+    view.userCount = countsByRole.get(view.id) ?? 0
+    view.readers = readersByRole.get(view.id) ?? []
+  }
+
   return {
-    data: rows.map(toView),
+    data: views,
+    pagination: { page, pageSize, total }
+  }
+}
+
+/** 批量统计多个角色的关联用户总数（仅在职且未删除，口径同 posts-service.employedUserFilter）。 */
+async function loadUserCountsBatch(
+  roleIds: string[]
+): Promise<Map<string, number>> {
+  const map = new Map<string, number>()
+
+  if (roleIds.length === 0) return map
+
+  const rows = await db
+    .select({ roleId: userRoles.roleId, total: count() })
+    .from(userRoles)
+    .innerJoin(users, and(eq(userRoles.userId, users.id), employedUserFilter))
+    .where(inArray(userRoles.roleId, roleIds))
+    .groupBy(userRoles.roleId)
+
+  for (const row of rows) map.set(row.roleId, row.total)
+
+  return map
+}
+
+/**
+ * 批量装载多个角色的最近关联用户（窗口函数每组取 3 条）：全页 1 组查询。
+ * SQL 写法对齐 nest notice.service.loadReadersBatch；过滤条件为
+ * employedUserFilter 的 SQL 形态（未删除且非离职，存量 null 按在职）。
+ */
+async function loadReadersBatch(
+  roleIds: string[]
+): Promise<Map<string, RoleReaderView[]>> {
+  const map = new Map<string, RoleReaderView[]>()
+
+  if (roleIds.length === 0) return map
+  for (const id of roleIds) map.set(id, [])
+
+  const result = await db.execute(sql`
+    SELECT t.role_id, t.user_id, t.display_name, t.avatar
+    FROM (
+      SELECT ur.role_id, ur.user_id, u.display_name, u.avatar,
+             row_number() OVER (
+               PARTITION BY ur.role_id
+               ORDER BY ur.created_at DESC, ur.user_id
+             ) AS rn
+      FROM user_roles ur
+      INNER JOIN users u ON u.id = ur.user_id
+      WHERE ur.role_id IN (${sql.join(roleIds.map(id => sql`${id}`), sql`, `)})
+        AND u.deleted_at IS NULL
+        AND (u.employment_status IS NULL OR u.employment_status <> 'resigned')
+    ) t
+    WHERE t.rn <= 3
+  `)
+  // postgres.js 驱动的 execute 直接返回行数组（对齐端内 notices-service 同款映射）
+  const rows = result as unknown as {
+    role_id: string
+    user_id: string
+    display_name: string
+    avatar: string | null
+  }[]
+
+  for (const row of rows) {
+    map.get(row.role_id)?.push({
+      id: row.user_id,
+      name: row.display_name,
+      avatar: row.avatar
+    })
+  }
+
+  return map
+}
+
+/**
+ * GET /roles/:id/users — 角色关联用户名单（关联用户穿透，契约 v1.13.0）。
+ * 过滤口径与 posts-service.listPostMembers 一致（未删除且非离职）；
+ * 形状同岗位成员穿透：DirectoryEntry 分页 + loadDirectoryExtras 回填部门路径。
+ */
+export async function listRoleUsers(
+  id: string,
+  params: { page?: number, pageSize?: number }
+): Promise<{
+  data: DirectoryEntryView[]
+  pagination: { page: number, pageSize: number, total: number }
+}> {
+  const { page, pageSize } = normalizePaging(params)
+
+  const role = await db.query.roles.findFirst({ where: eq(roles.id, id) })
+
+  if (!role) {
+    throw new ServerApiError(404, 'ROLE_NOT_FOUND', '角色不存在')
+  }
+
+  const [{ count: total }] = await db
+    .select({ count: count() })
+    .from(userRoles)
+    .innerJoin(users, and(eq(userRoles.userId, users.id), employedUserFilter))
+    .where(eq(userRoles.roleId, id))
+
+  const rows = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      displayName: users.displayName,
+      avatar: users.avatar,
+      employeeNo: users.employeeNo,
+      phone: users.phone,
+      email: users.email,
+      entryDate: users.entryDate,
+      employmentStatus: users.employmentStatus
+    })
+    .from(userRoles)
+    .innerJoin(users, and(eq(userRoles.userId, users.id), employedUserFilter))
+    .where(eq(userRoles.roleId, id))
+    // 与全站列表口径一致：创建时间降序 + id 兜底保证分页稳定
+    .orderBy(desc(users.createdAt), desc(users.id))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize)
+
+  const extrasMap = await loadDirectoryExtras(rows.map(r => r.id))
+
+  return {
+    data: rows.map(row => toDirectoryEntryView(row, extrasMap.get(row.id))),
     pagination: { page, pageSize, total }
   }
 }

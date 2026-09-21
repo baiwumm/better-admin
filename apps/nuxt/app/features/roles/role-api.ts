@@ -1,4 +1,5 @@
 import type {
+  DirectoryEntry,
   ListQueryParams,
   Role,
   RoleMenuGrant,
@@ -33,6 +34,14 @@ export interface RoleListParams extends ListQueryParams {
 /** GET /roles — 角色分页列表 */
 export function fetchRoles(params: RoleListParams) {
   return fetchApiList<Role>(`/roles`, params)
+}
+
+/** GET /roles/:id/users — 关联用户名单穿透（契约 v1.13.0；仅在职且未删除用户） */
+export function fetchRoleUsers(id: string, page = 1, pageSize = 10) {
+  return fetchApiList<DirectoryEntry>(
+    `/roles/${encodeURIComponent(id)}/users`,
+    { page, pageSize }
+  )
 }
 
 /** GET /roles/:id/menus — 角色当前菜单授权（menuId → 位掩码字符串） */

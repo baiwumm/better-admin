@@ -357,30 +357,31 @@ const columns = computed<AppColumnDef<Notice>[]>(() => [
       const notice = row.original
       const readers = notice.readers ?? []
 
-      // 无已读人员占位；有则头像堆叠（最多 3 个），超出部分 +N（N = readCount - 3）
+      // 无已读人员占位；有则 UAvatarGroup 堆叠（最多 3 个），超出部分 +N
+      // （N = readCount - 3）。+N 须自绘（组内置计数基于 children 数，服务端
+      // 只回 3 个不会触发）；组件内部先对 children reverse 再以
+      // flex-row-reverse 渲染，双重反转后视觉顺序 == children 传入顺序，
+      // 故按 [头像正序..., +N] 传即得 React 端形态。纯展示，无点击交互
       if (readers.length === 0) {
         return h('span', { class: 'text-muted text-sm' }, '—')
       }
       const shown = readers.slice(0, 3)
       const extra = Math.max(notice.readCount - shown.length, 0)
 
-      return h('div', { class: 'flex -space-x-2' }, [
+      return h(resolveComponent('UAvatarGroup'), { size: 'sm' }, () => [
         ...shown.map(reader =>
           h(resolveComponent('UAvatar'), {
             key: reader.id,
             alt: reader.name,
             src: reader.avatar ?? undefined,
-            text: reader.name.slice(0, 1),
-            size: 'sm',
-            class: 'ring-2 ring-default'
+            text: reader.name.slice(0, 1)
           })
         ),
         ...(extra > 0
           ? [
               h(resolveComponent('UAvatar'), {
-                size: 'sm',
                 text: `+${extra}`,
-                class: 'ring-2 ring-default'
+                class: 'text-xs'
               })
             ]
           : [])
