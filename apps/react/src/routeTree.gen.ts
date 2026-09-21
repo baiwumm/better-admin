@@ -26,6 +26,7 @@ import { Route as AuthenticatedSettingsMenusRouteImport } from './routes/_authen
 import { Route as AuthenticatedSettingsLogsRouteImport } from './routes/_authenticated/settings/logs'
 import { Route as AuthenticatedSettingsDictsRouteImport } from './routes/_authenticated/settings/dicts'
 import { Route as AuthenticatedPlaygroundThemeSwitchAnimationRouteImport } from './routes/_authenticated/playground/theme-switch-animation'
+import { Route as AuthenticatedPlaygroundLoadersRouteImport } from './routes/_authenticated/playground/loaders'
 import { Route as AuthenticatedPlaygroundGithubActivityRouteImport } from './routes/_authenticated/playground/github-activity'
 import { Route as AuthenticatedPlaygroundCodeBlockRouteImport } from './routes/_authenticated/playground/code-block'
 import { Route as AuthenticatedOrgPostsRouteImport } from './routes/_authenticated/org/posts'
@@ -132,6 +133,12 @@ const AuthenticatedPlaygroundThemeSwitchAnimationRoute =
   AuthenticatedPlaygroundThemeSwitchAnimationRouteImport.update({
     id: '/playground/theme-switch-animation',
     path: '/playground/theme-switch-animation',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundLoadersRoute =
+  AuthenticatedPlaygroundLoadersRouteImport.update({
+    id: '/playground/loaders',
+    path: '/playground/loaders',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPlaygroundGithubActivityRoute =
@@ -245,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/org/posts': typeof AuthenticatedOrgPostsRoute
   '/playground/code-block': typeof AuthenticatedPlaygroundCodeBlockRoute
   '/playground/github-activity': typeof AuthenticatedPlaygroundGithubActivityRoute
+  '/playground/loaders': typeof AuthenticatedPlaygroundLoadersRoute
   '/playground/theme-switch-animation': typeof AuthenticatedPlaygroundThemeSwitchAnimationRoute
   '/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/settings/logs': typeof AuthenticatedSettingsLogsRoute
@@ -278,6 +286,7 @@ export interface FileRoutesByTo {
   '/org/posts': typeof AuthenticatedOrgPostsRoute
   '/playground/code-block': typeof AuthenticatedPlaygroundCodeBlockRoute
   '/playground/github-activity': typeof AuthenticatedPlaygroundGithubActivityRoute
+  '/playground/loaders': typeof AuthenticatedPlaygroundLoadersRoute
   '/playground/theme-switch-animation': typeof AuthenticatedPlaygroundThemeSwitchAnimationRoute
   '/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/settings/logs': typeof AuthenticatedSettingsLogsRoute
@@ -314,6 +323,7 @@ export interface FileRoutesById {
   '/_authenticated/org/posts': typeof AuthenticatedOrgPostsRoute
   '/_authenticated/playground/code-block': typeof AuthenticatedPlaygroundCodeBlockRoute
   '/_authenticated/playground/github-activity': typeof AuthenticatedPlaygroundGithubActivityRoute
+  '/_authenticated/playground/loaders': typeof AuthenticatedPlaygroundLoadersRoute
   '/_authenticated/playground/theme-switch-animation': typeof AuthenticatedPlaygroundThemeSwitchAnimationRoute
   '/_authenticated/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/_authenticated/settings/logs': typeof AuthenticatedSettingsLogsRoute
@@ -349,6 +359,7 @@ export interface FileRouteTypes {
     | '/org/posts'
     | '/playground/code-block'
     | '/playground/github-activity'
+    | '/playground/loaders'
     | '/playground/theme-switch-animation'
     | '/settings/dicts'
     | '/settings/logs'
@@ -382,6 +393,7 @@ export interface FileRouteTypes {
     | '/org/posts'
     | '/playground/code-block'
     | '/playground/github-activity'
+    | '/playground/loaders'
     | '/playground/theme-switch-animation'
     | '/settings/dicts'
     | '/settings/logs'
@@ -417,6 +429,7 @@ export interface FileRouteTypes {
     | '/_authenticated/org/posts'
     | '/_authenticated/playground/code-block'
     | '/_authenticated/playground/github-activity'
+    | '/_authenticated/playground/loaders'
     | '/_authenticated/playground/theme-switch-animation'
     | '/_authenticated/settings/dicts'
     | '/_authenticated/settings/logs'
@@ -562,6 +575,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaygroundThemeSwitchAnimationRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/playground/loaders': {
+      id: '/_authenticated/playground/loaders'
+      path: '/playground/loaders'
+      fullPath: '/playground/loaders'
+      preLoaderRoute: typeof AuthenticatedPlaygroundLoadersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/playground/github-activity': {
       id: '/_authenticated/playground/github-activity'
       path: '/playground/github-activity'
@@ -703,6 +723,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedOrgPostsRoute: typeof AuthenticatedOrgPostsRoute
   AuthenticatedPlaygroundCodeBlockRoute: typeof AuthenticatedPlaygroundCodeBlockRoute
   AuthenticatedPlaygroundGithubActivityRoute: typeof AuthenticatedPlaygroundGithubActivityRoute
+  AuthenticatedPlaygroundLoadersRoute: typeof AuthenticatedPlaygroundLoadersRoute
   AuthenticatedPlaygroundThemeSwitchAnimationRoute: typeof AuthenticatedPlaygroundThemeSwitchAnimationRoute
   AuthenticatedSettingsDictsRoute: typeof AuthenticatedSettingsDictsRoute
   AuthenticatedSettingsLogsRoute: typeof AuthenticatedSettingsLogsRoute
@@ -734,6 +755,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlaygroundCodeBlockRoute: AuthenticatedPlaygroundCodeBlockRoute,
   AuthenticatedPlaygroundGithubActivityRoute:
     AuthenticatedPlaygroundGithubActivityRoute,
+  AuthenticatedPlaygroundLoadersRoute: AuthenticatedPlaygroundLoadersRoute,
   AuthenticatedPlaygroundThemeSwitchAnimationRoute:
     AuthenticatedPlaygroundThemeSwitchAnimationRoute,
   AuthenticatedSettingsDictsRoute: AuthenticatedSettingsDictsRoute,
