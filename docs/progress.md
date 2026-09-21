@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 销项：Vue 端 theme-switch-animation 演示页漏登记菜单权限表（2026-09-21）
+
+- **背景**：对齐 loaders 页时在 `route-access.ts` 按 7 个原始演示页口径登记本页，顺带发现 2026-09-16 落地的 `theme-switch-animation`（`6a17381`）从未进 `MENU_REQUIRED_PATHS` / `ROUTE_TITLE_KEYS`。
+- **影响**：不止标题兜底缺失——Vue 端第三层守卫只在路径命中 `MENU_REQUIRED_PATHS` 时才查菜单树并跳 `/403`，漏登等于**未获该菜单授权的角色直连 URL 也能打开页面**（React 端此时必 403），是越权可达而非纯观感问题。
+- **修复**：两表按菜单 sort 序补 `/playground/theme-switch-animation`（标题键 `menu.playground.themeSwitchAnimation`）。两端门控方向差异（React「默认拒绝 + 登录白名单」/ Vue·Nuxt「默认放行 + 显式登记表」）沉淀 `mechanisms.md` §34，含自查口诀与新菜单页同批登记要求。
+- **验证**：`eslint` 0 error / `vue-tsc` 零错误 / `vitest` 10 文件 101 用例全绿。越权可达与 403 跳转的实机验证需换一个未授权角色登录，随用户 GUI 走查或统一冒烟执行。
+- **同类待查（本轮按用户指示未动 Nuxt）**：Nuxt 端 `app/lib/route-access.ts` 两张表同样缺 `/playground/theme-switch-animation`，且 loaders 页尚未实现——对齐 Nuxt 时随页面一并补登记。
+
 ### Playground「加载动画」页对齐 Vue 端（2026-09-21，motion 关键帧改 CSS 等效）
 
 - **范围**：React 基准 `d12f190` → Next `37be50a` → 本轮 Vue 端。按 §21 端内约定**不引入 motion-v**，故本页是「功能等效移植」而非逐行平移：17 变体与信息口径不变，动画引擎换成 CSS `@keyframes`。**零新依赖**（`meta.packages = []`，页首信息卡显示「零新依赖」，与 grid-reveal 页同口径）。

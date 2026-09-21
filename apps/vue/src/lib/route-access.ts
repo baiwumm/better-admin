@@ -61,6 +61,7 @@ export const MENU_REQUIRED_PATHS = [
   "/playground/ai-kit/grid-reveal",
   "/playground/ai-kit/matrix-orb",
   "/playground/github-activity",
+  "/playground/theme-switch-animation",
   "/playground/loaders",
 ] as const;
 
@@ -98,6 +99,7 @@ export const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/playground/ai-kit/grid-reveal": "menu.playground.gridReveal",
   "/playground/ai-kit/matrix-orb": "menu.playground.matrixOrb",
   "/playground/github-activity": "menu.playground.githubActivity",
+  "/playground/theme-switch-animation": "menu.playground.themeSwitchAnimation",
   "/playground/loaders": "menu.playground.loaders",
 };
 

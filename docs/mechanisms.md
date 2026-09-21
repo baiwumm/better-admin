@@ -1091,3 +1091,18 @@ Unovis 已确认的代价（落地时按已知项接受，不要当成 bug 排�
 
 - 依据：`drawer.css` L251-254（`.drawer__footer`）、`pagination.css` L6-18（`.pagination` / `.pagination__content`）实读；角色 / 岗位成员抽屉落地实测（仅 Footer 加 important 不生效，nav + content 双 important 后居中）。`tsc` / eslint / vitest（93 用例）/ build 全绿。
 - 关联：§29（components 层的正例与本文的反例互为补充）；§30（Drawer.Footer 位于滚动区外的结构事实）。
+
+## 34. 菜单路由的权限门控方向在两端相反：React 默认拒绝、Vue / Nuxt 靠显式登记表（Vue 端，演示场加载动画页，2026-09-21）
+
+**现象**：Vue 端演示场 `theme-switch-animation` 页已录入共用菜单库、React 端也受菜单权限约束，但 Vue 侧 `MENU_REQUIRED_PATHS` 与 `ROUTE_TITLE_KEYS` 两张表都漏了它——结果是**未获该菜单授权的角色直连 URL 仍能打开页面**（React 端此时 `navigate({ to: "/403" })`），文档标题也失去兜底。
+
+**机制**：两端门控判据的默认值相反。
+
+- **React**（`layouts/admin-layout.tsx`）：可达集合 `allowedPaths` 由菜单树经 `collectMenuPaths` 实时派生，判定式是「**凡不在 `LOGIN_REQUIRED_PATHS` / `LOGIN_REQUIRED_PREFIXES` 白名单内的认证路由，一律要求命中菜单树本身或其父路径**」→ **默认拒绝**，新页面天然受控，白名单漏项只会「多拦」（可见、可查）。
+- **Vue**（`lib/route-access.ts` + `router/guards.ts`）：`MENU_REQUIRED_PATHS` 是「需要菜单权限校验的路径」**显式枚举表**，`guards.ts` 仅在 `isMenuRequiredPath(pathname) && !isLoginRequiredPath(pathname)` 为真时才查菜单树并跳 `/403` → **默认放行（登录即可）**，新菜单页**必须登记**，漏登即越权可达。
+- **Nuxt**：`MENU_REQUIRED_PATHS` / `ROUTE_TITLE_KEYS` 与 Vue 同形态，同一口径适用（2026-09-21 本轮按用户指示未动 Nuxt，后续对齐时一并核对）。
+- **Next**：`lib/route-title.ts` 只是**非菜单路由**的标题兜底（菜单路由标题来自菜单树），门控在 `proxy.ts` 侧按菜单判定，漏登记不影响权限。
+
+**规则沉淀**：在 Vue / Nuxt 端新增「菜单树里存在的页面」时，页面文件与 `route-access.ts` 两张表（`MENU_REQUIRED_PATHS` + `ROUTE_TITLE_KEYS`）**必须同批提交**。自查口诀：**React 有白名单、Vue / Nuxt 有登记表；白名单漏项 = 多拦（可见缺陷），登记表漏项 = 少拦（安全缺陷）**——评审时优先看后者。
+
+- 依据：`apps/react/src/lib/route-access.ts`（全文件仅两张登录白名单）、`apps/react/src/layouts/admin-layout.tsx`（`allowedPaths` / `isWhitelisted` / `isAllowedByParentPath` 与无权即 `navigate("/403")` 分支）、`apps/vue/src/lib/route-access.ts` 文件头语义注释、`apps/vue/src/router/guards.ts` 第三层守卫。
