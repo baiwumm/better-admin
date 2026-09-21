@@ -2,6 +2,12 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 补登记 Nuxt 端 theme-switch-animation 页的菜单权限与标题兜底（2026-09-21）
+
+- **范围**：Vue 端同类缺陷（下一条）修完后，按同一判据核对 Nuxt 端 `app/lib/route-access.ts`——`/playground/theme-switch-animation` 两张表皆缺，而页面 `app/pages/(authenticated)/playground/theme-switch-animation.vue` 已存在、`menu.playground.themeSwitchAnimation` 语言键已由 sync-locales 到位；`app/middleware/auth.global.ts` 第三层守卫与 Vue 同形（命中 `MENU_REQUIRED_PATHS` 才查菜单树并跳 `/403`），故同样是**越权可达**而非仅标题缺失。
+- **修复**：两表按菜单 sort 序补该路径（标题键 `menu.playground.themeSwitchAnimation`）。**未预登记 `/playground/loaders`**——该端页面尚未实现，登记不存在的路径只是噪声（点入仍由 catch-all 404 兜底），随 Nuxt loaders 对齐同批补，判据已写进 `mechanisms.md` §34。
+- **验证**：`eslint` 0 error / `nuxt typecheck` 零错误 / `vitest` 10 文件 99 用例全绿（`route-access.test.ts` 既有用例无冲突断言）。未跑 `nuxt build`（纯字符串登记表改动，无新增路由与组件）。越权可达与 403 跳转的实机验证需换一个未授权角色登录，随用户 GUI 走查执行。
+
 ### 销项：Vue 端 theme-switch-animation 演示页漏登记菜单权限表（2026-09-21）
 
 - **背景**：对齐 loaders 页时在 `route-access.ts` 按 7 个原始演示页口径登记本页，顺带发现 2026-09-16 落地的 `theme-switch-animation`（`6a17381`）从未进 `MENU_REQUIRED_PATHS` / `ROUTE_TITLE_KEYS`。

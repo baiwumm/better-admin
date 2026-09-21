@@ -1100,7 +1100,7 @@ Unovis 已确认的代价（落地时按已知项接受，不要当成 bug 排�
 
 - **React**（`layouts/admin-layout.tsx`）：可达集合 `allowedPaths` 由菜单树经 `collectMenuPaths` 实时派生，判定式是「**凡不在 `LOGIN_REQUIRED_PATHS` / `LOGIN_REQUIRED_PREFIXES` 白名单内的认证路由，一律要求命中菜单树本身或其父路径**」→ **默认拒绝**，新页面天然受控，白名单漏项只会「多拦」（可见、可查）。
 - **Vue**（`lib/route-access.ts` + `router/guards.ts`）：`MENU_REQUIRED_PATHS` 是「需要菜单权限校验的路径」**显式枚举表**，`guards.ts` 仅在 `isMenuRequiredPath(pathname) && !isLoginRequiredPath(pathname)` 为真时才查菜单树并跳 `/403` → **默认放行（登录即可）**，新菜单页**必须登记**，漏登即越权可达。
-- **Nuxt**：`MENU_REQUIRED_PATHS` / `ROUTE_TITLE_KEYS` 与 Vue 同形态，同一口径适用（2026-09-21 本轮按用户指示未动 Nuxt，后续对齐时一并核对）。
+- **Nuxt**：`MENU_REQUIRED_PATHS` / `ROUTE_TITLE_KEYS` 与 Vue 同形态，同一口径适用（2026-09-21 已补 `/playground/theme-switch-animation` 两处登记；`/playground/loaders` 待该端页面落地时同批补，**不给尚未实现的页面预登记**——登记一条不存在的路径只是噪声，页面本身仍走 catch-all 404）。
 - **Next**：`lib/route-title.ts` 只是**非菜单路由**的标题兜底（菜单路由标题来自菜单树），门控在 `proxy.ts` 侧按菜单判定，漏登记不影响权限。
 
 **规则沉淀**：在 Vue / Nuxt 端新增「菜单树里存在的页面」时，页面文件与 `route-access.ts` 两张表（`MENU_REQUIRED_PATHS` + `ROUTE_TITLE_KEYS`）**必须同批提交**。自查口诀：**React 有白名单、Vue / Nuxt 有登记表；白名单漏项 = 多拦（可见缺陷），登记表漏项 = 少拦（安全缺陷）**——评审时优先看后者。
