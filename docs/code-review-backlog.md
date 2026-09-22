@@ -30,6 +30,7 @@
    记录。Playground 页面随之回到 0 位（脚本与库已同步），异常页三子页无需改库即修复。
 
 ## 【暂缓 / 备案】
+- **`phone` 空串语义：Nest 返回 400 vs Next / Nuxt 归一为「清空」**（2026-09-22 复核后**备案不修**，审计台账 #27）：`apps/nest/src/account/dto/account.dto.ts:31-36` 对 `phone` 只有 `@IsOptional` + `@Matches(/^1[3-9]\d{9}$/)`，空串既非 undefined 也非 null、正则不放行 ⇒ **400**；而 Next `app/api/account/profile/route.ts:43-49` 与 Nuxt `server/api/account/profile.put.ts:24-29` 都把「非空字符串以外」归一为 `null`（即**清空**）。**为何不算缺陷**：① 分歧只存在于「Nest vs 两个独立全栈端」，Next 与 Nuxt 之间写法一致，不是某端漏改；② 四端前端提交前均已把空串转 `null`（`react profile-form-card.tsx:75`、`next :77`、`vue ProfileFormCard.vue:50/77`、`nuxt :48/75`），界面永远发不出 `""`，只有非 UI 客户端会撞到；③ 要对齐只能改 Nest（契约级行为变更，牵动 React / Vue 的错误提示与 i18n 文案），代价大于收益。**将来若真要修，方向是 Nest 接受「空串=清空」，而不是让两端去学 400。**
 
 - **Nest 端 e2e / 单测基建缺失**（2026-09-17 Phase 0 任务 A 发现）：`apps/nest` 无任何 spec 文件、
   jest 配置、`test` 脚本或 `@nestjs/testing` 依赖，计划 §3.6 Step 3「e2e 测试补齐」的前提不成立。
