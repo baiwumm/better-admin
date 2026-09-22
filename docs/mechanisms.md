@@ -730,9 +730,12 @@ titleKey 与 React 端 TanStack Router 的 `staticData.titleKey` 一字不差（
 - **与 usePageTitle 的一致性**：两者消费同一套 key，终态字符串相同，无闪烁冲突；
   为此 `route-title.ts` 补登记 `/exception/403|404|500`（→ `menu.exception.*`，对齐 React）——
   否则服务端 metadata 的标题会被 hook 在水合后回写成应用名（先对后错的回归）。
-- **边界**：`/org/notices/[noticeId]` 详情页**不加** metadata——`findActivePath` 为精确
-  路径匹配，hook 对详情路径本就回退应用名；加 metadata 会造成「首帧正确 → 水合后退化」，
-  属既有与 React（staticData 给 notices 标题）的差异，待后续单独对齐。
+- **边界（2026-09-22 复核已闭环，原表述作废）**：`/org/notices/[noticeId]` 详情页**已有** `generateMetadata`
+  （`page.tsx:6-7` → `generateRouteMetadata("menu.pageTitle.notices")`，键与 React
+  `staticData.titleKey` 一字不差），且页面是服务端壳、无需取数；当年「加 metadata 会造成首帧正确→水合后
+  退化」的成因已解除——`lib/route-title.ts:66-96` 补了 `[noticeId]` 模板匹配，hook 不再把详情路径打回应用名。
+  注意区分两层：**标签页标题**由 metadata 给（父级「公告管理」），**具体公告标题**走 tabs `syncMeta`
+  （`notice-detail-page.tsx:84-92` 写 `title: notice.title` + `parentTitle`），与 React / Vue / Nuxt 同构。
 - **验证**（2026-09-12 实测，next start + curl）：`/sign-in` 无 Cookie →
   「用户登录 - Better Admin」；带 `better-admin-language=en` → 「Sign In - Better Admin」
   （语言感知生效）；全屏错误页未登录被 proxy 重定向，属 §16.5 既有语义。
