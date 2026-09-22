@@ -8,6 +8,7 @@ import { gridRevealMeta } from './grid-reveal/meta'
 import { loadersMeta } from './loaders/meta'
 import { matrixOrbMeta } from './matrix-orb/meta'
 import { numberFlowMeta } from './number-flow/meta'
+import { okrTreeMeta } from './okr-tree/meta'
 import { themeSwitchAnimationMeta } from './theme-switch-animation/meta'
 
 export type PlaygroundDemo = {
@@ -55,5 +56,6 @@ export const PLAYGROUND_DEMOS: readonly PlaygroundDemo[] = [
     to: '/playground/theme-switch-animation',
     meta: themeSwitchAnimationMeta
   },
-  { id: 'loaders', to: '/playground/loaders', meta: loadersMeta }
+  { id: 'loaders', to: '/playground/loaders', meta: loadersMeta },
+  { id: 'okr-tree', to: '/playground/okr-tree', meta: okrTreeMeta }
 ]

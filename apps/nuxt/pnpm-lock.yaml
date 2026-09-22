@@ -215,6 +215,9 @@ importers:
       vue-advanced-cropper:
         specifier: ^2.8.9
         version: 2.8.9(vue@3.5.42(typescript@5.9.3))
+      vue3-okr-tree:
+        specifier: 1.13.0
+        version: 1.13.0(vue@3.5.42(typescript@5.9.3))
       write-excel-file:
         specifier: 4.1.1
         version: 4.1.1
@@ -6644,6 +6647,16 @@ packages:
     hasBin: true
     peerDependencies:
       typescript: '>=5.0.0'
+
+  vue3-okr-tree@1.13.0:
+    resolution: {integrity: sha512-+2X9VUNSX7O65OKNjRdrP+W3uvPT27zO7SghZc8n+RgQcq3s7aJvwLzLWCtN7hzr2AtFJKSEewIGvwyC9X+QKw==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      html-to-image: ^1.11.0
+      vue: 3.5.42
+    peerDependenciesMeta:
+      html-to-image:
+        optional: true
 
   vue@3.5.42:
     resolution: {integrity: sha512-4RyHQTbQvOPs3MfvUO1Sg0YRrKNnA0mAVtvpd12Tg1fKDN7OHBUl1IqSn8zGJjK9nI3NkNp8cgTpVrSZC5TTcA==}
@@ -13699,6 +13712,10 @@ snapshots:
       '@volar/typescript': 2.4.28(typescript@5.9.3)
       '@vue/language-core': 3.3.11
       typescript: 5.9.3
+
+  vue3-okr-tree@1.13.0(vue@3.5.42(typescript@5.9.3)):
+    dependencies:
+      vue: 3.5.42(typescript@5.9.3)
 
   vue@3.5.42(typescript@5.9.3):
     dependencies:

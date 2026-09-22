@@ -1,0 +1,98 @@
+/*
+ * OKR 树演示页样式（自 Vue 端逐字平移）。
+ *
+ * 组件外观定制策略：
+ * - 连接线 / 展开按钮等几何外观经 --okr-* 变量挂接 Nuxt UI Design Tokens
+ *   （--ui-border / --ui-bg-elevated / --ui-text-muted / --ui-primary，
+ *   由 @nuxt/ui 的 color mode 随站点深浅色切换提供，不写死色值、
+ *   也不跟随系统 prefers-color-scheme——内置 theme="auto" 的行为）；
+ * - 节点卡片开 unstyled（去掉组件自带背景 / 边框 / 圆角 / 阴影），
+ *   外观由 OrgNodeCard / OkrNodeCard 内的 Nuxt UI 语义类提供；
+ * - 几何类变量（间距 / 按钮直径）按演示页密度微调，均为静态覆盖，
+ *   不涉及运行期改动（连接线伪元素几何咬合要求见包 style.css 注释）。
+ */
+
+.okr-tree-demo {
+  /* 连接线：层级间距拉大、兄弟间距收窄，密林感更贴近后台图表密度 */
+  --okr-line-color: var(--ui-border);
+  --okr-line-radius: 6px;
+  --okr-gap-level: 28px;
+  --okr-gap-sibling: 10px;
+
+  /* 节点卡片：内边距交给我们渲染的卡片，字号对齐后台正文 */
+  --okr-node-padding: 0;
+  --okr-node-font-size: 13px;
+
+  /* 展开按钮：去阴影改细描边，底色随主题 */
+  --okr-btn-size: 18px;
+  --okr-btn-bg: var(--ui-bg-elevated);
+  --okr-btn-shadow: 0 0 0 1px var(--ui-border);
+  --okr-btn-sign-color: var(--ui-text-muted);
+  --okr-btn-text-color: var(--ui-text-muted);
+
+  /* 焦点环与选中态走站点主色 */
+  --okr-focus-color: var(--ui-primary);
+  --okr-focus-width: 2px;
+
+  /* 展开 / 收起过渡（尊重系统「减少动态效果」由组件内部处理） */
+  --okr-anim-duration: 200ms;
+}
+
+/*
+ * OKR 左树（关键举措）与右树视觉分区：左淡右实。
+ * 仅调整容器级变量与间距，卡片外观仍由 OkrNodeCard 提供。
+ */
+.okr-tree-demo .org-chart-node-left-children {
+  --okr-gap-sibling: 8px;
+}
+
+/*
+ * 画布（OkrTreeViewport）托盘：默认样式是浅色实底（暗下发色），本页用
+ * #toolbar 插槽自绘 Pill（Nuxt UI 语义类），故把托盘容器本身抹透明。
+ */
+.okr-tree-demo .okr-viewport-toolbar {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+/*
+ * 画布内的树容器改 max-content：纵向模式兄弟节点是 float，原 width:100%
+ * 会把宽度钉死在视口宽（canvas 的 shrink-to-fit 救不了百分比宽），float
+ * 按视口宽换行"掉下去"，fitToScreen 测到的已是换行后宽度、无东西可缩。
+ * max-content 让容器取内容的自然宽度（float 一字排开），fitToScreen 才能
+ * 按真实内容宽高缩放。min-width:100% 兜底窄树（横向模式）与空数据仍铺满。
+ * 注：官方 demo 的树是 horizontal（兄弟竖排）从未触发该问题。
+ */
+/*
+ * flow-root（BFC）包住纵向模式的浮动节点：纵向模式下 .org-chart-node 全是
+ * float，普通 block 容器高度塌陷为 0，自动适配按塌陷高度算垂直偏移，
+ * 树整体被压到画布下半部（水平方向 width:max-content 本就含浮动，不受影响）。
+ */
+.okr-tree-demo .okr-viewport-content .org-chart-container {
+  display: flow-root;
+  width: max-content;
+  min-width: 100%;
+}
+
+/*
+ * 收起的子树改 display:none：包的隐藏是内联 visibility:hidden + height:0
+ * ——高度不占但宽度仍参与 max-content，fitToScreen 会把收起子树的宽度也
+ * 算进居中度里，可见内容被缩得过小、挤在画布中间（用户实测反馈）。
+ * display:none 让测量只含可见内容；本页未开 animate（收起本无过渡），
+ * 无副作用——若未来开启 animate 需评估（动画终点态会被跳过过渡）。
+ */
+.okr-tree-demo .org-chart-node-children.is-hidden,
+.okr-tree-demo .org-chart-node-left-children.is-hidden {
+  display: none;
+}
+
+/*
+ * 去掉 canvas 的 will-change:transform：GPU 合成层会把文本按变换前分辨率
+ * 栅格化再缩放，即使 scale=1 也发虚（用户实测：只有再点一次缩放按钮、
+ * 浏览器重新栅格化后才恢复清晰）。演示页几个节点，无需该合成优化。
+ */
+.okr-tree-demo .okr-viewport-canvas {
+  will-change: auto;
+}

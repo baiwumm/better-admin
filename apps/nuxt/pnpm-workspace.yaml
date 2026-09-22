@@ -8,6 +8,12 @@ overrides:
   vue: 3.5.42
   '@internationalized/date': 3.12.4
 
+# 供应链策略兼容：pnpm 11.24 默认 24h minimumReleaseAge，vue3-okr-tree 1.13.0
+# 发布当日即接入演示场第 10 页（作者自有包、npm publish --provenance），
+# 与 react / next / vue 三端同款白名单（mechanisms.md §35）
+minimumReleaseAgeExclude:
+  - 'vue3-okr-tree@1.13.0'
+
 # 供应链策略兼容：trustPolicy: no-downgrade 会对「早期版本带 provenance、
 # 后发布版本不带」的存量老包批量误报（semver@6.3.1 / undici-types@6.21.0
 # 均为多年稳定使用的已知安全版本），与 next 端同一方案：
