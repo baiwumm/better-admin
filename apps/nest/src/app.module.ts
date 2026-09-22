@@ -13,6 +13,7 @@ import { LogsModule } from './modules/logs/logs.module';
 import { OrgModule } from './modules/org/org.module';
 import { NoticeModule } from './modules/notice/notice.module';
 import { StatsModule } from './modules/stats/stats.module';
+import { HealthController } from './modules/health/health.controller';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -40,7 +41,7 @@ import { DemoReadonlyGuard } from './auth/guards/demo-readonly.guard';
     NoticeModule,
     StatsModule,
   ],
-  controllers: [],
+  controllers: [HealthController],
   providers: [
     // 演示只读守卫（契约 v1.10.0）：全局注册，DEMO_MODE=true 时拦所有非白名单非 GET
     { provide: APP_GUARD, useClass: DemoReadonlyGuard },

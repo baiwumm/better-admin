@@ -200,7 +200,11 @@ info:
     未删除且非离职；404 ROLE_NOT_FOUND）。列表批量装载复用公告 loadReadersBatch
     的窗口函数模式（PARTITION BY role_id）。
     四端影响：Nest（实现方）与 React（消费方）本次同步；Vue / Next / Nuxt 待逐端对齐。
-  version: 1.13.0
+    v1.14.0 新增 GET /health（存活探针，x-permission: NONE、无鉴权、无数据库访问；
+    供 Render 免费层保活外部定时器调用，规避 15 分钟休眠导致的 30-50 秒冷启动）。
+    实现侧约束：该路径不写 api 日志（全局 LoggingInterceptor 显式跳过 /api/health），
+    否则每次探活都会落一行 logs 记录、并让「零依赖」端点重新依赖数据库。
+  version: 1.14.0
 
 servers:
   - url: https://nest.baiwumm.com/api
@@ -209,6 +213,8 @@ servers:
     description: Local dev
 
 tags:
+  - name: System
+    description: 系统探针（存活检查，v1.14.0，无鉴权）
   - name: Auth
     description: 认证（登录/登出/刷新/当前用户）
   - name: Account
@@ -2002,6 +2008,47 @@ components:
             message: 用户不存在
 
 paths:
+  # ===================== System =====================
+  /health:
+    get:
+      tags: [System]
+      summary: 存活探针
+      description: >
+        无鉴权、无数据库访问的保活端点（v1.14.0）。Render 免费层 15 分钟不活跃即休眠，
+        冷启动 30-50 秒会直接拖垮演示体验，故需外部定时器（UptimeRobot / CF Worker Cron）
+        每 5-10 分钟 ping 一次。响应只含进程级信息，不触库、不写 api 日志。
+        跨端说明：本端点为 NestJS 部署保活专用，Next / Nuxt 自带 server 运行时、
+        平台不休眠，不需要对等实现。
+      operationId: getHealth
+      security: []
+      x-permission: NONE
+      responses:
+        '200':
+          description: 服务存活
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [status, uptimeSeconds, timestamp]
+                    properties:
+                      status:
+                        type: string
+                        enum: [ok]
+                        example: ok
+                      uptimeSeconds:
+                        type: integer
+                        description: 进程存活秒数
+                        example: 3600
+                      timestamp:
+                        type: string
+                        format: date-time
+                        description: 服务器当前时间（ISO 8601）
+                        example: '2026-09-22T04:00:00.000Z'
+
   # ===================== Auth =====================
   /auth/login:
     post:

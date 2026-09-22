@@ -16,7 +16,7 @@ import { LogsService } from '@/modules/logs/logs.service';
  *
  * 开关：环境变量 LOG_API_ENABLED（默认 'true'）；
  * LOG_API_SKIP_GET=true 时 GET 请求不记录（演示环境降噪，非 GET 照记），默认 false 全记。
- * 为避免自引用噪声，跳过对 /api/logs 的读取型请求记录。
+ * 为避免自引用噪声，跳过对 /api/logs 的读取型请求记录；/api/health 存活探针一律不记。
  * best-effort：失败仅打印，不影响主流程。
  */
 @Injectable()
@@ -42,6 +42,12 @@ export class LoggingInterceptor implements NestInterceptor {
 
     // 跳过对日志接口自身的记录，避免自引用噪声
     if (path.startsWith('/api/logs')) {
+      return next.handle();
+    }
+
+    // 跳过存活探针：外部定时器每 5-10 分钟 ping 一次，写库既污染审计日志
+    // 也违背 health 端点「零依赖、不碰数据库」的保活语义
+    if (path.startsWith('/api/health')) {
       return next.handle();
     }
 

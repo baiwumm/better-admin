@@ -20,7 +20,7 @@
 | # | 状态 | 事项 | 证据 | 处置 |
 | --- | --- | --- | --- | --- |
 | 1 | ✅ | Nuxt 缺 `GET /logs/{id}` + `DELETE /logs/{id}`，日志单条删除运行时必 404；`findLog` 成死代码 | `apps/nuxt/server/api/` 只有 `logs.get.ts` / `logs.delete.ts`；调用方 `app/features/logs/log-api.ts:30` ← `LogsPage.vue:326`；契约 `openapi.yaml:3792`；Nest `logs.controller.ts` 有 `@Get(':id')` / `@Delete(':id')` | 已补 `server/api/logs/[id].get.ts` + `[id].delete.ts`（照 `roles/[id].*` 端内范式，SEARCH / DELETE 位分别对应）；服务层 `findLog` / `removeLog` 原已存在，直接接线。验证：eslint 0 error、`nuxt build` 通过、产物 `.output/server/chunks/routes/api/logs/_id_.{get,delete}.mjs` 注册为 `/api/logs/:id`。feature-matrix「日志管理」Nuxt 行 ✅ 自此名副其实 |
-| 2 | ⬜ | `GET /api/health` 全仓不存在，但已被当作 Render 保活前置条件（免费层 15 分钟休眠 / 冷启动 30–50 秒） | `apps/nest/src` 14 个 controller 无 health；`openapi.yaml` 47 路径无 health；`AGENTS.md` §17 ①；`docs/vue-plan.md:202` 误称「已上线」 | Nest 新增无鉴权、无 DB 访问的 health 端点 + 契约补录 + 改 vue-plan 该句 |
+| 2 | ✅ | `GET /api/health` 全仓不存在，但已被当作 Render 保活前置条件（免费层 15 分钟休眠 / 冷启动 30–50 秒） | `apps/nest/src` 14 个 controller 无 health；`openapi.yaml` 47 路径无 health；`AGENTS.md` §17 ①；`docs/vue-plan.md:202` 误称「已上线」 | 已新增 `src/modules/health/health.controller.ts`（无 AuthGuard、不触库）挂入 AppModule；契约升 **v1.14.0** 补录 `/health`（`security: []` + `x-permission: NONE` + 新增 System tag）。附带必要修正：LoggingInterceptor 显式跳过 `/api/health`——否则每次探活落一行 api 日志、且让「零依赖」端点重新依赖数据库。验证：`tsc --noEmit` 与 `nest build` 均通过、产物含 `dist/modules/health/health.controller.js`。**实机 curl 未做**：Nest 进程带日志清理 cron 且连四端共用线上库，启动验证留到上线环节（连同 §17 ① 的 UptimeRobot / CF Worker Cron 配置）。vue-plan `:202` 的错误表述随 #22 一并改 |
 | 42 | ⬜ | ⚠️ JWT 密钥存在可预测明文兜底，线上漏配即任何人可伪造登录态；Next/Nuxt 同类代码为显式抛错 | `apps/nest/src/auth/auth.module.ts:14`、`strategies/jwt.strategy.ts:25`：`process.env.JWT_SECRET ?? 'better-admin-secret'` | 去兜底、改 fail-fast；顺带核 `JWT_REFRESH_SECRET` 兜底与 `JWT_EXPIRES_IN`（example=1h / 代码=7d / auth.service=1h）三处漂移 |
 | 43 | ⬜ | ⚠️ 一次性脚本无环境守卫，直连共用线上库写弱口令账号 `testadmin / test123`（绑 admin 角色）；另一脚本同库改 `role_menus` | `apps/nest/scripts/create-test-user.ts:12-28`、`verify-rbac-scenario.ts`；四端共用同库（AGENTS §5） | 加 `DEMO_MODE`/`NODE_ENV` 守卫或删除脚本 |
 
@@ -48,7 +48,7 @@
 
 | # | 状态 | 事项 | 证据 | 处置 |
 | --- | --- | --- | --- | --- |
-| 6 | ⬜ | 契约设计说明断更 5 个版本（v1.9.0→v1.13.0 只写进 yaml description）；变更记录行序非倒序 | `apps/nest/docs/openapi-design.md` §9 末条停在 v1.7.1（2026-09-09）；`database-design.md` 末行 v0.10 与 v0.6/v0.9 乱序 | 补录变更表、修行序（AGENTS §13 双文件先行） |
+| 6 | ⬜ | 契约设计说明断更 5 个版本（v1.9.0→v1.13.0 只写进 yaml description）；变更记录行序非倒序 | `apps/nest/docs/openapi-design.md` §9 末条停在 v1.7.1（2026-09-09）；`database-design.md` 末行 v0.10 与 v0.6/v0.9 乱序 | 补录变更表、修行序（AGENTS §13 双文件先行）。**附带实测扩大范围**：§3「端点清单（按模块）」只写到 3.8 日志，**组织中心 / 公告 / 站内信 / Stats / v1.13.0 角色关联用户 / v1.14.0 `/health` 全部缺失**；§2 权限点仍写「共 9 个」而 EXPORT(512) 已在 v1.7.1 引入 |
 | 7 | ⬜ | 契约冒烟脚本落后：只 20 个只读 GET，未含最近两次契约变更新端点，缺 8 个详情 GET；依赖 admin 密码未接 demo-login → 全量 diff 跑不动 | `apps/nuxt/scripts/contract-diff.mjs:116-137`、`:16-17`；AGENTS.md 路径误记为根 `scripts/` | 扩清单 + 凭据注入；AGENTS 路径改正 |
 | 8 | ⬜ | 端点计数失真：「44 契约路径全覆盖」实为 47 path / 76 method | `openapi.yaml`；实测 Nest 76/76、Next 76/76、Nuxt 74/76（缺口=#1） | 改计数（#1 修复后为 76/76） |
 | 9 | ⬜ | `super_admin` 的 role_menus 仅 24/28（缺 exception 三页 + 主题切换动画页），靠 -1n 全量位免检掩盖 | `progress.md:352` | 补授权数据（幂等脚本）或明确接受 |
