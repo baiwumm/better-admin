@@ -83,11 +83,12 @@ export default defineNuxtConfig({
   // 此前本配置无任何 head 块，标签页图标只靠浏览器自动请求 /favicon.ico 兜底——缺
   // apple-touch-icon 时 iOS「添加到主屏」会退化成截网页图当图标，缺 manifest 时安卓
   // 不以独立应用形态打开。资产由 assets/logo/build-assets.py 生成，此处只做声明。
+  // ⚠️ 与 React 端 index.html 同形，但不含 ico 那条：Nuxt 的 head.link 类型联合不接受
+  //   "shortcut icon" / "alternate icon"，而浏览器本就会自动请求 /favicon.ico 兜底。
   app: {
     head: {
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
-        { rel: 'alternate icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'icon', type: 'image/png', sizes: '96x96', href: '/favicon-96x96.png' },
         { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
         { rel: 'manifest', href: '/site.webmanifest' }
