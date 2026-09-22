@@ -154,7 +154,9 @@ function normalizeProfileInput(
   let phone: string | null | undefined
 
   if (dto.phone !== undefined) {
-    phone = dto.phone === null ? null : dto.phone.trim() || null
+    // 对齐 nest（account.dto.ts 对 phone 无 @Transform）：不 trim，校验原始值、原样入库
+    // （台账 #27 拍板：Nuxt 与 Next 同批对齐 Nest；三端前端提交前已 trim，界面流量不受影响）
+    phone = dto.phone ?? null
     // 对齐 nest @Matches（契约 v1.8.1）：11 位大陆手机号
     assertMatches(phone, /^1[3-9]\d{9}$/, '请输入 11 位有效手机号')
   }

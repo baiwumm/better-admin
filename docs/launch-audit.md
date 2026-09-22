@@ -89,7 +89,7 @@
 | 18 | Shadcn 补充条款：正式作废，还是补实现 | 见 P1 #18 |
 | 44 | Nest CORS 白名单范围（两端 vs 四端） | 见 P1 #44 |
 | 26 | ✅ | Next 登录/刷新响应体是否裁剪双 token（原记为 P2 未做项，称其削弱 httpOnly 防线） | `progress.md:1387`；`apps/next/src/app/api/auth/login/route.ts:13` 注释说明「响应体仍按契约返回，客户端可忽略令牌字段」 | **用户裁决：不裁剪**，改为在契约里写明这是有意双形态。理由：裁剪会让四端共用同一份 Contract 的前提失效（React / Vue 就是靠响应体取令牌），而客户端忽略字段即可、真正防线是 Cookie 的 HttpOnly（已具备），无安全增益。已在 `openapi.yaml` 的 `POST /auth/login` 补 `description` 注记（纯文档性说明，不改响应 schema，故**不升契约版本**） |
-| 27 | Nest `phone` 不 trim，是否由 Next 对齐 Nest | `progress.md:889` |
+| 27 | ✅ | Nest 对 `phone` 不 trim、Next 会 trim，两端不一致（原记「待拍板」） | 取证：`apps/nest/src/account/dto/account.dto.ts:32-36` 的 phone 只有 `@IsOptional` + `@Matches`、**无 `@Transform`**；`main.ts` 全局 ValidationPipe 不做空白归一；`account.service.ts:147-149` 原样入库 ⇒ 前提成立 | **按你裁决「服务端对齐 Nest」**改两处：Next `lib/server/account-service.ts:156-163` 去掉 `.trim() \|\| null`；**Nuxt `server/lib/account-service.ts:157` 同形问题同批一起改**（否则仍是两端不一致）。实际影响很小——`^1[3-9]\d{9}$` 本就不接受空白，改的是"以原始值校验并原样入库"的语义一致性；三端前端提交前已 trim，界面流量无变化。⚠️ **残留一处需你再定**：Next `app/api/account/profile/route.ts:43-48` 把 `phone: ""` 归一为 `null`（清空），Nest 则是 400——该归一是四字段共用写法，而 website/github/x 三字段的空串→null 恰是 Nest 语义（`stripPrefix`），只有 phone 分歧，要改需拆分支 |
 | 28 | 四端 `redirectToSignIn` 带参规则未统一 | `mechanisms.md:907` |
 | 29 | Next `/org/notices/[noticeId]` 详情页无 metadata | `mechanisms.md:735` |
 | 51 | 文档站 `theme-switch-animation` 是否随四端升 0.2.0（现仍 0.1.0；`components/theme-toggle.tsx:36` 只用了 `CIRCLE_BLUR`，0.2.0 移除的四向擦除类型未被引用，技术上可安全升级，但升级要同步 `pnpm-workspace.yaml` 供应链白名单并触发安装，属依赖变更） | 本页 #51 |
