@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import type { ThemeAnimationDirection } from "theme-switch-animation/vue";
 
 import { DEMO_ACCENTS } from "../demo-palette";
 
@@ -22,6 +23,10 @@ const props = defineProps<{
   duration: number;
   easing: string;
   blurAmount: number;
+  /** 扫描方向，仅 BLINDS / SCAN / QR_GRID 消费 */
+  direction: ThemeAnimationDirection;
+  /** 百叶窗叶片宽度 px，仅 BLINDS 消费 */
+  slatWidth: number;
 }>();
 
 const { t } = useI18n();
@@ -30,8 +35,10 @@ const { isAnimating, isDark, triggerRef, toggle } =
   useDemoThemeAnimation<HTMLDivElement>(() => ({
     animationType: props.type,
     blurAmount: props.blurAmount,
+    direction: props.direction,
     duration: props.duration,
     easing: props.easing,
+    slatWidth: props.slatWidth,
   }));
 
 // 强调色按数组下标循环取演示色板：色板是演示参数值（见 demo-palette.ts 注释），

@@ -9,3 +9,6 @@ allowBuilds:
 # 与 react / next 两端 react-okr-tree 同款白名单（mechanisms.md §35）
 minimumReleaseAgeExclude:
   - 'vue3-okr-tree@1.13.0'
+  # theme-switch-animation 0.2.0：同作者自有包，发布当日升级（新增 BLINDS/SCAN/QR_GRID，
+  # 移除 LTR/RTL/TTB/BTT 四向擦除类型），与 react 端同款白名单（mechanisms.md §35）
+  - 'theme-switch-animation@0.2.0'
