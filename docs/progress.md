@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 演示场「主题切换动画」页升级 theme-switch-animation 0.2.0：四端（2026-09-22）
+
+- **升级内容（库 0.2.0 changelog）**：新增三种属性驱动动画类型 `BLINDS`（百叶窗）/ `SCAN`（扫描）/ `QR_GRID`（方块格子）与 `direction`（LTR / RTL / TTB / BTT，默认 ltr）、`slatWidth`（16–200px，默认 72）选项；**breaking**：移除 `ThemeAnimationType.LTR / RTL / TTB / BTT` 四向擦除类型（由 `SCAN` + `direction` 承接），总类型数 13 → 12。
+- **分端节奏**：React 先行（用户 GUI 验证通过）→ Vue → Next / Nuxt 同批（用户逐端验证通过）。四端 `pnpm-workspace.yaml` 各补 `theme-switch-animation@0.2.0` 供应链白名单（发布当日接入，§35 同款）。
+- **演示页更新（四端同口径）**：类型清单换新（BLINDS / SCAN / QR_GRID，React / Next 用 lucide-react 组件、Vue / Nuxt 用 `i-lucide-*` iconify 名）；参数区新增两个条件控件——选中三种新类型出「方向」分段（`direction`）、选 BLINDS 再出「叶片宽度」滑块（`slatWidth`，**无 formatOptions**：Intl 单位无 "pixel"，传入抛 RangeError，既有备案）；两参数向全部 `useThemeAnimation` 实例透传（React 直传 props，Vue / Nuxt 经取值器 getter 保响应性）。
+- **端差异**：Next 自 React 逐字拷贝仅加 `"use client"`，语言包整文件拷贝使 check-locales 恢复全等（升级窗口内曾临时红）；Nuxt 的 `ThemeAnimationDirection`（值 + 类型）走 `theme-switch-animation/nuxt` 模块自动导入（0.2.0 已覆盖）；Vue / Nuxt 语言包走各自 `sync-locales` 脚本（React 为源）。
+- **验证**：React eslint / `tsc` / vitest（93 用例）/ `vite build`，Vue eslint / `vue-tsc` / vitest（101 用例），Next check-locales / eslint / `tsc`，Nuxt `sync-locales` / eslint / `nuxt typecheck` 全绿；四端用户 GUI 验证通过（本轮按用户指示从简，Next / Nuxt 未跑 build，下轮统一上线前补跑即可）。
+
 ### 演示场「组织架构树」页画布化改造：Next / Vue / Nuxt 三端同步（2026-09-22）
 
 - **范围**：兑现上一条目（React 端画布化）的待办——画布 + 受控 zoom/offset 自动适配 + 自绘工具栏按序平移三端；同日修复用户 GUI 实测反馈的两个画布缺陷（四端同修）。机制沉淀见 `mechanisms.md` §36。
