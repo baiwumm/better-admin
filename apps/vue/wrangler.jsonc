@@ -1,0 +1,13 @@
+{
+  // Vue 端（纯静态 SPA）的 Cloudflare Workers 静态资源配置（审计台账 #3）。
+  // 与 apps/react/wrangler.jsonc 同构；机制说明与「_redirects 在 Workers 不生效」的
+  // 注意事项见该文件注释，避免两处各写一份漂移。
+  //
+  // 部署：npx wrangler deploy；自定义域 vue.baiwumm.com 在 Cloudflare 控制台绑定。
+  "name": "better-admin-vue",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

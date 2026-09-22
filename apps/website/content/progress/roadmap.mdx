@@ -44,4 +44,4 @@ Playground 演示场分两个阶段推进，之后的 Phase 0 / Phase C 也都�
 | 环境变量与迁移 | 各平台配齐变量（密钥不进仓库），数据库迁移在目标环境执行到位 |
 | 构建验证 | 各端构建产物验证通过；CI 目前只有语言包与日志清理两个 cron，lint / test / build 尚未挂接 |
 
-平台分工：React / Vue → Cloudflare Pages，Next / Nuxt / 本站 → Vercel，NestJS → Render。绑定域名后本页会同步更新在线地址。
+平台分工：React / Vue → Cloudflare Workers（Static Assets，SPA 深链回退由 `wrangler.jsonc` 的 `not_found_handling` 负责），Next / Nuxt / 本站 → Vercel，NestJS → Render。绑定域名后本页会同步更新在线地址。

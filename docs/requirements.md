@@ -708,7 +708,7 @@ Auth
 
 前端按运行形态分两类平台（单一来源见 `AGENTS.md` §17）：
 
-- **React / Vue**（纯静态 SPA）→ **Cloudflare Pages**（静态请求 / 带宽免费额度充足，`baiwumm.com` zone 已在 Cloudflare DNS）；
+- **React / Vue**（纯静态 SPA）→ **Cloudflare Workers（Static Assets）**（`baiwumm.com` zone 已在 Cloudflare DNS；配置见各端 `wrangler.jsonc`）；
 - **Next.js / Nuxt**（全栈，服务端 `postgres.js` TCP 直连数据层，Cloudflare Workers 运行时不支持）与 **官方文档站**→ **Vercel**。
 
 域名统一见 §13 域名规划（单一来源）。
@@ -742,7 +742,7 @@ Supabase PostgreSQL。
                                               ┌────┴────┐
                                               │         │
                                             React      Vue
-                                            CF Pages  CF Pages
+                                          CF Workers  CF Workers
 ```
 
 ---
@@ -754,12 +754,12 @@ Supabase PostgreSQL。
 | 官方文档站 | `better-admin.baiwumm.com` | Vercel |
 | Next.js | `next.baiwumm.com` | Vercel |
 | Nuxt | `nuxt.baiwumm.com` | Vercel |
-| React | `react.baiwumm.com` | Cloudflare Pages |
-| Vue | `vue.baiwumm.com` | Cloudflare Pages |
+| React | `react.baiwumm.com` | Cloudflare Workers（Static Assets） |
+| Vue | `vue.baiwumm.com` | Cloudflare Workers（Static Assets） |
 | NestJS API | `nest.baiwumm.com` | Render |
 
 > **上线状态（2026-09-12）**：四端均未部署上线——现域名指向历史旧项目；全部版本开发完成后**统一上线**（详见 `AGENTS.md` §17）。官方文档站待 Vercel 部署绑定。
-> **平台分化（2026-09-12 拍板）**：React / Vue 为纯静态 SPA，部署到 **Cloudflare Pages**（免费静态请求 / 带宽无限，缓解 Vercel Hobby 额度压力）；Next / Nuxt 全栈**必须留 Vercel**——服务端数据层走 `postgres.js` TCP 直连，Cloudflare Workers 运行时不支持（Hyperdrive 需付费且驱动兼容性存疑，重写数据层违反「行为不变」）；NestJS 留 Render，**配合保活 ping 消除免费层冷启动（上线必做，见 AGENTS §17 统一上线清单标题）**。DNS（baiwumm.com zone）已托管于 Cloudflare（实测 NS = `elma / tadeo.ns.cloudflare.com`），CF Pages 绑自定义域前提成立。SPA 在浏览器直连 `nest.baiwumm.com/api`（跨域 XHR），与 SPA 托管平台无关——Nest CORS 白名单按域名维持不变。
+> **平台分化（2026-09-12 拍板，2026-09-22 React / Vue 改判为 Workers）**：React / Vue 为纯静态 SPA，现部署到 **Cloudflare Workers（Static Assets）**，配置为各端 `wrangler.jsonc`（`assets.directory=./dist` + `not_found_handling=single-page-application` 负责 SPA 深链回退）。⚠️ 原拍板选 **Pages** 的依据是「Pages 免费静态请求 / 带宽无限，缓解 Vercel Hobby 额度压力」——**该额度理由不随迁移自动成立**，Workers 计划按请求计费、静态资源额度另有一套口径，上线前需按当期官方定价另行核对（本轮未核对，不在此断言数字）。Next / Nuxt 全栈**必须留 Vercel**——服务端数据层走 `postgres.js` TCP 直连，Cloudflare Workers 运行时不支持（Hyperdrive 需付费且驱动兼容性存疑，重写数据层违反「行为不变」）；NestJS 留 Render，**配合保活 ping 消除免费层冷启动（上线必做，见 AGENTS §17 统一上线清单标题）**。DNS（baiwumm.com zone）已托管于 Cloudflare（实测 NS = `elma / tadeo.ns.cloudflare.com`），自定义域绑定前提成立。SPA 在浏览器直连 `nest.baiwumm.com/api`（跨域 XHR），与 SPA 托管平台无关——Nest CORS 白名单按域名维持不变。
 
 ---
 

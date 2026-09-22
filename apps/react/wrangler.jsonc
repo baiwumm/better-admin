@@ -1,0 +1,18 @@
+{
+  // React 端（纯静态 SPA）的 Cloudflare Workers 静态资源配置（审计台账 #3）。
+  //
+  // SPA 直链回退靠 not_found_handling：未命中的路径一律回 index.html，
+  // 这样 /settings/users、/org/depts 这类深链可以直接分享与刷新。
+  // ⚠️ Pages 的 public/_redirects 在 Workers 上**不生效**（那是 Pages 专属机制），
+  //   所以不需要、也不要再加 _redirects 文件。
+  //
+  // 部署：npx wrangler deploy（wrangler 有意不写入 package.json 依赖，
+  //       见 AGENTS §15「不擅自引入依赖」；也可在 CF 控制台用 Git 集成构建 dist/ 后发布）
+  // 自定义域 react.baiwumm.com 在 Cloudflare 控制台绑定，不写在配置里。
+  "name": "better-admin-react",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
