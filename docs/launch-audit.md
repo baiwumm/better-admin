@@ -138,7 +138,7 @@
 1. **#28 方案 B**：三端 api-client 的 `redirectToSignIn` 平移 Nuxt 形态（3 端 3 处）；顺带删 Nuxt 一处重复赋值。
 2. **#27 残留**：Next profile route 把 `phone: ""` 归一为 `null`（Nest 是 400）；该归一是四字段共用写法、其余三字段的空串→null 恰是 Nest 语义，只 phone 分歧，要改需拆分支。
 3. **#45 半个**：`clean-logs.yml` 的生产库写凭据——换只读 Secret 还是停用 GitHub 侧（Nest 进程内 cron 已等价）。
-4. **#3 派生项**：Workers 计划的额度口径需按当期官方定价核对（原 Pages「带宽无限」理由不成立），我没查、也没在文档里编数字。
+4. ~~#3 派生项（Workers 额度核对）~~ **已按要求处理**：requirements §13 删去原「Pages 免费静态请求 / 带宽无限」的额度理由，只记录 React / Vue 由 Cloudflare Workers（Static Assets）托管及其配置，不做任何额度断言。
 
 **🚫 既有待拍板项不变**：#46（Nest / Next 测试基建立项）、#12（是否建 docs→content 同步机制）、#30（角色矩阵 / vitest plugin-vue / Scalar 自托管）、#55 附带项（website 是否补 `.env.example`，我的结论是不补）。
 **📋 上线环节**：见上表 #33–#39 行（走查回收、tag、五端部署、`DEMO_MODE` 与 `LOG_API_SKIP_GET`）。
