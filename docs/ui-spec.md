@@ -2,7 +2,7 @@
 
 > 本文档定义 Better Admin 的页面结构、组件行为、视觉 Token 与交互规范；`/react`（Hero UI 基准版本）是 UI Source of Truth，Vue / Next.js / Nuxt 按此规范对齐。
 >
-> **UI 组件库策略**：React / Next.js 采用 **Hero UI 为主 + Shadcn UI 为补充**，Vue / Nuxt 采用 **Nuxt UI v4**（唯一组件库，详见 §18.3 与 `AGENTS.md` §21 / `nuxt-ui-guide.md`）；React / Next.js 样式变量以 **Hero UI 设计体系为主要参考**对齐，Vue / Nuxt 直接使用 Nuxt UI 默认 Design Tokens。
+> **UI 组件库策略**：React / Next.js 采用 **Hero UI + 项目级自定义组件** 两级（Shadcn UI 已于 2026-09-22 作废，见 §18.3），Vue / Nuxt 采用 **Nuxt UI v4**（唯一组件库，详见 §18.3 与 `AGENTS.md` §21 / `nuxt-ui-guide.md`）；React / Next.js 样式变量以 **Hero UI 设计体系为主要参考**对齐，Vue / Nuxt 直接使用 Nuxt UI 默认 Design Tokens。
 
 ---
 
@@ -273,7 +273,7 @@ AppSidebar（w-64 / w-16，flex-col，bg-surface）
 ### 5.2 Better Admin 颜色规范
 
 1. 保留 slate 中性色体系与 oklch 变量结构；品牌化阶段只调整 `--primary`、`--ring`、`--chart-*` 与 sidebar 语义色。
-   - 策略更新（§18.3）：样式变量 / Design Tokens 以 **Hero UI 设计体系为主要参考**，Shadcn UI 复用同一套项目级变量，不再单独维护一套独立视觉体系；上表数值为现状记录，按 Hero UI 对齐的调整在后续阶段实施评估。
+- 策略更新（§18.3）：样式变量 / Design Tokens 以 **Hero UI 设计体系为主要参考**，项目级自定义组件复用同一套项目级变量，不单独维护独立视觉体系；上表数值为现状记录，按 Hero UI 基准校正。
 2. 主色需满足对比度：浅色模式下主按钮文字对比度 ≥ 4.5:1；Dark 模式沿用「主色反转」策略。
 3. 状态色映射（业务统一）：
    - 正常/启用/成功 → `primary` 或 `chart-2`（绿）Badge
@@ -424,19 +424,24 @@ HeroUI v3.2.6 派生的令牌（取证：`node_modules/@heroui/styles/dist/herou
 
 ### 10.1 现状（react-hook-form + zod + @hookform/resolvers）
 
-- shadcn/ui `Form`（`FormProvider` + `FormField` + `FormItem` + `FormLabel` + `FormControl` + `FormDescription` + `FormMessage`）。
-- `FormItem`：`grid gap-2`；`FormLabel`：`text-sm font-medium`（错误时 `text-destructive`）；`FormDescription`：`text-sm text-muted-foreground`；`FormMessage`：`text-sm text-destructive`。
-- 控件基准：`Input` / `Select` / `Textarea` 高度 `h-9`（`sm` 变体 `h-8`）、`rounded-md border-input`、`bg-transparent`、`px-3`、`text-base md:text-sm`；focus 时 `border-ring + ring 3px ring-ring/50`；错误时 `border-destructive + ring-destructive/20`；禁用 `opacity-50`。
-- Dark 模式下控件 `dark:bg-input/30`。
-- 其他控件：Checkbox、RadioGroup、Switch、InputOTP、Calendar/DatePicker、SelectDropdown（带图标选项封装）。
-- 表单承载：新建/编辑统一放 Drawer（`Sheet`）；提交按钮 `Button type="submit"`，表单 `id` 与 Drawer 底部按钮关联。
+> ⚠️ 2026-09-22 按实现重写：原小节列的是 shadcn/ui `Form` 原语（`FormProvider` / `FormField` /
+> `FormItem` / `FormLabel` / `FormControl` / `FormMessage`、控件高度 `h-9`、`dark:bg-input/30`、错误色
+> `text-destructive`），**两端代码里这些组件与类名一个都不存在**（`FormProvider|FormField|FormItem|FormMessage`
+> 在 `apps/react/src` 下零命中）。真实形态见下。
+
+- **绑定方式**：react-hook-form 的 `useForm` + **`Controller`** 逐个包裹 Hero UI 字段组件，`zodResolver(schema)` 做校验；**没有** shadcn 的 `Form` 上下文包装层，也不从 schema 生成表单结构。
+- **字段组件**（均为 `@heroui/react`）：文本用 `TextField` + `Input`；带前后缀 / 清除的用 `InputGroup` + `Input`；下拉用 `Select` + `ListBox` + `ListBoxItem`；开关用 `Switch`；标签用 `Label`；复合场景有项目自建 `PasswordField`、`DeptTreeSelect`、`UserTagInput` 等。
+- **错误提示**：读 `fieldState.error?.message`，渲染为字段下方一行 `text-danger` 文案（Hero UI 语义色），不是 shadcn 的 `FormMessage`。
+- **表单承载**：新建 / 编辑统一放 `Modal`（Hero UI），删除走 `AlertDialog`（ConfirmDialog），复杂大表单用 `Drawer`；开合状态一律 `useOverlayState()`（`AGENTS.md` §7.2）。
+- **提交**：底部右侧主按钮 `type="submit"`，取消为 `variant="outline"` 在其左；服务端错误经 `api-client` 统一映射后走 Toast + 字段级错误。
+- **日期**：Hero UI `DatePicker` / `Calendar`，值以 `@internationalized/date` 的 `parseDate` 转换。
 
 ### 10.2 Better Admin 表单规范
 
 1. 表单统一 react-hook-form + zod schema（`z.object`），`zodResolver` 校验；类型从 schema 推导（`z.infer`）。
 2. 字段布局：单列表单 `space-y-6`；多字段行内网格 `grid gap-4`（如 `sm:grid-cols-2`）。
 3. 表单承载规则：新建/编辑 → Drawer；删除 → ConfirmDialog；批量导入 → Dialog；设置页 → 内联表单（`ContentSection` + `max-w-xl`）。
-4. 必填标记：label 不加 `*`，通过校验提示表达（保留 shadcn 默认行为），如业务要求可在 Label 追加。
+4. 必填标记：label 不加 `*`，通过校验提示表达（沿用模板既有行为，非某组件库特性），如业务要求可在 Label 追加。
 5. 提交按钮：Drawer/Dialog 底部右侧（`justify-end`），取消按钮为 `outline` 在左；提交中禁用并显示加载态（§15）。
 6. 错误提示统一显示在字段下方（`FormMessage`），服务端错误走 Toast + 字段级错误映射。
 7. 手机端输入 `font-size: 16px` 防缩放行为保留（`index.css` 已内置）。
@@ -605,7 +610,7 @@ HeroUI v3.2.6 派生的令牌（取证：`node_modules/@heroui/styles/dist/herou
 | 类别 | 选型 |
 | --- | --- |
 | UI | React 19 + TypeScript（strict）+ Vite + Tailwind CSS v4 |
-| 组件 | **Hero UI（为主，`@heroui/react`）** + **shadcn/ui（补充，new-york，源码在 `src/components/ui/`，存量保留）** + Radix UI 原语 |
+| 组件 | **Hero UI（`@heroui/react` 3.2.6）** + 项目级自定义组件（**无 shadcn/ui、无 Radix 原语**；2026-09-22 作废该层级，见 §18.3）
 | 路由 | TanStack Router（文件式 `src/routes/`） |
 | 数据请求 | TanStack Query + fetch 封装（`src/lib/api-client.ts`） |
 | 表格 | TanStack Table + 自研 DataTable 封装 |
@@ -618,7 +623,7 @@ HeroUI v3.2.6 派生的令牌（取证：`node_modules/@heroui/styles/dist/herou
 
 ### 18.2 Better Admin 组件使用原则
 
-1. **组件优先级**：Hero UI 为主 → Shadcn UI 补充 → 项目级自定义组件（见 §18.3）；组件只从声明库（Hero UI 包 / `@/components/ui/*` / `@/components/common/*` / `@/components/business/*`）引入。
+1. **组件优先级**：Hero UI 内置组件 → 项目级自定义组件（两级，见 §18.3；Shadcn UI 层级已于 2026-09-22 作废）；组件只从声明库（`@heroui/react` / `@/components/common/*` / `@/components/business/*` / `@/layouts/components/*`）引入，禁止深路径引第三方内部实现。
 2. **不重复造轮子**：已有 DataTable、ConfirmDialog、ThemeSettingsDrawer、Header/Main 等组合组件，业务页面优先组合复用。
 3. **图标统一 lucide-react**；不引入其他图标库。
 4. **样式统一 Tailwind + 语义 token**：不用内联 style 表达布局/颜色；`cn()` 用于条件合并。
@@ -631,62 +636,50 @@ HeroUI v3.2.6 派生的令牌（取证：`node_modules/@heroui/styles/dist/herou
 
 ---
 
-## 18.3 UI 组件库策略（Hero UI 为主 + Shadcn UI 补充）
+## 18.3 UI 组件库策略（React / Next.js：Hero UI + 项目级自定义组件）
 
 > 本小节为项目级 UI 组件库核心规则的**细则单源**（策略级见 `AGENTS.md` §7.2；`requirements.md` §7.3 与本文一致），React / Next.js 必须遵循；Vue / Nuxt 采用 **Nuxt UI v4**（规则见 `AGENTS.md` §21 与 `nuxt-ui-guide.md`）。
+>
+> ⚠️ **Shadcn UI 已从本策略中移除（2026-09-22 用户拍板作废，见 `docs/launch-audit.md` #18）**：历史上本文与 `AGENTS.md` §7.2 / `requirements.md` 都写着「Hero UI 为主 + **Shadcn UI 补充**」并给出三级优先级，但两端**从未引入过 Shadcn**——`apps/react` 与 `apps/next` 的 `package.json` 里没有任何 shadcn / radix / cmdk / sonner 依赖，也不存在 `src/components/ui/` 目录（Hero UI 模板初始即无）。原「补充」列里点名的 Command / Sidebar / Form / Dialog / Toast 实为**项目自建组件或 Hero UI 组件**（见下表）。保留该层级只会持续误导选型，故正式作废：React / Next.js 只有两级。
 
-**组件选择规则（React / Next.js）**：
+**组件选择规则（React / Next.js，两级）**：
 
-1. 先检查项目现有组件（`components/`、`components/ui/`、`features/`），不重复创建已存在组件。
-2. Hero UI 已提供满足需求的组件（Button / Input / Textarea / Select / Autocomplete / Dropdown / Modal / Drawer / Tabs / Card / Tooltip / Popover / Avatar / Badge / Chip / Switch / Checkbox / Radio / Progress / Spinner / Pagination / Navbar / DatePicker / DateRangePicker / Table 等）必须优先使用。
-3. Hero UI 没有对应组件、或无法满足/不适合当前场景 → 使用 **Shadcn UI**（Command、复杂 Form 组合、Sidebar、DataTable 相关、特殊 Sheet / Drawer、或项目已高度定制并稳定使用的组件）。不要为了使用 Shadcn UI 而主动寻找 Shadcn 方案。
-4. 两者都无法满足 → **项目级自定义组件**（遵循现有 Design Tokens，禁止随意新增颜色 / 圆角 / 阴影 / 字体 / 间距）。
-
-**禁止事项**：
-
-- 禁止同一种基础组件在不同页面随意混用不同组件库（如 A 页 Shadcn Button、B 页 Hero Button、C 页自定义 Button），除非存在被项目规范认可的明确技术原因。
-- 禁止因为熟悉 Shadcn UI 就默认所有组件使用 Shadcn UI；禁止为了「全部 Hero UI 化」强行重写存量 Shadcn UI。
-- 禁止未经确认进行大规模 UI 重构 / 一次性迁移。
-- 浮层开合状态的 `useOverlayState` 硬规则见 `AGENTS.md` §7.2（编码级规则，单点维护在 AGENTS）。
+1. 先检查项目现有组件（`components/common/`、`components/business/`、`layouts/components/`、`features/`），不重复创建已存在组件。
+2. Hero UI 已提供且满足需求的组件（Button / Input / Textarea / Select / Autocomplete / Dropdown / Modal / Drawer / Tabs / Card / Tooltip / Popover / Avatar / Badge / Chip / Switch / Checkbox / Radio / Progress / Spinner / Pagination / Navbar / DatePicker / Calendar / Table 等）**必须优先使用**。
+3. Hero UI 没有对应组件、或不适合当前场景 → **项目级自定义组件**（基于 Hero UI 原子组件拼装，遵循现有 Design Tokens，并在代码注释说明为何不用 Hero UI；禁止随意新增颜色 / 圆角 / 阴影 / 字体 / 间距）。
 
 **组件优先级（React / Next.js）**：
 
 ```text
-Hero UI
-  ↓
-Hero UI 没有对应组件 / 不适合当前场景
-  ↓
-Shadcn UI
-  ↓
-两者都无法满足需求
-  ↓
-项目级自定义组件
+Hero UI 内置组件
+  ↓  没有对应组件 / 不适合当前场景（须在注释中说明原因）
+项目级自定义组件（基于 Hero UI 原子组件拼装）
 ```
 
-**选型对照（基准）**：
+**禁止事项**：
 
-| 能力 | 首选（Hero UI） | 补充（Shadcn UI，存量保留） |
+- 禁止引入 Shadcn UI / radix / cmdk / sonner 等作为「补充层」组件库（2026-09-22 起为硬性规则）；确有需要引入第三方 UI 能力时，先按 `AGENTS` §15 做依赖评审并同步修订本节。
+- 禁止同一种基础组件在不同页面既用 Hero UI 又用另建的一套（视觉必须同源）。
+- 禁止未经确认进行大规模 UI 重构 / 一次性迁移；业务能力优先于组件库替换。
+- 浮层开合状态的 `useOverlayState` 硬规则见 `AGENTS.md` §7.2（编码级规则，单点维护在 AGENTS）。
+
+**选型对照（按实际实现核对，2026-09-22 重写）**：
+
+| 能力 | 实际实现 | 说明 |
 | --- | --- | --- |
-| Button / Input / Textarea | ✅ Hero UI | 存量页面保留 Shadcn 实现，渐进迁移 |
-| Select / Autocomplete / Dropdown | ✅ Hero UI | — |
-| Modal / Drawer | ✅ Hero UI（新需求） | 存量 Dialog / Sheet 保留 |
-| Tabs / Card / Tooltip / Popover | ✅ Hero UI | — |
-| Avatar / Badge / Chip / Switch / Checkbox / Radio | ✅ Hero UI | — |
-| Progress / Spinner / Pagination | ✅ Hero UI | — |
-| DatePicker / DateRangePicker | ✅ Hero UI | 存量 Calendar + Popover 组合保留 |
-| Table（简单场景） | ✅ Hero UI | 复杂场景走 DataTable |
-| Navbar | ✅ Hero UI | — |
-| Command（命令面板） | — | ✅ Shadcn（cmdk），Hero UI 无对应 |
-| Sidebar | — | ✅ Shadcn（深度定制：inset/icon/offcanvas、Cookie 持久化、Cmd+B、移动端 Sheet），不建议迁移 |
-| DataTable（TanStack Table） | — | ✅ 项目级能力（搜索/筛选/排序/分页/行选择/批量/列显隐/URL 同步），不重写 |
-| Form（RHF + Zod 适配层） | — | ✅ Shadcn Form 保留，表单技术方案不变 |
-| Dialog / AlertDialog（ConfirmDialog） | — | ✅ 存量保留；新需求可用 Hero UI Modal / Drawer |
-| Toast（sonner）/ 进度条 | — | ✅ 基础设施保留 |
+| Button / Input / Textarea / Select / Dropdown / Tabs / Card / Tooltip / Popover / Avatar / Badge / Chip / Switch / Checkbox / Radio / Progress / Spinner / Pagination / Navbar / DatePicker | ✅ **Hero UI**（`@heroui/react` 3.2.6） | 无并行实现 |
+| Command（命令面板） | ✅ **项目自建** `layouts/components/command-menu.tsx` | ⚠️ 旧表写「Shadcn（cmdk）」为误：两端无 cmdk 依赖，匹配与键盘导航为自研 |
+| Sidebar（侧边栏） | ✅ **项目自建** `layouts/components/app-sidebar.tsx` + `sidebar-menu.tsx` | 建立在 Hero UI 双栏/导航件之上；旧表写的 inset / Cookie 持久化等 Shadcn 特性未使用（折叠态持久化走项目自身偏好存储） |
+| Form（表单） | ✅ **react-hook-form + zod** 直接接 Hero UI 字段组件 | 无 shadcn `Form` 适配层；表单技术方案见 §10 |
+| Dialog / AlertDialog（ConfirmDialog） | ✅ **Hero UI** Modal / AlertDialog / Drawer | 开合状态一律 `useOverlayState()`（AGENTS §7.2） |
+| Toast / 进度条 | ✅ **Hero UI** `Toast`（根路由 `<Toast.Provider placement="top">`）/ `@bprogress` | 两端无 sonner 依赖 |
+| DataTable（复杂表格） | ✅ **项目级能力** `components/common/data-table/`（TanStack Table） | 搜索/筛选/排序/分页/行选择/批量/列显隐/URL 同步，不重写 |
+| 空态 / 错误态 / 骨架 | ✅ **项目级** `EmptyContent` / `ErrorContent` + Hero UI `Skeleton` | 见 §13 / §14 |
 
 **样式变量统一（React / Next.js）**：
 
 - React / Next.js 维护**一套项目级 Design Tokens**（以 `src/styles/theme.css` 语义变量为基座），Token 数值以 **Hero UI 设计体系为主要参考**。
-- Shadcn UI 与 Hero UI 均消费同一套 Token；禁止各自维护独立视觉（圆角、边框、颜色、字体、阴影、间距、Focus / Hover / Disabled、Dark Mode、动画必须一致）。
+- Hero UI 组件与项目级自定义组件消费同一套 Token；禁止各自维护独立视觉（圆角、边框、颜色、字体、阴影、间距、Focus / Hover / Disabled、Dark Mode、动画必须一致）。
 - 新增组件禁止随意新增颜色 / 圆角 / 阴影 / 字体 / 间距，除非有明确设计需求（与 §5/§6/§7/§8 规则一致）。
 
 **渐进式调整**：
@@ -811,3 +804,4 @@ C:\Users\Administrator\.workbuddy\binaries\python\envs\default\Scripts\python.ex
 | 2026-09-05 | v1.2 | Vue / Nuxt 组件库策略切换为 **Nuxt UI v4**（头部策略、§1.1 差异注、§18.3）；同步 `AGENTS.md` §21 与 `docs/nuxt-ui-guide.md` |
 | 2026-09-02 | v1.0 | 文档重构：基于当前 React Hero UI 基准版本更新，移除 Shadcn Admin 历史引用与 Phase 1B 规划表述，同步页面结构与技术栈现状 |
 | 2026-09-03 | v1.1 | 新增组织架构图谱页面规划与交互边界（§1.3，阶段 4，未实施）；明确四端图谱 / 图表一致性原则：实现库可不同（React/Next → @xyflow/react + Recharts；Vue/Nuxt 待其对应阶段决策），视觉靠本规范对齐 |
+| 2026-09-22 | v1.2 | **Shadcn UI 层级作废（用户拍板，`docs/launch-audit.md` #18）**：§18.3 由三级（Hero UI → Shadcn → 自定义）改为**两级（Hero UI → 项目级自定义组件）**，选型对照表按实际实现重写（原文标注为 Shadcn 的 Command / Sidebar / Form / Dialog / Toast 实为项目自建或 Hero UI 组件，两端从无 shadcn / radix / cmdk / sonner 依赖，也无 `src/components/ui/`）；§10.1 表单「现状」按实现重写（真实形态是 `useForm` + `Controller` 包 Hero UI 字段件，原文列的 `FormProvider` / `FormItem` / `FormMessage` / `h-9` / `text-destructive` 在代码里一个都不存在）；§8 圆角同步改为 HeroUI 派生刻度；文首、§17 技术栈表、组件优先级与 import 白名单一并校正。`AGENTS.md` §2/§7.1-7.3/§18、`requirements.md` §2/§4/§7.3/§9/§12/§14 与架构图、`README.md`、`docs/react.md` 同步。 |

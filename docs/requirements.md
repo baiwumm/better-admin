@@ -20,7 +20,7 @@ better-admin
 
 Better Admin 是一个基于现代 Web 技术栈构建的全栈 Admin 系统。
 
-项目以 **React 版本（基于 Hero UI 实现）** 作为前端 UI / UX 的基准（UI Source of Truth）；不同技术栈采用各自的 UI 组件库（React / Next.js：**Hero UI 为主 + Shadcn UI 补充**；Vue / Nuxt：**Nuxt UI v4 为主**），在保持整体视觉风格、页面结构和交互体验一致的前提下，分别使用不同的前端及全栈技术进行实现。
+项目以 **React 版本（基于 Hero UI 实现）** 作为前端 UI / UX 的基准（UI Source of Truth）；不同技术栈采用各自的 UI 组件库（React / Next.js：**Hero UI + 项目级自定义组件**；Vue / Nuxt：**Nuxt UI v4**（唯一）），在保持整体视觉风格、页面结构和交互体验一致的前提下，分别使用不同的前端及全栈技术进行实现。
 
 项目的核心目标不是开发多套不同的后台系统，而是：
 
@@ -73,7 +73,7 @@ better-admin/
 ├── apps/                    # 全部可独立运行 / 构建 / 部署的应用
 │   ├── next/                # Next.js 全栈实现
 │   ├── nuxt/                # Nuxt 全栈实现
-│   ├── react/               # React（UI 基准；Hero UI 为主 + Shadcn UI 补充）
+│   ├── react/               # React（UI 基准；Hero UI + 项目级自定义组件）
 │   ├── vue/                 # Vue + Nuxt UI
 │   ├── nest/                # NestJS 后端 API
 │   └── website/             # 官方文档站（Next 16 + Fumadocs）
@@ -108,7 +108,7 @@ apps/react
 - React
 - Tailwind CSS
 - TypeScript
-- UI 组件库：**Hero UI（为主）+ Shadcn UI（补充）**（见 §7.3）
+- UI 组件库：**Hero UI + 项目级自定义组件**（两级；Shadcn 层级已作废，见 §7.3）
 
 React 版本（`/react`）基于 Hero UI 模板实现，不含 Shadcn UI 组件。UI 组件库策略遵循「渐进式调整」：新增功能优先 Hero UI，不做一次性大规模重构。
 
@@ -389,7 +389,7 @@ React 版本（`/react`）基于 Hero UI 模板实现（UI 组件库策略见 §
 
 Vue、Next.js、Nuxt.js 版本按照 React 版本实现页面结构与交互。
 
-UI 组件库策略（§7.3）：React / Next.js 以 **Hero UI 为主 + Shadcn UI 为补充**；Vue / Nuxt 以 **Nuxt UI v4 为主**（唯一组件库，规则见 `AGENTS.md` §21）。
+UI 组件库策略（§7.3）：React / Next.js 以 **Hero UI + 项目级自定义组件** 两级；Vue / Nuxt 以 **Nuxt UI v4 为主**（唯一组件库，规则见 `AGENTS.md` §21）。
 
 ---
 
@@ -450,31 +450,27 @@ UI 组件库策略（§7.3）：React / Next.js 以 **Hero UI 为主 + Shadcn UI
 ### 组件库定位
 
 ```text
-React       → Hero UI 为主 + Shadcn UI 补充
-Next.js     → Hero UI 为主 + Shadcn UI 补充
+React       → Hero UI + 项目级自定义组件
+Next.js     → Hero UI + 项目级自定义组件
 Vue         → Nuxt UI v4（唯一组件库）
 Nuxt.js     → Nuxt UI v4（唯一组件库）
 ```
 
+> ⚠️ 2026-09-22：**Shadcn UI 层级作废**（用户拍板，见 `docs/launch-audit.md` #18）。本节此前把 Shadcn 写成 React / Next.js 的「补充层」并给出三级优先级，但两端从未引入过 shadcn / radix / cmdk / sonner，也无 `src/components/ui/` 目录；原「补充」列点名的 Command / Sidebar / Form / Dialog / Toast 实为项目自建组件或 Hero UI 组件（实际归属见 `ui-spec.md` §18.3 的选型对照表）。
+
 ### 组件选择优先级（React / Next.js）
 
 ```text
-Hero UI
-  ↓
-Hero UI 没有对应组件 / 不适合当前场景
-  ↓
-Shadcn UI
-  ↓
-两者都无法满足需求
-  ↓
-项目级自定义组件
+Hero UI 内置组件
+  ↓  没有对应组件 / 不适合当前场景（须在代码注释说明原因）
+项目级自定义组件（基于 Hero UI 原子组件拼装）
 ```
 
-即：**Hero UI > Shadcn UI > 自定义实现**。
+即：**Hero UI > 项目级自定义组件**（两级，无第三层组件库）。
 
 - Hero UI 已提供满足需求的组件（Button / Input / Textarea / Select / Autocomplete / Dropdown / Modal / Drawer / Tabs / Card / Tooltip / Popover / Avatar / Badge / Chip / Switch / Checkbox / Radio / Progress / Spinner / Pagination / Navbar / DatePicker / DateRangePicker / Table 等）必须优先使用。
-- Shadcn UI 用于 Hero UI 未覆盖的场景（Command、复杂 Form 组合、Sidebar、DataTable 相关、特殊 Sheet / Drawer、已高度定制并稳定使用的组件）。
-- 禁止同类组件无规则混用；禁止因开发者个人偏好随意选择组件库。
+- Hero UI 未覆盖的场景（Command 命令面板、Sidebar、DataTable、复杂表单组合等）一律用**项目级自定义组件**实现——这些当前都已是项目自建组件，不得改为引入新组件库。
+- 禁止同类组件无规则混用；禁止为引入第三套组件库（含 Shadcn UI）而不做 `AGENTS` §15 依赖评审。
 
 ### 渐进式调整（React / Next.js）
 
@@ -491,16 +487,16 @@ Hero UI Design System
         ↓
 项目 CSS Variables / Design Tokens
         ↓
-Hero UI + Shadcn UI + 项目自定义组件
+Hero UI + 项目级自定义组件
 ```
 
 需要统一：主色、次要颜色、Background / Foreground、Content、Border / Divider、Focus / Hover / Active / Disabled、Radius、Typography、Font Size、Font Weight、Spacing、Shadow、Transition、Dark Mode / Light Mode。
 
-Shadcn UI 复用项目级变量进行适配，最终产品必须看起来像同一个设计系统，不允许 Hero UI 与 Shadcn UI 各自保持完全不同的默认视觉。
+项目级自定义组件复用项目级变量进行适配，最终产品必须看起来像同一个设计系统，不允许 Hero UI 与自定义组件各自保持完全不同的默认视觉。
 
 ### Form 技术方案
 
-React / Next.js 表单保持 **React Hook Form + Zod**，不因 UI 组件库改变表单校验方案与业务逻辑；UI 控件选择遵循「Hero UI 优先，Shadcn UI 补充」。
+React / Next.js 表单保持 **React Hook Form + Zod**，不因 UI 组件库改变表单校验方案与业务逻辑；UI 控件选择遵循「Hero UI 优先，无对应时用项目级自定义组件」。
 
 Vue / Nuxt 表单统一 **UForm + Zod**（Nuxt UI 表单容器 + zod schema 校验；vee-validate 经评审不引入）。
 
@@ -885,13 +881,13 @@ Phase 7
 Better Admin
 
 ├── React
-│   └── Hero UI（主）+ Shadcn UI（补充）
+│   └── Hero UI + 项目级自定义组件
 │
 ├── Vue
 │   └── Nuxt UI v4
 │
 ├── Next.js
-│   └── Hero UI（主）+ Shadcn UI（补充）· Full-stack
+│   └── Hero UI + 项目级自定义组件 · Full-stack
 │
 ├── Nuxt
 │   └── Nuxt UI v4 · Full-stack
@@ -933,7 +929,7 @@ Better Admin 不仅是一个 Admin 模板，也不是对某个开源模板的简
 - React / Vue 技术对比
 - Next.js / Nuxt 全栈开发
 - NestJS 后端开发
-- Hero UI Design / Shadcn UI Design
+- Hero UI Design（项目级 Design Tokens 以其为参考基准）
 - PostgreSQL
 - TypeScript
 - API Design

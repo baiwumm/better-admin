@@ -10,7 +10,7 @@
 
 - 后续 Vue、Next.js、Nuxt 版本以 React 版本的页面结构、UI 组件、视觉、交互、响应式与 Dark Mode 行为作为参考基准。
 - **`/react` 基于 Hero UI 模板实现，不含 Shadcn UI 组件**，新增功能一律使用 Hero UI。
-- **UI 组件库策略**：React（含 Next.js）以 **Hero UI 为主、Shadcn UI 为补充**（优先级：Hero UI > Shadcn UI > 项目级自定义）；样式变量以 Hero UI 设计体系为主要参考（详见 `AGENTS.md` §7.2 / `ui-spec.md` §18.3）。
+- **UI 组件库策略**：React（含 Next.js）只有 **Hero UI + 项目级自定义组件** 两级（Shadcn 层级已作废）（优先级：Hero UI > Shadcn UI > 项目级自定义）；样式变量以 Hero UI 设计体系为主要参考（详见 `AGENTS.md` §7.2 / `ui-spec.md` §18.3）。
 - React 是纯前端实现，**不直接连接数据库**，通过 NestJS API 访问数据：
 
 ```text
@@ -81,7 +81,7 @@ react/
 ├── public/                    # 静态资源（favicon、图片、字体）
 ├── src/
 │   ├── components/            # 项目级可复用组件
-│   │   ├── ui/                # shadcn/ui 基础组件（按需创建，当前无 Shadcn 组件）
+│   │   ├── ui/                # 不使用（无 shadcn 层，基础件直接来自 @heroui/react；该目录当前不存在）
 │   │   ├── common/            # 项目通用组件（按需创建，跨业务复用）
 │   │   │   └── error-pages/   # 全屏错误页（ErrorPageShell + 403/404/500）
 │   │   └── business/          # 业务组件（按需创建，特定业务域专用）
@@ -112,7 +112,7 @@ react/
 
 | 层级 | 目录 | 职责 | 示例 |
 |---|---|---|---|
-| **UI 层** | `components/ui/` | 纯 UI 基础组件（shadcn/ui 源码组件，如 button、dialog、input、select） | `button.tsx`、`dialog.tsx` |
+| ~~UI 层~~ | `components/ui/` | **已作废（2026-09-22）**：不引入 shadcn 源码组件，基础件直接用 `@heroui/react` | — |
 | **通用层** | `components/common/` | 项目级可复用组件，跨业务模块共享（Shell、Loading、EmptyState、ConfirmDialog 等） | `error-pages/`、`PageHeader/` |
 | **业务层** | `components/business/` | 特定业务域专用组件，仅在某模块内复用（UserTable、UserForm、DashboardCard 等） | `UserTable/`、`UserForm/` |
 

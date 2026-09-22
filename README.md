@@ -6,9 +6,9 @@
 
 | 技术栈 | 目录 | 定位 | 组件库 |
 | --- | --- | --- | --- |
-| React | `apps/react/` | 前端（UI 基准） | Hero UI 为主 + Shadcn UI 补充 |
+| React | `apps/react/` | 前端（UI 基准） | Hero UI + 项目级自定义组件 |
 | Vue | `apps/vue/` | 前端 | Nuxt UI v4 |
-| Next.js | `apps/next/` | 全栈（不依赖 NestJS） | Hero UI 为主 + Shadcn UI 补充 |
+| Next.js | `apps/next/` | 全栈（不依赖 NestJS） | Hero UI + 项目级自定义组件 |
 | Nuxt | `apps/nuxt/` | 全栈（不依赖 NestJS） | Nuxt UI v4 |
 | NestJS | `apps/nest/` | 后端 API | — |
 

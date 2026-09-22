@@ -34,7 +34,7 @@ better-admin/
 ├── apps/                    # 全部可独立运行 / 构建 / 部署的应用
 │   ├── next/                # Next.js 全栈实现
 │   ├── nuxt/                # Nuxt 全栈实现
-│   ├── react/               # React（UI 基准；Hero UI 为主 + Shadcn UI 补充）
+│   ├── react/               # React（UI 基准；Hero UI + 项目级自定义组件）
 │   ├── vue/                 # Vue + Nuxt UI
 │   ├── nest/                # NestJS 后端 API
 │   └── website/             # 官方文档站（Next 16 + Fumadocs）
@@ -92,7 +92,7 @@ better-admin/
 
 ### 7.1 UI Source of Truth 与设计基准
 
-- **React 是 Better Admin 的 UI Source of Truth**：页面结构、UI 设计、交互、UX、Design Tokens、组件行为均以 React 版本为基准。React 保持 Source of Truth **并不意味着 React 必须全部使用 Shadcn UI**。
+- **React 是 Better Admin 的 UI Source of Truth**：页面结构、UI 设计、交互、UX、Design Tokens、组件行为均以 React 版本为基准。React 保持 Source of Truth **并不意味着所有控件都必须塞进 Hero UI**——Hero UI 无对应组件时用项目级自定义组件（见 §7.2）。
 - React 版本（`apps/react`）基于 Hero UI 模板实现，不含 Shadcn UI 组件。**UI 组件库策略独立定义**（见 §7.2）。
 - Vue、Next.js、Nuxt 版本按 React 版本实现，保持页面、组件行为、视觉与交互一致。
 
@@ -100,10 +100,10 @@ better-admin/
 
 | 技术栈 | 主组件库 | 补充 |
 | --- | --- | --- |
-| React / Next.js | **Hero UI** | Shadcn UI（组件优先级：Hero UI > Shadcn UI > Custom Component） |
+| React / Next.js | **Hero UI** | 项目级自定义组件（组件优先级：**Hero UI > 项目级自定义组件**。Shadcn UI 层级已于 2026-09-22 作废：两端从未引入过 shadcn / radix / cmdk / sonner，也无 `src/components/ui/` 目录） |
 | Vue / Nuxt | **Nuxt UI v4** | 唯一组件库，禁止替代库（组件优先级与操作指引见 §21 与 `docs/nuxt-ui-guide.md`） |
 
-- **样式变量**：React / Next.js 以 Hero UI Design System 为参考形成一套项目级 Design Tokens，Hero UI + Shadcn UI + 自定义组件共用（见 §7.3）。
+- **样式变量**：React / Next.js 以 Hero UI Design System 为参考形成一套项目级 Design Tokens，Hero UI 与项目级自定义组件共用（见 §7.3）。
 - **整个项目**：React 仍然是 UI / UX Source of Truth；不同技术栈可以使用不同 UI 组件库，但最终页面必须保持统一的视觉、交互、结构和用户体验。
 - **细则单源**：组件选择规则、选型对照、禁止事项、渐进式调整的完整细则以 [`docs/ui-spec.md`](docs/ui-spec.md) §18.3 为准（本节自 2026-09-12 起只留策略级，避免双源漂移）。
 - **HeroUI 文档**：HeroUI v3 文档索引位于 `./.heroui-docs/react`，任何 HeroUI 组件任务**先查文档再动手**（凭记忆写 HeroUI v3 API 极易出错）；本文档的自动索引块已移除，需要时可用 `heroui agents-md --react --output AGENTS.md` 重新生成。⚠️ 该索引由 CLI 拉取、可能滞后于依赖版本（2026-09-21 实测依赖已 3.2.6 而索引停在 3.2.4），新组件（如 `AvatarGroup`）查不到时以官方站文档 + `node_modules` 内 `.d.ts` / 源码取证为准。
@@ -113,7 +113,7 @@ better-admin/
 
 - React / Next.js 的样式变量、设计 Token、主题变量以 **Hero UI 设计体系为主要参考**，形成**一套项目级 Design Tokens**；**禁止并行维护两套互相独立的设计变量**。
 - 需重点统一：主色、次要颜色、Background / Foreground、Content、Border / Divider、Focus / Hover / Active / Disabled、Radius、Typography（Font Size / Font Weight）、Spacing、Shadow、Transition、Dark Mode / Light Mode。
-- Shadcn UI 复用这套项目级变量进行适配，与 Hero UI 共用同一视觉体系（圆角、边框、颜色、字体、阴影、间距、Focus / Hover / Disabled、Dark Mode、动画），最终产品不允许出现两套截然不同的组件视觉。
+- 项目级自定义组件复用这套项目级变量进行适配，与 Hero UI 共用同一视觉体系（圆角、边框、颜色、字体、阴影、间距、Focus / Hover / Disabled、Dark Mode、动画），最终产品不允许出现两套截然不同的组件视觉。
 
 ### 7.4 UI 一致性要求
 
@@ -390,7 +390,7 @@ Better Admin 是一个长期、多技术栈项目。AI Agent 应按照阶段逐�
 不要四套前端同时开发，推荐按以下顺序：
 
 ```text
-Phase 1  React + Shadcn Admin（完成 UI 基础）
+Phase 1  React + Shadcn Admin（完成 UI 基础）← 历史规划；实际以 Hero UI 模板落地，Shadcn 层级已作废（§7.2 / ui-spec §18.3）
 Phase 2  NestJS + PostgreSQL（完成后端基础能力）
 Phase 3  React + NestJS（完成第一套完整全栈系统）
 Phase 4  Vue + NestJS（复刻完整系统）
