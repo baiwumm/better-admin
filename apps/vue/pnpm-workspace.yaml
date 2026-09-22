@@ -3,3 +3,9 @@
 allowBuilds:
   esbuild: true
   vue-demi: true
+
+# 供应链策略兼容：pnpm 11.24 默认 24h minimumReleaseAge，vue3-okr-tree 1.13.0
+# 发布当日即接入演示场第 10 页（作者自有包、npm publish --provenance），
+# 与 react / next 两端 react-okr-tree 同款白名单（mechanisms.md §35）
+minimumReleaseAgeExclude:
+  - 'vue3-okr-tree@1.13.0'

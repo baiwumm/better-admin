@@ -63,6 +63,7 @@ export const MENU_REQUIRED_PATHS = [
   "/playground/github-activity",
   "/playground/theme-switch-animation",
   "/playground/loaders",
+  "/playground/okr-tree",
 ] as const;
 
 /** 路径 → 文档标题 i18n 键（menu.pageTitle.* / exception 页用 menu.exception.*）。 */
@@ -101,6 +102,7 @@ export const ROUTE_TITLE_KEYS: Record<string, string> = {
   "/playground/github-activity": "menu.playground.githubActivity",
   "/playground/theme-switch-animation": "menu.playground.themeSwitchAnimation",
   "/playground/loaders": "menu.playground.loaders",
+  "/playground/okr-tree": "menu.playground.okrTree",
 };
 
 /**

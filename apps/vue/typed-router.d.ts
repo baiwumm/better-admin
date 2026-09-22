@@ -178,6 +178,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/(authenticated)/playground/okr-tree': RouteRecordInfo<
+      '/(authenticated)/playground/okr-tree',
+      '/playground/okr-tree',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/(authenticated)/playground/theme-switch-animation': RouteRecordInfo<
       '/(authenticated)/playground/theme-switch-animation',
       '/playground/theme-switch-animation',
@@ -438,6 +445,14 @@ declare module 'vue-router/auto-routes' {
     'src/pages/(authenticated)/playground/loaders.vue': {
       routes:
         | '/(authenticated)/playground/loaders'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/(authenticated)/playground/okr-tree.vue': {
+      routes:
+        | '/(authenticated)/playground/okr-tree'
       views:
         | never
       pathParamNames:
