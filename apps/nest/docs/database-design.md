@@ -110,17 +110,25 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 > - 数据库层字段 snake_case；API 响应统一 camelCase（与 Contract 一致）。
 > - `i18n_key` 字段为可空，存翻译键；`label` 为中文兜底，前端按 key 映射英文（见 §5）。
 
+> **类型口径（2026-09-22 按实现校正，见仓库根 `docs/launch-audit.md` #54）**：类型列历史上记的是
+> `varchar(N)`，但**实际 schema 全仓零 `varchar`**——所有字符串列一律 drizzle `text()`（含
+> `text('tags').array()` 数组列）。长度与格式约束放在 DTO / class-validator 层（上限见
+> `openapi-design.md` 与 `openapi.yaml` 的 schema 约束），DB 层不设宽度限制。
+> 因此本节类型统一改写为 `text（≤N）`，括号内的 N 保留原设计意图备查：对**用户输入列**它是 DTO
+> 实际校验的上限；对**服务端自写列**（如 `logs.ip` / `logs.user_agent`）无 DTO 约束，N 仅作容量参考。
+> 这是「文档改口径对齐实现」的裁决结果——不把 schema 改回 varchar，以免五端共用的线上库需迁移。
+
 ### 2.1 `users`（用户）
 
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
 | id | text | PK | 用户 ID（服务端 `nanoid(12)` 生成） |
-| username | varchar(50) | NOT NULL | 登录名（部分唯一索引，见下） |
-| email | varchar(255) | NOT NULL | 邮箱（部分唯一索引，见下） |
-| password_hash | varchar(255) | NOT NULL | bcrypt 哈希，禁止明文 |
-| display_name | varchar(100) | NOT NULL | 展示名 |
-| avatar | varchar(512) | NULL | 头像 URL（我的账户上传后指向 Supabase Storage 公开地址，带时间戳参数穿透缓存） |
-| phone | varchar(20) | NULL | 电话（v1.5.0，我的账户自助修改；`+` 前缀 + 数字/空格/短横线，4-20 位） |
+| username | text（≤50） | NOT NULL | 登录名（部分唯一索引，见下） |
+| email | text（≤255） | NOT NULL | 邮箱（部分唯一索引，见下） |
+| password_hash | text（≤255） | NOT NULL | bcrypt 哈希，禁止明文 |
+| display_name | text（≤100） | NOT NULL | 展示名 |
+| avatar | text（≤512） | NULL | 头像 URL（我的账户上传后指向 Supabase Storage 公开地址，带时间戳参数穿透缓存） |
+| phone | text（≤20） | NULL | 电话（v1.5.0，我的账户自助修改；`+` 前缀 + 数字/空格/短横线，4-20 位） |
 | tags | text[] | NULL | 个人标签（v1.5.0，我的账户自助维护；服务端 trim、去空、去重，≤10 个 × 20 字符） |
 | last_login_at | timestamptz | NULL | 最近一次登录成功时间（v1.5.0，登录成功时写入；从未登录为 NULL） |
 | website | text | NULL | 个人网站裸域名（v1.5.2，如 baidu.com，可带路径，不带协议；展示前缀 `https://` 由前端拼接） |
@@ -130,7 +138,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | employee_no | text | NULL | 工号（v1.6.0，人员通讯录展示 / 搜索用） |
 | employment_status | text | NULL | 在职状态（v1.6.0：`employed` / `resigned`；NULL 视为在职，与账号启停 `status` 正交） |
 | entry_date | date | NULL | 入职日期（v1.6.0，人员通讯录展示用） |
-| status | varchar(20) | NOT NULL, DEFAULT 'active' | `active` / `disabled`（收进字典 `user_status`） |
+| status | text（≤20） | NOT NULL, DEFAULT 'active' | `active` / `disabled`（收进字典 `user_status`） |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | |
 | updated_at | timestamptz | NOT NULL, DEFAULT now() | |
 | deleted_at | timestamptz | NULL | 软删除 |
@@ -154,9 +162,9 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
 | id | text | PK | 角色 ID |
-| name | varchar(50) | NOT NULL, UNIQUE | 显示名，如「超级管理员」 |
-| code | varchar(50) | NOT NULL, UNIQUE | 程序用，如 `super_admin` |
-| description | varchar(255) | NULL | 描述 |
+| name | text（≤50） | NOT NULL, UNIQUE | 显示名，如「超级管理员」 |
+| code | text（≤50） | NOT NULL, UNIQUE | 程序用，如 `super_admin` |
+| description | text（≤255） | NULL | 描述 |
 | enabled | boolean | NOT NULL, DEFAULT true | 是否启用 |
 | sort | int | NOT NULL, DEFAULT 0 | 排序 |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | |
@@ -212,9 +220,9 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
 | id | text | PK | |
-| code | varchar(50) | NOT NULL, UNIQUE | 字典类型码，如 `user_status` |
-| name | varchar(100) | NOT NULL | 显示名 |
-| description | varchar(255) | NULL | |
+| code | text（≤50） | NOT NULL, UNIQUE | 字典类型码，如 `user_status` |
+| name | text（≤100） | NOT NULL | 显示名 |
+| description | text（≤255） | NULL | |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | |
 | updated_at | timestamptz | NOT NULL, DEFAULT now() | |
 
@@ -223,9 +231,9 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
 | id | text | PK | |
-| type_code | varchar(50) | NOT NULL, FK→dict_types.code | 所属字典 |
-| value | varchar(100) | NOT NULL | 实际值，如 `active` |
-| label | varchar(100) | NOT NULL | 显示文案（中文兜底） |
+| type_code | text（≤50） | NOT NULL, FK→dict_types.code | 所属字典 |
+| value | text（≤100） | NOT NULL | 实际值，如 `active` |
+| label | text（≤100） | NOT NULL | 显示文案（中文兜底） |
 | i18n_key | text | NULL | 翻译键，如 `dict.user_status.active` |
 | sort | int | NOT NULL, DEFAULT 0 | 排序 |
 | enabled | boolean | NOT NULL, DEFAULT true | 是否启用 |
@@ -258,11 +266,11 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
 | id | text | PK | |
-| type | varchar(20) | NOT NULL | `operation`/`login`/`api`/`error`（见 §3） |
+| type | text（≤20） | NOT NULL | `operation`/`login`/`api`/`error`（见 §3） |
 | user_id | text | NULL, FK→users.id | 操作用户，匿名可为 NULL |
-| action | varchar(100) | NOT NULL | 动作，如 `user.create`/`login.success` |
-| ip | varchar(45) | NULL | 客户端 IP |
-| user_agent | varchar(512) | NULL | UA |
+| action | text（≤100） | NOT NULL | 动作，如 `user.create`/`login.success` |
+| ip | text（≤45） | NULL | 客户端 IP |
+| user_agent | text（≤512） | NULL | UA |
 | detail | jsonb | NULL | 上下文（改前/改后、错误栈等） |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | （日志不软删） |
 
@@ -276,11 +284,11 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | --- | --- | --- | --- |
 | id | text | PK | 组织 ID（服务端 `nanoid(12)`） |
 | parent_id | text | NULL, FK→depts.id | 父级组织；NULL = 顶级（集团）。无限级树，ON DELETE RESTRICT（删除由服务级三级校验阻断） |
-| name | varchar(100) | NOT NULL | 组织名称，部分唯一索引 `depts_name_unique_active`（未删除间） |
-| code | varchar(50) | NULL | 组织编码，部分唯一索引 `depts_code_unique_active`（未删除间；NULL 不约束） |
+| name | text（≤100） | NOT NULL | 组织名称，部分唯一索引 `depts_name_unique_active`（未删除间） |
+| code | text（≤50） | NULL | 组织编码，部分唯一索引 `depts_code_unique_active`（未删除间；NULL 不约束） |
 | leader_id | text | NULL, FK→users.id | 负责人，ON DELETE SET NULL |
 | sort | int | NOT NULL, DEFAULT 0 | 同级排序号，数字越大越靠前 |
-| status | varchar(20) | NOT NULL, DEFAULT 'enabled' | `enabled` / `disabled`；停用后不可作为新数据的上级组织 / 岗位所属组织 |
+| status | text（≤20） | NOT NULL, DEFAULT 'enabled' | `enabled` / `disabled`；停用后不可作为新数据的上级组织 / 岗位所属组织 |
 | created_at / updated_at / deleted_at | timestamptz | | 通用约定；软删除 |
 
 索引：`depts_parent_idx (parent_id)`、`depts_leader_idx (leader_id)`。负责人姓名由查询 left join users（过滤未删除）得出，不冗余存储。
@@ -291,10 +299,10 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | --- | --- | --- | --- |
 | id | text | PK | 岗位 ID |
 | dept_id | text | NOT NULL, FK→depts.id | 所属组织，ON DELETE RESTRICT（组织删除前须先移除岗位） |
-| name | varchar(100) | NOT NULL | 岗位名称；部分唯一索引 `posts_dept_name_unique_active (dept_id, name)`（未删除间） |
-| category | varchar(20) | NOT NULL, DEFAULT 'management' | 岗位类别：`management` 管理岗 / `professional` 专业岗 / `production` 生产岗 |
-| rank | varchar(20) | NOT NULL, DEFAULT '' | 岗位职级（P1-P10 / M1-M5），空串表示未设置 |
-| status | varchar(20) | NOT NULL, DEFAULT 'enabled' | `enabled` / `disabled` |
+| name | text（≤100） | NOT NULL | 岗位名称；部分唯一索引 `posts_dept_name_unique_active (dept_id, name)`（未删除间） |
+| category | text（≤20） | NOT NULL, DEFAULT 'management' | 岗位类别：`management` 管理岗 / `professional` 专业岗 / `production` 生产岗 |
+| rank | text（≤20） | NOT NULL, DEFAULT '' | 岗位职级（P1-P10 / M1-M5），空串表示未设置 |
+| status | text（≤20） | NOT NULL, DEFAULT 'enabled' | `enabled` / `disabled` |
 | created_at / updated_at / deleted_at | timestamptz | | 通用约定；软删除（服务层软删岗位时同步清理 user_posts 关联） |
 
 > **架构决策**：岗位仅作组织数据（通讯录展示、公告推送范围），**不参与权限聚合**——RBAC 仍为 用户↔角色↔菜单位掩码（§1），与 PRD「岗位为权限分配最小单元」的偏离经用户评审确认（progress.md 契约 v1.6.0 条目）。
@@ -316,11 +324,11 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
 | id | text | PK | |
-| title | varchar(200) | NOT NULL | 公告标题 |
+| title | text（≤200） | NOT NULL | 公告标题 |
 | content | text | NOT NULL | 富文本内容（Tiptap HTML，渲染端须消毒防 XSS） |
 | publisher_id | text | NULL, FK→users.id | 发布人，ON DELETE SET NULL |
 | is_top | boolean | NOT NULL, DEFAULT false | 置顶 |
-| status | varchar(20) | NOT NULL, DEFAULT 'draft' | `draft` / `published` / `withdrawn` |
+| status | text（≤20） | NOT NULL, DEFAULT 'draft' | `draft` / `published` / `withdrawn` |
 | publish_time | timestamptz | NOT NULL | 发布时间（支持定时发布） |
 | created_at / updated_at / deleted_at | timestamptz | | 通用约定；软删除 |
 
@@ -332,7 +340,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | --- | --- | --- | --- |
 | id | text | PK | |
 | notice_id | text | NOT NULL, FK→notices.id | ON DELETE CASCADE |
-| scope_type | varchar(20) | NOT NULL | `dept` 按组织 / `post` 按岗位 / `user` 按具体人员；同一公告多行取并集 |
+| scope_type | text（≤20） | NOT NULL | `dept` 按组织 / `post` 按岗位 / `user` 按具体人员；同一公告多行取并集 |
 | target_id | text | NOT NULL | 组织 ID / 岗位 ID / 用户 ID |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | |
 
@@ -346,7 +354,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | notice_id | text | NOT NULL, FK→notices.id | ON DELETE CASCADE |
 | user_id | text | NOT NULL, FK→users.id | ON DELETE CASCADE |
 | read_at | timestamptz | NOT NULL, DEFAULT now() | 首次阅读时间（仅新增不更新，唯一约束保证只记首次） |
-| ip_address | varchar(50) | NOT NULL, DEFAULT '' | 阅读时 IP |
+| ip_address | text（≤50） | NOT NULL, DEFAULT '' | 阅读时 IP |
 
 约束：UNIQUE `(notice_id, user_id)`；索引 `notice_read_records_notice_idx`。阅读记录不可篡改（append-only，不提供编辑接口）；用户离职后保留历史。
 
@@ -367,8 +375,8 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | --- | --- | --- | --- |
 | id | text | PK | |
 | recipient_id | text | NOT NULL, FK→users.id | 收件人，ON DELETE CASCADE |
-| type | varchar(30) | NOT NULL, DEFAULT 'system' | 预留：`notice_remind` 公告催办 / `notice_publish` 新公告 / `system` 系统消息 |
-| title | varchar(200) | NOT NULL | |
+| type | text（≤30） | NOT NULL, DEFAULT 'system' | 预留：`notice_remind` 公告催办 / `notice_publish` 新公告 / `system` 系统消息 |
+| title | text（≤200） | NOT NULL | |
 | content | text | NULL | |
 | link | text | NULL | 点击跳转的前端路由 |
 | read_at | timestamptz | NULL | 已读时间；NULL = 未读 |
@@ -472,8 +480,8 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | 10.2 角色管理 | `roles` + `role_menus` + 权限配置 | 已建模 |
 | 10.3 权限管理 | `PERMISSIONS` 枚举 + `menus.permissions`/`role_menus.permissions` 位 | 已建模（位掩码方案） |
 | 10.4 菜单管理 | `menus`（树形 + 按钮位 + i18n_key） | 已建模 |
-| 10.5 Dashboard | 数据统计（后续接口，不在本 Schema） | 后续阶段 |
-| 10.6 系统设置 | ~~`settings`~~ | v0.3 移除（含端点与权限位） |
+| 10.5 Dashboard | 无新增表：`GET /stats/overview`（契约 v1.11.0 → v1.12.0）对 users / roles / user_roles / logs / depts / posts / notices 做只读聚合（`src/modules/stats/stats.service.ts`） | 已实现（v1.11.0，零新表） |
+| 10.6 系统设置 | ~~`settings`~~（源码遗留声明与物理表状态见 §2.8） | v0.3 移除（含端点与权限位） |
 | 10.7 日志 | `logs`（4 类型） | 已建模 |
 | 字典管理（用户补充） | `dict_types` + `dict_items` | 已建模 |
 | 国际化（用户补充→撤回） | 纯前端 i18n，后端只存 key | 已约定 |
@@ -505,3 +513,4 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | 2026-09-05 | v0.9 | 契约 v1.7.1：新增 `EXPORT`(512) 权限点（通讯录 Excel 导出按钮前端门控，无独立端点）；仅人员通讯录菜单声明该位，存量库经 `nest/scripts/migrate-menus-add-export-bit.ts` 幂等补录；super_admin 全量位自动覆盖。权限点共 10 个。 |
 | 2026-09-14 | v0.10 | §1.5 步骤 2 明确「有 `role_menus` 关联记录即可见，不按 `permissions` 值过滤」：Nest / Next / Nuxt 三端服务端同款移除 `buildAllowedMenuIds` 中的 `permissions != 0` 过滤（实现层偏离设计，致 0 位纯展示页对普通角色不可见）。无 Schema / 契约变化；新增「演示场」菜单树 10 节点（含三级，全部 0 位）经 `nest/scripts/migrate-menus-add-playground.ts` 幂等录入。 |
 | 2026-09-22 | v0.11 | 本文档清账（**纯文档修正，零 Schema / 零契约变更**，背景见仓库根 `docs/launch-audit.md` #50）：① 新增 §2.18 `refresh_tokens` 小节——该表自契约 v1.2（迁移 `0001_*`）起即存在，此前 §2 长期无小节，现按 `refresh_tokens.schema.ts` 逐列补录，并记明用途、轮换/撤销链路与 `REFRESH_TOKEN_CLEANUP_*` 清理机制。② §2 标题计数改准：`pgTable(` 声明 **18** 处 / 库中物理表 **17** 张（与 `drizzle/meta/0009_snapshot.json` 一致），并注明 `settings` 声明未进 barrel、不参与迁移生成。③ §2.8 表述纠偏：「已移除」易被误读为「表还在库里」——现写明物理表已由 `0002_*` DROP、源码仍留一份无引用的死声明（不动 schema、不删表）。④ §2.9 日志清理由「建议」改为已实现事实（`LOG_RETENTION_DAYS` / `LOG_CLEANUP_CRON` / `LOG_CLEANUP_ENABLED`）。⑤ §9 历史行按日期+版本重排为升序（此前 v0.10 在 v0.6 之上、v0.9 在 v0.5 之下），**行内容逐字未改**，仅版式排序。 |
+| 2026-09-22 | v0.12 | **类型列口径对齐实现（纯文档，零 Schema 变更）**：§2 各表类型列原写 `varchar(N)`，实测 drizzle schema（`src/db/schema/*.ts`）与全部迁移 SQL（`drizzle/*.sql`）**零 `varchar`**，字符串列一律 `text`（含 `text[]` 数组列），长度与格式约束在 DTO / class-validator 层。33 处类型统一改写为 `text（≤N）`，N 保留原设计意图备查；§2 头新增「类型口径」说明块，明确用户输入列的 N 为 DTO 实际校验上限、服务端自写列（`logs.ip` / `logs.user_agent`）无 DTO 约束仅作容量参考。裁决依据：不把 schema 改回 varchar，避免五端共用线上库做无收益迁移（仓库根 `docs/launch-audit.md` #54）。 |
