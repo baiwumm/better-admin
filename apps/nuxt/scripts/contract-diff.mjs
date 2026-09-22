@@ -8,7 +8,13 @@
  *
  * 用法：node scripts/contract-diff.mjs [nuxtBase] [nestBase]
  *   默认 nuxtBase=http://localhost:3001/api  nestBase=http://localhost:3000/api
+ *   凭据走环境变量 CONTRACT_USER / CONTRACT_PASSWORD（缺省 admin / admin123，
+ *   仅供本地冒烟；线上或演示库请显式注入，勿把真实口令写进命令行历史）。
  * 退出码：0 = 差异为零或全部已记录；1 = 存在未记录差异。
+ *
+ * 覆盖面：openapi.yaml 的全部只读 GET（31 条步骤，含 v1.11/v1.12 /stats/overview、
+ * v1.13 /roles/{id}/users 与详情类端点），仅 /health 按契约设计排除。
+ * 前置：Nuxt 与 Nest 两个服务需同时在线（脚本自身不启动它们）。
  */
 const NUXT_BASE = process.argv[2] ?? 'http://localhost:3001/api'
 const NEST_BASE = process.argv[3] ?? 'http://localhost:3000/api'
@@ -112,7 +118,10 @@ async function main() {
   const nuxtToken = await login(NUXT_BASE)
   const nestToken = await login(NEST_BASE)
 
-  // ── 只读端点清单（path 中的 :ref 由 resolveStep 动态替换）──
+  // ── 只读端点清单（path 中的 :ref 由 resolveRefs 动态替换）──
+  // 覆盖面 = openapi.yaml 全部 GET 端点，除两类有意排除：
+  //   · /health（Nest 保活专用，契约明示 Next / Nuxt 不做对等实现）；
+  //   · /dict/types/{code} 系列用固定 code=user_status 实参覆盖（见下两行）。
   const steps = [
     '/auth/me',
     '/permissions',
@@ -121,26 +130,51 @@ async function main() {
     '/dict/types/user_status/items',
     '/menus',
     '/menus/tree',
+    '/menus/:menuId',
     '/roles?page=1&pageSize=10',
+    '/roles/:roleId',
     '/roles/:roleId/menus',
+    '/roles/:roleId/users',
     '/users?page=1&pageSize=10',
+    '/users/:userId',
     '/logs?page=1&pageSize=10',
+    '/logs/:logId',
     '/org/depts?page=1&pageSize=10',
     '/org/depts/tree',
+    '/org/depts/:deptId',
     '/org/posts?page=1&pageSize=10',
+    '/org/posts/:postId',
+    '/org/posts/:postId/members',
     '/org/directory?page=1&pageSize=10',
     '/notices?page=1&pageSize=10',
+    '/notices/:noticeId',
+    '/notices/:noticeId/read-stats',
     '/notices/mine?page=1&pageSize=10',
     '/notifications?page=1&pageSize=10',
     '/notifications/unread-count',
-    '/account/profile'
+    '/account/profile',
+    '/stats/overview'
   ]
 
   /** 动态引用解析（从 nuxt 侧列表响应取 id；Nest 与 Nuxt 共库，id 一致）。 */
   const refs = {}
   async function resolveRefs() {
-    const roles = await get(NUXT_BASE, nuxtToken, '/roles?page=1&pageSize=10')
-    refs.roleId = firstId(roles.body)
+    const sources = {
+      roleId: '/roles?page=1&pageSize=10',
+      userId: '/users?page=1&pageSize=10',
+      menuId: '/menus',
+      logId: '/logs?page=1&pageSize=10',
+      deptId: '/org/depts?page=1&pageSize=10',
+      postId: '/org/posts?page=1&pageSize=10',
+      noticeId: '/notices?page=1&pageSize=10'
+    }
+    for (const [name, listPath] of Object.entries(sources)) {
+      const res = await get(NUXT_BASE, nuxtToken, listPath)
+      refs[name] = firstId(res.body)
+      if (!refs[name]) {
+        console.warn(`[contract-diff] ⚠ 引用 ${name} 未取得（${listPath} 返回空），详情类端点将打向 MISSING`)
+      }
+    }
   }
   await resolveRefs()
 

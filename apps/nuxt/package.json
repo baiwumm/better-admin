@@ -15,7 +15,8 @@
     "pretest": "node scripts/sync-locales.mjs",
     "sync-locales": "node scripts/sync-locales.mjs",
     "check-locales": "node scripts/check-locales.mjs",
-    "db:clean-logs": "node scripts/clean-logs.mjs"
+    "db:clean-logs": "node scripts/clean-logs.mjs",
+    "contract-diff": "node scripts/contract-diff.mjs"
   },
   "dependencies": {
     "@bprogress/vue": "^1.1.5",
