@@ -111,9 +111,9 @@
 ## ✅ 已核实干净（不作为待办，防重复排查）
 
 - Vue / Nuxt `route-access.ts` 两表对 10 条 playground 路径全部登记，与 `(authenticated)/playground/` 下 10 个页面文件一一对应 → mechanisms §34「漏登 = 越权可达」在演示场模块已闭环。
-- Nest、Next 端点对契约 76/76 零缺口（唯一缺口见 #1）。
+- 端点覆盖已按 path+method 实测：契约 48 路径 / 77 操作，**Nest 77/77、Next 76/77、Nuxt 76/77**（差额唯一是 `/health`，契约明示不做对等实现）；Nuxt 此前的 `/logs/{id}` 缺口已修（#1）。
 - 工作树完全干净，无未提交改动。
-- 根与五端 `package.json` version 一致 0.2.0（website 除外，见 #13）。
+- 六端 `package.json` version 已全部一致 0.2.0（website 掉队问题已修，见 #13）。
 - 源码零 `TODO/FIXME/XXX/HACK`、零 `@ts-ignore` / `@ts-expect-error`；24 处 `eslint-disable` 全为行级且合理（12 处 `vue/no-v-html` 正文均过 `sanitizeNoticeHtml` DOMPurify）。
 - Nest 日志拦截器只记 method/path/status/耗时/IP/UA，不落请求体，无密码泄漏面。
 - Supabase 密钥仅服务端读取，浏览器包无引用（AGENTS §5 合规）。
