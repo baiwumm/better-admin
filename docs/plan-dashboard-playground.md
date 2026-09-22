@@ -324,6 +324,7 @@ type DemoMeta = {
 | Ai Kit › Matrix Orb（三级页） | rare-ui `matrix-orb` | 自定义重写 | 矩阵光球动画 |
 | GitHub Activity | rare-ui `github-activity`（`motion`） | 自定义重写 | 贡献热力图（静态数据，不连外部 API） |
 | 主题切换动画（2026-09-16 追加，非 rare-ui 清单） | `theme-switch-animation`（第三方库 `/react` 子导出，View Transitions 蒙版揭示） | 官方 `/vue` 子导出（getter 对象传参）+ `/nuxt` 模块自动导入 | 13 种蒙版揭示主题切换动画演示：类型清单 / 时长 / 缓动选择 / 方向类型 / 重置 |
+| 组织架构树（2026-09-21 追加，第 10 页 `/playground/okr-tree`） | `react-okr-tree`（第三方库，作者 baiwumm，MIT） | `vue3-okr-tree`（同作者，与 React 包自 1.13.0 起锁步发布、同号同功能面） | 组织架构树（方向切换 / 全部展开收起 / 名称负责人过滤 / 折叠子节点数 / 选中态）+ OKR `onlyBothTree` 根节点左右双向展开（左举措 / 右 KR） |
 
 - **旧清单整体移除（2026-09-14 拍板）**：Smart Ticker / 拖拽 / 富文本 / 加载态集 / 轮播 / 列表自动动画 / 图片 Lightbox / 二维码不再纳入——拖拽（`@dnd-kit`）、富文本（`@tiptap`）业务功能已上线无需重复演示，其余不再计划。
 - 旧项目 `file-viewer`（Excel/PDF/Word viewer）**不做**：重依赖且偏离 Admin 场景（原决策保留）。
@@ -343,6 +344,7 @@ type DemoMeta = {
 | `prismjs`（+ `@types/prismjs` dev） | Phase A/B（Vue / Nuxt）**——两端已引入 1.30.0（2026-09-16）** | 代码块高亮：`prism-react-renderer` 为 React 专属渲染器，Vue 侧用 prism 核心直接 tokenize 后逐行渲染；语言按需注册（tsx / css / json / sql / python / bash），`Prism.manual` 关闭自动高亮 | 轻（Vue 端实测落在 code-block 按需 chunk 约 56KB，index 不含） |
 | `motion-v` | Phase A/B（Vue / Nuxt）**——已评审：不引入（2026-09-16）** | rare-ui 动画重写候选（Motion 官方 Vue 版）；对齐时逐页评估，全部以 CSS transition / `<Transition>` / `<TransitionGroup>` FLIP / Canvas RAF 等效满足（唯一未复刻的是 github-activity 头像 `layoutId` 共享元素飞行，降级为淡入淡出） | 无 |
 | `theme-switch-animation` | Phase B 追加（React / Next / Vue / Nuxt 四端）**——四端已引入 0.1.0（2026-09-16）** | 主题切换蒙版揭示动画库（作者 baiwumm，MIT）；React / Next 用 `/react`，Vue 用 `/vue`，Nuxt 用 `/nuxt` 模块自动导入；与项目既有 View Transition 路由 / 主题过渡并存（演示页内由库独占编排权，store 走 `applyThemeModeInstant` 让渡） | 轻（各端独立分包约 22 kB） |
+| `react-okr-tree` + `vue3-okr-tree` | Playground 追加（React / Next / Vue / Nuxt）**——React 已引入 1.13.0（2026-09-21），其余三端待 React 基准验证后按序对齐** | 组织架构树 / OKR 树组件（作者 baiwumm，MIT，npm 已发布，两包自 1.13.0 起锁步发布）；peer `react ≥ 18.2` / `vue ≥ 3.3`，零运行时依赖；可选 peer `html-to-image` 仅画布导出图需要，本演示范围精简**不装**；§21 第三方 Vue 组件库评审已由用户批准（Nuxt UI v4 无组织架构树组件、自研以千行计且偏离 React 基准、两包同源同 CSS 是四端一致性最优解）；React / Next 用 `react-okr-tree`，Vue / Nuxt 用 `vue3-okr-tree`，API 逐项对齐；外观经 `--okr-*` 变量挂站点 Design Token（随 `.dark` 翻转，不跟随系统偏好），节点卡片开 `unstyled` 由 renderNode / 默认插槽自绘 | 轻（React 端实测演示页按需 chunk 18.87 kB gzip，含两区块；dist 首行带 `'use client'`，Next App Router 可直接 import） |
 | `recharts` | Phase C | Dashboard 图表（`AGENTS.md` §19 已定 Recharts）；Next / Vue / Nuxt 端各自对齐等价方案 | 图表类标准选择，体积可按需 tree-shake |
 
 > 已移除（2026-09-14 随旧清单）：`@tombcato/smart-ticker`、`swiper`、`@formkit/auto-animate`、`yet-another-react-lightbox`、`qrcode`。

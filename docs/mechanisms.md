@@ -1126,3 +1126,15 @@ Unovis 已确认的代价（落地时按已知项接受，不要当成 bug 排�
 - lockfile 由低版本 pnpm 写入、高版本校验可过（frozen install 通过即证格式兼容），无需强制用 11.24 重写。
 
 - 依据：两台 pnpm 的 `--version` / `config list` 对比实跑；Volta pnpm `install --frozen-lockfile` 补白名单前后各一次（前 `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`、后 653 条目全过），随后 Volta pnpm `dev` 正常启动（Vite ready 5173）。
+
+---
+
+## 36. 画布组件三坑：float 塌陷高度、reset 语义是「回原点」、拦双击必须捕获阶段（四端，组织架构树页，2026-09-22）
+
+**一、float 布局的测量塌陷**：`react-okr-tree` / `vue3-okr-tree` 纵向模式节点全是 `float: left`，`.org-chart-container` 是普通 block——浮动的**宽度**参与 `width: max-content`（水平居中一直正确），**高度**却塌陷为 0：凡「按内容 offsetHeight 计算视口偏移」的逻辑（fit / 居中适配）都会算出偏移 ≈ 视口高的一半，内容整体被压到下半部。修复用 `display: flow-root`（BFC 包住浮动、高度恢复真实），不用 clearfix 或 `overflow`（各有副作用）。推论：任何按内容尺寸定位/缩放的组件，遇上 float 布局先验证测量元素高度是否真实。
+
+**二、包内置 reset 的语义是「回原点」不是「回初始适配」**：`scope.reset` = zoom 1 + offset (0,0)，对 canvas 视口（translate 定位）就是左上角。页面有自己的初始适配（fit 钳位 + 居中）时，工具栏 reset 必须改接页面自己的 fit；且包把**双击视口**也绑成同一 reset，视口根元素又不透传事件 props（仅 className / style），内部包装层拦不住空白区域双击——须在画布**外层容器**以捕获阶段拦截：React 用 `onDoubleClickCapture`（合成事件模拟捕获序，祖先 capture 先于后代 bubble，`stopPropagation` 阻止后续合成派发）、Vue / Nuxt 用 `@dblclick.capture`（原生捕获监听）。工具栏区域的双击要放行（`target.closest('.okr-viewport-toolbar')` 早退），避免点按钮误触发重适配。
+
+**三、SSR：`watch(..., { immediate: true })` 在服务端 setup 期也会执行**——2026-09-21 progress 条目「SSR 期 watch 回调不执行」说法有误，特此更正（此前未炸只是因为回调体是可选链、无浏览器 API）。immediate 回调里要调浏览器 API（`requestAnimationFrame` / DOM 测量）时必须加 `import.meta.server` 守卫（如本页 `fit()`）或把初始化移到 `onMounted`。
+
+- 依据：`react-okr-tree@1.13.0` / `vue3-okr-tree@1.13.0` 的 style.css（`.vertical .org-chart-node { float: left }`）与 es.js（`onDoubleClick: reset`、根元素仅透传 className/style）取证；React / Vue 双端用户 GUI 实测复现（纵向偏下、reset/双击跳左上角）与修复后确认。

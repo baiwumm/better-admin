@@ -2,6 +2,70 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 演示场「组织架构树」页画布化改造：Next / Vue / Nuxt 三端同步（2026-09-22）
+
+- **范围**：兑现上一条目（React 端画布化）的待办——画布 + 受控 zoom/offset 自动适配 + 自绘工具栏按序平移三端；同日修复用户 GUI 实测反馈的两个画布缺陷（四端同修）。机制沉淀见 `mechanisms.md` §36。
+- **缺陷修复一「纵向模式垂直不居中」**：`.org-chart-container` 在纵向模式下节点全是 `float: left`，普通 block 容器高度塌陷为 0，fit 按塌陷高度算垂直偏移（约画布高的一半）把树整体压到下半部；水平方向因 `width: max-content` 本就含浮动、一直正确。修复：容器覆盖加 `display: flow-root`（BFC 包住浮动、高度恢复真实树高），四端 `okr-tree.css` 同一规则。
+- **缺陷修复二「重置回左上角」**：包 `scope.reset` 语义是回原点 (0,0)，画布模式下即左上角，而页面「初始态」是自算 fit 的居中适配。工具栏重置按钮改接页面 fit（React 传 `onReset` / Vue·Nuxt `@reset` 回抛）；**双击画布同源**——包内部把双击也绑成同一 reset 且视口根元素不透传事件 props（仅 className/style），子元素包装层拦不住空白区域双击，改在画布外层容器捕获阶段拦截：React `onDoubleClickCapture`、Vue / Nuxt `@dblclick.capture`（工具栏上的双击放行），统一改走页面 fit。
+- **Next 端**：`okr-tree-page.tsx` 以 React 最终版整体覆盖（仅加回 `"use client"`，此前仍是旧 overflow 容器版）+ `okr-tree.css` 换全量版（补齐 max-content / flow-root / is-hidden / will-change 四组画布规则）；`next build` 含 `/playground/okr-tree` 路由。
+- **Vue 端**：`OkrTreePage.vue` 区块一重写为画布（`OkrTreeViewport` + `v-model:zoom/offset` 受控 + `#toolbar` 插槽）；fit 以页内函数实现（与 React hook 同口径：双 rAF、缩放钳 [MIN_ZOOM, 1]、RO 只观察视口宽高）；新增 `ViewportToolbar.vue`（UButton outline 图标 Pill，reset 经 emit 回抛页面 fit）；**初始展开态从 `default-expand-all` 对齐为 `default-expanded-keys`（根一级，与 React 基准一致）**；`okr-tree.css` 补齐四组画布规则。
+- **Nuxt 端**：自 Vue 同页平移（单引号无分号、`useI18n` 自动导入）。**SSR 适配**：`watch(..., { immediate: true })` 在服务端 setup 期也会执行（2026-09-21 条目「SSR 期 watch 回调不执行」说法有误，此前未炸只是回调体是可选链），`fit()` 顶部加 `import.meta.server` 守卫（服务端无 rAF），挂载后由 `onMounted` 再调；初始展开态同 Vue 对齐。
+- **语言包**：Vue / Nuxt 各自 zh-CN / en `features.json` 补 4 键（zoomIn / zoomOut / viewFit / viewReset，与 React / Next 逐字一致）+ `orgDescription` 补画布交互句（此前两端旧页文案不带该句）。
+- **验证**：Next eslint / `tsc` / `next build`，React vitest（93 用例）+ 双端 check-locales，Vue eslint / `vue-tsc` / vitest（101 用例）/ `vite build`，Nuxt eslint / `nuxt typecheck` / vitest（99 用例）/ `nuxt build` 全绿。React 端画布居中与重置已由用户验证通过，三端 GUI 走查待用户。
+
+### 演示场「组织架构树」页画布化改造：React 端（2026-09-21）
+
+- **起因**：用户 GUI 反馈——纵向模式下树宽超出容器时，float 兄弟节点换行"掉到下面"（容器 `overflow-x-auto` 兜不住：内容没溢出、只是换行了），要求像 `/org/chart`（React Flow fitView）那样按数据做画布缩放。
+- **方案**：接入包自带 `OkrTreeViewport`（1.4.0 新增，导出面早有、本页此前未用）。其 canvas 为 `position: absolute`，内容按 shrink-to-fit 计算，**从根上消除 float 换行**；`fitToScreen` 按内容宽高自动缩放居中。`exportImage` 才依赖可选 peer `html-to-image`（handle 暴露但本页不调用，依旧不装）。
+- **改造要点（React 端 `okr-tree-page.tsx` 两区块均套 Viewport）**：
+  - `useViewportAutoFit` hook：挂载 / `direction` 切换（key 重挂载）/ 容器尺寸变化（ResizeObserver，覆盖侧边栏折叠与窗口缩放）时 fit；展开收起、过滤等交互后手动 fit（rAF 等一帧 DOM 稳定，与包内 scrollToNode 同款时序）；
+  - `minZoom={0.55}`：12 叶子全展开约 2100px 宽，fit 到约 900px 容器比例 ≈0.4，钳在下限保可读性，超出部分交拖拽平移 / Ctrl+滚轮缩放 / 双击重置（wheelBehavior 默认 ctrl-zoom，不劫持页面滚动）；
+  - `renderToolbar` 自绘 Pill 工具栏（lucide 图标 + 百分比）替换包默认中文硬编码按钮；CSS 把 `.okr-viewport-toolbar` 容器抹透明（默认浅色实底暗下发色）；
+  - i18n 新增 4 键（zoomIn / zoomOut / viewFit / viewReset，中英），`orgDescription` / `okrDescription` 追加画布交互说明；features.json 已按 check-locales 强制同步 Next。
+- **验证**：React eslint 0 problem / `vite build` 通过。GUI 走查待用户。
+- **第二轮调整（用户 GUI 反馈后同日）**：① 「画布有了但数据还掉下去」——根因是 `.org-chart-container { width: 100% }` 把宽度钉死在视口宽，canvas 的 shrink-to-fit 救不了百分比宽（包官方 demo 用横向树、从未暴露此问题）；viewport 作用域内覆盖 `width: max-content; min-width: 100%` 后 fit 才测得真实内容宽；② 「总部居中、第三级被裁」——`defaultExpandAll` 全展开宽约 2100px、fit 只能缩到 0.55 把根挤中间；改为 `defaultExpandedKeys` **默认只展开根一级**（总部 + 4 中心 ≈ 750px，fit 后 100% 完整可见不模糊），全览交给用户主动点「全部展开」（缩小是主动选择）；③ 「OKR 画布发虚」——横向模式兄弟本为竖排、不会掉下去，`overflow-x-auto` 足够且 scale 会让文本栅格化模糊，OKR 区块**移除 Viewport 回退原容器**；okrDescription 同步撤掉画布措辞，features.json 已同步 Next。
+- **第三轮调整（用户 GUI 反馈后同日）**：① 「默认形态还是总部居中一小团」——包的收起子树是内联 `visibility:hidden; height:0`，**高度不占但宽度仍参与 max-content**，fitToScreen 把收起子树的宽度也算进居中度，可见内容被缩 0.55 挤中间；demo 作用域内对 `.org-chart-node-children.is-hidden` / `-left-children.is-hidden` 覆盖 `display:none`（本页未开 animate、收起本无过渡，零副作用；若未来开 animate 需评估动画终点态），fit 测量回归纯可见内容 → 默认形态 100% 完整居中；② 「OKR 改默认全部展开」——OKR 树加 `defaultExpandAll`，宽出部分由 overflow-x 滚动（无画布、不缩放）。
+- **第四轮调整（用户 GUI 反馈后同日）**：默认形态 fit 到 185%——包 `fitToScreen` 内部 `computeFit` 的 zoom 上限是 `maxZoom`（2），内容小于视口时被**放大**，且首帧测量偏小后没有触发器修正（原有 RO 只观察外层容器、内容就绪不通知）。改为**受控 zoom/offset + 自算 fit**（`useViewportAutoFit`）：直接测 `.okr-viewport` / `.okr-viewport-content` 尺寸（dom-contract 契约类），`zoom = clampZoom(min(wRatio, hRatio), MIN_ZOOM, 1)`——**上限钳 1**，小于视口保持 100% 双向居中、超出才缩至 0.55 下限；受控值传 Viewport，用户手动缩放 / 拖拽 / 双击重置仍走包内部逻辑并经 `onZoomChange` / `onOffsetChange` 同步；RO 改双观察（viewport 宽变 + content 内容尺寸变），兜住首帧与运行期内容变化（transform 不影响 layout 尺寸，无循环）。
+- **第五轮调整（用户 GUI 反馈后同日，三现象同源）**：① 「卡片模糊、点缩放按钮才清晰」——包 CSS `.okr-viewport-canvas { will-change: transform }` 强制 GPU 合成，合成层把文本按变换前分辨率栅格化后再缩放，scale=1 也发虚，只有再改一次 transform（点按钮）才重栅格化；demo 作用域覆盖 `will-change: auto`（演示页规模无需该优化）；另 fit 的 translate 改 `Math.round` 取整，亚像素定位同样让文本发虚。② 「点节点展开跳动到原位置」——上一轮的 content 层 RO 把单节点 +/- 展开也当成 fit 触发源、视图被重算跳回居中；RO 收回为**只观察 viewport**（宽高变化：侧边栏折叠 / 窗口缩放），单节点展开收起**不 fit**（视图不动、新内容原地长出，拖拽查看），全局操作（全部展开 / 收起 / 过滤）仍显式 fit；首帧可靠性由双 rAF（DOM 提交 + 布局稳定）+ viewport RO 首次通知兜底。
+- **待办**：用户确认 React 效果后，把画布化改造（含上述三点）按序平移 Next / Vue / Nuxt（三端页面当前仍是旧的 `overflow-x-auto` 容器，语言包已先行带新键）。
+
+### Playground「组织架构树」页对齐 Nuxt 端：第 10 页四端 100% 收尾（2026-09-21）
+
+- **范围**：Vue 验证通过后对齐 Nuxt 端（最后一端），自 Vue 端同页平移。演示场第 10 页 `/playground/okr-tree` 四端全部对齐。
+- **SSR 结论（本页无需 `<ClientOnly>`）**：`vue3-okr-tree` 的 DOM 访问（ResizeObserver / matchMedia / createElement）全部在 `onMounted` 或方法内且有 `typeof window` 守卫，模块顶层纯净；`watch` immediate 回调服务端不执行，ref 方法调用均在客户端。与 loaders 页 canvas 组件必须包 `<ClientOnly>` 的情形不同——本页直接渲染。
+- **与 Vue 端的差异**：仅 `useI18n` 走 Nuxt 自动导入（不写 import）、`meta.source` 指 `apps/nuxt`，其余逐字；`route-access.ts` 两表按 §34 与页面同批登记（Nuxt 守卫同 Vue 形态，漏登=越权可达）。
+- **工具链**：Nuxt 端 `packageManager: pnpm@12.3.4`，本机 DSH 工具链 pnpm 11.8 的委派 shim 失效（`E:\.pnpm-store` 链接断），统一走用户 Volta pnpm（在 nuxt 目录自动解析 12.3.4）执行 install / lint / typecheck / test / build，与用户日常一致。
+- **供应链**：`apps/nuxt/pnpm-workspace.yaml` 补 `minimumReleaseAgeExclude: vue3-okr-tree@1.13.0`（§35 第四端），frozen install 校验通过。
+- **lint 适配**：Nuxt 端 eslint 规则与 Vue 端略有差异（`@stylistic/arrow-parens` 要求单参箭头函数带括号、`vue/html-indent` 模板缩进），`--fix` 后全绿。
+- **验证**：eslint 0 error / `nuxt typecheck` 零错误 / vitest 10 文件 99 用例 / `nuxt build` 成功（okr-tree 独立 CSS 分包）。GUI 走查待用户。
+- **收尾**：feature-matrix 该行 Nuxt → ✅，**Playground 10 页四端 100% 对齐**；另修复该行单元格此前一处误删行尾换行导致的表格并行（已拆回，「路由权限守卫」行恢复独立）。
+
+### Playground「组织架构树」页对齐 Vue 端（2026-09-21）
+
+- **范围**：Next 验证通过后按序对齐 Vue 端（第三端）。`vue3-okr-tree@1.13.0` 同版锁入——§21 第三方 Vue 组件库评审（Nuxt UI v4 无组织架构树组件、自研成本高且偏离基准、两包同源同 CSS 是四端一致性最优解）的正式落地。
+- **与 React 基准的差异（端内约定，非缺陷）**：① 包换成 `vue3-okr-tree`（API 逐项对齐：`#default="{node,data}"` 插槽对应 renderNode、`@node-click` 对应 onNodeClick、ref expose 的 `filter / expandAll / collapseAll`；**无 React 的泛型组件**，`@node-click` 处理器按包边界 `TreeNodeData` 收窄后 `as OrgNodeData` cast，与 React 端同模式）；② 页面外壳用端内既有 demo 封装 + Nuxt UI 组件（`DemoSegmented`=UTabs 分段 / `DemoSwitch`=USwitch / `UInput` 搜索框 / `UButton` outline），两张节点卡片抽独立小组件 `OrgNodeCard.vue` / `OkrNodeCard.vue`（语义类 `bg-elevated` / `border-default` / `border-primary` / `text-highlighted` / `text-muted`，UIcon `i-lucide-building-2`）；③ **`--okr-*` 变量换挂 Nuxt UI token**（`--ui-border` / `--ui-bg-elevated` / `--ui-text-muted` / `--ui-primary`）——§21 主题策略要求直接用 Nuxt UI 默认 Design Tokens、不建 React theme.css 映射层，与端内 dashboard.css / chart-theme.css 同一模式；④ 数据文件中 interface 带可选 `children` 自引用字段。
+- **保持一致的口径**：默认方向纵向（随用户 2026-09-21 拍板，React / Next / Vue 三端同）、`:key="direction"` 重挂载切换方向（创建期快照 prop）、watch `immediate` 过滤（空值恢复全部）、不引入可选 peer `html-to-image`、数据工厂取数。
+- **登记（§34）**：`lib/route-access.ts` 两张表（`MENU_REQUIRED_PATHS` + `ROUTE_TITLE_KEYS`）与页面同批加 `/playground/okr-tree`——Vue 守卫是显式登记表，漏登=越权可达；语言包经 `sync-locales` 从 React 拉齐（含方向中立化后的 orgDescription 新文案）；`registry.ts` 登记第 10 项。
+- **供应链**：`apps/vue/pnpm-workspace.yaml` 补 `minimumReleaseAgeExclude: vue3-okr-tree@1.13.0`（承接 §35，Volta pnpm 11.24 frozen install 通过）。
+- **验证**：eslint 0 error（7 条既有 warning 不在本轮文件）/ `vue-tsc` 零错误（修 1 处 `@node-click` 处理器宽类型不匹配：包事件签名为 `TreeNodeData`，Vue 版无泛型组件，显式 cast 收窄）/ vitest 10 文件 101 用例 / `vite build` 成功（okr-tree 独立分包 JS + CSS，未进主包；typed-router.d.ts 已生成 `/playground/okr-tree` 路由）。GUI 走查待用户（本地 5174 dev server）。
+- **待办**：Nuxt 端待用户安排后对齐（装 `vue3-okr-tree` + 白名单、自 Vue 平移、`route-access.ts` 两表登记）；feature-matrix 该行 Vue → ✅。
+
+### Playground「组织架构树」页对齐 Next 端（2026-09-21）
+
+- **范围**：React 基准经用户 GUI 验证通过后，按基准对齐 Next 端（第二端）。`react-okr-tree@1.13.0` 同版锁入 Next。
+- **移植差异仅两处**（与 loaders 页同口径）：四个文件（`okr-tree-page.tsx` / `okr-tree-data.ts` / `okr-tree.css` / `meta.ts`）自 React 基准复制——页面组件加回 `"use client"`、`meta.source` 改指 `apps/next/`；`PlaygroundIntro` 导航在 Next 端本就用 `next/navigation`，页面主体与样式零改动。路由 `src/app/(authenticated)/playground/okr-tree/page.tsx` 保持服务端组件导出 `generateRouteMetadata("menu.playground.okrTree")`；`registry.ts` 登记第 10 项；Next 无 `route-access.ts` 登记需求（门控在 `proxy.ts` 按菜单树，标题来自菜单树，与 loaders 页同口径）。
+- **供应链**：`apps/next/pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude` 补 `react-okr-tree@1.13.0`（承接 mechanisms §35，与 react 端同款）；Volta pnpm 11.24 `install --frozen-lockfile` 671 条目通过。
+- **验证**：eslint 0 error（新文件单独跑 0 问题；24 条既有 warning 不在本轮文件）/ `tsc --noEmit` 零错误 / `next build` 成功（`/playground/okr-tree` 已入路由表）/ `check-locales` 14 文件一致（okrTree 双语 40 键随 React 同步在先）。GUI 走查待用户本地确认（`next dev -p 3100`）。
+- **待办**：Vue / Nuxt 端待用户安排后按序对齐（装 `vue3-okr-tree`，若发布不足 24h 需在对应端 `pnpm-workspace.yaml` 同步补白名单，见 §35）；feature-matrix 该行 Next → ✅。
+
+### 修复 react-okr-tree 被 pnpm 供应链策略拦截导致 `pnpm dev` 失败（2026-09-21）
+
+- **现象**：用户端 `pnpm dev` 报 `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`：`react-okr-tree@1.13.0` 发布不足 24h，被 minimumReleaseAge cutoff 拒绝；而 agent 环境安装时是成功的。
+- **根因**：agent 工具链 pnpm **11.8.0**（minimumReleaseAge 默认 0 且命中数小时前缓存校验）与用户 Volta pnpm **11.24.0**（默认 1440 分钟）策略默认值不同——「本机能装、用户端被拦」。完整机制与自救流程沉淀 `mechanisms.md` §35。
+- **修复**：按仓库既有模式（`@heroui/*@3.2.5` 两条先例）在 `apps/react/pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude` 补 `react-okr-tree@1.13.0`（作者自有包、provenance 发布、精确版本放行）。
+- **验证**：用用户同款 Volta pnpm 复跑 `install --frozen-lockfile`（653 条目全过）+ `dev` 正常启动（Vite ready 5173）；lockfile 无需重写（11.8 写入、11.24 校验兼容）。
+- **备忘**：后续 Next / Vue / Nuxt 端装 `vue3-okr-tree@1.13.0`（同日发布）会踩同一坑，发布 24h 内实施需在对应端 `pnpm-workspace.yaml` 同步补白名单。
+
 ### Playground「加载动画」页对齐 Nuxt 端（2026-09-21，四端 100% 收尾）
 
 - **范围**：Vue 端 `a8899d9` → 本轮 Nuxt 端（最后一端）。CSS `@keyframes` 等效那套整体平移（§21 不引入 motion-v、零新依赖、`meta.packages = []`），页面结构 / 两区块 / 变体清单与前三端一致；语言包经 `sync-locales` 拉 React 8 键。
@@ -9,6 +73,16 @@
 - **`vue/multi-word-component-names` 单点豁免**：vendor 组件名 `Loader` 是单词，而 React / Next / Vue 三端同名文件为 `Loader.vue` / `loader.tsx`，四端命名一致优先（§7.4）→ 在 `eslint.config.mjs` 加**仅覆盖该文件**的规则关闭 + 原因注释，不改名、不全局关规则。
 - **登记**：`app/lib/route-access.ts` 两张表补 `/playground/loaders`（承接同日 §34 结论：Nuxt 守卫同 Vue 形态，登记与页面同批），`registry.ts` 登记第 9 项。
 - **验证**：`eslint` 0 error / `nuxt typecheck` 零错误 / `vitest` 10 文件 99 用例 / `nuxt build` 成功；产物 CSS 核对 12 组 `@keyframes ld-*` 齐备、`ld-morph` 的 `clip-path: var(--sN)` 未被压掉。用户 GUI 走查通过。**loaders 页四端（React / Next / Vue / Nuxt）至此 100% 对齐。**
+
+### Playground 追加「组织架构树」演示页：React 基准（2026-09-21，react-okr-tree@1.13.0）
+
+- **范围**：第 10 个演示页 `/playground/okr-tree`。用户拍板：演示范围精简（不装可选 peer `html-to-image`，导出图能力不在范围）、暗色必须与站点主题切换联动、批准 React / Next 装 `react-okr-tree` 与 Vue / Nuxt 装 `vue3-okr-tree`（§21 第三方组件库评审理由：Nuxt UI v4 无组织架构树组件、自研以千行计且偏离 React 基准、两包同源同 CSS 是四端一致性最优解）、先做 React 基准待用户验证后再逐端对齐。
+- **页面形态**（两区块）：① 组织架构树——`direction` 横向 / 纵向分段切换（`direction` 是创建期快照 prop，按包约定绑 `key` 重挂载）、全部展开 / 收起（ref 命令式）、名称 / 负责人搜索过滤（`filterNodeMethod` + 空值恢复）、折叠显示子节点数开关、点击选中描边 + 当前选中回显；② OKR 双向展开——`onlyBothTree` 模式下 KR 挂目标右侧、关键举措挂左侧，左右独立折叠、根节点居中不位移。
+- **外观策略（关键决策）**：不写死色值也不跟随系统 `prefers-color-scheme`（内置 `theme="auto"` 的行为）——连接线 / 展开按钮 / 焦点环经 `--okr-*` 变量挂接 HeroUI Design Token（`okr-tree.css` 里 `var(--border)` / `var(--surface)` / `var(--muted)` / `var(--accent)`，变量在使用点解析故随 `.dark` 自动翻转）；节点卡片开 `unstyled`，外观由 `renderNode` 内 Tailwind 语义类自绘（与后台其他卡片一致）；几何类变量（gap / padding / 按钮直径）按演示密度静态微调。
+- **依赖与菜单**：`react-okr-tree@1.13.0` 精确锁版入 `apps/react`（peer react ≥ 18.2 满足；零运行时依赖；dist 首行带 `'use client'` 对 Vite 无影响）。共用库幂等脚本 `apps/nest/scripts/migrate-menus-add-playground-okr-tree.ts`（icon `workflow`、sort 6 排加载动画之后、permissions 0n、super_admin 补全量位，重复执行不重复插入——已实跑两次验证）。注意该脚本头部原写 `pnpm tsx` 但 nest 端实际只有 `ts-node`（loaders 脚本头部说明过期），本脚本按实际修正为 `pnpm ts-node`。
+- **i18n**：17 键（`menu.playground.okrTree` + `features.playground.okrTree.*` 16 键）中英双语；语言包按仓库惯例同步到 Next（`check-locales` 强制 React 与 Next 一致，页面实现留待后续对齐——与 loaders 页「React + Next 语言包先同步」同口径）。
+- **验证**：React `tsc` 零错误 / eslint 新文件 0 error（6 条既有 warning 不在本轮文件）/ `vite build` 成功（okr-tree 分包 18.87 kB gzip，routeTree.gen.ts 已再生含新路由）/ `check-locales` 14 文件一致 / vitest 8 文件 93 用例全绿；dev server 模块级冒烟（页面 / 样式 / 数据 / 优化后依赖均 200，包 CSS 与页内 CSS 注入顺序正确）。**GUI 走查待用户**（用户本地已有 5173 dev server，新增文件经 HMR 自动生效）。
+- **待办**：Next / Vue / Nuxt 待用户验证 React 基准后按序对齐；feature-matrix 该行 Next / Vue / Nuxt 暂标 🔧（仅指本页；Nuxt 另含加载动画页待对齐）。
 
 ### 补登记 Nuxt 端 theme-switch-animation 页的菜单权限与标题兜底（2026-09-21）
 
