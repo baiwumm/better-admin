@@ -1,7 +1,7 @@
-# Better Admin — Vue 端开发方案（v1.1 修订版）
+# Better Admin — Vue 端开发方案（v1.3 修订版）
 
 > 本文档是 Vue 端（Phase 4：Vue + NestJS）的完整开发方案：功能对齐清单、技术选型、MVP 路线。
-> 基准：React 端为 UI / 交互 / 页面结构 Source of Truth（`ui-spec.md` §1）；API Contract 以 `apps/nest/openapi/openapi.yaml`（v1.7.0）为唯一事实来源。
+> 基准：React 端为 UI / 交互 / 页面结构 Source of Truth（`ui-spec.md` §1）；API Contract 以 `apps/nest/openapi/openapi.yaml`（**v1.14.0**，实测 48 条路径 / 77 个 path+method 操作；本方案立项时为 v1.7.0，Vue 各里程碑按当期版本实施，此后 v1.8~v1.14 逐版跟进）为唯一事实来源。
 > 组件库策略：**Vue / Nuxt 以 Nuxt UI v4 为唯一 UI 组件库**（规则真源见 `AGENTS.md` §21 与 `docs/nuxt-ui-guide.md`）。
 
 ## 修订记录
@@ -11,13 +11,14 @@
 | v1.0 | 2026-09-05 | 初版方案（功能对齐清单 + 技术选型 + MVP 路线），评审通过 |
 | v1.1 | 2026-09-05 | 落地评审 5 条微调：① M0 增加重写 `docs/routing.md`；② 图表选型补 chart tokens 色值对齐约束；③ M1 验收补测试策略（vitest globals + jsdom、纯函数测试拷贝）；④ 布局必须使用 Nuxt UI Dashboard 套件；⑤ 移除 React token 移植要求，直接使用 Nuxt UI 默认 Design Tokens / Color System |
 | v1.2 | 2026-09-05 | 评审修正：路由选型由「Vue Router 集中式路由表手写 + `ROUTE_PATHS` 字典」改为 **Vue Router + unplugin-vue-router（官方文件式路由插件，`vue-router/vite`）**：`src/pages/` 为路由根、`(group)` 分组、`[param]` 动态段、`typed-router.d.ts` 类型生成；三层守卫逻辑保持不变，挂载方式适配为「全局前置守卫 + App.vue 按 `definePage()` meta 挂载 AdminLayout」（对应 React 端 `_authenticated` 布局路由） |
+| v1.3 | 2026-09-22 | 上线前文档清账（`docs/launch-audit.md` #22）：契约真源版本 v1.7.0 → **v1.14.0**（实测 48 条路径 / 77 个 path+method 操作，立项时 44 端点）；§M4 部署条目中「`GET /api/health` 端点已上线」更正为「2026-09-22 才落地，线上保活 ping 配置仍属本环节待做动作」（原表述在当时为假，见 `launch-audit.md` #2）。**§M4 部署清单内容全部保留（上线时使用），仅订正事实错误**；§1 功能清单 / §2 技术选型 / §3 各里程碑记录为立项与实施期快照，按 `AGENTS.md` §13 不回改（含 §2 图表行的 ECharts 推荐——Vue 端最终按 `AGENTS.md` §21 评审落地 **Unovis 1.7.0**，见 `mechanisms.md` §32；当前功能对齐状态以 `docs/feature-matrix.md` 的 **29 项 / Vue 29/29** 为准） |
 
 ---
 
 ## 0. 架构约束（不可违反）
 
 - **数据库**：Vue 不直接连接数据库，数据来源为 NestJS API（`requirements.md` §4.2）：`Browser → Vue → NestJS → PostgreSQL`。
-- **API Contract**：请求/响应结构遵守 `apps/nest/openapi/openapi.yaml`（v1.7.0）；Vue 阶段零后端改动，若发现契约缺口，先改契约评审再实现。
+- **API Contract**：请求/响应结构遵守 `apps/nest/openapi/openapi.yaml`（当前 **v1.14.0**，立项时 v1.7.0）；Vue 阶段零后端改动，若发现契约缺口，先改契约评审再实现。
 - **UI 对齐策略（v1.1 修订）**：页面结构、布局骨架、交互行为（侧边栏折叠/展开、Header 操作区顺序、表格工具栏位置等）与 React 端保持一致；**组件视觉直接使用 Nuxt UI 默认风格**，不刻意模仿 React（HeroUI）组件样式；品牌标识（Logo、产品名）保持一致；**功能对齐优先于像素级视觉对齐**。
 - **UI 组件库**：Vue / Nuxt 均使用 **Nuxt UI v4**（`@nuxt/ui`，Tailwind CSS v4 + Reka UI）；禁止引入 Vuetify / Quasar / Element Plus / PrimeVue / shadcn-vue 等替代 UI 库（详见 `docs/nuxt-ui-guide.md`）。
 - **布局实现硬约束**：侧边栏与顶部栏必须优先使用 Nuxt UI 官方 Dashboard 套件（`UDashboardGroup` / `UDashboardPanel` / `UDashboardSidebar` / `UDashboardNavbar` / `UDashboardSearch` / `UCommandPalette`），**禁止从零手写布局**。命名说明：评审意见中的 `UDashboardLayout` 在 Nuxt UI v4 中的实际组件名为 **`UDashboardGroup`**（v3 → v4 更名，职责一致：布局容器 + 侧栏状态持久化 + 单位定义）。
@@ -199,7 +200,7 @@ apps/vue/src/pages/
 
 > **进度（2026-09-11）**：**文档收尾 ✅**（feature-matrix 统计口径按行校正为 27 项 + 错误页行标注未对齐项 / mechanisms §16 四条机制结论 / progress.md 置顶条目 / AGENTS §19 指针）、**本地冒烟 ✅**（登录闭环 + API 17 端点 + 21 路由走查含网络监控 + M3 专项 8 项；发现并修复 4 项对齐缺陷，另清理 1 项既有 lint error；`lint` / `type-check` / `test` / `build` 四绿）。**Vercel 部署与线上冒烟未执行**——随四端统一上线执行（AGENTS §17 上线状态标记，2026-09-12）。
 
-- **部署（随四端统一上线执行，平台已定为 Cloudflare Pages，见 AGENTS §17）**：CF Pages Git 集成（Root Directory = `vue`，构建命令 `pnpm build`，输出目录 `dist/`）；环境变量 `VITE_API_BASE_URL` 指向 `https://nest.baiwumm.com/api`；Nest CORS 增加 `https://vue.baiwumm.com`；**SPA 回退验证**（直链 `/users` 等路由刷新——CF Pages 无根 `404.html` 时自动回退 `index.html`，必要时加 `_redirects: /* /index.html 200`）；**Nest 保活 ping 联动确认**（`GET /api/health` 端点已上线 + UptimeRobot / CF Cron 在 ping，避免 SPA 首次调用撞上 30-50s 冷启动）；随后根 version 同步 + `pnpm sync-versions` + 单提交 `chore: release vX.Y.Z` + tag。
+- **部署（随四端统一上线执行，平台已定为 Cloudflare Pages，见 AGENTS §17）**：CF Pages Git 集成（Root Directory = `vue`，构建命令 `pnpm build`，输出目录 `dist/`）；环境变量 `VITE_API_BASE_URL` 指向 `https://nest.baiwumm.com/api`；Nest CORS 增加 `https://vue.baiwumm.com`；**SPA 回退验证**（直链 `/users` 等路由刷新——CF Pages 无根 `404.html` 时自动回退 `index.html`，必要时加 `_redirects: /* /index.html 200`）；**Nest 保活 ping 联动确认**（`GET /api/health` 端点已于 **2026-09-22** 落地：`apps/nest/src/modules/health/health.controller.ts`（无鉴权 / 不触库）+ 契约升 v1.14.0 补录，`LoggingInterceptor` 显式跳过该路径；⚠️ 本条 M4 原文写「端点已上线」在当时是事实错误——写该条时（2026-09-11）该端点尚不存在，更正记录见 `docs/launch-audit.md` #2 / #22；**线上 UptimeRobot / CF Worker Cron 每 5-10 分钟 ping 的配置仍未执行，正是本环节要做的动作**，避免 SPA 首次调用撞上 30-50s 冷启动）；随后根 version 同步 + `pnpm sync-versions` + 单提交 `chore: release vX.Y.Z` + tag。
 - 文档 ✅：feature-matrix Vue 列全量更新（Dashboard 保持 ❌）；mechanisms.md 增补 Vue 机制条目（**§16**：常驻挂载查询 enabled 门控 / 动态路由标题前缀匹配 / Nuxt UI locale 缺键 / 无渲染组件模板）；progress.md 置顶 M4 条目。
 - 验收：线上冒烟（登录 → 模块走查 → 暗色 / 英文）← **随统一上线执行**；统计与实际一致 ✅（27 项口径，Vue 26 项完成）。
 
