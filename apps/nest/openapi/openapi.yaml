@@ -2054,6 +2054,11 @@ paths:
     post:
       tags: [Auth]
       summary: 登录
+      description: >
+        响应体固定返回 accessToken / refreshToken / user（契约统一形状，React / Vue 直接取用令牌）。
+        ⚠️ 有意的双形态（2026-09-22 裁决，见 docs/launch-audit.md #26）：Next.js 端另经 httpOnly Cookie 下发同一份令牌，
+        但其响应体仍按本契约保留令牌字段、不做裁剪——裁剪会使四端共用同一份 Contract 的前提失效，
+        而客户端忽略这些字段即可，没有安全增益（真正的防线是 Cookie 的 HttpOnly，已具备）。
       security: []
       x-permission: NONE
       requestBody:

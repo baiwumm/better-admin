@@ -88,7 +88,7 @@
 | 25 | 🚫 | Dashboard 两级卡片分层（浅色下会变「凹陷」）——曾是唯一挂起的设计决策 | `progress.md:242` | **用户裁决：废弃，不改**（原话「没什么感觉，现状挺好的」）。现状 = 单层卡片 + 页头欢迎横幅承担层次；本条结案，不再出现在待办 |
 | 18 | Shadcn 补充条款：正式作废，还是补实现 | 见 P1 #18 |
 | 44 | Nest CORS 白名单范围（两端 vs 四端） | 见 P1 #44 |
-| 26 | Next 登录/刷新响应体是否裁剪双 token（`login/route.ts:13` 注释称守共用契约，砍则破坏 React/Vue 响应形状） | `progress.md:1387` |
+| 26 | ✅ | Next 登录/刷新响应体是否裁剪双 token（原记为 P2 未做项，称其削弱 httpOnly 防线） | `progress.md:1387`；`apps/next/src/app/api/auth/login/route.ts:13` 注释说明「响应体仍按契约返回，客户端可忽略令牌字段」 | **用户裁决：不裁剪**，改为在契约里写明这是有意双形态。理由：裁剪会让四端共用同一份 Contract 的前提失效（React / Vue 就是靠响应体取令牌），而客户端忽略字段即可、真正防线是 Cookie 的 HttpOnly（已具备），无安全增益。已在 `openapi.yaml` 的 `POST /auth/login` 补 `description` 注记（纯文档性说明，不改响应 schema，故**不升契约版本**） |
 | 27 | Nest `phone` 不 trim，是否由 Next 对齐 Nest | `progress.md:889` |
 | 28 | 四端 `redirectToSignIn` 带参规则未统一 | `mechanisms.md:907` |
 | 29 | Next `/org/notices/[noticeId]` 详情页无 metadata | `mechanisms.md:735` |
