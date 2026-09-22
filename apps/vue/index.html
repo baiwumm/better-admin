@@ -3,6 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- 品牌图标三件套（由 assets/logo/build-assets.py 生成，见 docs/ui-spec.md §19）：
+         ICO 兜底旧浏览器、96 PNG 供 Windows 磁贴、apple-touch-icon 供 iOS 加到主屏
+         （缺它时 iOS 会退化成截网页图当图标）、manifest 让安卓/桌面以独立应用形态打开。 -->
+    <link rel="alternate icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#020817" />

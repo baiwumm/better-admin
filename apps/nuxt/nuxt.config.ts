@@ -79,6 +79,21 @@ export default defineNuxtConfig({
   devtools: {
     enabled: true
   },
+  // 品牌图标声明（2026-09-22 补，见 docs/ui-spec.md §19 与 docs/launch-audit.md #5）：
+  // 此前本配置无任何 head 块，标签页图标只靠浏览器自动请求 /favicon.ico 兜底——缺
+  // apple-touch-icon 时 iOS「添加到主屏」会退化成截网页图当图标，缺 manifest 时安卓
+  // 不以独立应用形态打开。资产由 assets/logo/build-assets.py 生成，此处只做声明。
+  app: {
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'alternate icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/png', sizes: '96x96', href: '/favicon-96x96.png' },
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' },
+        { rel: 'manifest', href: '/site.webmanifest' }
+      ]
+    }
+  },
 
   css: ['~/assets/css/main.css'],
 

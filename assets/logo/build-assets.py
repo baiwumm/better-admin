@@ -244,6 +244,27 @@ def main() -> int:
             "web-app-manifest-192x192.png",
             "web-app-manifest-512x512.png",
         ],
+        # Vue / Nuxt 于 2026-09-22 补入：此前本表只列 react / next / website，
+        # 两端只拿到 SVG/ICO，缺 apple-touch-icon（iOS 加到主屏会退化成网页截图）
+        # 与 web-app-manifest PNG。文件名与像素尺寸与 react / next 完全一致。
+        "vue": [
+            "logo.png",
+            "logo-dark.png",
+            "favicon.png",
+            "favicon-96x96.png",
+            "apple-touch-icon.png",
+            "web-app-manifest-192x192.png",
+            "web-app-manifest-512x512.png",
+        ],
+        "nuxt": [
+            "logo.png",
+            "logo-dark.png",
+            "favicon.png",
+            "favicon-96x96.png",
+            "apple-touch-icon.png",
+            "web-app-manifest-192x192.png",
+            "web-app-manifest-512x512.png",
+        ],
         "website": ["apple-touch-icon.png"],
     }
 
@@ -325,6 +346,42 @@ def main() -> int:
             touched.append("favicon_light.svg")
         installed[app] = sorted(touched)
     report["各端安装"] = installed
+
+    # ---------- 3a2. webmanifest（Vue / Nuxt）----------
+    # 与上面 PNG 同批补入：缺 manifest 时移动端「添加到主屏」不会以独立应用形态打开。
+    # react 的 site.webmanifest 早先手工创建、内容与此一致，不在此覆盖；next 走 App Router
+    # 文件约定 metadata、当前未引用 manifest，故也不生成，避免留下无人引用的死资产。
+    manifest_json = json.dumps(
+        {
+            "name": "Better Admin",
+            "short_name": "Better Admin",
+            "icons": [
+                {
+                    "src": "/web-app-manifest-192x192.png",
+                    "sizes": "192x192",
+                    "type": "image/png",
+                    "purpose": "maskable",
+                },
+                {
+                    "src": "/web-app-manifest-512x512.png",
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "maskable",
+                },
+            ],
+            "theme_color": "#ffffff",
+            "background_color": "#ffffff",
+            "display": "standalone",
+        },
+        indent=2,
+    )
+    for app in ("vue", "nuxt"):
+        (APPS / app / "public" / "site.webmanifest").write_text(
+            manifest_json + "\n", encoding="utf-8", newline="\n"
+        )
+        report.setdefault("webmanifest 安装", []).append(
+            f"apps/{app}/public/site.webmanifest"
+        )
 
     # ---------- 3b. Next.js 文件约定图标（apps/next/src/app/） ----------
     # ⚠️ Next App Router 的 file-based metadata **优先于** layout.tsx 的 metadata.icons：

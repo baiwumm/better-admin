@@ -761,6 +761,9 @@ Shadcn UI
 
 派生位图（各端沿用既有文件名与像素尺寸，零代码改动）：`logo.png`(256) / `logo-dark.png`(256) / `favicon.png`(64) / `favicon-96x96.png`(96) / `favicon_light.png`(64) / `apple-touch-icon.png`(180) / `web-app-manifest-192x192.png` / `web-app-manifest-512x512.png`。
 
+> **装配范围与 head 声明（2026-09-22 补，背景见 `docs/launch-audit.md` #5）**：上面这套 PNG 目标表历史上只列 react / next / website，**Vue / Nuxt 长期只拿到 SVG/ICO**，缺 `apple-touch-icon.png` 与 `web-app-manifest-*.png`，且两端页面里根本没声明这些图标——Nuxt 甚至没有任何 `app.head` 块，标签页图标纯靠浏览器自动请求 `/favicon.ico` 兜底。现已把 vue / nuxt 补入脚本目标表（`favicon_light.png` 是 react / next 的历史兼容项，不给 vue / nuxt 复制），并由脚本生成 `site.webmanifest`，两端 head 补齐 `icon / alternate icon / 96 PNG / apple-touch-icon / manifest` 五条 link。
+> ⚠️ **光生成资产不等于生效**：新增端或新增图标时，必须同时改 `build-assets.py` 的目标表**和**该端的 head 声明（Next 端例外，走 `src/app/` 文件约定 metadata），否则文件躺在 `public/` 里没人引用。验收口径：查看渲染出的 HTML `<head>` 有上述 link，且 iOS 添加到主屏显示的是 Monogram B 而非网页截图。
+
 ### 19.4 硬性规则
 
 1. **单色几何**：只允许两级极性；禁止引入渐变 / 滤镜 / 位图 / 描边补偿 / `fill-opacity` 层次。
