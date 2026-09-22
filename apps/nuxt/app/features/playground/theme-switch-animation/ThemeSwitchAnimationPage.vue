@@ -25,6 +25,23 @@ import { useDemoThemeAnimation } from './use-demo-theme-animation'
 
 const DURATION_RANGE = { min: 200, max: 1500, step: 50 }
 const BLUR_RANGE = { min: 1, max: 10, step: 0.5 }
+/** BLINDS 叶片宽度合法域（库约定 16–200px，越界静默回落默认 72） */
+const SLAT_WIDTH_RANGE = { min: 16, max: 200, step: 2 }
+const SLAT_WIDTH_DEFAULT = 72
+
+/** 消费 `direction` 选项的三种属性驱动类型（其余类型传入无效果） */
+const DIRECTION_CONSUMING_TYPES: readonly DemoAnimationType[] = [
+  ThemeAnimationType.BLINDS,
+  ThemeAnimationType.SCAN,
+  ThemeAnimationType.QR_GRID
+]
+
+const DIRECTION_PRESETS = [
+  ThemeAnimationDirection.LTR,
+  ThemeAnimationDirection.RTL,
+  ThemeAnimationDirection.TTB,
+  ThemeAnimationDirection.BTT
+] as const
 
 const EASING_PRESETS = [
   { id: 'ease-in-out', label: 'ease-in-out' },
@@ -50,8 +67,9 @@ const TRIGGER_ALIGNS = [
  * 演示场 › 主题切换动画：`theme-switch-animation`（View Transitions API 蒙版揭示）。
  *
  * 与项目既有主题切换（`stores/design-theme-store` 的 clip-path 四向揭示）**并存**：
- * 本页只演示库的 13 种蒙版动画，受控模式接入同一主题 store，不替换业务的主题动画实现。
- * `ThemeAnimationType` / `useThemeAnimation` 由 `theme-switch-animation/nuxt` 模块自动导入。
+ * 本页只演示库的 12 种蒙版动画，受控模式接入同一主题 store，不替换业务的主题动画实现。
+ * `ThemeAnimationType` / `ThemeAnimationDirection` / `useThemeAnimation` 由
+ * `theme-switch-animation/nuxt` 模块自动导入。
  */
 const { t } = useI18n()
 const store = useDesignThemeStore()
@@ -60,6 +78,16 @@ const animationType = ref<DemoAnimationType>(ThemeAnimationType.CIRCLE)
 const duration = ref(750)
 const easing = ref<EasingId>('ease-in-out')
 const blurAmount = ref(2)
+const direction = ref<ThemeAnimationDirection>(ThemeAnimationDirection.LTR)
+const slatWidth = ref(SLAT_WIDTH_DEFAULT)
+
+/** `DemoSegmented` 收 `{ id, label }[]`（可变数组），方向文案走 i18n 动态映射。 */
+const DIRECTION_OPTIONS = computed(() =>
+  DIRECTION_PRESETS.map(preset => ({
+    id: preset,
+    label: t(`features.playground.themeSwitchAnimation.direction.${preset}`)
+  }))
+)
 
 // 区块二专属实例：以当前参数触发一次切换
 const {
@@ -69,8 +97,10 @@ const {
 } = useDemoThemeAnimation<HTMLDivElement>(() => ({
   animationType: animationType.value,
   blurAmount: blurAmount.value,
+  direction: direction.value,
   duration: duration.value,
-  easing: easing.value
+  easing: easing.value,
+  slatWidth: slatWidth.value
 }))
 
 /** 与页头主题选择器、Logo 深浅色同一状态源，演示页切换后全站同步。 */
@@ -93,7 +123,7 @@ onMounted(() => {
 
 <template>
   <PlaygroundPage :meta="themeSwitchAnimationMeta">
-    <!-- 区块一：13 种动画类型，逐类型点击体验（圆钮即扩散圆心，网格不同位置即不同起点） -->
+    <!-- 区块一：12 种动画类型，逐类型点击体验（圆钮即扩散圆心，网格不同位置即不同起点） -->
     <DemoSection
       :description="
         t('features.playground.themeSwitchAnimation.gridDescription')
@@ -105,17 +135,19 @@ onMounted(() => {
           v-for="(item, index) in DEMO_ANIMATION_TYPES"
           :key="item.type"
           :blur-amount="blurAmount"
+          :direction="direction"
           :duration="duration"
           :easing="easing"
           :hint-key="item.hintKey"
           :icon="item.icon"
           :index="index"
+          :slat-width="slatWidth"
           :type="item.type"
         />
       </div>
     </DemoSection>
 
-    <!-- 区块二：选中一种动画并调节时长 / 缓动 / 模糊强度，再以该参数触发一次切换 -->
+    <!-- 区块二：选中一种动画并调节时长 / 缓动 / 模糊强度 / 方向 / 叶宽，再以该参数触发一次切换 -->
     <DemoSection
       :description="
         t('features.playground.themeSwitchAnimation.paramsDescription')
@@ -152,6 +184,29 @@ onMounted(() => {
             :max="BLUR_RANGE.max"
             :min="BLUR_RANGE.min"
             :step="BLUR_RANGE.step"
+          />
+        </DemoControl>
+        <DemoControl
+          v-if="DIRECTION_CONSUMING_TYPES.includes(animationType)"
+          :label="t('features.playground.themeSwitchAnimation.direction')"
+        >
+          <DemoSegmented
+            v-model="direction"
+            :label="t('features.playground.themeSwitchAnimation.direction')"
+            :options="DIRECTION_OPTIONS"
+          />
+        </DemoControl>
+        <DemoControl
+          v-if="animationType === ThemeAnimationType.BLINDS"
+          :label="t('features.playground.themeSwitchAnimation.slatWidth')"
+        >
+          <!-- 像素值不传 format-options：Intl 单位无 "pixel"，传入会抛 RangeError -->
+          <DemoSlider
+            v-model="slatWidth"
+            :label="t('features.playground.themeSwitchAnimation.slatWidth')"
+            :max="SLAT_WIDTH_RANGE.max"
+            :min="SLAT_WIDTH_RANGE.min"
+            :step="SLAT_WIDTH_RANGE.step"
           />
         </DemoControl>
       </template>
@@ -206,9 +261,11 @@ onMounted(() => {
           :align="align"
           :animation-type="animationType"
           :blur-amount="blurAmount"
+          :direction="direction"
           :duration="duration"
           :easing="easing"
           :index="position + 1"
+          :slat-width="slatWidth"
         />
       </DemoStage>
     </DemoSection>

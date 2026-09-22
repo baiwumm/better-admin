@@ -17,6 +17,10 @@ export interface AnimationParams {
   easing: string
   /** 模糊蒙版强度，仅 CIRCLE_BLUR 生效 */
   blurAmount: number
+  /** 扫描方向，仅 BLINDS / SCAN / QR_GRID 生效（0.2.0 起四向擦除并入此选项） */
+  direction: ThemeAnimationDirection
+  /** 百叶窗叶片宽度 px，仅 BLINDS 生效 */
+  slatWidth: number
 }
 
 /**
@@ -68,11 +72,17 @@ export function useDemoThemeAnimation<T extends HTMLElement = HTMLButtonElement>
     get blurAmount() {
       return getParams().blurAmount
     },
+    get direction() {
+      return getParams().direction
+    },
     get duration() {
       return getParams().duration
     },
     get easing() {
       return getParams().easing
+    },
+    get slatWidth() {
+      return getParams().slatWidth
     },
     get isDark() {
       return store.isDark

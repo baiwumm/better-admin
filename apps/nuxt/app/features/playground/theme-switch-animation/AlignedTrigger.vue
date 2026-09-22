@@ -18,6 +18,10 @@ const props = defineProps<{
   duration: number
   easing: string
   blurAmount: number
+  /** 扫描方向，仅 BLINDS / SCAN / QR_GRID 消费 */
+  direction: ThemeAnimationDirection
+  /** 百叶窗叶片宽度 px，仅 BLINDS 消费 */
+  slatWidth: number
 }>()
 
 const { t } = useI18n()
@@ -26,8 +30,10 @@ const { isAnimating, triggerRef, toggle }
   = useDemoThemeAnimation<HTMLDivElement>(() => ({
     animationType: props.animationType,
     blurAmount: props.blurAmount,
+    direction: props.direction,
     duration: props.duration,
-    easing: props.easing
+    easing: props.easing,
+    slatWidth: props.slatWidth
   }))
 </script>
 
