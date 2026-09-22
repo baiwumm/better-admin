@@ -16,7 +16,7 @@
 
 1. **统一数据库**：所有技术栈（React/Vue/Next/Nuxt/Nest）共用同一套 PostgreSQL Schema，禁止维护不同的数据库结构。
 2. **ORM**：NestJS 使用 **Drizzle ORM**；Schema 定义文件即 Single Source，后续全栈版本复用同一字段设计。
-3. **Supabase 仅作托管**：不使用 Supabase Auth / RLS / Edge Functions / Storage；连接信息仅存在于服务端环境变量。
+3. **Supabase 仅作托管**：不使用 Supabase Auth / RLS / Edge Functions；连接信息仅存在于服务端环境变量。**唯一豁免为 Storage**（契约 v1.5.0：用户头像存 bucket `avatars`、public read，由服务端持密钥中转读写，浏览器不接触密钥，见 §2.1 `avatar` 与 AGENTS §5）。
 4. **RBAC 服务端强制校验**：用户 ↔ 角色 ↔ 权限、菜单关联权限；服务端必须做授权校验，不只依赖前端路由守卫。
 5. **API Contract 优先**：OpenAPI 为 Contract 唯一事实来源，本文档的表结构需与后续 OpenAPI 对齐。
 6. **一致性**：字段命名、数据类型、业务规则跨技术栈保持一致；本文档定义后，其他技术栈不得另起炉灶。
@@ -94,8 +94,14 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 ---
 
-## 2. 表清单（17 张，无 i18n 表）
+## 2. 表清单（物理 17 张，无 i18n 表）
 
+> **计数口径（2026-09-22 实测校正，原写「17 张」为口径混用所致失真，见仓库根 `docs/launch-audit.md` #50）**：
+> - `src/db/schema/` 下 `pgTable(` 声明共 **18** 处（`grep -rc pgTable src/db/schema/*.ts` 求和）；
+> - 其中 `settings`（§2.8）为**已停用的遗留声明**：该文件未被 barrel `src/db/schema/index.ts` 导出，而 `drizzle.config.ts` 的 `schema` 入口只读该 barrel，故它不参与迁移生成；
+> - **库中物理表 17 张**——与 drizzle-kit 最新快照 `drizzle/meta/0009_snapshot.json` 的 17 张完全一致（含 `refresh_tokens`，不含已被迁移 `0002_*` DROP 的 `settings`）；
+> - 本节 §2.1–§2.18 共 18 个小节 = **17 张物理表 + 1 条已停用表口径说明**（§2.18 `refresh_tokens` 为本次补录，此前长期无小节）。
+>
 > 通用约定：
 > - 所有表主键 `id` 为 `text`（与参考模型一致，实现简单、无 uuid 生成依赖）。
 > - **主键生成策略**：所有 `text` 类型主键由**服务端强制使用 `nanoid(12)` 生成**（如 `const id = nanoid(12)`），确保高并发下的唯一性与无序性。**禁止前端传入 id，禁止依赖数据库自增/序列**。需引入 `nanoid` 依赖（属必要基础设施）。
@@ -228,12 +234,24 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 唯一约束建议：`(type_code, value)`。
 
-### 2.8 `settings`（系统设置）— 已移除（v0.3）
+### 2.8 `settings`（系统设置）— 已停用（v0.3 移除，物理表已 DROP）
 
-> settings 表与 `/api/settings` 系列端点已随契约 v1.3 / 本文档 v0.3 **整体移除**
-> （系统设置页暂无落地计划，相关接口不再维护）；迁移 `0002_*` 已在真实库
-> DROP 该表。原「SETTINGS_UPDATE 独立写权限位」约定一并废止。
-> 日志清理若需保留期配置，另行以新配置载体实现，不复用本表。
+> **模块与端点已移除**：`/api/settings` 系列端点、`SETTINGS_UPDATE` 权限位与本表一并随
+> 契约 v1.3 / 本文档 v0.3 移除（系统设置页无落地计划，相关接口不再维护）；
+> **物理表已不存在**——迁移 `drizzle/0002_lively_obadiah_stane.sql` 即
+> `DROP TABLE "settings" CASCADE;`（`0000_initial_schema.sql` 建、`0002` 删，其后无回建）。
+>
+> ⚠️ **口径澄清（2026-09-22 实测，勿再写作「表仍在库中保留」）**：`src/db/schema/settings.schema.ts`
+> 仍保留该表的 drizzle 列声明（§2 计数里的第 18 处 `pgTable`），但该文件**未被 barrel
+> `src/db/schema/index.ts` 导出**、`drizzle.config.ts` 只以该 barrel 为 schema 入口，
+> 且全仓无任何代码 import 该表定义（`grep -rn "settings\.schema" src scripts` 0 命中，
+> 仅 `logs.schema.ts` 注释与 seed 菜单的 `to: '/settings/*'` 路径字面量提到 settings）。
+> 因此它是**不参与迁移、无业务读写的死声明**，不影响库结构，也不构成「表还在」的依据；
+> 若后续被重新导出，drizzle-kit 会生成 `CREATE TABLE settings` 的回潮迁移——删除或复活该文件前须先确认。
+>
+> 日志清理若需保留期配置，另行以新配置载体实现，不复用本表（现状：保留期与计划由环境变量驱动，
+> 见 `src/modules/logs/log-cleanup.service.ts` 与 `.env.example` 的 `LOG_RETENTION_DAYS` /
+> `LOG_CLEANUP_CRON` / `LOG_CLEANUP_ENABLED`）。
 
 ### 2.9 `logs`（日志）
 
@@ -250,7 +268,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 索引：`logs_type_idx (type)`、`logs_created_idx (created_at)`。
 
-> **日志自动清理策略**：日志表只增不删（无软删），长期运行会膨胀。生产环境建议通过 **`pg_cron`**（数据库侧定时任务）或应用层 **`@Cron()`**（NestJS 定时任务）定期清理：保留期原计划读 `settings.system.logRetentionDays`（settings 已于 v0.3 移除，启用时另行引入配置载体），删除 `created_at` 早于 `now() - interval 'N days'` 的过期日志。清理任务本身应记录到 `error`/`operation` 日志以便追溯，避免静默丢失审计数据。
+> **日志自动清理策略**（已实现，非建议项）：日志表只增不删（无软删），长期运行会膨胀，故采用应用层 **`@Cron()`**（NestJS 定时任务）清理——`src/modules/logs/log-cleanup.service.ts` 每日 03:00（Asia/Shanghai，`LOG_CLEANUP_CRON` 可覆盖，`LOG_CLEANUP_ENABLED=false` 关闭）删除 `created_at` 早于 `now() - LOG_RETENTION_DAYS 天`（缺省 30，非正整数回退缺省）的日志，按批 1000 条循环（避免单条 SQL 长时间持锁，靠 `logs_created_idx` 支撑截止时间扫描），并跳过 faker 布景日志（`detail.seed === true`）。清理任务本身写一条 `operation` 日志（`action=log.cleanup`）以便追溯，避免静默丢失审计数据。保留期**不读** `settings.system.logRetentionDays`（settings 已于 v0.3 移除，见 §2.8），改由环境变量承载。
 
 ### 2.10 `depts`（组织，v1.6.0 组织中心）
 
@@ -358,6 +376,29 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 索引：`notifications_recipient_idx (recipient_id, read_at)`。**顶栏铃铛的数据源**（未读数 = read_at IS NULL 计数）。
 
+### 2.18 `refresh_tokens`（刷新令牌托管，契约 v1.2 建表，迁移 `0001_*`）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | text | PK | 记录 ID（服务端 `nanoid(12)` 生成） |
+| user_id | text | NOT NULL, FK→users.id (cascade) | 所属用户；用户软删除 / 停用 / 改密码时按 `user_id` 批量清行 |
+| token_hash | text | NOT NULL, UNIQUE | refreshToken 的 **SHA-256 hex 摘要**（**不落明文**；`refresh_tokens_token_hash_unique`，按哈希精确撤销） |
+| expires_at | timestamptz | NOT NULL | 过期时刻，取自签发时 refreshToken 的 `exp`（记住我档 `REFRESH_EXPIRES_IN` 缺省 30d / 短会话档 `REFRESH_EXPIRES_IN_SHORT` 缺省 1d） |
+| created_at | timestamptz | NOT NULL, DEFAULT now() | |
+
+索引：`refresh_tokens_user_id_idx (user_id)`。一个用户可并存多行（多设备各自独立会话）。
+
+> **用途（契约 v1.2「refreshToken 服务端托管」）**：refreshToken 不只是无状态 JWT——签发时同步写一行哈希，
+> `POST /auth/refresh` 须命中该行且未到 `expires_at` 才放行（登出 / 被撤销 / 重放伪造均在此拒绝）。
+> **轮换**：refresh 在事务内删旧行、插新行，新行 `expires_at` **继承原行**（固定窗口，非滑动续期）。
+> **撤销**：`POST /auth/logout` 携带 refreshToken 时按哈希删单行（精确撤销该设备），未携带则按 `user_id` 清空该用户全部行；
+> 改密码 / 封禁 / 软删除同理由 `token_version` 递增 + 清行组合下线（`auth.service` / `account.service` / `users.service`）。
+> **清理机制**：自然过期的行不在任何撤销路径上，此前无人回收；现由 `src/auth/refresh-token-cleanup.service.ts`
+> 每日 03:30（Asia/Shanghai，与日志清理 03:00 错峰）分批删除 `expires_at < now()` 的行（单批 1000 行，
+> best-effort，失败仅记日志不影响主流程）；`REFRESH_TOKEN_CLEANUP_CRON` 覆盖计划、
+> `REFRESH_TOKEN_CLEANUP_ENABLED=false` 关闭（两项已在 `.env.example` 登记；随契约 v1.10.0 演示模式补齐——
+> 演示站高频快捷登录会使该表持续膨胀）。
+
 ---
 
 ## 3. 日志类型定义（`logs.type`）
@@ -376,6 +417,8 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 ---
 
 ## 4. 系统设置预置 Key（种子）
+
+> ⚠️ **本节已随 v0.3 / 契约 v1.3 废止**：`settings` 表与 `/api/settings` 端点移除后，下列 8 个 key **不再 seed、无消费方**（`src/db/seed.ts` 无任何写入）；保留本表仅为追溯当初的分组设计，勿据此实现新功能。现状与源码残留口径见 §2.8。
 
 | key | group | 说明 | value 示例 |
 | --- | --- | --- | --- |
@@ -416,7 +459,7 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 - **用户**：`admin` / `admin123`（bcrypt 哈希；`SEED_ADMIN_PASSWORD` 环境变量可覆盖，缺省回退 `admin123`），关联 `super_admin`。
 - **菜单树**：概览/Dashboard、系统管理（用户/角色/权限/菜单/日志）、系统设置；各自带 `permissions` 按钮位 + `i18n_key`。
 - **字典初值**：`user_status`(active/disabled)、`log_type`(operation/login/api/error) 等，带 `i18n_key`。
-- **设置**：§4 的 8 个 key。
+- ~~**设置**：§4 的 8 个 key~~（v0.3 起随 settings 模块移除，seed 不再写入，见 §4 废止说明）。
 - 种子脚本与迁移脚本分离，避免在共有库污染；建议在隔离测试库先跑通。
 
 ---
@@ -452,12 +495,13 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 | 日期 | 版本 | 说明 |
 | --- | --- | --- |
-| 2026-09-14 | v0.10 | §1.5 步骤 2 明确「有 `role_menus` 关联记录即可见，不按 `permissions` 值过滤」：Nest / Next / Nuxt 三端服务端同款移除 `buildAllowedMenuIds` 中的 `permissions != 0` 过滤（实现层偏离设计，致 0 位纯展示页对普通角色不可见）。无 Schema / 契约变化；新增「演示场」菜单树 10 节点（含三级，全部 0 位）经 `nest/scripts/migrate-menus-add-playground.ts` 幂等录入。 |
-| 2026-09-01 | v0.6 | 契约 v1.6.0（组织中心阶段 1/2）：迁移 0007 新增 8 张表——`depts` / `posts` / `user_posts` / `notices` / `notice_scopes` / `notice_read_records` / `notice_remind_logs` / `notifications`（后 5 张阶段 3 实现业务）；`users` 表新增 `dept_id` / `employee_no` / `employment_status` / `entry_date` 四个可空列（向前兼容）。组织/岗位软删 + 部分唯一索引；depts↔users 循环外键以 AnyPgColumn 惰性回调声明；岗位不参与权限聚合（架构决策）。存量库需执行 `pnpm db:migrate`（0007）与 `nest/scripts/migrate-menus-add-org.ts`（菜单补录）。 |
-| 2026-08-30 | v0.5 | 契约 v1.4.4：新增 `GRANT`(256) 权限点（菜单授权，守卫 `PUT /roles/:id/menus`，原为 EDIT）；仅角色管理菜单声明该位，存量库经 `nest/scripts/migrate-menus-add-grant-bit.ts` 幂等补录；super_admin 全量位自动覆盖，无需迁移数据。权限点共 9 个。 |
-| 2026-09-05 | v0.9 | 契约 v1.7.1：新增 `EXPORT`(512) 权限点（通讯录 Excel 导出按钮前端门控，无独立端点）；仅人员通讯录菜单声明该位，存量库经 `nest/scripts/migrate-menus-add-export-bit.ts` 幂等补录；super_admin 全量位自动覆盖。权限点共 10 个。 |
-| 2026-08-28 | v0.4 | 契约 v1.4：`menus.target` 列移除（真实库已 DROP COLUMN），外链打开方式由前端按 `to` 是否外链推导，菜单字段与权限位无其它变化。 |
 | 2026-08-21 | v0.1 | Phase 2 数据库设计方案：位掩码 RBAC、9 张表（无 i18n 表）、日志 4 类型、设置预置、字典、纯前端 i18n 约定。仅文档，未开发。 |
 | 2026-08-21 | v0.2 | 六项关键改进：超级管理员全量位(`9223372036854775807`)、主键 `nanoid(12)` 强制服务端生成、users 软删部分唯一索引、新增 `SETTINGS_UPDATE` 独立位、日志自动清理策略、字典/菜单 i18n 管理规范。仅文档，未开发。 |
-| 2026-08-28 | v0.3 | 新增管理用全量菜单树约定（`GET /api/menus/tree`，契约 v1.3，支持 search 模糊与 order 排序方向）；**移除 `settings` 表/模块与 `SETTINGS_UPDATE` 权限位**；新增 `RESET_PASSWORD`(128) 位守卫重置密码端点（`RESET` 保留为前端「重置」按钮显隐位），权限点共 8 个，真实库已 DROP settings 表；`menus.to` 增加部分唯一索引（NULL 不约束）与格式/唯一校验（MENU_TO_INVALID / MENU_TO_EXISTS）。 |
 | 2026-08-21 | v0.3 | 新增 §1.5 菜单树权限填充性能约束（禁止 N+1，O(1) 内存映射法，仅 2 次查询）。仅文档，未开发。 |
+| 2026-08-28 | v0.3 | 新增管理用全量菜单树约定（`GET /api/menus/tree`，契约 v1.3，支持 search 模糊与 order 排序方向）；**移除 `settings` 表/模块与 `SETTINGS_UPDATE` 权限位**；新增 `RESET_PASSWORD`(128) 位守卫重置密码端点（`RESET` 保留为前端「重置」按钮显隐位），权限点共 8 个，真实库已 DROP settings 表；`menus.to` 增加部分唯一索引（NULL 不约束）与格式/唯一校验（MENU_TO_INVALID / MENU_TO_EXISTS）。 |
+| 2026-08-28 | v0.4 | 契约 v1.4：`menus.target` 列移除（真实库已 DROP COLUMN），外链打开方式由前端按 `to` 是否外链推导，菜单字段与权限位无其它变化。 |
+| 2026-08-30 | v0.5 | 契约 v1.4.4：新增 `GRANT`(256) 权限点（菜单授权，守卫 `PUT /roles/:id/menus`，原为 EDIT）；仅角色管理菜单声明该位，存量库经 `nest/scripts/migrate-menus-add-grant-bit.ts` 幂等补录；super_admin 全量位自动覆盖，无需迁移数据。权限点共 9 个。 |
+| 2026-09-01 | v0.6 | 契约 v1.6.0（组织中心阶段 1/2）：迁移 0007 新增 8 张表——`depts` / `posts` / `user_posts` / `notices` / `notice_scopes` / `notice_read_records` / `notice_remind_logs` / `notifications`（后 5 张阶段 3 实现业务）；`users` 表新增 `dept_id` / `employee_no` / `employment_status` / `entry_date` 四个可空列（向前兼容）。组织/岗位软删 + 部分唯一索引；depts↔users 循环外键以 AnyPgColumn 惰性回调声明；岗位不参与权限聚合（架构决策）。存量库需执行 `pnpm db:migrate`（0007）与 `nest/scripts/migrate-menus-add-org.ts`（菜单补录）。 |
+| 2026-09-05 | v0.9 | 契约 v1.7.1：新增 `EXPORT`(512) 权限点（通讯录 Excel 导出按钮前端门控，无独立端点）；仅人员通讯录菜单声明该位，存量库经 `nest/scripts/migrate-menus-add-export-bit.ts` 幂等补录；super_admin 全量位自动覆盖。权限点共 10 个。 |
+| 2026-09-14 | v0.10 | §1.5 步骤 2 明确「有 `role_menus` 关联记录即可见，不按 `permissions` 值过滤」：Nest / Next / Nuxt 三端服务端同款移除 `buildAllowedMenuIds` 中的 `permissions != 0` 过滤（实现层偏离设计，致 0 位纯展示页对普通角色不可见）。无 Schema / 契约变化；新增「演示场」菜单树 10 节点（含三级，全部 0 位）经 `nest/scripts/migrate-menus-add-playground.ts` 幂等录入。 |
+| 2026-09-22 | v0.11 | 本文档清账（**纯文档修正，零 Schema / 零契约变更**，背景见仓库根 `docs/launch-audit.md` #50）：① 新增 §2.18 `refresh_tokens` 小节——该表自契约 v1.2（迁移 `0001_*`）起即存在，此前 §2 长期无小节，现按 `refresh_tokens.schema.ts` 逐列补录，并记明用途、轮换/撤销链路与 `REFRESH_TOKEN_CLEANUP_*` 清理机制。② §2 标题计数改准：`pgTable(` 声明 **18** 处 / 库中物理表 **17** 张（与 `drizzle/meta/0009_snapshot.json` 一致），并注明 `settings` 声明未进 barrel、不参与迁移生成。③ §2.8 表述纠偏：「已移除」易被误读为「表还在库里」——现写明物理表已由 `0002_*` DROP、源码仍留一份无引用的死声明（不动 schema、不删表）。④ §2.9 日志清理由「建议」改为已实现事实（`LOG_RETENTION_DAYS` / `LOG_CLEANUP_CRON` / `LOG_CLEANUP_ENABLED`）。⑤ §9 历史行按日期+版本重排为升序（此前 v0.10 在 v0.6 之上、v0.9 在 v0.5 之下），**行内容逐字未改**，仅版式排序。 |
