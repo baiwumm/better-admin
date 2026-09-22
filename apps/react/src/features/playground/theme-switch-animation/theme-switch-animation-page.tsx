@@ -3,6 +3,7 @@ import {
   supportsViewTransition,
 } from "theme-switch-animation";
 import {
+  ThemeAnimationDirection,
   ThemeAnimationType,
   useThemeAnimation,
 } from "theme-switch-animation/react";
@@ -39,6 +40,23 @@ const SETTLE_BUFFER_MS = 150;
 
 const DURATION_RANGE = { min: 200, max: 1500, step: 50 };
 const BLUR_RANGE = { min: 1, max: 10, step: 0.5 };
+/** BLINDS 叶片宽度合法域（库约定 16–200px，越界静默回落默认 72） */
+const SLAT_WIDTH_RANGE = { min: 16, max: 200, step: 2 };
+const SLAT_WIDTH_DEFAULT = 72;
+
+/** 消费 `direction` 选项的三种属性驱动类型（其余类型传入无效果） */
+const DIRECTION_CONSUMING_TYPES: readonly DemoAnimationType[] = [
+  ThemeAnimationType.BLINDS,
+  ThemeAnimationType.SCAN,
+  ThemeAnimationType.QR_GRID,
+];
+
+const DIRECTION_PRESETS = [
+  ThemeAnimationDirection.LTR,
+  ThemeAnimationDirection.RTL,
+  ThemeAnimationDirection.TTB,
+  ThemeAnimationDirection.BTT,
+] as const;
 
 const EASING_PRESETS = [
   { id: "ease-in-out", label: "ease-in-out" },
@@ -56,6 +74,10 @@ interface AnimationParams {
   easing: string;
   /** 模糊蒙版强度，仅 CIRCLE_BLUR 生效 */
   blurAmount: number;
+  /** 扫描方向，仅 BLINDS / SCAN / QR_GRID 生效（0.2.0 起四向擦除并入此选项） */
+  direction: ThemeAnimationDirection;
+  /** 百叶窗叶片宽度 px，仅 BLINDS 生效 */
+  slatWidth: number;
 }
 
 /**
@@ -99,8 +121,10 @@ function useDemoThemeAnimation(params: AnimationParams) {
   const { ref, toggleTheme } = useThemeAnimation<HTMLDivElement>({
     animationType: params.animationType,
     blurAmount: params.blurAmount,
+    direction: params.direction,
     duration: params.duration,
     easing: params.easing,
+    slatWidth: params.slatWidth,
     isDark,
     onChange: (next) => applyThemeModeInstant(next ? "dark" : "light"),
   });
@@ -207,7 +231,7 @@ function AnimationTypeCard({
   );
 }
 
-/** 区块一：13 种动画类型，逐类型点击体验（圆心取圆钮中心，网格不同位置即不同起点）。 */
+/** 区块一：12 种动画类型，逐类型点击体验（圆心取圆钮中心，网格不同位置即不同起点）。 */
 function TypeGridSection({ params }: { params: AnimationParams }) {
   const { t } = useTranslation();
 
@@ -234,32 +258,42 @@ function TypeGridSection({ params }: { params: AnimationParams }) {
   );
 }
 
-/** 区块二：选中一种动画并调节时长 / 缓动 / 模糊强度，再以该参数触发一次切换。 */
+/** 区块二：选中一种动画并调节时长 / 缓动 / 模糊强度 / 方向 / 叶宽，再以该参数触发一次切换。 */
 function ParamsSection({
   animationType,
   blurAmount,
+  direction,
   duration,
   easing,
+  slatWidth,
   onAnimationTypeChange,
   onBlurAmountChange,
+  onDirectionChange,
   onDurationChange,
   onEasingChange,
+  onSlatWidthChange,
 }: {
   animationType: DemoAnimationType;
   blurAmount: number;
+  direction: ThemeAnimationDirection;
   duration: number;
   easing: EasingId;
+  slatWidth: number;
   onAnimationTypeChange: (type: DemoAnimationType) => void;
   onBlurAmountChange: (value: number) => void;
+  onDirectionChange: (value: ThemeAnimationDirection) => void;
   onDurationChange: (value: number) => void;
   onEasingChange: (value: EasingId) => void;
+  onSlatWidthChange: (value: number) => void;
 }) {
   const { t } = useTranslation();
   const { isAnimating, ref, toggle } = useDemoThemeAnimation({
     animationType,
     blurAmount,
+    direction,
     duration,
     easing,
+    slatWidth,
   });
 
   return (
@@ -301,6 +335,38 @@ function ParamsSection({
                 step={BLUR_RANGE.step}
                 value={blurAmount}
                 onChange={onBlurAmountChange}
+              />
+            </DemoControl>
+          ) : null}
+          {DIRECTION_CONSUMING_TYPES.includes(animationType) ? (
+            <DemoControl
+              label={t("features.playground.themeSwitchAnimation.direction")}
+            >
+              <DemoSegmented<ThemeAnimationDirection>
+                label={t("features.playground.themeSwitchAnimation.direction")}
+                options={DIRECTION_PRESETS.map((preset) => ({
+                  id: preset,
+                  label: t(
+                    `features.playground.themeSwitchAnimation.direction.${preset}`,
+                  ),
+                }))}
+                value={direction}
+                onChange={onDirectionChange}
+              />
+            </DemoControl>
+          ) : null}
+          {animationType === ThemeAnimationType.BLINDS ? (
+            <DemoControl
+              label={t("features.playground.themeSwitchAnimation.slatWidth")}
+            >
+              {/* 像素值不传 formatOptions：Intl 单位无 "pixel"，传入会抛 RangeError */}
+              <DemoSlider
+                label={t("features.playground.themeSwitchAnimation.slatWidth")}
+                maxValue={SLAT_WIDTH_RANGE.max}
+                minValue={SLAT_WIDTH_RANGE.min}
+                step={SLAT_WIDTH_RANGE.step}
+                value={slatWidth}
+                onChange={onSlatWidthChange}
               />
             </DemoControl>
           ) : null}
@@ -479,7 +545,7 @@ function EnvironmentSection() {
  * 演示场 › 主题切换动画：`theme-switch-animation`（View Transitions API 蒙版揭示）。
  *
  * 与项目既有主题切换（`stores/design-theme-store` 的 clip-path 四向揭示）**并存**：
- * 本页只演示库的 13 种蒙版动画，受控模式接入同一主题 store，不替换业务的主题动画实现。
+ * 本页只演示库的 12 种蒙版动画，受控模式接入同一主题 store，不替换业务的主题动画实现。
  */
 export function ThemeSwitchAnimationPage() {
   const [animationType, setAnimationType] = useState<DemoAnimationType>(
@@ -488,6 +554,10 @@ export function ThemeSwitchAnimationPage() {
   const [duration, setDuration] = useState(750);
   const [easing, setEasing] = useState<EasingId>("ease-in-out");
   const [blurAmount, setBlurAmount] = useState(2);
+  const [direction, setDirection] = useState<ThemeAnimationDirection>(
+    ThemeAnimationDirection.LTR,
+  );
+  const [slatWidth, setSlatWidth] = useState(SLAT_WIDTH_DEFAULT);
 
   // 离开页面时兜底摘除摘名属性（正常路径由模块级计时器摘除），
   // 避免遗留属性让路由过渡动画失去 main-content 独立快照组。
@@ -501,8 +571,10 @@ export function ThemeSwitchAnimationPage() {
   const params: AnimationParams = {
     animationType,
     blurAmount,
+    direction,
     duration,
     easing,
+    slatWidth,
   };
 
   return (
@@ -511,12 +583,16 @@ export function ThemeSwitchAnimationPage() {
       <ParamsSection
         animationType={animationType}
         blurAmount={blurAmount}
+        direction={direction}
         duration={duration}
         easing={easing}
+        slatWidth={slatWidth}
         onAnimationTypeChange={setAnimationType}
         onBlurAmountChange={setBlurAmount}
+        onDirectionChange={setDirection}
         onDurationChange={setDuration}
         onEasingChange={setEasing}
+        onSlatWidthChange={setSlatWidth}
       />
       <TriggerPointSection params={params} />
       <EnvironmentSection />

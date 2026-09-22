@@ -6,6 +6,9 @@ minimumReleaseAgeExclude:
   # react-okr-tree 1.13.0：作者自有包（npm publish --provenance），发布当日即接入
   # 演示场第 10 页；pnpm 11.24 默认 24h minimumReleaseAge，按 heroui 3.2.5 同款白名单放行
   - 'react-okr-tree@1.13.0'
+  # theme-switch-animation 0.2.0：同作者自有包，发布当日升级（新增 BLINDS/SCAN/QR_GRID，
+  # 移除 LTR/RTL/TTB/BTT 四向擦除类型）
+  - 'theme-switch-animation@0.2.0'
 # 供应链策略兼容：全局 trustPolicy: no-downgrade 会对"早期版本带 provenance、
 # 后发布版本不带"的老包批量误报（均为多年稳定使用的已知安全版本）。
 # 发布超过 1 年（525600 分钟）的包跳过信任检查，保留对新增发布版本的降级防护。
