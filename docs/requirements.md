@@ -70,16 +70,22 @@ Better Admin 是一个基于现代 Web 技术栈构建的全栈 Admin 系统。
 
 ```text
 better-admin/
-├── next/                    # Next.js 全栈实现
-├── nuxt/                    # Nuxt 全栈实现
-├── react/                   # React（UI 基准；Hero UI 为主 + Shadcn UI 补充）
-├── vue/                     # Vue + Nuxt UI
-├── nest/                    # NestJS 后端 API
+├── apps/                    # 全部可独立运行 / 构建 / 部署的应用
+│   ├── next/                # Next.js 全栈实现
+│   ├── nuxt/                # Nuxt 全栈实现
+│   ├── react/               # React（UI 基准；Hero UI 为主 + Shadcn UI 补充）
+│   ├── vue/                 # Vue + Nuxt UI
+│   ├── nest/                # NestJS 后端 API
+│   └── website/             # 官方文档站（Next 16 + Fumadocs）
 ├── docs/                    # 项目文档
+├── assets/                  # 跨端共享的品牌资产真源（assets/logo/）
+├── scripts/                 # 仓库级脚本（sync-versions 等）
 ├── README.md
 ├── AGENTS.md
-└── package.json             # 可选 Workspace 配置
+└── package.json             # 仅产品级元数据与 version（不放依赖，非 Workspace 配置）
 ```
+
+> 单仓库 / 多独立应用：**仓库不引入 pnpm workspace**，各应用有自己的 lockfile，可独立 install / build / deploy（`AGENTS.md` §3、§15）。
 
 ---
 
@@ -90,7 +96,7 @@ better-admin/
 目录：
 
 ```text
-/react
+apps/react
 ```
 
 定位：
@@ -125,7 +131,7 @@ PostgreSQL
 目录：
 
 ```text
-/vue
+apps/vue
 ```
 
 定位：
@@ -160,7 +166,7 @@ PostgreSQL
 目录：
 
 ```text
-/next
+apps/next
 ```
 
 定位：
@@ -196,7 +202,7 @@ PostgreSQL
 目录：
 
 ```text
-/nuxt
+apps/nuxt
 ```
 
 定位：
@@ -233,7 +239,7 @@ PostgreSQL
 目录：
 
 ```text
-/nest
+apps/nest
 ```
 
 定位：
@@ -561,7 +567,7 @@ DELETE /api/users/:id
 
 # 9. API Contract
 
-API Contract 的唯一事实来源是 [`apps/nest/openapi/openapi.yaml`](../apps/nest/openapi/openapi.yaml)（Contract-First：先定契约再实现；当前 v1.9.0）。
+API Contract 的唯一事实来源是 [`apps/nest/openapi/openapi.yaml`](../apps/nest/openapi/openapi.yaml)（Contract-First：先定契约再实现；当前 v1.14.0，48 条路径 / 77 个 path+method 操作）。
 
 - 四端（React / Vue / Next.js / Nuxt）与 NestJS 均以该文件为准：路径、方法、信封、错误码、分页结构逐字一致；
 - 业务错误码（大写蛇形）统一登记在契约中，禁止散落各端实现；
@@ -571,7 +577,7 @@ API Contract 的唯一事实来源是 [`apps/nest/openapi/openapi.yaml`](../apps
 
 # 10. 业务功能
 
-核心业务模块与组织中心。各模块的四端实现状态见 `docs/feature-matrix.md`（Dashboard 为唯一全端未实现项）。
+核心业务模块与组织中心。各模块的四端实现状态见 `docs/feature-matrix.md`（当前 29 项四端全部对齐）。
 
 ## 10.1 用户管理
 
@@ -599,7 +605,7 @@ API Contract 的唯一事实来源是 [`apps/nest/openapi/openapi.yaml`](../apps
 - 菜单与权限位关联，支持 i18n key、路由地址、图标、keepAlive 等配置
 - 搜索过滤；编辑防环
 
-## 10.5 Dashboard（规划中）
+## 10.5 Dashboard
 
 包含：
 
@@ -610,7 +616,7 @@ API Contract 的唯一事实来源是 [`apps/nest/openapi/openapi.yaml`](../apps
 - 系统状态
 - 快捷操作
 
-（实施排在 Playground Gate 之后，方案见 `docs/plan-dashboard-playground.md`。）
+（**已实现**：2026-09-18 React 基准 → 2026-09-19 Next / Vue / Nuxt 对齐，四端 + NestJS 全 ✅。数据由单一聚合接口 `GET /stats/overview` 提供（契约 v1.11.0 引入、v1.12.0 定稿取数口径：去掉 `days` 参数、`loginTrend` 固定近 30 日，7/30 日区间由前端本地截取）；页面落地为欢迎横幅与快捷入口、4 张 KPI 卡（sparkline + 环比）、登录趋势面积图、角色占比环形图、最近动态与最新公告；原始规划项中的「系统状态」未单列区块。实施记录见 `docs/progress.md`，方案见 `docs/plan-dashboard-playground.md` §4。）
 
 ## 10.6 日志
 
@@ -625,7 +631,7 @@ API Contract 的唯一事实来源是 [`apps/nest/openapi/openapi.yaml`](../apps
 
 - 头像：上传前支持裁剪、缩放、旋转；支持删除头像；服务端中转写入 Supabase Storage，每用户一张，同名覆盖
 - 基本信息：修改显示名称、电话；维护个人标签（增删，最多 10 个）
-- 个人链接：个人网站（裸域名）、GitHub 用户名、X 用户名（输入框固定协议/平台前缀，存裸值；自动剥离粘贴的完整链接前缀；控制台后续展示）
+- 个人链接：个人网站（裸域名）、GitHub 用户名、X 用户名（输入框固定协议/平台前缀，存裸值；自动剥离粘贴的完整链接前缀）；已在用户列表的「个人链接」列（图标 + Tooltip 外链）与侧边栏用户区「个人链接」子菜单展示
 - 账号信息（只读）：用户名、角色、账号状态、注册时间、最近登录时间
 
 安全 Tab：
@@ -700,7 +706,12 @@ Auth
 
 ## 12.1 前端
 
-所有前端项目使用 Vercel 部署，域名统一见 §13 域名规划（单一来源）。
+前端按运行形态分两类平台（单一来源见 `AGENTS.md` §17）：
+
+- **React / Vue**（纯静态 SPA）→ **Cloudflare Pages**（静态请求 / 带宽免费额度充足，`baiwumm.com` zone 已在 Cloudflare DNS）；
+- **Next.js / Nuxt**（全栈，服务端 `postgres.js` TCP 直连数据层，Cloudflare Workers 运行时不支持）与 **官方文档站**→ **Vercel**。
+
+域名统一见 §13 域名规划（单一来源）。
 
 ## 12.2 NestJS
 
@@ -731,7 +742,7 @@ Supabase PostgreSQL。
                                               ┌────┴────┐
                                               │         │
                                             React      Vue
-                                            Vercel    Vercel
+                                            CF Pages  CF Pages
 ```
 
 ---
@@ -793,27 +804,27 @@ Next.js / Nuxt.js 自己实现 Server API 时，也尽可能保持相同的 API 
 例如：
 
 ```bash
-cd react
+cd apps/react
 pnpm dev
 ```
 
 ```bash
-cd vue
+cd apps/vue
 pnpm dev
 ```
 
 ```bash
-cd next
+cd apps/next
 pnpm dev
 ```
 
 ```bash
-cd nuxt
+cd apps/nuxt
 pnpm dev
 ```
 
 ```bash
-cd nest
+cd apps/nest
 pnpm start:dev
 ```
 
@@ -823,7 +834,7 @@ pnpm start:dev
 
 不建议四套前端同时开发。
 
-> 当前进度：Phase 1-5 已完成（React / NestJS / Vue / Next.js），Phase 6（Nuxt）已立项待决策——最新状态以 `AGENTS.md` §19 为准。
+> 当前进度：Phase 1-6 全部完成（React / NestJS / Vue / Next.js / Nuxt 均已落地，四端功能对齐 29/29），Phase 7（统一测试 → 部署全部版本）待执行——最新状态以 `AGENTS.md` §19 为准。
 
 推荐按照以下顺序：
 
