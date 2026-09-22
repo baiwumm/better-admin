@@ -138,7 +138,9 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | employee_no | text | NULL | 工号（v1.6.0，人员通讯录展示 / 搜索用） |
 | employment_status | text | NULL | 在职状态（v1.6.0：`employed` / `resigned`；NULL 视为在职，与账号启停 `status` 正交） |
 | entry_date | date | NULL | 入职日期（v1.6.0，人员通讯录展示用） |
+| gender | text | NULL | 性别（v1.6.0 阶段 2 补充，可空向前兼容；`male` 男 / `female` 女，NULL = 未设置；迁移 `0008_*` 新增列） |
 | status | text（≤20） | NOT NULL, DEFAULT 'active' | `active` / `disabled`（收进字典 `user_status`） |
+| token_version | integer | NOT NULL, DEFAULT 0 | **令牌版本号**（契约 v1.2，迁移 `0001_*` 新增列）：签发 JWT 时写入 payload 的 `ver` claim，登录 / 每请求鉴权实时比对；改密码、封禁、登出撤销时 +1，使该用户全部存量 access / refresh token 立即失效（全端强制下线）。机制见 `docs/mechanisms.md` §5 |
 | created_at | timestamptz | NOT NULL, DEFAULT now() | |
 | updated_at | timestamptz | NOT NULL, DEFAULT now() | |
 | deleted_at | timestamptz | NULL | 软删除 |
@@ -514,3 +516,4 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 | 2026-09-14 | v0.10 | §1.5 步骤 2 明确「有 `role_menus` 关联记录即可见，不按 `permissions` 值过滤」：Nest / Next / Nuxt 三端服务端同款移除 `buildAllowedMenuIds` 中的 `permissions != 0` 过滤（实现层偏离设计，致 0 位纯展示页对普通角色不可见）。无 Schema / 契约变化；新增「演示场」菜单树 10 节点（含三级，全部 0 位）经 `nest/scripts/migrate-menus-add-playground.ts` 幂等录入。 |
 | 2026-09-22 | v0.11 | 本文档清账（**纯文档修正，零 Schema / 零契约变更**，背景见仓库根 `docs/launch-audit.md` #50）：① 新增 §2.18 `refresh_tokens` 小节——该表自契约 v1.2（迁移 `0001_*`）起即存在，此前 §2 长期无小节，现按 `refresh_tokens.schema.ts` 逐列补录，并记明用途、轮换/撤销链路与 `REFRESH_TOKEN_CLEANUP_*` 清理机制。② §2 标题计数改准：`pgTable(` 声明 **18** 处 / 库中物理表 **17** 张（与 `drizzle/meta/0009_snapshot.json` 一致），并注明 `settings` 声明未进 barrel、不参与迁移生成。③ §2.8 表述纠偏：「已移除」易被误读为「表还在库里」——现写明物理表已由 `0002_*` DROP、源码仍留一份无引用的死声明（不动 schema、不删表）。④ §2.9 日志清理由「建议」改为已实现事实（`LOG_RETENTION_DAYS` / `LOG_CLEANUP_CRON` / `LOG_CLEANUP_ENABLED`）。⑤ §9 历史行按日期+版本重排为升序（此前 v0.10 在 v0.6 之上、v0.9 在 v0.5 之下），**行内容逐字未改**，仅版式排序。 |
 | 2026-09-22 | v0.12 | **类型列口径对齐实现（纯文档，零 Schema 变更）**：§2 各表类型列原写 `varchar(N)`，实测 drizzle schema（`src/db/schema/*.ts`）与全部迁移 SQL（`drizzle/*.sql`）**零 `varchar`**，字符串列一律 `text`（含 `text[]` 数组列），长度与格式约束在 DTO / class-validator 层。33 处类型统一改写为 `text（≤N）`，N 保留原设计意图备查；§2 头新增「类型口径」说明块，明确用户输入列的 N 为 DTO 实际校验上限、服务端自写列（`logs.ip` / `logs.user_agent`）无 DTO 约束仅作容量参考。裁决依据：不把 schema 改回 varchar，避免五端共用线上库做无收益迁移（仓库根 `docs/launch-audit.md` #54）。 |
+| 2026-09-22 | v0.13 | §2.1 `users` 补录两个长期缺失的列：**`gender`**（`text` 可空，v1.6.0 阶段 2 补充、迁移 `0008_*`）与 **`token_version`**（`integer notNull default 0`，契约 v1.2、迁移 `0001_*`，JWT `ver` claim 的载体，改密/封禁/撤销时 +1 实现全端强制下线，机制引 mechanisms §5）。两列均按 `src/db/schema/users.schema.ts` 实际定义与注释撰写。（仓库根 `docs/launch-audit.md` #53） |
