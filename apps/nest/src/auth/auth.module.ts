@@ -6,14 +6,15 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PermissionsGuard } from './guards/permissions.guard';
 import { RefreshTokenCleanupService } from './refresh-token-cleanup.service';
+import { getJwtExpiresIn, getJwtSecret } from '@/config/env';
 
 @Module({
   imports: [
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET ?? 'better-admin-secret',
+      secret: getJwtSecret(),
       signOptions: {
-        expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as never,
+        expiresIn: getJwtExpiresIn() as never,
       },
     }),
   ],

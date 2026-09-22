@@ -11,6 +11,11 @@ import {
 import { isDemoMode } from '@/auth/guards/demo-readonly.guard';
 import type { DemoLoginKind } from '@/auth/dto/demo-login.dto';
 import { normalizePermissionBits } from '@/db/schema/permissions.enum';
+import {
+  getJwtExpiresIn,
+  getRefreshExpiresIn,
+  getRefreshSecret,
+} from '@/config/env';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
@@ -154,17 +159,13 @@ export class AuthService {
     };
     const accessToken = this.jwtService.sign(
       { ...commonClaims, type: 'access' as const },
-      { expiresIn: (process.env.JWT_EXPIRES_IN ?? '1h') as never },
+      { expiresIn: getJwtExpiresIn() as never },
     );
     const refreshToken = this.jwtService.sign(
       { ...commonClaims, type: 'refresh' as const },
       {
-        secret: process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET,
-        expiresIn: (
-          rememberMe
-            ? (process.env.REFRESH_EXPIRES_IN ?? '30d')
-            : (process.env.REFRESH_EXPIRES_IN_SHORT ?? '1d')
-        ) as never,
+        secret: getRefreshSecret(),
+        expiresIn: getRefreshExpiresIn(rememberMe) as never,
       },
     );
     return { accessToken, refreshToken };
@@ -343,7 +344,7 @@ export class AuthService {
   async refresh(dto: RefreshDto) {
     try {
       const payload = this.jwtService.verify<AuthJwtPayload>(dto.refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET,
+        secret: getRefreshSecret(),
       });
       if (payload.type !== 'refresh') {
         throw new Error('invalid token type');
@@ -374,12 +375,12 @@ export class AuthService {
       const baseClaims = { sub: payload.sub, username: payload.username, ver: payload.ver ?? 0 };
       const accessToken = this.jwtService.sign(
         { ...baseClaims, type: 'access' as const },
-        { expiresIn: (process.env.JWT_EXPIRES_IN ?? '1h') as never },
+        { expiresIn: getJwtExpiresIn() as never },
       );
       const newRefreshToken = this.jwtService.sign(
         { ...baseClaims, type: 'refresh' as const },
         {
-          secret: process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET,
+          secret: getRefreshSecret(),
           expiresIn: remainingSeconds,
         },
       );
