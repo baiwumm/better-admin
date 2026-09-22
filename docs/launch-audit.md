@@ -30,7 +30,7 @@
 
 | # | 状态 | 事项 | 证据 | 处置 |
 | --- | --- | --- | --- | --- |
-| 11 | ⬜ | 对外文档站整片陈旧：仍写「四端 26/27、唯一缺口 Dashboard、Phase 0/C 未启动、Playground 7 页、契约 v1.10/v1.11」 | `apps/website/content/index.mdx:56`；`content/progress/feature-matrix.mdx:18-24`；`content/progress/roadmap.mdx:19-43`；`components/docs/diagrams.tsx:786,813,821,834-842`；`components/landing/faq.tsx:46`；`components/landing/stacks.tsx:95-111` | 按现状重写（**29/29 = 100%**，分母见 #15 校正；Playground 10 页；契约 v1.14.0；Phase 0 / Phase C 已完成） |
+| 11 | ✅ | 对外文档站整片陈旧：仍写「四端 26/27、唯一缺口 Dashboard、Phase 0/C 未启动、Playground 7 页、契约 v1.10/v1.11」 | `apps/website/content/index.mdx:56`；`content/progress/feature-matrix.mdx:18-24`；`content/progress/roadmap.mdx:19-43`；`components/docs/diagrams.tsx:786,813,821,834-842`；`components/landing/faq.tsx:46`；`components/landing/stacks.tsx:95-111` | 已按现状重写：矩阵图与文案改 **29/29 = 100%**（分母提为 `MATRIX_DONE/MATRIX_TOTAL` 常量并注真源），虚线框改列「两处有意保留的架构差异」；路线图四阶段全 ✅（Gate 标「已过」）+ 新增契约版本表与上线清单；`index.mdx` 状态行 + Card 描述、`faq.tsx`、`stacks.tsx` 三处硬编码同步。**顺带发现并修掉 `content/architecture/api.mdx` 端点缺口**：原表恰好 44 行 = 44 条路径，漏了 `/auth/demo-login`(v1.10)、`/roles/{id}/users`(v1.13)、`/stats/overview`(v1.11)、`/health`(v1.14) 四个已实现端点，`/users` 与 `/logs` 两行还漏标批量 `DELETE ?ids=`；已补第 5 个 Tab 与 4 行、计数改 **48 路径 / 77 操作**（python 解析 yaml 实测）。验证：`next build` 通过、20 个静态页生成。**未做**：「17 张表」断言需先修后端设计文档（新增 #50），本轮不动 |
 | 14 | ✅ | Vue 端图表口径过期：已迁 Unovis，文档仍写「零依赖手写内联 SVG」 | 迁移提交 `7164b26`/`7169e7b`（2026-09-20），代码 `apps/vue/src/components/chart/AreaChart.vue`、`DonutChart.vue`；未回写处 `docs/feature-matrix.md:33`、`AGENTS.md` §19 | 已三处同步：feature-matrix Dashboard 行 Vue 段改写为 Unovis 事实（并连带修正过时计数——用例 106→**101**、chart-geometry 11→**6** 例，KPI sparkline 仍手写 SVG 三端同口径）；AGENTS §19 两处（当前待办的 Vue 段 + Nuxt 段的「Vue 端维持手写 SVG」）；`progress.md` 置顶补记该迁移（§13 更新触发此前漏执行）。**遗留待复跑**：该行「环形 6 扇区 / 3 条 sparkline 描边取色」两项 DOM 实测为手写时期所做，已在本条与 #32 标注，Unovis 版未复跑 |
 | 15 | ✅ | `docs/feature-matrix.md` 自相矛盾：统计表 React/Next/Nuxt 各缺 1 项，与同文件全 ✅ 的表格及「27 项 100%」注脚冲突 | `:77-80` ↔ `:33` 全 ✅、`:84-85` | **根因不止统计表**：按行实测矩阵数据行为 **29 行**（核心 10 + 组织 8 + 基础设施 11），旧「27 项」口径自 2026-09-11 起未随新增「演示模式」「Playground 演示场」两行更新——即该文件历史上同一分母已第三次失真（23→27→29）。已改：统计表四端 29/0/100%、口径注重写并加了「新增行必须同步改分母」的硬性提醒、两条「27 项全部完成」注脚、AGENTS §19「27/27」→29/29（含校正说明）。**连带影响 #11**：文档站须用的正确分母是 29，不是 27 |
 | 18 | ⬜ | Shadcn 幽灵条款：文档承诺「Hero UI 主 + Shadcn 补充」，实际两端无该目录无该依赖，与 AGENTS §7.2「不含 Shadcn 组件」冲突 | `requirements.md:105/453/469`、`ui-spec.md:570/596/641-644`；实测 `apps/react|next` 无 `src/components/ui/`、无 cmdk/shadcn 依赖 | 🚫 需拍板：正式作废该条款，还是补实现（本文按作废处理，待确认） |
@@ -62,6 +62,8 @@
 | 48 | ⬜ | gitignore 口子：Next 只忽略 `.env*.local`（裸 `.env` 不被忽略）、Nest 不覆盖 `.env.production`、website 的 `.env*` 连 `.env.example` 一起吃掉 | `apps/next/.gitignore:28`、`apps/nest/.gitignore`、`apps/website/.gitignore:20` | 统一 `.env*` + `!.env.example` |
 | 49 | ⬜ | 孤儿脚本未挂 npm script | `apps/nuxt/scripts/check-locales.mjs`、`clean-logs.mjs`；react/next `scan-stale-tokens.cjs` | 挂 script 或删除 |
 | 31 | ⬜ | 契约外遗留口径：`GET /logs` search 仅匹配 action、旧权限位值清理脚本未出 | `progress.md:1636/:1774` | 登记，随下次契约变更处理 |
+| 50 | ⬜ | **表数量真源失真**（修 #11 时发现）：schema 实报 **18** 张 `pgTable`，而 `database-design.md` §2 标题写「17 张」——其 17 个小节里含 `2.8 settings`（标注"已移除"却仍在 `src/db/schema/settings.schema.ts` 建表），且 **`refresh_tokens` 表（契约 v1.2 起托管 refreshToken）没有小节** | `grep pgTable` 计 18；`apps/nest/docs/database-design.md:97` 与其 §2 小节列表；`src/db/schema/settings.schema.ts:13` | 核清 settings 表是"保留但停用"还是"该删"，补 `refresh_tokens` 小节，重算表数；之后再回头定文档站「17 张表」文案（`content/architecture/database.mdx:3`、`index.mdx:66`、`diagrams.tsx:297,328`） |
+| 51 | 🚫 | 文档站 `theme-switch-animation` 仍锁 **0.1.0**，四端应用已升 0.2.0 | `apps/website/package.json`；`components/theme-toggle.tsx:36` 只用 `CIRCLE_BLUR`（不在 0.2.0 移除的 LTR/RTL/TTB/BTT 之列，升级无破坏面） | 升 0.2.0 需同步补 `apps/website/pnpm-workspace.yaml` 供应链白名单（mechanisms §35）并重跑 frozen 校验，属依赖变更——待你确认是否随本轮做 |
 
 ---
 
@@ -85,6 +87,7 @@
 | 27 | Nest `phone` 不 trim，是否由 Next 对齐 Nest | `progress.md:889` |
 | 28 | 四端 `redirectToSignIn` 带参规则未统一 | `mechanisms.md:907` |
 | 29 | Next `/org/notices/[noticeId]` 详情页无 metadata | `mechanisms.md:735` |
+| 51 | 文档站 `theme-switch-animation` 是否随四端升 0.2.0（现仍 0.1.0；`components/theme-toggle.tsx:36` 只用了 `CIRCLE_BLUR`，0.2.0 移除的四向擦除类型未被引用，技术上可安全升级，但升级要同步 `pnpm-workspace.yaml` 供应链白名单并触发安装，属依赖变更） | 本页 #51 |
 | 30 | 角色矩阵（主管/HR 是否含演示场）+ super_admin 授权数据（关联 #9）；Vue 端是否为组件测试补 vitest plugin-vue；Scalar 白屏是否切自托管 | `plan-phase0-execution.md:146`、`progress.md:118/:402` |
 
 ---

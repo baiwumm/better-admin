@@ -775,15 +775,18 @@ export function FrontendFlow({
 /* =================== 11. 功能对齐状态图 =================== */
 
 const MATRIX_ROWS = ["React", "Vue", "Next.js", "Nuxt"];
+/** 功能矩阵计数（真源：docs/feature-matrix.md 按行实测 29 项，四端均已对齐） */
+const MATRIX_TOTAL = 29;
+const MATRIX_DONE = 29;
 
 export function FeatureMatrixDiagram() {
   const barX = 110;
   const barW = 470;
-  const filled = Math.round((barW * 26) / 27);
+  const filled = Math.round((barW * MATRIX_DONE) / MATRIX_TOTAL);
 
   return (
     <Frame
-      title="功能对齐状态：四个前端均为 26 / 27 项，唯一缺口是 Dashboard 概览"
+      title={`功能对齐状态：四个前端均为 ${MATRIX_DONE} / ${MATRIX_TOTAL} 项，功能已全部对齐`}
       viewBox="0 0 720 268"
     >
       {MATRIX_ROWS.map((name, index) => {
@@ -810,7 +813,7 @@ export function FeatureMatrixDiagram() {
               className="fill-foreground"
             />
             <T x={700} y={y + 16} anchor="end" className="fill-muted-foreground font-mono text-[10.5px]">
-              26 / 27
+              {MATRIX_DONE} / {MATRIX_TOTAL}
             </T>
           </g>
         );
@@ -818,10 +821,10 @@ export function FeatureMatrixDiagram() {
 
       <Box x={20} y={186} w={680} h={66} rx={12} dashed />
       <T x={38} y={212} className="fill-foreground text-[12px] font-semibold">
-        唯一未对齐项：Dashboard 概览
+        两处有意保留的架构差异（不算功能缺失）
       </T>
       <T x={38} y={232} className="fill-muted-foreground text-[10.5px]">
-        四端与 NestJS 均未实现（Nest 侧该列无对应 API），已列入 Phase C 排期
+        Next.js 无页面保活（App Router 无等价原语）· 认证载体不同（React/Vue 走 Bearer，Next 走 httpOnly Cookie），契约完全一致
       </T>
     </Frame>
   );
@@ -831,15 +834,15 @@ export function FeatureMatrixDiagram() {
 
 const ROADMAP = [
   { x: 110, phase: "Phase A", status: "✅ 已完成", note: "09-14", done: true, desc: ["菜单树录入", "+ 四端占位"] },
-  { x: 280, phase: "Phase B", status: "✅ 已完成", note: "09-16", done: true, desc: ["React 基准", "→ 四端对齐（7 页）"] },
-  { x: 450, phase: "Phase 0", status: "⬜ 未启动", note: "Gate 后", done: false, desc: ["只读守卫 / 快捷登录", "契约 v1.10.0"] },
-  { x: 620, phase: "Phase C", status: "⬜ 未启动", note: "Gate 后", done: false, desc: ["KPI + 趋势图", "契约 v1.11.0"] },
+  { x: 280, phase: "Phase B", status: "✅ 已完成", note: "09-16", done: true, desc: ["React 基准", "→ 四端对齐（10 页）"] },
+  { x: 450, phase: "Phase 0", status: "✅ 已完成", note: "09-18", done: true, desc: ["只读守卫 / 快捷登录", "契约 v1.10.0"] },
+  { x: 620, phase: "Phase C", status: "✅ 已完成", note: "09-19", done: true, desc: ["KPI + 趋势图", "契约 v1.12.0"] },
 ];
 
 export function RoadmapDiagram() {
   return (
     <Frame
-      title="路线图：Playground 两个阶段已完成，Phase 0 与 Phase C 待 Gate 后启动"
+      title="路线图：演示场两阶段 + Phase 0 演示准备 + Phase C 概览均已完成，下一步统一上线"
       viewBox="0 0 720 214"
     >
       <line
@@ -899,7 +902,7 @@ export function RoadmapDiagram() {
         strokeDasharray="4 4"
       />
       <T x={365} y={76} anchor="middle" className="fill-muted-foreground text-[9.5px]">
-        Gate
+        Gate（已过）
       </T>
     </Frame>
   );

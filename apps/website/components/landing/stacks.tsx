@@ -92,23 +92,23 @@ export function Stacks() {
             </div>
           ))}
 
-          {/* 功能对齐状态卡：用进度条把「26 / 27」变成可看的东西，
+          {/* 功能对齐状态卡：用进度条把「29 / 29」变成可看的东西，
               高度刻意压到与相邻卡片齐平，避免撑出成片空白 */}
           <div className="card-premium flex flex-col p-6">
             <div className="flex items-baseline justify-between gap-2">
               <h3 className="font-semibold">功能对齐状态</h3>
               <span className="font-mono text-xs text-muted-foreground">
-                26 / 27
+                29 / 29
               </span>
             </div>
             <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-muted shadow-[inset_0_1px_2px_rgb(0_0_0/0.06)] dark:shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]">
               <div
                 className="h-full rounded-full bg-foreground"
-                style={{ width: `${(26 / 27) * 100}%` }}
+                style={{ width: "100%" }}
               />
             </div>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              唯一缺口：Dashboard 概览
+              四端功能已全部对齐
             </p>
             <Link
               href="/docs/progress/feature-matrix"

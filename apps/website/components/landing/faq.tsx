@@ -43,7 +43,7 @@ const QUESTIONS = [
     value: "function-parity",
     title: "四个前端的功能对齐到什么程度了？",
     content:
-      "共 27 项功能，四个前端目前均为 26 / 27，完成度 96%。唯一未对齐的是 Dashboard 概览，四端与 NestJS 都还没实现，已列入后续排期。",
+      "共 29 项功能，四个前端均为 29 / 29，功能已全部对齐。差异只剩两处有意保留的架构选择：Next.js 无页面保活原语、认证载体用 httpOnly Cookie 而非 Bearer——契约与功能完全一致。",
   },
   {
     value: "open-source",

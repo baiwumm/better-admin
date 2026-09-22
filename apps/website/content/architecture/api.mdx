@@ -79,9 +79,9 @@ description: 统一响应信封、分页约定、错误码规范与完整端点�
 
 ## 端点总览
 
-当前契约共 **44 条路径**，按模块分：
+当前契约共 **48 条路径 / 77 个操作**（真源 `openapi.yaml`，v1.14.0），按模块分：
 
-<Tabs items={["认证与账户", "权限 · 用户 · 角色 · 菜单", "字典 · 日志", "组织 · 公告 · 通知"]}>
+<Tabs items={["认证与账户", "权限 · 用户 · 角色 · 菜单", "字典 · 日志", "组织 · 公告 · 通知", "概览与系统"]}>
 
 <Tab value="认证与账户">
 
@@ -91,6 +91,7 @@ description: 统一响应信封、分页约定、错误码规范与完整端点�
 | `POST` | `/auth/refresh` | 刷新 accessToken（**refreshToken 会轮换，旧 token 作废**） |
 | `POST` | `/auth/logout` | 登出，撤销托管的 refreshToken，返回 `204` |
 | `GET` | `/auth/me` | 当前用户信息与聚合权限位 |
+| `POST` | `/auth/demo-login` | 演示环境快捷登录（`DEMO_MODE=true` 才存在，否则 `404`；`kind` 取 `admin` / `random`） |
 | `GET` `PUT` | `/account/profile` | 个人资料 |
 | `PUT` | `/account/email` | 修改邮箱 |
 | `PUT` | `/account/password` | 修改密码（触发全端下线） |
@@ -103,13 +104,14 @@ description: 统一响应信封、分页约定、错误码规范与完整端点�
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | `GET` | `/permissions` | 权限点枚举字典（只读，界面不可增删改） |
-| `GET` `POST` | `/users` | 用户列表 / 新建 |
+| `GET` `POST` `DELETE` | `/users` | 用户列表 / 新建 / 批量删除（`?ids=`，全有全无） |
 | `GET` `PUT` `DELETE` | `/users/{id}` | 用户详情 / 更新 / 删除 |
 | `PUT` | `/users/{id}/reset-password` | 重置密码（需 `RESET_PASSWORD` 位） |
 | `PUT` | `/users/{id}/status` | 启用 / 停用 |
 | `GET` `POST` | `/roles` | 角色列表 / 新建 |
 | `GET` `PUT` `DELETE` | `/roles/{id}` | 角色详情 / 更新 / 删除 |
 | `GET` `PUT` | `/roles/{id}/menus` | 读取 / 保存角色菜单授权（需 `GRANT` 位） |
+| `GET` | `/roles/{id}/users` | 角色关联用户分页名单（仅在职且未删除，v1.13.0） |
 | `GET` `POST` | `/menus` | 菜单列表 / 新建 |
 | `GET` | `/menus/tree` | 菜单树 |
 | `GET` `PUT` `DELETE` | `/menus/{id}` | 菜单详情 / 更新 / 删除 |
@@ -125,7 +127,7 @@ description: 统一响应信封、分页约定、错误码规范与完整端点�
 | `GET` `PUT` `DELETE` | `/dict/types/{code}` | 字典类型详情 / 更新 / 删除 |
 | `GET` `POST` | `/dict/types/{code}/items` | 某类型下的字典项 |
 | `PUT` `DELETE` | `/dict/items/{id}` | 字典项更新 / 删除 |
-| `GET` | `/logs` | 日志列表（分页 + 过滤） |
+| `GET` `DELETE` | `/logs` | 日志列表（分页 + 过滤）/ 批量删除（`?ids=`，任一 ID 无效整体 `400`） |
 | `GET` `DELETE` | `/logs/{id}` | 日志详情 / 删除 |
 
 </Tab>
@@ -152,6 +154,15 @@ description: 统一响应信封、分页约定、错误码规范与完整端点�
 | `GET` | `/notifications/unread-count` | 未读数 |
 | `PUT` | `/notifications/read-all` | 全部已读 |
 | `PUT` | `/notifications/{id}/read` | 单条已读 |
+
+</Tab>
+
+<Tab value="概览与系统">
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `GET` | `/stats/overview` | Dashboard 概览聚合（KPI 计数 + 近 30 日登录趋势 + 角色占比 + 最新公告 + 最近操作日志）；任意已登录用户可读，无权限位 |
+| `GET` | `/health` | 存活探针（v1.14.0）：**无鉴权、不访问数据库**，供外部定时器保活 Render 免费实例 |
 
 </Tab>
 
