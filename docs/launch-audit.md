@@ -40,7 +40,7 @@
 | 22 | ⬜ | `vue-plan.md` 陈旧：契约 v1.7.0；`:202` 称 health「已上线」为假 | `:4/:20`、`:202` | 刷新版本；该句随 #2 一并改 |
 | 24 | ⬜ | `plan-dashboard-playground.md` 完成勾选未回填 + 多处陈旧现状 + `usedIn` 待回填 | `:91-95`、`:160-163`、`:235-238`；`:12/:23/:347/:359/:362`；`:302` | 核勾与刷新；§9.2/§9.3 线上口径项转 ⏸️ 上线环节 |
 | 44 | ⬜ | `CORS_ORIGINS` 未被模板纳管（AGENTS §9 要求）；且 §17 ③「四端域名」口径可能本身过宽——Next/Nuxt 不消费 Nest | `apps/nest/main.ts:22-33` 缺省含 localhost×5 + react/vue；`.env.example` 无该变量 | 补 `.env.example`；🚫 白名单范围需确认 |
-| 45 | ⬜ | CI 从未验证任何一端构建；`clean-logs.yml` 以生产库写权限长期挂在 GitHub Secrets | `.github/workflows/` 仅 `check-locales.yml`（只装 apps/next）+ `clean-logs.yml`（cron 直连生产 DELETE） | 挂四端 + website 的 lint/test/build 矩阵；clean-logs 改只读凭据或停用一侧 |
+| 45 | 🚫 | CI 从未验证任何一端的构建；`clean-logs.yml` 以生产库写权限长期挂在 GitHub Secrets | `.github/workflows/` 仅 `check-locales.yml`（只装 apps/next）+ `clean-logs.yml`（cron 直连生产 DELETE） | **未动，需你批准再建**：新增 workflow 会立刻开始消耗 Actions 额度并可能对现有分支报红，属影响共享系统的变更。建议方案：PR 触发一个 matrix job（node 24 + pnpm，六个 app 各跑 lint / typecheck 或 tsc / test / build，`working-directory: apps/<app>` 保持各端独立 lockfile），`clean-logs` 的凭据改只读或停用一侧（与 Nest 进程内 `log-cleanup.service` 本就重复）。你点头我就落地 |
 
 ---
 
@@ -52,7 +52,7 @@
 | 52 | ⬜ | `database-design.md` §9 变更记录**行序乱**（v0.10 在 v0.6 之上、v0.9 在 v0.5 之下）——与 #6 同类的两份真源文档问题，本条专记行序 | 同文件 §9 表格 | 已由 #50 那轮一并按日期+版本重排为升序，**行内容逐字未改**（§13 历史记录不可回改，仅版式）。若你认为该表本就该保持「追加在最下方」的原序，回退这次重排即可 |
 | 7 | ✅ | 契约冒烟脚本落后于契约 | `apps/nuxt/scripts/contract-diff.mjs` 原 20 条只覆盖到 v1.7 时代端点 | 已按 openapi 实测扩到 **31 条步骤**：补 `/menus/{id}`、`/roles/{id}`、`/roles/{id}/users`(v1.13)、`/users/{id}`、`/logs/{id}`、`/org/depts/{id}`、`/org/posts/{id}`、`/org/posts/{id}/members`、`/notices/{id}`、`/notices/{id}/read-stats`、`/stats/overview`(v1.11/v1.12)；refs 解析从「只取 roleId」泛化为按来源列表批量取 7 个 id（role/user/menu/log/dept/post/notice），取不到时告警而非静默打向 `MISSING` 造成两侧同 404 的假通过。排除项写明在文件头：`/health` 按契约不做对等实现、`/dict/types/{code}` 用固定 code 实参覆盖。另挂 `pnpm contract-diff` 入口（此前无任何 npm script 指向）；AGENTS §19 的脚本路径误记（根 `scripts/`）一并更正。验证：`node --check` 通过、步骤清单与 yaml GET 集合脚本比对全覆盖。**实跑需 Nuxt + Nest 双服务在线，留待走查时执行** |
 | 8 | ✅ | 端点计数陈旧：AGENTS §19 与 feature-matrix 注脚写「70 个方法端点（44 契约路径全覆盖）」 | 实测 `openapi.yaml` v1.14.0 = **48 路径 / 77 操作**；Nest 77/77（含本轮 `/health`）、Next 76/77（契约明示 health 不做对等实现）、Nuxt `server/api` 76 个方法文件（= 77 − health，find 实测） | 已改为双时点表述「当时 70 个 / 44 路径；2026-09-22 按 yaml 实测 48 / 77」，并注明曾缺的 `GET/DELETE /logs/{id}` 已由 `d1284f6` 补齐。⚠️ 本行原记的「47 path / 76 method」是我在 #2 加 `/health` **之前**取的数，一并纠正为 48 / 77 |
-| 9 | ⬜ | `super_admin` 的 role_menus 仅 24/28（缺 exception 三页 + 主题切换动画页），靠 -1n 全量位免检掩盖 | `progress.md:352` | 补授权数据（幂等脚本）或明确接受 |
+| 9 | ⬜ | `super_admin` 的 role_menus 仅 24/28（缺 exception 三页 + 主题切换动画页），靠 -1n 全量位免检掩盖 | `progress.md:352`；AGENTS §19「super_admin 保护设计依据」 | ⚠️ 需写共用线上库（UPDATE role_menus），且超管授权是权限体系命脉（清空即全后台 403、无自助恢复）——**不擅自执行**，留待你确认是否补录、以及是否连带处理角色矩阵（#30） |
 | 12 | ⬜ | AGENTS §19 称文档站内容「由 `docs/` 真源自动同步」，实为手写 MDX、无同步脚本 | `apps/website/content/**`；根 `scripts/` 仅 `sync-versions.mjs` | 改表述，或立项同步机制（🚫 二选一需拍板） |
 | 13 | ⬜ | website 版本停在 0.1.0，被 `sync-versions.mjs` 排除，且脚本注释与硬编码列表不符 | `apps/website/package.json`；`scripts/sync-versions.mjs:16-22` | 纳入 SUB_PROJECTS |
 | 16 | ✅ | AGENTS §19 现状标记失效：「改动未提交」早已入库；Vue 端模块行的 Playground 页数仍写 9 页 | 实测 `git status --porcelain`（含 `-uall`）为空；`playground` 实为 10 页（见本页 feature-matrix 行与 #15 行数实测） | 已改：§19 两处「改动未提交」→「改动已入库」（保留仍然为真的「待 GUI 走查 / 审核」）；Vue 端模块行的「Playground 演示场（9 页…）」改为 10 页并补第 10 页组织架构树。progress.md 内 7 处同类「未提交」表述按 §13「历史记录永不回改」原则不动 |
