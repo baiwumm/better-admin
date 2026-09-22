@@ -9,7 +9,7 @@
 
 - 项目定位为**演示项目**（上线后谁都可以登录），在主体业务（用户 / 角色 / 权限 / 菜单 / 字典 / 日志 / 组织中心）之外需要补三类能力：
   1. **演示上线准备**：线上数据重置为逼真的 faker 数据集、全站只读守卫、快捷登录、日志降噪——这是公开上线的前提，也为 Dashboard 提供有时间分布的真实数据；
-  2. **Dashboard 概览页**：当前四端首页均为占位（React 空壳 div、Next 同款空壳、Vue / Nuxt `PlaceholderPage`），既完成既有待办，又作为全栈能力的门面；
+  2. **Dashboard 概览页**：立项时四端首页均为占位（React 空壳 div、Next 同款空壳、Vue / Nuxt `PlaceholderPage`），既完成既有待办，又作为全栈能力的门面（2026-09-22 更新：**四端 Dashboard 均已实现**，Phase C 于 2026-09-18 启动、2026-09-19 四端落地，契约 v1.11.0 → v1.12.0；见 §4 与 `progress.md`）；
   3. **Playground 演示场**：纯前端静态组件演示（rare-ui 组件集 + number-flow 等），体现「同一套产品多套技术栈」的技术广度。
 - 参考原型：旧项目 `better-nuxt/app/pages/playground`（auto-animate / charts / count-to(number-flow, smart-ticker) / draggable / file-viewer / lightbox / qrcode / spinner / swiper）；**演示组件来源（2026-09-14 菜单定稿）**：[rare-ui](https://rareui.com)（MIT，shadcn registry，React 源码 vendor 进仓库，Vue / Nuxt 端按其视觉重写）+ `@number-flow`（官方 React / Vue 双包）。
 - **UI 基准**：React 是 UI Source of Truth，本计划所有页面先在 React 端定稿，Next / Vue 随后对齐（`AGENTS.md` §7）。
@@ -20,7 +20,7 @@
 
 > Gate-1 / Gate-2 只约束 Phase 0 与 Phase C；Playground 为纯前端静态演示，不等 Gate（口径调整详见本节末 2026-09-14 说明）：
 
-- [x] **Gate-1**：Nuxt 端与 React 基准**功能全部对齐**（`docs/feature-matrix.md` 中 Nuxt 列全部 ✅；口径为现有业务功能对齐，不含本计划三块，避免循环依赖）。**2026-09-16 达成**——Nuxt 26/27（仅剩 Dashboard，属 Phase C 豁免项），同日 logs 模块源码缺失 P0 修复（提交 `60546ab`）后，干净 clone 下 `typecheck` / `build` 恢复可过。
+- [x] **Gate-1**：Nuxt 端与 React 基准**功能全部对齐**（`docs/feature-matrix.md` 中 Nuxt 列全部 ✅；口径为现有业务功能对齐，不含本计划三块，避免循环依赖）。**2026-09-16 达成**——Nuxt 26/27（仅剩 Dashboard，属 Phase C 豁免项），同日 logs 模块源码缺失 P0 修复（提交 `60546ab`）后，干净 clone 下 `typecheck` / `build` 恢复可过。（2026-09-22 更新：Phase C 与 Playground 落地后矩阵按行为 **29 项**，Nuxt **29/29** 全 ✅；旧「26/27」口径作废，分母见 `feature-matrix.md` 统计表）
 - [x] **Gate-2**：Nuxt 端**冒烟测试通过**（登录 / 菜单加载 / 各模块列表与 CRUD / 权限边界 / 登出，见 §9.4 冒烟清单口径）。**2026-09-16 用户实测通过——Gate 全部达成，Phase 0 可启动（执行清单 §3.6）。**
 
 **总顺序（2026-09-14 重排）**：**Phase A + Phase B Playground 不等 Gate、立即启动**（纯前端静态演示，无数据依赖，与 Nuxt 收尾并发；四端同步推进）；Gate 达成后按 **Phase 0 演示上线准备 → Phase C Dashboard** 推进。每个 Phase 完成后按 `AGENTS.md` §10 提交并更新 `progress.md`。
@@ -86,13 +86,13 @@
 
 ### 3.4 日志降噪与增长治理
 
-> 现状：`LoggingInterceptor` 每个 HTTP 请求写一条 `type=api` 日志（`LOG_API_ENABLED` 默认开）；`HttpExceptionFilter` 每个异常写一条 `type=error`；`login` / `operation` 由各 service 手动写；`log-cleanup.service` 每日 03:00 统一保留 30 天（`LOG_RETENTION_DAYS`）。
+> 现状：`LoggingInterceptor` 每个 HTTP 请求写一条 `type=api` 日志（`LOG_API_ENABLED` 默认开）；`HttpExceptionFilter` 每个异常写一条 `type=error`；`login` / `operation` 由各 service 手动写；`log-cleanup.service` 每日 03:00 统一保留 30 天（`LOG_RETENTION_DAYS`）。（2026-09-22 注：本行为**立项时现状**；下列五项落地后 api 日志受 `LOG_API_SKIP_GET` 控制且 `/api/health` 一律不记、`DEMO_READONLY` 不落 error 日志、带 `seed` 标记的布景日志免于清理。）
 
-- [ ] `LoggingInterceptor` 增加 `LOG_API_SKIP_GET` 开关：演示环境 **GET 不记 api 日志**，非 GET 照记（只剩白名单与被拦请求，量极小）；本地开发保持全记。
-- [ ] `HttpExceptionFilter` 对 `DEMO_READONLY` **不写 error 日志**（否则访客乱点删除即刷库）。
-- [ ] `login` 日志保留，是 Dashboard 趋势图的活数据；30 天滚动可控。
-- [ ] `log-cleanup` **跳过带 `seed` 标记的日志**（faker 日志作为永久「布景」保留），真实日志按 `LOG_RETENTION_DAYS` 滚动。
-- [ ] refresh_tokens 过期清理：确认现有机制，缺则补一条 cron。
+- [x] `LoggingInterceptor` 增加 `LOG_API_SKIP_GET` 开关：演示环境 **GET 不记 api 日志**，非 GET 照记（只剩白名单与被拦请求，量极小）；本地开发保持全记。（落地：`apps/nest/src/common/interceptors/logging.interceptor.ts` 读 `LOG_API_SKIP_GET`，默认 false；`.env.example` 已登记；T5 查库确认 GET 0 条 api 日志而 POST 正常记录）
+- [x] `HttpExceptionFilter` 对 `DEMO_READONLY` **不写 error 日志**（否则访客乱点删除即刷库）。（落地：`apps/nest/src/common/filters/http-exception.filter.ts` 对 `code === 'DEMO_READONLY'` 硬编码特判跳过写入；T5 查库确认拦截 0 条 error 日志）
+- [x] `login` 日志保留，是 Dashboard 趋势图的活数据；30 天滚动可控。（`auth.service` 登录 / 登出仍写 `type: 'login'`；`log-cleanup.service` 按 `LOG_RETENTION_DAYS`（默认 30）滚动，Phase C 的 `stats/overview` 即消费该序列）
+- [x] `log-cleanup` **跳过带 `seed` 标记的日志**（faker 日志作为永久「布景」保留），真实日志按 `LOG_RETENTION_DAYS` 滚动。（落地：`apps/nest/src/modules/logs/log-cleanup.service.ts` 按 `detail.seed === true` 排除，常量 `DEMO_SEED_LOG_DETAIL_KEY` 见 `apps/nest/src/db/demo.constants.ts`）
+- [x] refresh_tokens 过期清理：确认现有机制，缺则补一条 cron。（确认结果：原缺失，已补 `apps/nest/src/auth/refresh-token-cleanup.service.ts`，cron 默认 `30 3 * * *`（每日 03:30，可由 `REFRESH_TOKEN_CLEANUP_CRON` 覆盖），注册于 `auth.module.ts` / `app.module.ts`）
 
 ### 3.5 契约与环境变量
 
@@ -158,9 +158,11 @@
 **Step 8 — 统一验收与上线**
 
 - [ ] §9.2 验收清单逐项过（curl 直拦、脚本幂等、头像全自家域名、GET 不记日志、拦截不写 error 日志）
-- [ ] `feature-matrix.md` 新增演示模式行（快捷登录 / 只读守卫，四端状态）
+  - 说明（2026-09-22 核对）：括号内五项判据已于 **2026-09-18 T5** 在「本地构建产物 + 注入 `DEMO_MODE=true` + 共用库」环境逐项验证并记录（`progress.md` Phase 0 条目 / `plan-phase0-execution.md` §4 任务 B 报告：curl 全链路矩阵全过、11 表指纹逐轮一致、头像 150 张全为自家 Storage 域名零外链、GET 0 条 api 日志、`DEMO_READONLY` 0 条 error 日志）。本条判据指向 §9.2，而 §9.2 为**线上部署后**验收清单，故不提前打钩。
+- [x] `feature-matrix.md` 新增演示模式行（快捷登录 / 只读守卫，四端状态）——2026-09-18 T5 落地（核心业务模块新增「演示模式（快捷登录 / 只读守卫）」行，四端 + NestJS 全 ✅）
 - [ ] 执行 `demo-reset` 洗数据 → 各端线上环境配 `DEMO_MODE=true` → 上线
-- [ ] `progress.md` 置顶记录 + `AGENTS.md` §19 指针同步
+  - 说明（2026-09-22 核对）：脚本开发与本地/共用库执行（含幂等复跑）已在 Step 2 / T5 完成；**「各端线上配 `DEMO_MODE=true`」与「上线」属四端统一上线环节**（AGENTS §17），未执行，故本条保持未勾。
+- [x] `progress.md` 置顶记录 + `AGENTS.md` §19 指针同步——2026-09-18 T5 落地（progress.md「Phase 0 演示上线准备全部完成（T1~T5，2026-09-17 ~ 09-18）」条目；AGENTS §19 待办指针改为「Phase 0 完成 → 下一步 Phase C Dashboard 与四端统一上线」）
 
 ---
 
@@ -232,10 +234,11 @@
 1. [x] OpenAPI v1.11.0 契约定稿（`stats/overview`）（`d677bb3`）
 2. [x] Nest `stats` 模块（只读 service；e2e 随 T1 备案口径以 curl 全链路覆盖，`19b806c`）
 3. [x] React Dashboard（设计定稿基准版；`recharts@3.10.1` 按 §7 评审引入，`@number-flow/react` 复用；`3159f8c`；**GUI 验证待用户本地执行**）
-4. [ ] Next 端对齐（server API 同名实现 + 页面复刻；语言包 25 键已随 React 提前同步）
-5. [ ] Vue 端对齐（Nuxt UI v4 + Recharts Vue 等价方案）
-6. [ ] Nuxt 端对齐（Nuxt 端最后一块功能，随 Phase C 一并补齐）
+4. [x] Next 端对齐（server API 同名实现 + 页面复刻；语言包 25 键已随 React 提前同步）——2026-09-19 完成（已同步 v1.12.0 取数形状与 React 基准全部打磨项，`feature-matrix.md` Dashboard 行 Next ✅；像素级观感 GUI 走查待用户）
+5. [x] Vue 端对齐（Nuxt UI v4 + Recharts Vue 等价方案）——2026-09-19 完成（`feature-matrix.md` Vue ✅；控件全用 Nuxt UI 内置）。⚠️ 括号内「Recharts Vue 等价方案」为立项时设想：Vue 端图表**最终按 `AGENTS.md` §21 三级评审引入 Unovis 1.7.0**（`@unovis/vue` + `@unovis/ts`，2026-09-20 由早期零依赖手写内联 SVG 迁移而来，选型与实测见 `mechanisms.md` §32、补记见 `progress.md` 2026-09-22 条目）
+6. [x] Nuxt 端对齐（Nuxt 端最后一块功能，随 Phase C 一并补齐）——2026-09-19 完成（服务端 `stats-service` 逐字平移 Nest v1.12.0 聚合 + 前端 `features/dashboard` 九文件；图表按用户拍板引入 `nuxt-charts` 3.0.0；四绿；**双端契约冒烟与 GUI 走查待执行**）
 7. [ ] 四端深浅色 / 响应式逐项过检 → `feature-matrix.md` 更新 → `progress.md` 记录
+   - 说明（2026-09-22 核对）：后两环已完成（`feature-matrix.md` Dashboard 行四端 + NestJS 全 ✅、React / Next / Vue / Nuxt 各自条目已置顶记录）；**唯「四端深浅色 / 响应式逐项过检」未做**——Next / Vue / Nuxt 三端 Dashboard 的像素级 GUI 走查截至本次审计仍待回收（`launch-audit.md` #14 的「待复跑」遗留 + #32~#39「GUI 走查回收」条目：Dashboard 四端像素观感在列，且 Nuxt Dashboard 走查仍见问题、细节未提供），故本条整体保持未勾。
 
 ---
 
@@ -261,10 +264,12 @@
 │   ├── Grid Reveal        （三级页面  /playground/ai-kit/grid-reveal）
 │   └── Matrix Orb         （三级页面  /playground/ai-kit/matrix-orb）
 ├── GitHub Activity         （二级页面  /playground/github-activity）
-└── 主题切换动画 / Theme Switch Animation（二级页面  /playground/theme-switch-animation）
+├── 主题切换动画 / Theme Switch Animation（二级页面  /playground/theme-switch-animation）
+├── 加载动画 / Loaders      （二级页面  /playground/loaders，2026-09-21 追加，第 9 页）
+└── 组织架构树 / OKR Tree   （二级页面  /playground/okr-tree，2026-09-21 追加，第 10 页）
 ```
 
-- 页面节点 `keepAlive` 开启、目录节点关闭（演示页纯静态、无写库副作用）；三级菜单同时作为侧边栏深层级渲染的真实演示。图标（lucide kebab-case，已核对同时存在于 lucide-react 1.x 与 @iconify-json/lucide）：演示场 `flask-conical` / 代码块 `square-code` / 数字动画 `hash` / Number Flow `arrow-up-1-0` / Animated Counter `tally-5` / Ai Kit `sparkles` / Fluid Orb `orbit` / Grid Reveal `grid-2x2` / Matrix Orb `atom` / GitHub Activity `calendar-days`（lucide-react 1.x 已移除品牌图标 `github`，改用热力图语义）/ 主题切换动画 `sun-moon`（2026-09-16 追加，sort 4 排 GitHub Activity 之后，经 `apps/nest/scripts/migrate-menus-add-theme-switch-animation.ts` 幂等录入）。
+- 页面节点 `keepAlive` 开启、目录节点关闭（演示页纯静态、无写库副作用）；三级菜单同时作为侧边栏深层级渲染的真实演示。图标（lucide kebab-case，已核对同时存在于 lucide-react 1.x 与 @iconify-json/lucide）：演示场 `flask-conical` / 代码块 `square-code` / 数字动画 `hash` / Number Flow `arrow-up-1-0` / Animated Counter `tally-5` / Ai Kit `sparkles` / Fluid Orb `orbit` / Grid Reveal `grid-2x2` / Matrix Orb `atom` / GitHub Activity `calendar-days`（lucide-react 1.x 已移除品牌图标 `github`，改用热力图语义）/ 主题切换动画 `sun-moon`（2026-09-16 追加，sort 4 排 GitHub Activity 之后，经 `apps/nest/scripts/migrate-menus-add-theme-switch-animation.ts` 幂等录入）；**现共 10 页**——追加 加载动画 `loader-circle`（sort 5）/ 组织架构树 `workflow`（sort 6），2026-09-21 经 `apps/nest/scripts/migrate-menus-add-playground-loaders.ts` 与 `migrate-menus-add-playground-okr-tree.ts` 幂等录入（两页 `keepAlive: true`、`permissions: 0n`，与既有演示页同口径）。
 - 三级菜单验证点：**展开态四端已代码级核实递归渲染**——React / Next `SidebarGroup → MenuLevel` 递归、Vue / Nuxt `toNavLeaf` 递归映射 + Nuxt UI 4.11 `NavigationMenu` vertical 模式经 `ReuseItemTemplate(level + 1)` 递归渲染子级手风琴；**折叠态**（React / Next 折叠菜单；Nuxt UI 折叠态 `UPopover` 仅平铺一层子项）、面包屑、命令面板搜索已经用户 GUI 实测过检通过（2026-09-16），四端一致。
 - [x] 演示页通用规范（四端已随 Phase B 落地）：React 路由 `src/routes/_authenticated/playground/<demo>.tsx`（三级页为 `playground/count-to/<demo>.tsx`）、实现 `src/features/playground/<demo-name>/`，其余三端按各自路由约定建同名路径；页首固定 `PlaygroundIntro` 信息卡（规范见 §5.2）；开启 `keepAlive`；i18n 全量跟进；Nuxt 端 canvas / 动画组件以 `<ClientOnly>` 包裹防 SSR 水合报错。
 
@@ -299,7 +304,7 @@ type DemoMeta = {
 | --- | --- |
 | 标题区 | 标题 + 描述 + 「主要场景」一段（均 i18n） |
 | 依赖区 | 每个包一枚 Chip：`包名@版本` + 三个图标外链（npm / GitHub / Docs，`noopener` 新窗口）；零依赖显示「零新依赖」标签并列出复用的现有包 |
-| 关联区 | 「查看源码」GitHub 文件链接；「项目内使用」跳转按钮（如 Number Flow → Dashboard KPI 数字滚动，Phase C 完成后回填 `usedIn`，把演示与真实业务串起来） |
+| 关联区 | 「查看源码」GitHub 文件链接；「项目内使用」跳转按钮（如 Number Flow → Dashboard KPI 数字滚动，Phase C 完成后回填 `usedIn`，把演示与真实业务串起来）（2026-09-22 核对：**Phase C 已完成但 `usedIn` 尚未回填**——四端 `features/playground/number-flow/meta.ts` 仍是同一条 TODO 注释「Phase C Dashboard KPI 数字滚动落地后回填 usedIn」，全仓 `usedIn` 仅出现在类型定义与 `PlaygroundIntro` 渲染分支，无一份 meta 实际赋值；此为**遗留待办**（`launch-audit.md` #24 已登记），本轮只据实标注、不改代码） |
 
 **硬性约束**：
 
@@ -311,6 +316,8 @@ type DemoMeta = {
 ## 6. Phase B — Playground 演示页实现（React 基准 → 逐端对齐）
 
 > **Phase B 已全部完成**（2026-09-15 React 基准 → 2026-09-16 三端对齐，含追加的主题切换动画页，共 8 页；实施记录见 §5.0 步骤 3-4 与 progress.md）。本节表格保留为「来源 / 依赖 / 对齐方案」对照记录。
+>
+> （2026-09-22 更新：Phase B 收尾后演示场又追加两页——第 9 页「加载动画」`/playground/loaders`、第 10 页「组织架构树」`/playground/okr-tree`，均于 2026-09-21 完成四端对齐，**演示场现共 10 页**（`apps/react/src/features/playground/registry.ts` 实测 10 条 `PLAYGROUND_DEMOS`）；下表已按同一格式补齐「加载动画」行。）
 >
 > 依赖一次性评审通过后实施（清单见 §7），不零散添加。rare-ui 为 MIT 协议 shadcn registry：**React / Next 直接 vendor 其组件源码**（`cn` 导入改 `@heroui/react`，见 §5.0 步骤 3）；**Vue / Nuxt 无对应实现，按 React 视觉以 Nuxt UI + 自定义组件重写**（`AGENTS.md` §21），动画以 CSS 等效实现（motion-v 经评审**不引入**，§7），验收以「四端交互一致」为准。
 
@@ -324,6 +331,7 @@ type DemoMeta = {
 | Ai Kit › Matrix Orb（三级页） | rare-ui `matrix-orb` | 自定义重写 | 矩阵光球动画 |
 | GitHub Activity | rare-ui `github-activity`（`motion`） | 自定义重写 | 贡献热力图（静态数据，不连外部 API） |
 | 主题切换动画（2026-09-16 追加，非 rare-ui 清单） | `theme-switch-animation`（第三方库 `/react` 子导出，View Transitions 蒙版揭示） | 官方 `/vue` 子导出（getter 对象传参）+ `/nuxt` 模块自动导入 | 13 种蒙版揭示主题切换动画演示：类型清单 / 时长 / 缓动选择 / 方向类型 / 重置 |
+| 加载动画（2026-09-21 追加，第 9 页 `/playground/loaders`） | vendor beUI（MIT）registry 的 `loader` 组件（快照来源 `https://beui.dev/r/loader.json`），**零新 npm 依赖**——动画复用既有 `motion@13.2.0`；React 基准 `d12f190`（用户 GUI 走查通过）→ Next `37be50a` | 按 `AGENTS.md` §21 不引入 motion-v：motion 关键帧一律 CSS `@keyframes` 等效移植（morph 走 `clip-path: polygon()`），Nuxt 端因 SSR 将 reduced-motion 的 metaballs 合拢姿态改由 CSS 媒体查询达成 | 17 种加载动效变体（spinner / dots / bars / dot-matrix / dither / morph / comet / scramble / metaballs / newton / helix / percent + ASCII 系 5 种）：变体墙 + 参数调试两区块，共享 size / speed |
 | 组织架构树（2026-09-21 追加，第 10 页 `/playground/okr-tree`） | `react-okr-tree`（第三方库，作者 baiwumm，MIT） | `vue3-okr-tree`（同作者，与 React 包自 1.13.0 起锁步发布、同号同功能面） | 组织架构树（方向切换 / 全部展开收起 / 名称负责人过滤 / 折叠子节点数 / 选中态）+ OKR `onlyBothTree` 根节点左右双向展开（左举措 / 右 KR） |
 
 - **旧清单整体移除（2026-09-14 拍板）**：Smart Ticker / 拖拽 / 富文本 / 加载态集 / 轮播 / 列表自动动画 / 图片 Lightbox / 二维码不再纳入——拖拽（`@dnd-kit`）、富文本（`@tiptap`）业务功能已上线无需重复演示，其余不再计划。
@@ -344,7 +352,7 @@ type DemoMeta = {
 | `prismjs`（+ `@types/prismjs` dev） | Phase A/B（Vue / Nuxt）**——两端已引入 1.30.0（2026-09-16）** | 代码块高亮：`prism-react-renderer` 为 React 专属渲染器，Vue 侧用 prism 核心直接 tokenize 后逐行渲染；语言按需注册（tsx / css / json / sql / python / bash），`Prism.manual` 关闭自动高亮 | 轻（Vue 端实测落在 code-block 按需 chunk 约 56KB，index 不含） |
 | `motion-v` | Phase A/B（Vue / Nuxt）**——已评审：不引入（2026-09-16）** | rare-ui 动画重写候选（Motion 官方 Vue 版）；对齐时逐页评估，全部以 CSS transition / `<Transition>` / `<TransitionGroup>` FLIP / Canvas RAF 等效满足（唯一未复刻的是 github-activity 头像 `layoutId` 共享元素飞行，降级为淡入淡出） | 无 |
 | `theme-switch-animation` | Phase B 追加（React / Next / Vue / Nuxt 四端）**——四端已引入 0.1.0（2026-09-16）** | 主题切换蒙版揭示动画库（作者 baiwumm，MIT）；React / Next 用 `/react`，Vue 用 `/vue`，Nuxt 用 `/nuxt` 模块自动导入；与项目既有 View Transition 路由 / 主题过渡并存（演示页内由库独占编排权，store 走 `applyThemeModeInstant` 让渡） | 轻（各端独立分包约 22 kB） |
-| `react-okr-tree` + `vue3-okr-tree` | Playground 追加（React / Next / Vue / Nuxt）**——React 已引入 1.13.0（2026-09-21），其余三端待 React 基准验证后按序对齐** | 组织架构树 / OKR 树组件（作者 baiwumm，MIT，npm 已发布，两包自 1.13.0 起锁步发布）；peer `react ≥ 18.2` / `vue ≥ 3.3`，零运行时依赖；可选 peer `html-to-image` 仅画布导出图需要，本演示范围精简**不装**；§21 第三方 Vue 组件库评审已由用户批准（Nuxt UI v4 无组织架构树组件、自研以千行计且偏离 React 基准、两包同源同 CSS 是四端一致性最优解）；React / Next 用 `react-okr-tree`，Vue / Nuxt 用 `vue3-okr-tree`，API 逐项对齐；外观经 `--okr-*` 变量挂站点 Design Token（随 `.dark` 翻转，不跟随系统偏好），节点卡片开 `unstyled` 由 renderNode / 默认插槽自绘 | 轻（React 端实测演示页按需 chunk 18.87 kB gzip，含两区块；dist 首行带 `'use client'`，Next App Router 可直接 import） |
+| `react-okr-tree` + `vue3-okr-tree` | Playground 追加（React / Next / Vue / Nuxt）**——四端均已引入 1.13.0（React 2026-09-21 基准先行，Next / Vue / Nuxt 同日按序对齐并四绿；2026-09-22 实测四端 `package.json`：React / Next = `react-okr-tree@1.13.0`，Vue / Nuxt = `vue3-okr-tree@1.13.0`）** | 组织架构树 / OKR 树组件（作者 baiwumm，MIT，npm 已发布，两包自 1.13.0 起锁步发布）；peer `react ≥ 18.2` / `vue ≥ 3.3`，零运行时依赖；可选 peer `html-to-image` 仅画布导出图需要，本演示范围精简**不装**；§21 第三方 Vue 组件库评审已由用户批准（Nuxt UI v4 无组织架构树组件、自研以千行计且偏离 React 基准、两包同源同 CSS 是四端一致性最优解）；React / Next 用 `react-okr-tree`，Vue / Nuxt 用 `vue3-okr-tree`，API 逐项对齐；外观经 `--okr-*` 变量挂站点 Design Token（随 `.dark` 翻转，不跟随系统偏好），节点卡片开 `unstyled` 由 renderNode / 默认插槽自绘 | 轻（React 端实测演示页按需 chunk 18.87 kB gzip，含两区块；dist 首行带 `'use client'`，Next App Router 可直接 import） |
 | `recharts` | Phase C | Dashboard 图表（`AGENTS.md` §19 已定 Recharts）；Next / Vue / Nuxt 端各自对齐等价方案 | 图表类标准选择，体积可按需 tree-shake |
 
 > 已移除（2026-09-14 随旧清单）：`@tombcato/smart-ticker`、`swiper`、`@formkit/auto-animate`、`yet-another-react-lightbox`、`qrcode`。
@@ -353,13 +361,13 @@ type DemoMeta = {
 
 ## 8. 一致性同步清单
 
-> 2026-09-18 任务 B（T5）逐项核对。Dashboard 相关两项随 Phase C 完成后补勾，不提前打钩。
+> 2026-09-18 任务 B（T5）逐项核对。Dashboard 相关两项随 Phase C 完成后补勾，不提前打钩。（2026-09-22 更新：Phase C 已完成，该两项已补勾，本行「不提前打钩」的约束解除。）
 
-- [x] `docs/feature-matrix.md`：新增演示模式（快捷登录 / 只读守卫）行（2026-09-18，四端 + NestJS 全 ✅）；Playground 行已有（✅）；Dashboard 行已有（❌ 各端均未实现，随 Phase C 更新）。
-- [x] `docs/ui-spec.md` §1.3：登录页快捷登录（`/sign-in` 行补 `DEMO_MODE` 快捷按钮口径）与 Playground 模式（`/playground/*` 行）已补充（2026-09-18）；Dashboard 状态「占位」→「已实现」**待 Phase C**。
+- [x] `docs/feature-matrix.md`：新增演示模式（快捷登录 / 只读守卫）行（2026-09-18，四端 + NestJS 全 ✅）；Playground 行已有（✅）；Dashboard 行已有（❌ 各端均未实现，随 Phase C 更新）。（2026-09-22 更新：Dashboard 行已随 Phase C 更新为四端 + NestJS 全 ✅；矩阵按行实测为 **29 项、四端 29/29**，Playground 行为 10 页。）
+- [x] `docs/ui-spec.md` §1.3：登录页快捷登录（`/sign-in` 行补 `DEMO_MODE` 快捷按钮口径）与 Playground 模式（`/playground/*` 行）已补充（2026-09-18）；Dashboard 状态「占位」→「已实现」**已随 Phase C 完成**（2026-09-22 核对：`ui-spec.md` §1.3 路由表现已记「`/` | Dashboard | 数据统计 | Dashboard 模式（欢迎横幅 + KPI 卡片行 + 主图表 / 环形图 + 最近动态 / 最新公告）| ✅ 已实现（四端，契约 v1.11.0 → v1.12.0）」）。
 - [x] `docs/progress.md`：每 Phase 完成置顶记录（Phase 0 见 2026-09-18 条目；Playground / 各 Phase 均已按完成时点置顶记录）。
 - [x] `AGENTS.md` §19：当前待办指针同步（Phase 0 完成 → 下一步 Phase C Dashboard 与四端统一上线，2026-09-18）。
-- [x] 契约 v1.10.0（demo-login / `DEMO_READONLY`）变更记录：`apps/nest/openapi/openapi.yaml` changelog（T1 已录入，含四端影响评估）+ `docs/progress.md`（T5 条目）；v1.11.0（stats）**待 Phase C** 定义时录入。
+- [x] 契约 v1.10.0（demo-login / `DEMO_READONLY`）变更记录：`apps/nest/openapi/openapi.yaml` changelog（T1 已录入，含四端影响评估）+ `docs/progress.md`（T5 条目）；v1.11.0（stats）**已随 Phase C 录入**（2026-09-22 核对：openapi changelog 已有 v1.11.0 段，此后 v1.12.0 取数口径修正 / v1.13.0 角色关联用户 / v1.14.0 `GET /health`，现最新版本 **v1.14.0**）。
 - [x] 各端 `.env.example`：`DEMO_MODE` 登记（nest / next / nuxt；react / vue 为纯静态 SPA 无服务端，不适用）；`LOG_API_SKIP_GET` 仅 nest 登记（Next / Nuxt 无 LoggingInterceptor 机制，见执行手册 T4 报告口径）。
 
 ## 9. 验收标准
@@ -378,6 +386,8 @@ type DemoMeta = {
 
 ### 9.2 演示上线准备（Phase 0）
 
+> **本节为线上部署后验收项，随四端统一上线执行**（`AGENTS.md` §17 上线清单）。2026-09-18 T5 已在「本地构建产物 + 注入 `DEMO_MODE=true` + 共用库」完成等价验证并记录（`plan-phase0-execution.md` §4 / `progress.md` Phase 0 条目），但线上 `DEMO_MODE=true` 配置与线上口径的最终确认尚未执行，故本清单一律保持未勾。
+
 - [ ] 线上任意演示账号无法完成任何增删改，**curl 直连接口同样被拦**（服务端权威）；登录 / 刷新 / 退出 / 站内信已读正常。
 - [ ] 前端被拦时统一 toast「演示环境，禁止修改数据」（i18n），写按钮与表单可正常打开、校验可见。
 - [ ] 超管不出现在任何快捷登录池；仅用户名密码可登录；重置脚本执行后超管密码哈希未变。
@@ -387,6 +397,8 @@ type DemoMeta = {
 - [ ] 日志：GET 不产生 api 日志；`DEMO_READONLY` 拦截不产生 error 日志；30 天后 seed 布景日志仍在，真实日志正常滚动。
 
 ### 9.3 Dashboard（Phase C）
+
+> **本节为线上部署后验收项，随四端统一上线执行**。四端 Dashboard 代码已于 2026-09-18 ~ 09-19 全部落地（§4.4 第 1~6 步），但清单四项均属**线上口径的最终过检**（像素级一致性 / 线上聚合数据 / 敏感字段终查 / React Skills 复核），截至 2026-09-22 Next / Vue / Nuxt 三端 GUI 走查尚未回收（`launch-audit.md` #14 遗留、#32~#39「GUI 走查回收」，其中 Nuxt Dashboard 走查仍见问题、细节未提供），故保持未勾。
 
 - [ ] 四端视觉与交互一致（布局 / 图表类型 / 微动效 / 深浅色 / 响应式断点）。
 - [ ] 所有数字来自 `stats` 接口真实聚合；接口挂掉时整页 Skeleton + 错误重试，不白屏。
