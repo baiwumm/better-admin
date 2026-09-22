@@ -77,24 +77,19 @@ let redirectingToSignIn = false
 function redirectToSignIn() {
   if (redirectingToSignIn) return
 
-  redirectingToSignIn = true
-
   // 已在登录页：不再跳转。location.assign 同 URL 也会整页重载——若登录页上
   // 出现意外 401（应无从发生，防御性兜底），重载会表现为「进入登录页又刷新」。
   // 未登录访问受保护页面的跳转由路由守卫统一处理并按规则携带 redirect。
   if (window.location.pathname === '/sign-in') return
 
+  // 置位放在早退之后：否则「在登录页收到 401」会把标志位永久置真，之后任何
+  // 真正的会话失效跳转都会被自身挡掉。
   redirectingToSignIn = true
 
-  // 直接整页跳转登录页（清空 SPA 内存态更干净）。redirect 参数与路由守卫
-  // ① 保持同一规则（对齐 Next 端 buildSignInRedirect）：根路径不带参数
-  // （登录后本就落首页，回跳无意义），其余路径携带当前完整路径。
-  if (window.location.pathname === '/') {
-    window.location.assign('/sign-in')
-  } else {
-    const target = `${window.location.pathname}${window.location.search}`
-    window.location.assign(`/sign-in?redirect=${encodeURIComponent(target)}`)
-  }
+  // 直接整页跳转登录页（清空 SPA 内存态更干净），不带 redirect：与 React /
+  // Next / Vue 三端的 401 硬跳同口径（launch-audit #28 方案 C）。路由守卫层的
+  // 「根路径裸跳、其余带 redirect」是另一层规则，两者不互相影响。
+  window.location.assign('/sign-in')
 }
 
 /** refresh 请求的并发去重 Promise（同一时刻只存在一个飞行中的 refresh）。 */
