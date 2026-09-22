@@ -1,6 +1,6 @@
 {
   "name": "better-admin-website",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Better Admin 文档站（独立应用，部署 Vercel better-admin.baiwumm.com）",
   "scripts": {

@@ -8,18 +8,18 @@
  * 子项目按 apps/ 下的目录名列举、存在才处理——后续新增子应用时脚本
  * 无需改动；version 未变化的文件不重写（保持 git diff 干净）。
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const SUB_PROJECTS = [
-  "apps/react",
-  "apps/vue",
-  "apps/next",
-  "apps/nuxt",
-  "apps/nest",
-];
+const appsDir = path.join(rootDir, "apps");
+// 实际枚举 apps/ 下的子目录，而不是手写清单：手写清单已经漏掉过 website，
+// 导致根 version 升到 0.2.0 时文档站还停在 0.1.0。
+const SUB_PROJECTS = readdirSync(appsDir, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => `apps/${entry.name}`)
+  .sort();
 
 const rootPkg = JSON.parse(
   readFileSync(path.join(rootDir, "package.json"), "utf8"),
