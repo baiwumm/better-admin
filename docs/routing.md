@@ -58,7 +58,7 @@ src/routes/
 │   │   ├── notices_.$noticeId.tsx  # /org/notices/:noticeId（公告详情，登录可达前缀）
 │   │   └── chart.tsx          # /org/chart       （架构图谱）
 │   └── settings/              # 系统管理（菜单权限）
-│       ├── index.tsx          # /settings        （分组兜底空页）
+│       ├── （无 index.tsx）    # /settings 不建页：分组节点 to 为空，直连一律 404（2026-09-22 统一，见 launch-audit #47）
 │       ├── users.tsx          # /settings/users  （用户管理）
 │       ├── roles.tsx          # /settings/roles  （角色管理）
 │       ├── permissions.tsx    # /settings/permissions（权限管理）
@@ -132,7 +132,7 @@ src/pages/
 | `/org/directory` | `_authenticated/org/directory.tsx` | 人员通讯录（支持 `?deptId=`） | 菜单权限 | 菜单树含该路径 |
 | `/org/notices` | `_authenticated/org/notices.tsx` | 公告管理 | 菜单权限 | 菜单树含该路径 |
 | `/org/chart` | `_authenticated/org/chart.tsx` | 架构图谱 | 菜单权限 | 菜单树含该路径 |
-| `/settings` | `_authenticated/settings/index.tsx` | 分组兜底空页 | 菜单权限 | 分组节点 `to` 为空，正常导航不可达 |
+| `/settings` | **（四端均无页面文件）** | 分组节点路径 | — | **2026-09-22 统一：不建兜底页**，分组节点 `to` 为空、正常导航不可达，直接输入 URL 四端一致走 404（此前 React 渲染空 div、Vue / Nuxt 用 PlaceholderPage、Next 本就 404，三端三种表现）|
 | `/settings/users` | `_authenticated/settings/users.tsx` | 用户管理 | 菜单权限 | 菜单树含该路径 |
 | `/settings/roles` | `_authenticated/settings/roles.tsx` | 角色管理 | 菜单权限 | 菜单树含该路径 |
 | `/settings/permissions` | `_authenticated/settings/permissions.tsx` | 权限管理 | 菜单权限 | 菜单树含该路径 |

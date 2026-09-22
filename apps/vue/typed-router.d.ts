@@ -192,13 +192,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/(authenticated)/settings/': RouteRecordInfo<
-      '/(authenticated)/settings/',
-      '/settings',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
     '/(authenticated)/settings/dicts': RouteRecordInfo<
       '/(authenticated)/settings/dicts',
       '/settings/dicts',
@@ -461,14 +454,6 @@ declare module 'vue-router/auto-routes' {
     'src/pages/(authenticated)/playground/theme-switch-animation.vue': {
       routes:
         | '/(authenticated)/playground/theme-switch-animation'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/(authenticated)/settings/index.vue': {
-      routes:
-        | '/(authenticated)/settings/'
       views:
         | never
       pathParamNames:

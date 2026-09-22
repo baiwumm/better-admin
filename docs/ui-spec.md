@@ -41,7 +41,7 @@
     │   ├── notices_.$noticeId # 公告详情（登录可达前缀）
     │   └── chart            # 架构图谱
     └── settings/
-        ├── index            # 分组兜底空页
+        ├── （无 index）      # 分组节点不建兜底页，直连 404（launch-audit #47）
         ├── users            # 用户管理
         ├── roles            # 角色管理
         ├── permissions      # 权限管理（只读）

@@ -18,7 +18,6 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedMyNoticesRouteImport } from './routes/_authenticated/my-notices'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as authSignInRouteImport } from './routes/(auth)/sign-in'
-import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings/users'
 import { Route as AuthenticatedSettingsRolesRouteImport } from './routes/_authenticated/settings/roles'
 import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_authenticated/settings/permissions'
@@ -88,12 +87,6 @@ const authSignInRoute = authSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => authRouteRoute,
 } as any)
-const AuthenticatedSettingsIndexRoute =
-  AuthenticatedSettingsIndexRouteImport.update({
-    id: '/settings/',
-    path: '/settings/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedSettingsUsersRoute =
   AuthenticatedSettingsUsersRouteImport.update({
     id: '/settings/users',
@@ -268,7 +261,6 @@ export interface FileRoutesByFullPath {
   '/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
   '/settings/roles': typeof AuthenticatedSettingsRolesRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
-  '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/org/notices/$noticeId': typeof AuthenticatedOrgNoticesNoticeIdRoute
   '/playground/ai-kit/fluid-orb': typeof AuthenticatedPlaygroundAiKitFluidOrbRoute
   '/playground/ai-kit/grid-reveal': typeof AuthenticatedPlaygroundAiKitGridRevealRoute
@@ -303,7 +295,6 @@ export interface FileRoutesByTo {
   '/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
   '/settings/roles': typeof AuthenticatedSettingsRolesRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
-  '/settings': typeof AuthenticatedSettingsIndexRoute
   '/org/notices/$noticeId': typeof AuthenticatedOrgNoticesNoticeIdRoute
   '/playground/ai-kit/fluid-orb': typeof AuthenticatedPlaygroundAiKitFluidOrbRoute
   '/playground/ai-kit/grid-reveal': typeof AuthenticatedPlaygroundAiKitGridRevealRoute
@@ -341,7 +332,6 @@ export interface FileRoutesById {
   '/_authenticated/settings/permissions': typeof AuthenticatedSettingsPermissionsRoute
   '/_authenticated/settings/roles': typeof AuthenticatedSettingsRolesRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
-  '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/org/notices_/$noticeId': typeof AuthenticatedOrgNoticesNoticeIdRoute
   '/_authenticated/playground/ai-kit/fluid-orb': typeof AuthenticatedPlaygroundAiKitFluidOrbRoute
   '/_authenticated/playground/ai-kit/grid-reveal': typeof AuthenticatedPlaygroundAiKitGridRevealRoute
@@ -378,7 +368,6 @@ export interface FileRouteTypes {
     | '/settings/permissions'
     | '/settings/roles'
     | '/settings/users'
-    | '/settings/'
     | '/org/notices/$noticeId'
     | '/playground/ai-kit/fluid-orb'
     | '/playground/ai-kit/grid-reveal'
@@ -413,7 +402,6 @@ export interface FileRouteTypes {
     | '/settings/permissions'
     | '/settings/roles'
     | '/settings/users'
-    | '/settings'
     | '/org/notices/$noticeId'
     | '/playground/ai-kit/fluid-orb'
     | '/playground/ai-kit/grid-reveal'
@@ -450,7 +438,6 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/permissions'
     | '/_authenticated/settings/roles'
     | '/_authenticated/settings/users'
-    | '/_authenticated/settings/'
     | '/_authenticated/org/notices_/$noticeId'
     | '/_authenticated/playground/ai-kit/fluid-orb'
     | '/_authenticated/playground/ai-kit/grid-reveal'
@@ -531,13 +518,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/sign-in'
       preLoaderRoute: typeof authSignInRouteImport
       parentRoute: typeof authRouteRoute
-    }
-    '/_authenticated/settings/': {
-      id: '/_authenticated/settings/'
-      path: '/settings'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings/users': {
       id: '/_authenticated/settings/users'
@@ -752,7 +732,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSettingsPermissionsRoute: typeof AuthenticatedSettingsPermissionsRoute
   AuthenticatedSettingsRolesRoute: typeof AuthenticatedSettingsRolesRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
-  AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
   AuthenticatedOrgNoticesNoticeIdRoute: typeof AuthenticatedOrgNoticesNoticeIdRoute
   AuthenticatedPlaygroundAiKitFluidOrbRoute: typeof AuthenticatedPlaygroundAiKitFluidOrbRoute
   AuthenticatedPlaygroundAiKitGridRevealRoute: typeof AuthenticatedPlaygroundAiKitGridRevealRoute
@@ -786,7 +765,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSettingsPermissionsRoute: AuthenticatedSettingsPermissionsRoute,
   AuthenticatedSettingsRolesRoute: AuthenticatedSettingsRolesRoute,
   AuthenticatedSettingsUsersRoute: AuthenticatedSettingsUsersRoute,
-  AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
   AuthenticatedOrgNoticesNoticeIdRoute: AuthenticatedOrgNoticesNoticeIdRoute,
   AuthenticatedPlaygroundAiKitFluidOrbRoute:
     AuthenticatedPlaygroundAiKitFluidOrbRoute,

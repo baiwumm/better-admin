@@ -829,7 +829,7 @@ NuxtPage 动态渲染下不可用；必须改用 NuxtPage 内置 `keepalive` pro
   include = 已打开标签的**组件名**集合 ∩ 菜单 keepAlive 路径 ∖ 刷新中；组件名从
   `route.matched[0].components.default.__name` 取（watch matched 记录 + sessionStorage）；
   刷新 = `pageKey`（path#seq）递增强制重挂载 + include 摘一拍剪除旧缓存。
-- **已知近似**：同名页面组件（控制台 `index.vue` 与 `settings/index.vue` 组件名同为
+- **已知近似**：同名页面组件（控制台 `index.vue` 与 `settings/index.vue` 组件名同为。**（2026-09-22 更新：分组兜底页 `settings/index.vue` 已随 launch-audit #47 删除，当前不再有同名 index 组件对，该近似处于不触发状态；机制本身仍成立——将来若再引入同名页面组件会复现，故保留本条结论不删）**
   `index`）关闭其一将一并剪除两者缓存——仅损失缓存不影响正确性。
 - **路由 VT 编排不受影响**：beforeResolve 捕旧帧 / afterEach 放行 / 方向感知照 Vue 蓝本
   挂同一组件（app.vue slot 包装、admin 区外编排条件已过滤）。
