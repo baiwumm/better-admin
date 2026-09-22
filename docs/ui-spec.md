@@ -26,12 +26,13 @@
 /
 ├── (auth)/                  # 认证页（居中卡片布局）
 │   └── sign-in              # 登录
-├── (errors)/                # 全屏错误页
-│   ├── 401 / 403 / 404 / 500
+├── 403 / 404 / 500          # 全屏错误页（顶层路由文件，无 (errors) 分组，也无 401 / 503 页）
 └── _authenticated/          # 认证态布局（Sidebar + Header + Main）
-    ├── index                # 控制台（占位）
+    ├── index                # 控制台（Dashboard 概览页）
     ├── account              # 我的账户
     ├── my-notices           # 我的公告（登录可达）
+    ├── exception/403、404、500   # 异常页（错误页的菜单化嵌入形态）
+    ├── playground/          # 演示场 10 页（含 ai-kit / count-to 两个三级分组）
     ├── org/
     │   ├── depts            # 组织管理
     │   ├── posts            # 岗位管理
@@ -53,12 +54,13 @@
 
 | 模式 | 代表页面 | 结构特征 |
 | --- | --- | --- |
-| Dashboard | `/` | `Header`（Search/ThemeSwitch/ThemeSettingsDrawer/ProfileDropdown）+ `Main`（标题行 + Tabs + 统计卡片网格 + 图表网格） |
-| 列表管理 | `/users`、`/tasks` | `Header fixed` + `Main`（页头：标题 + 描述 + 主操作按钮）+ `DataTable`（Toolbar / Table / Pagination / BulkActions）+ 全局 `Dialogs` |
-| 卡片网格 | `/apps` | 页头 + 筛选/排序控件 + 分隔线 + 卡片网格（`md:grid-cols-2 lg:grid-cols-3`） |
-| 认证页 | `/sign-in` 等 | `AuthLayout`（居中 Logo + 标题）+ `Card max-w-sm` + 表单 + 页脚说明 |
-| 错误页 | `/403` `/404` `/500` | 全屏居中：超大数字 + 说明 + `Go Back` / `Back to Home` 按钮 |
-| 占位页 | `/help-center` | `ComingSoon`（图标 + 标题 + 描述） |
+| Dashboard | `/` | `Main`（欢迎横幅 + KPI 卡片行（含 sparkline）+ 主图表 / 环形图卡 + 最近动态 / 最新公告，宽屏 `max-w-7xl` 居中）；Header 右侧为 Search → 铃铛 → 全屏 → 语言 → 主题设置抽屉 |
+| 列表管理 | `/settings/users`、`/settings/logs` | `Main`（页头：标题 + 描述 + 主操作按钮）+ `DataTable`（Toolbar / Table / Pagination / BulkActions）+ 页面级弹层（Drawer 表单、确认 Dialog） |
+| 卡片网格 | Dashboard KPI 行、`/playground/*` 演示卡 | 页头 + 控件 + 分隔线 + 卡片网格；模板演示页 `/apps`、`/tasks` 已随 HeroUI 重构移除，无对应业务路由 |
+| 左树右表 | `/org/depts`、`/org/directory` | 主体区左右分栏：组织树面板 + 列表 / 通讯录（`/exception/*` 与公告详情走全宽白名单，不套卡片内边距） |
+| 认证页 | `/sign-in` | 居中 Logo + 标题 + `Card` 表单 + 页脚说明（`DEMO_MODE` 下为「管理员 / 随机用户」快捷登录按钮） |
+| 错误页 | `/403` `/404` `/500` | **Result 插画风格**（`components/common/error-pages/result-page.tsx`：插画 → 标题 → 副标题 → 操作区「返回上一页 / 返回首页」），`fullscreen` 与 `embedded`（`/exception/*` 菜单形态）两种变体；文案已中文化 |
+| 占位页 | — | 模板的 `ComingSoon`（`/help-center`）已移除；现存 `placeholder-page.tsx` 零引用（见 §13.1） |
 
 ### 1.3 页面结构规划
 
@@ -66,7 +68,7 @@
 
 | 路由 | 页面 | 模块 | 主要 UI 模式 | 状态 |
 | --- | --- | --- | --- | --- |
-| `/` | Dashboard | 数据统计 | Dashboard 模式（统计卡片 + 图表 + 最近活动） | 占位 |
+| `/` | Dashboard | 数据统计 | Dashboard 模式（欢迎横幅 + KPI 卡片行 + 主图表 / 环形图 + 最近动态 / 最新公告） | ✅ 已实现（四端，契约 v1.11.0 → v1.12.0） |
 | `/settings/users` | 用户管理 | 用户 | 列表模式（列表/搜索/分页/详情/新建/编辑/删除/状态） | ✅ 已实现 |
 | `/settings/roles` | 角色管理 | 角色 | 列表模式 + 菜单授权抽屉（树形授权 + 权限位多选） | ✅ 已实现 |
 | `/settings/permissions` | 权限管理 | 权限 | 只读位掩码枚举字典 | ✅ 已实现 |
@@ -82,7 +84,7 @@
 | `/my-notices` | 我的公告 | 组织 | 左列表右详情（URL `?noticeId=` 驱动） | ✅ 已实现 |
 | `/account` | 我的账户 | 用户 | 卡片式多分区设置 | ✅ 已实现 |
 | `/sign-in` 等 | 认证页 | 认证 | 认证模式（居中卡片布局）；`DEMO_MODE=true` 时展示「管理员 / 随机用户」快捷登录按钮（替代 GitHub / Google 占位；契约 v1.10.0 `POST /auth/demo-login`，写操作统一 403 `DEMO_READONLY` toast） | ✅ 已实现 |
-| `/playground/*` | Playground 演示场 | Playground | 演示模式（`PlaygroundIntro` 信息卡 + 组件演示区，8 页含三级菜单；详见 plan-dashboard-playground.md §5） | ✅ 已实现 |
+| `/playground/*` | Playground 演示场 | Playground | 演示模式（`PlaygroundIntro` 信息卡 + 组件演示区，10 页含三级菜单；详见 plan-dashboard-playground.md §5） | ✅ 已实现（四端） |
 | `/403` `/404` `/500` | 错误页 | 系统 | 全屏错误模式 | ✅ 已实现 |
 
 > **UI 组件库差异说明**：React / Next.js 使用 **Hero UI** 组件（Button / Modal / Tabs 等），Vue / Nuxt 使用 **Nuxt UI** 组件（布局用 Dashboard 套件）；组件库不同，但**页面功能、布局结构、交互逻辑、数据流保持一致**。
@@ -111,64 +113,69 @@
 ### 2.1 现状（认证态布局层级）
 
 ```text
-SearchProvider
-└── LayoutProvider
-    └── SidebarProvider
-        ├── SkipToMain
-        ├── AppSidebar
-        └── SidebarInset (@container/content)
-            └── Header + Main（页面内容）
+AdminLayout（src/layouts/admin-layout.tsx：h-dvh 双栏 flex 壳 + 权限门卫）
+├── <aside>（hidden md:flex，w-64 / 折叠 w-16，width 过渡 + contain / transform-gpu）
+│   └── AppSidebar（品牌 / 菜单 / 快捷链接 / 用户区，见 §3）
+└── 右列（flex min-w-0 flex-1 flex-col）
+    ├── AppHeader（h-16 顶栏；含移动端 Drawer 与命令面板浮层）
+    ├── TagsBar（多标签页栏，偏好开关）
+    └── <main>（min-h-0 flex-1 overflow-y-auto，唯一滚动容器）
+        └── KeepAliveOutlet（保活实例池 + 路由 VT 编排 + 异常覆盖层 overlay）
 ```
 
-- `SidebarInset` 使用 **container queries**（`@container/content`），DataTable 分页等组件基于容器宽度自适应。
-- `Main`：默认 `px-4 py-6`；非 fluid 时在 `@7xl/content` 下居中并限宽 `max-w-7xl`；`fixed` 变体为全高 flex 布局（设置页）。
-- `Header`：高度 `h-16`，内容 `p-4 sm:gap-4`；`fixed` 时 `sticky top-0`，滚动超过 10px 后显示阴影 + `backdrop-blur` 背景。
-- 主题设置抽屉（`ThemeSettingsDrawer`，即旧称 ConfigDrawer）支持：主题（system/light/dark）、Sidebar 变体、Layout 模式、主题色板（6 套），偏好经 zustand persist 存 **localStorage**（永不过期；不使用 Cookie）。
-- 顶部进度条（bprogress）在路由切换时显示；`Toaster` 全局挂载在根布局。
+- 无 `SearchProvider` / `LayoutProvider` / `SidebarProvider` / `SkipToMain` 的 Context 壳：命令面板开合用 HeroUI `useOverlayState`（状态在 `AppHeader` 内），布局侧只有 `admin-layout` 的折叠布尔量与 `design-theme-store` 的偏好。
+- **不使用 container queries**（React / Next 端源码中无 `@container` / `container-type`）：DataTable 分页等组件的窄屏收敛走 Tailwind 断点与条件渲染。
+- `Main`：`p-4 md:p-6`；全宽白名单 `FULL_WIDTH_ROUTES = ["/org/chart", "/my-notices", "/exception/403|404|500"]` 去内边距贴边撑满；居中限宽 `max-w-7xl` 由页面自身负责（如 Dashboard），**不存在 `Main fixed` 变体**。
+- `Header`：高度 `h-16`、`px-4`、`border-b`、`shrink-0`——固定于右列顶部、不参与 `main` 滚动；**无 `fixed` / `sticky` / 滚动阴影 / `backdrop-blur` 变体**。
+- 主体区异常态由 `KeepAliveOutlet` 的 `overlay` 承载（菜单加载中 / 加载失败 / 403 跳转中），保活实例池保持挂载，恢复后原页面状态不丢。
+- 主题设置抽屉（`ThemeSettingsDrawer`，即旧称 ConfigDrawer）八项偏好：主题色、明暗模式（system/light/dark）、色彩模式、主题动画方向、页面切换动画、页面切换速度、圆角、显示多标签页；偏好由 `design-theme-store` 直接读写 **localStorage**（键统一 `better-admin-*` 前缀，永不过期；不使用 Cookie，也未使用 zustand `persist` 中间件）。
+- 顶部进度条（bprogress）由 `src/lib/progress.ts` 状态机在路由切换与接口请求时驱动；全局 Toast 队列挂在根路由 `<Toast.Provider placement="top" />`（见 §12.1）。
 
 ### 2.2 Better Admin Layout 规范
 
-1. 保留现有层级：`SidebarProvider > SidebarInset > Header + Main`，不改变整体骨架。
-2. 默认配置固定为：Sidebar 变体 **inset**、折叠模式 **icon**、主题 **system**、方向 **ltr**；`ThemeSettingsDrawer`（主题设置抽屉）作为用户偏好入口保留。
-3. 页面内容统一使用 `Main`（默认居中限宽 `max-w-7xl`），全高场景使用 `Main fixed`。
-4. `Header` 右侧操作区顺序统一为：`Search` → `ThemeSwitch` → `ThemeSettingsDrawer` → `ProfileDropdown`（从左到右）。
-5. 列表页使用 `Header fixed`，其余页面使用普通 `Header`。
-6. 禁止在页面内自行实现 sticky/fixed 布局，统一通过 `Header fixed` / `Main fixed` 组合。
+1. 保留现有层级：`AdminLayout 双栏壳 > <aside>(侧边栏) + 右列(Header + [TagsBar] + Main)`，不改变整体骨架。
+2. 默认配置固定为：侧边栏展开（`w-64`）、主题 **system**、方向 **ltr**；`ThemeSettingsDrawer`（主题设置抽屉）作为用户偏好唯一入口保留。
+3. 页面内容统一放在 `main`（默认 `p-4 md:p-6`）；需要贴边撑满的页面进 `FULL_WIDTH_ROUTES` 白名单，宽屏限宽 `max-w-7xl` 由页面自身包裹。
+4. `Header` 右侧操作区顺序统一为：`Search` → `NoticeBell` → `Fullscreen` → `LanguageSwitcher` → `ThemeSettingsDrawer`（从左到右）；用户信息入口在侧边栏用户区（§3.1），不放顶栏。
+5. 顶栏与侧边栏不随主体内容滚动（滚动条只属于 `main`），禁止页面内自行实现 sticky/fixed 布局。
 
 ---
 
 ## 3. Sidebar
 
-### 3.1 现状（shadcn/ui Sidebar 二次封装）
+### 3.1 现状（自研 AppSidebar，由 HeroUI 原子组件拼装）
+
+实现位置：`apps/react/src/layouts/admin-layout.tsx`（外层 `<aside>` 壳与宽度动画、折叠状态）+ `layouts/components/app-sidebar.tsx`（内容）+ `sidebar-menu.tsx` / `collapsed-menu.tsx`（两种形态的菜单树）。**不是** shadcn/ui Sidebar 的二次封装，项目中也**不存在** `SidebarProvider` / `SidebarInset` / `--sidebar-width*` 变量。
 
 **尺寸与行为**：
 
 | 项 | 值 |
 | --- | --- |
-| 桌面展开宽度 | `16rem`（`--sidebar-width`） |
-| 移动端宽度 | `18rem`（`--sidebar-width-mobile`） |
-| 折叠（icon）宽度 | `3rem`（`--sidebar-width-icon`） |
-| 变体 | `sidebar` / `floating` / `inset`（默认 **inset**） |
-| 折叠模式 | `offcanvas` / `icon` / `none`（默认 **icon**） |
-| 快捷键 | `Ctrl/Cmd + B` 切换 |
-| 状态持久化 | Cookie `sidebar_state`（7 天） |
-| 移动端行为 | 变为 Sheet 抽屉（`SheetContent`） |
+| 桌面展开宽度 | `w-64`（16rem） |
+| 桌面折叠（icon）宽度 | `w-16`（4rem） |
+| `md` 以下 | 整个侧边栏不渲染（`hidden md:flex`），由顶栏按钮以 HeroUI **Drawer**（`placement="left"`，`Drawer.Dialog` 宽 `w-64`）弹出 |
+| 折叠形态 | 单一布尔量两态切换（顶栏 `PanelLeftClose` / `PanelLeftOpen` 图标按钮），**无 `sidebar`/`floating`/`inset` 变体，也无 `offcanvas`/`icon`/`none` 折叠模式配置** |
+| 快捷键 | 无（项目未实现 `Ctrl/Cmd + B`；`Ctrl/Cmd + K` 是命令面板） |
+| 状态持久化 | **不持久化**——折叠态是 `admin-layout.tsx` 的 `useState(false)`，刷新即回到展开；全站未使用 Cookie |
+| 宽度动画 | 外层 `<aside>` 承担 `transition-[width] duration-200`，内容层宽度瞬切并由外层裁剪溢出 |
 
 **结构**：
 
 ```text
-Sidebar
-├── SidebarHeader   → TeamSwitcher（团队/应用切换，可替换为 AppTitle/Logo）
-├── SidebarContent  → NavGroups（分组 + 菜单项）
-│                      ├── 普通项：图标 + 标题 + Badge
-│                      └── 分组项：Collapsible 子菜单（折叠态变为右侧 Dropdown）
-├── SidebarFooter   → NavUser（头像 + 名称 + 邮箱 + 用户菜单）
-└── SidebarRail
+AppSidebar（w-64 / w-16，flex-col，bg-surface）
+├── SidebarBrand     → Logo + 产品名（含技术栈下拉），折叠态仅图标
+├── ScrollShadow     → 唯一滚动区域（上下渐隐提示溢出）
+│   └── <nav>        → 加载中：SidebarMenuSkeleton / CollapsedMenuSkeleton
+│                      展开态：SidebarMenu（Accordion 分组 + ListBox 子项，支持多级递归）
+│                      折叠态：CollapsedMenu（叶子图标 Tooltip + 分组 hover Popover 浮出子菜单）
+├── SidebarLinks     → 快捷外链（GitHub / 博客；折叠态仅图标 + Tooltip）
+└── SidebarUser      → 用户区（头像 + 名称 + 邮箱 + Dropdown 菜单，自带顶部分隔线）
 ```
 
-- 导航数据来源：后端 `GET /api/menus`（MenuNode[]），前端 `useMenus` hook 拉取 + 权限过滤 + 合并硬编码「控制台」节点。
-- 高亮规则（`findActivePath`）：递归匹配当前路径对应叶子节点及其祖先链。
-- 折叠态下的分组项自动切换为 Dropdown 弹出子菜单。
+- 无 `SidebarRail`；用户区不在 `SidebarFooter` 槽位而是独立区块（React 端本就不存在 shadcn 的 slot 体系）。
+- 导航数据来源：后端 `GET /api/menus`（MenuNode[]），前端 `useMenus` hook 拉取 + 权限过滤 + 合并硬编码「控制台」节点（该节点前端固定注入，接口失败时侧边栏回退为**仅「控制台」**，保证控制台入口不被菜单接口拖没）。
+- 高亮规则（`findActivePath`）：递归匹配当前路径对应叶子节点及其祖先链（Header 面包屑与折叠菜单共用同一判据）。
+- 折叠态下的分组项由 **Popover**（hover 浮出）展开子菜单，叶子项为 Tooltip + 直接跳转。
 
 ### 3.2 Better Admin Sidebar 规范
 
@@ -195,8 +202,8 @@ Sidebar
 
 4. 菜单项图标统一使用 lucide-react；子菜单使用 Collapsible；徽标（Badge）仅用于数字类提示，统一 `rounded-full px-1 py-0 text-xs`。
 5. 导航数据继续保持单一数据源（`sidebar-data` 结构），后续接入 RBAC 后按权限过滤，不散落写死在页面里。
-6. 用户区（NavUser）：头像 + 名称 + 邮箱 + 菜单（个人设置 / 退出登录）；退出登录沿用确认 Dialog。
-7. 默认变体 inset + icon 折叠，`Ctrl/Cmd + B` 与移动端抽屉行为保留。
+6. 用户区（`SidebarUser`）：头像 + 名称 + 邮箱 + Dropdown 菜单（我的账户 / 我的公告 / 个人链接子菜单（网站 / GitHub / X，无链接时整组不渲染）/ 退出登录）；退出登录用 `AlertDialog` 二次确认，确认后调 `POST /auth/logout`。
+7. 侧边栏只有展开（`w-64`）与图标折叠（`w-16`）两态，折叠态**不做持久化**（刷新回到展开）；`md` 以下侧边栏整体不渲染，由顶栏按钮以 Drawer 弹出同一份内容；不提供变体 / 折叠模式配置，也不实现 `Ctrl/Cmd + B` 快捷键。
 
 ---
 
@@ -204,16 +211,16 @@ Sidebar
 
 ### 4.1 现状
 
-- **实现**：`ThemeProvider`（`src/context/theme-provider.tsx`），在 `<html>` 上切换 `light` / `dark` class。
-- **选项**：`system`（默认）/ `light` / `dark`；`system` 跟随系统并监听 `prefers-color-scheme` 实时变化。
-- **持久化**：Cookie `vite-ui-theme`，有效期 1 年。
-- **入口**：Header 的 `ThemeSwitch`（Dropdown，sun/moon 动画切换）；`ThemeSettingsDrawer` 的 Theme 选择。
+- **实现**：明暗模式由 `src/stores/design-theme-store.ts`（Zustand store，非 React Context、**无 `ThemeProvider` 组件**，项目中不存在 `src/context/` 目录）统一管理：解析结果经 `applyThemeModeToDOM()` 落到 `<html>`——移除旧明暗 class、加入 `light` / `dark` class 并同步 `data-theme` 属性（行为对齐 HeroUI `applyTheme`）。
+- **选项**：`system`（默认）/ `light` / `dark`；`system` 读 `matchMedia('(prefers-color-scheme: dark)')` 并监听其 `change` 实时跟随系统。
+- **持久化**：localStorage 键 `better-admin-theme-mode`（无过期时间）；**项目全站未使用 Cookie**（`vite-ui-theme` 等 Cookie 方案随 shadcn-admin 模板一并移除）。
+- **入口**：Header 右侧「主题设置抽屉」（`src/layouts/components/theme-settings-drawer.tsx`）内的 `ThemeModePicker`；Header **不再单独放 `ThemeSwitch` 下拉**。
 - **CSS 策略**：Tailwind v4 `@custom-variant dark (&:is(.dark *))`，即 class 策略。
-- **浏览器主题色**：切换时同步更新 `<meta name="theme-color">`（light `#fff` / dark `#020817`）。
+- **切换动画**：明暗 / 主题色切换经 View Transition 蒙版揭示动画（`src/themes/use-theme-mode-transition.ts` + `styles/theme-transition.css`，方向可在偏好设置中选择）。
 
 ### 4.2 Better Admin 主题规范
 
-1. 保留 `ThemeProvider` 机制（system/light/dark + class 策略 + Cookie 持久化），不更换方案。
+1. 保留主题模式机制（system/light/dark + class 策略 + localStorage 持久化），不更换方案。
 2. 所有颜色一律通过 CSS 变量（`--background`、`--primary` 等）与 Tailwind 语义类使用，**禁止在业务代码中硬编码色值**。
 3. 品牌化仅修改 `src/styles/theme.css` 中的变量值（如 `--primary`、`--chart-*`），组件代码不动。
 4. `theme-color` 元信息随主题同步（保留现有行为）。
@@ -280,18 +287,18 @@ Sidebar
 
 ### 6.1 现状
 
-- Google Fonts 引入 **Inter**（100–900）与 **Manrope**（200–800）。
-- 可选字体：`inter`（默认）/ `manrope` / `system`（`src/config/fonts.ts`）。
-- `FontProvider` 在 `<html>` 上添加 `font-inter` 等 class 实现全局字体切换；Cookie `font` 持久化 1 年。
-- Tailwind v4 `@theme inline` 定义 `--font-inter`、`--font-manrope`。
+- 主字体 **Maple Mono CN**（OFL-1.1，v7.9）**自托管子集**：`@font-face` 声明于 `src/styles/fonts.css`（仅 regular / weight 400 一档，`font-display: swap`，`unicode-range` 覆盖 GB2312 常用汉字 + ASCII + 常用标点，子集外字符自然回退系统字体），字体文件为 `public/fonts/maple-mono-cn-regular.woff2`；`index.html` 启动页内联同一 `font-family`，避免 FOUC。
+- 全局字体栈由 `src/styles/globals.css` 的 `--font-sans: 'Maple Mono CN', system-ui, Avenir, Helvetica, Arial, sans-serif` 提供（即 Tailwind v4 的 `font-sans` 语义）。
+- **无 Google Fonts 外链、无 Inter / Manrope、无字体切换能力**：模板时代的 `src/config/fonts.ts` + `FontProvider` + `<html>` 字体 class + Cookie `font` 方案已随 HeroUI 重构整体移除（`src/config/` 目录已不存在；全站不使用 Cookie）。
+- 「主题设置抽屉」当前八项偏好（主题色 / 明暗模式 / 色彩模式 / 主题动画方向 / 页面切换动画 / 页面切换速度 / 圆角 / 显示多标签页）中**不含字体项**。
 - 字号习惯：页面标题 `text-2xl font-bold tracking-tight`（设置页 `md:text-3xl`）；CardTitle `font-semibold`；正文 `text-sm`；辅助文字 `text-xs`。
 
 ### 6.2 Better Admin 字体规范
 
-1. 默认字体 **Maple Mono CN**（全局主字体，自托管分包，OFL-1.1）；正文与 UI 统一使用，可选 Inter / Manrope / system（`/settings/appearance` 可切换）。
+1. 默认字体 **Maple Mono CN**（全局主字体，自托管子集，OFL-1.1）；正文与 UI 统一使用；**不做字体切换**（早期规划的「可选 Inter / Manrope / system + `/settings/appearance` 切换」从未实现，该路由不存在，现状见 §6.1）。
 2. 字号阶梯固定：页面标题 `text-2xl font-bold tracking-tight`（可选 `md:text-3xl`）→ 区块标题 `text-lg font-medium/semibold` → 正文 `text-sm` → 辅助 `text-xs` → 表单标签 `text-sm font-medium`。
-3. 保留字体切换能力（Inter / Manrope / system），默认 Inter。
-4. 中文本地化阶段：补充中文回退字体（如 system-ui / PingFang SC / Microsoft YaHei），在 `--font-inter` 等变量中追加回退栈。
+3. 如将来要恢复字体切换能力，必须四端同步落地并提供与 Maple Mono 同口径的**自托管子集资产**（禁止重新引入 Google Fonts 外链），同时把该项并入「主题设置抽屉」的偏好清单。
+4. 中文回退由字体栈承担（`system-ui, Avenir, Helvetica, Arial, sans-serif`，见 §6.1），不在业务代码中另写 `font-family`。
 
 ---
 
@@ -325,54 +332,84 @@ Sidebar
 
 ## 8. 圆角
 
-### 8.1 现状（`--radius: 0.625rem`，即 10px）
+### 8.1 现状（HeroUI v3 派生刻度，基准 `--radius: 0.5rem` = 8px）
 
-| 令牌 | 计算值 | 使用组件 |
+React / Next 端**不存在** shadcn 时代的 `--radius-sm/md/lg/xl` 变量表：圆角完全由 **HeroUI 主题提供**，项目只在 `:root` 定义两个基准变量（`apps/react/src/styles/globals.css`、`apps/next/src/styles/globals.css`）。
+
+| 变量 | 默认值 | 作用 |
 | --- | --- | --- |
-| `--radius-sm` | `6px`（radius − 4px） | 小元素、关闭按钮等 |
-| `--radius-md` | `8px`（radius − 2px） | Button、Input、Select、Badge、Skeleton、Tabs |
-| `--radius-lg` | `10px`（radius） | Dialog、Sheet 内卡片、Alert、TabList |
-| `--radius-xl` | `14px`（radius + 4px） | Card、floating Sidebar |
+| `--radius` | `0.5rem`（8px） | 整条刻度的基准，HeroUI 组件按 `calc(var(--radius) * N)` 派生 |
+| `--field-radius` | `0.75rem`（12px） | 表单控件专用基准 |
+
+HeroUI v3.2.6 派生的令牌（取证：`node_modules/@heroui/styles/dist/heroui.min.css`）为 `--radius-xs = ×0.25`、`--radius-xl = ×1.5`、`--radius-2xl = ×2`、`--radius-3xl = ×3`、`--radius-4xl = ×4`，**没有** `--radius-sm / --radius-md / --radius-lg` 这三个 shadcn 命名。
+
+默认档（`--radius = 8px`）实测组件圆角：
+
+| 值 | 计算式 | 使用组件 |
+| --- | --- | --- |
+| **24px** | `min(32px, var(--radius-3xl))` | Card、Modal / AlertDialog、Popover、Dropdown 与 Select 弹层、Alert、Accordion 面板、Toast |
+| 24px | `calc(var(--radius) * 3)` | Button、Tabs 标签与指示器、分页按钮、日历单元格 |
+| 20px | `calc(var(--radius) * 2.5)` | Table 外层容器（primary）、Tabs 列表容器 |
+| 16px | `calc(var(--radius) * 2)` | Chip、Table 表体容器、菜单 / 列表项 |
+| **12px** | `var(--field-radius)` | 全部表单控件（Input / Textarea / Select 触发器 / 日期字段 / 输入组 / OTP） |
+| 12px | `min(32px, var(--radius-xl))` | Tooltip |
+
+- **卡片与弹层为 24px**：Dashboard 骨架即用 `rounded-3xl`（同 24px）与 HeroUI Card 对齐，避免加载态与内容态圆角跳变（见 `docs/progress.md` 2026-09-19 条目）。
+- 32px 上限：`min(32px, …)` 使最大档下的卡片 / 弹层被截为 32px，不会无限放大。
+- `rounded-full` 的圆形件（头像 / Switch 手柄等）不走该刻度，不受档位影响（属预期行为）。
+
+**圆角档位（用户偏好）**：整条刻度靠覆盖基准变量整体缩放，实现见 `apps/react/src/styles/radius.css`（Next 端同名文件同构）。
+
+| 档位 | `html[data-radius]` | `--radius` | `--field-radius` | 卡片实际值 |
+| --- | --- | --- | --- | --- |
+| 直角 | `none` | `0rem` | `0rem` | 0 |
+| 小圆角 | `small` | `0.25rem`（4px） | `0.375rem`（6px） | 12px |
+| 中圆角（默认） | 不写属性（沿用 `:root`） | `0.5rem`（8px） | `0.75rem`（12px） | 24px |
+| 大圆角 | `large` | `0.75rem`（12px） | `1.125rem`（18px） | 32px（被 `min(32px, …)` 截断） |
+
+档位由「主题设置抽屉」的 `RadiusPicker` 选择，持久化在 localStorage 键 `better-admin-radius`（档位表 `src/themes/radius.ts`；默认档不落存储）。
 
 ### 8.2 Better Admin 圆角规范
 
-1. 保留 `--radius = 0.625rem` 与 sm/md/lg/xl 派生刻度，品牌化阶段不调整圆角体系。
-2. 组件圆角绑定关系固定：表单控件/按钮 `md`、卡片 `xl`、弹层 `lg`、徽标 `md`（Sidebar 数字徽标圆形）。
-3. 图表柱状条圆角统一 `radius: [4, 4, 0, 0]`。
-4. 新增组件必须从这套刻度取值，禁止使用任意圆角值。
+1. 基准固定为 `--radius: 0.5rem` + `--field-radius: 0.75rem`，整站圆角一律走 HeroUI 派生刻度；**禁止**在业务代码写死 px 圆角，也禁止另建一套独立的 `--radius-sm/md/lg` 变量表与 HeroUI 并行（`AGENTS.md` §7.3）。
+2. 组件圆角绑定关系由 HeroUI 主题决定：卡片 / 弹层 24px（`--radius-3xl`，上限 32px）、表单控件 12px（`--field-radius`）、按钮 24px；自建区块需要与卡片同圆角时用 `rounded-3xl`。
+3. 圆角的整体缩放只能通过 `html[data-radius]` 覆盖基准变量实现（四档见 §8.1），禁止逐组件覆写 `border-radius`。
+4. 图表：当前 Dashboard 为面积图 + 环形图，**无柱状条**；若后续引入柱状图，柱端圆角统一 `radius: [4, 4, 0, 0]`。
+5. 新增组件必须从这套刻度取值，禁止使用任意圆角值。
+6. **适用范围**：本节刻度只约束 React / Next（HeroUI）端。Vue / Nuxt 端按 `AGENTS.md` §21 走 Nuxt UI 自带的 `--ui-radius` 派生体系（同名四档偏好经 `<html style="--ui-radius">` 覆盖实现，见 `apps/vue/src/themes/radius.ts`），**不要求与 React 端数值一致**，只对齐「同一档位 → 全站圆角整体缩放」的行为。
 
 ---
 
 ## 9. 表格（DataTable）
 
-### 9.1 现状（TanStack Table v8 + 可复用 DataTable）
+### 9.1 现状（TanStack Table v9 + HeroUI `Table` 的自研 DataTable）
 
-**组成**：`DataTableToolbar` / `DataTableColumnHeader` / `DataTablePagination` / `DataTableBulkActions` / `DataTableFacetedFilter` / `DataTableViewOptions`。
+**组成**（`src/components/common/data-table/`）：`DataTableToolbar` / `DataTableFilterSelect` / `DataTableSearchReset` / `DataTableViewOptions` / `DataTableBulkActions` / `DataTablePagination` / `DataTableSelectAll` + `DataTableSelectRow` / 主体 `data-table.tsx`（+ `table-types.ts`、`use-flip-reorder.ts`）。**表头与排序列头不自建**，直接用 HeroUI 的 `Table` / `Table.SortableColumnHeader`（无 shadcn `DataTableColumnHeader`，也没有 `DataTableFacetedFilter`）。
 
 | 能力 | 实现要点 |
 | --- | --- |
 | 搜索 | Toolbar 搜索框（`h-8`），支持全局过滤或指定列过滤 |
-| 筛选 | FacetedFilter（Dropdown + Checkbox + 图标），列过滤 |
-| 重置 | 有筛选时显示 ghost 风格 Reset 按钮 |
-| 列显隐 | ViewOptions（Dropdown 勾选列） |
-| 排序 | 列头排序（升/降），列定义 meta 控制样式 |
+| 筛选 | `DataTableFilterSelect`（列过滤下拉，选项 + 图标） |
+| 重置 | `DataTableSearchReset`（有筛选条件时显示重置按钮） |
+| 列设置 | `DataTableViewOptions`：可见性勾选 + 拖拽排序 + 重置（FLIP 动画），持久化到 localStorage，key 规则 `column-setting:{userId}:{routePath}`（不含查询参数） |
+| 排序 | 列头排序（升/降）由 HeroUI `Table.SortableColumnHeader` 承载，列定义 `meta` 控制对齐与样式 |
 | 行选择 | Checkbox 多选 + `DataTableBulkActions`（底部浮动批量操作条） |
-| 分页 | 页大小 Select（10/20/30/40/50）+ 页码按钮（最多 5 个，省略号折叠）+ 首/末页（窄容器隐藏）+ 响应式换行 |
-| URL 同步 | `useTableUrlState` 将分页/筛选/搜索同步到 URL（可分享、可回退） |
-| 空态 | 单行 `No results.`（`h-24 text-center`） |
-| 视觉 | 外层 `rounded-md border overflow-hidden`；表头 `h-10 px-2 text-start font-medium`；单元格 `p-2 whitespace-nowrap`；行 hover `bg-muted/50`；选中行 `bg-muted` |
+| 分页 | 页大小 Select（`PAGE_SIZE_OPTIONS = 10/20/30/40/50`）+ 页码按钮（最多 5 个，省略号折叠）+ 首/末页（窄容器隐藏）+ 响应式换行 |
+| 列表状态 | **不入 URL**：由 Zustand 列表 store（`hooks/create-list-store.ts`）+ `hooks/use-list-query.ts` 驱动服务端分页，queryKey 含全部条件字段与 `epoch`（条件变更即换新 key，配合 `keepPreviousData` 防闪回）；项目中从未存在 `useTableUrlState`，分页 / 筛选不提供可分享的 URL 状态 |
+| 三态 | 空态 `EmptyContent`、错误态 `ErrorContent` + 重试（`onRetry`）、首屏 6 行骨架（详见 §13 / §14） |
+| 视觉 | 由 HeroUI `Table` 主题提供：外层容器 `min(32px, calc(var(--radius) * 2.5))`（默认档 20px）、表体容器 `--radius-2xl`（16px）；表头高度、单元格内边距、行 hover / 选中态均由主题类控制，业务侧不覆写（见 §8.1） |
 
 ### 9.2 Better Admin 表格规范
 
 1. 所有列表页统一使用现有 `DataTable` 组合，禁止页面内另写表格样式。
-2. 列表状态（搜索/筛选/排序/分页）统一同步 URL（`useTableUrlState` 模式）。
+2. 列表状态（搜索 / 筛选 / 排序 / 分页）统一由 Zustand 列表 store 管理并驱动服务端分页，**不同步到 URL**（现状见 §9.1「列表状态」行；早期规划的 `useTableUrlState` 模式从未实现）。
 3. 列定义规范：
    - 第一列（如可多选）为 Checkbox 选择列；
    - 行操作列固定在末尾，使用 `DropdownMenu`（查看/编辑/删除），删除项红色 `destructive`；
    - 状态字段使用 Badge（`rounded-full`）表达语义色；
    - 长文本列支持 `line-clamp`，避免破坏行高。
-4. 表格容器外层统一 `rounded-md border`，横向溢出滚动。
-5. 空态文案不得直接写 `No results.`，统一走 Empty State 组件（见 §14）。
+4. 表格容器的圆角与边框一律交由 HeroUI `Table` 主题提供（默认档外层 20px / 表体 16px，见 §8.1），禁止页面自行套 `rounded-md border` 等类覆盖主题。
+5. 空态文案不得直接写 `No results.`，统一走 Empty State 组件（见 §13）。
 6. 分页默认 `pageSize 10`，可选 10/20/30/40/50。
 7. **搜索/重置按钮权限位门控**（`DataTableSearchReset` 内置）：搜索按钮消费
    `SEARCH` 位、重置按钮消费 `RESET` 位，两位均缺失时整组不渲染；`RESET`
@@ -438,34 +475,35 @@ Sidebar
 
 ## 12. Toast
 
-### 12.1 现状（sonner）
+### 12.1 现状（HeroUI `Toast`，非 sonner）
 
-- `Toaster` 全局挂在根布局（`src/routes/__root.tsx`），`duration 5000`，主题跟随 `useTheme`（`--normal-bg: var(--popover)` 等与主题联动）。
-- 默认位置：sonner 默认（右上角）。
-- 错误链路：`QueryClient` 全局配置 —— mutation `onError` 走 `handleServerError`；401 → `toast.error('Session expired!')` + 重置认证 + 跳转登录；500 → `toast.error('Internal Server Error!')` + 跳转 `/500`；304 → `toast.error('Content not modified!')`；403 预留处理。
+- **实现**：`@heroui/react` 的 `Toast` 组件 + 命令式 `toast` 单例（`toast.success` / `toast.danger` / `toast.warning`…，**没有 sonner**，项目 `package.json` 无该依赖）。全局队列挂载在根路由 `src/routes/__root.tsx` 的 `<Toast.Provider placement="top" />`（**顶部居中**）。
+- **动画编排**：HeroUI toast 默认把每次队列增删包进根级 View Transition，会与路由 / 主题 VT 抢占并在亮色下产生整页鬼影——`src/provider.tsx` 启动时覆写底层 stately 队列的 `wrapUpdate` 为直通以禁用 VT，`src/lib/toast-animation.ts` 再给队列 `close` 打补丁补上纯 CSS 进出场动画（退场延迟 ~180ms 后真正移除）。机制结论见 `docs/mechanisms.md`。
+- **错误链路**：**不存在 QueryClient 全局 `onError` toast**（`src/lib/query-client.ts` 只配 `retry: 1` / `staleTime: 60_000` / `refetchOnWindowFocus: false`）。401 由 `src/lib/api-client.ts` 处理：自动 `POST /auth/refresh` 并用新 token 重试原请求一次（并发去重），refresh 失败即清空本地会话并跳转登录页；业务错误码在 api-client 拦截器层统一本地化 `message`，由各页面既有的错误 toast 呈现（避免重复弹窗）。500 / 未捕获渲染错误跳独立 `/500` 页（见 §15）。
 
 ### 12.2 Better Admin Toast 规范
 
-1. Toast 仅用于操作反馈与服务端错误，位置固定右上角，`duration 5000`。
-2. 语义：成功操作 `toast.success`；失败/错误 `toast.error`；异步请求进行中 `toast.loading` + 完成后更新。
-3. 表单字段级错误不进 Toast，显示在字段下方；全局/非字段错误走 Toast。
-4. 错误文案：401/403/500 沿用现有全局处理链路，业务错误优先展示后端 `message`。
+1. Toast 仅用于操作反馈与服务端错误，位置固定顶部居中（`placement="top"`）。
+2. 语义：成功操作 `toast.success`；失败 / 错误 `toast.danger`（HeroUI 命名，非 `toast.error`）；异步请求进行中 `toast.loading` + 完成后更新。
+3. 表单字段级错误不进 Toast，显示在字段下方；全局 / 非字段错误走 Toast。
+4. 错误文案：401 走「刷新 → 失败回登录页」链路（不弹全局 toast），403 / 业务错误优先展示后端本地化后的 `message`，服务端 500 跳 `/500` 页。
 
 ---
 
 ## 13. Empty State
 
-### 13.1 现状
+### 13.1 现状（已有统一 EmptyContent / ErrorContent 组件）
 
-- 表格空数据：单行 `No results.`（`h-24 text-center`）——仅文字，无图标。
-- 未开发页面：`ComingSoon`（`Telescope` 图标 72 + `text-4xl font-bold` + muted 描述，全屏居中）。
-- 无统一的业务 EmptyState 组件。
+- **统一空态组件** `EmptyContent`（`src/components/common/empty-content/empty-content.tsx`）：居中「图标（默认 lucide `Inbox`，`size-10`）+ 主文案 + 可选说明 + 可选操作区」，props 全部可选，不传即表格默认空数据样式（主文案取 i18n 键 `common.datatable.empty`）。
+- **统一错误态组件** `ErrorContent`（`src/components/common/error-content/error-content.tsx`）：与 `EmptyContent` 同构、语义独立，图标默认 lucide `TriangleAlert`（danger 色），带操作区（如「重试」）。
+- **`DataTable` 三态内置**（`src/components/common/data-table/data-table.tsx`）：`isError` → `ErrorContent` + `onRetry` 重试按钮（并强制清空行以压掉 refetch 失败时残留的旧数据）；首屏 `isLoading && rows.length === 0` → 骨架行；其余空数据 → `EmptyContent`（页面可经 `emptyState` 覆写）。
+- 旧的 `ComingSoon` / `Telescope` 全屏占位组件已不存在；`src/components/common/placeholder-page.tsx` 仍留在仓库但**全项目零引用**（`/settings` 兜底口径另行处置，见 `docs/launch-audit.md` #47）。
 
 ### 13.2 Better Admin Empty State 规范
 
-1. **统一 `EmptyState` 组件**：图标（lucide，如 `Inbox`/`SearchX`）+ 标题（`font-semibold`）+ 描述（`text-sm text-muted-foreground`）+ 可选操作按钮，居中布局。
+1. 统一使用 `EmptyContent`（图标 + 主文案 + 说明 + 可选操作按钮，居中布局）；表格 / 弹窗 / 区块空数据一律不各自手写文案。
 2. 表格空态：筛选无结果 → 图标 `SearchX` + 「未找到匹配结果」+ Reset 按钮；列表无数据 → 图标 `Inbox` + 「暂无数据」+ 新建按钮（有权限时）。
-3. 页面占位（未开发模块）沿用 `ComingSoon`，文案统一「该页面尚未开发」。
+3. 页面占位（未开发模块）：原 `ComingSoon` 组件已随模板移除，如需占位统一走 `EmptyContent` 的图标 + 文案 + 操作结构，文案统一「该页面尚未开发」。
 4. **空/错误/加载三态互斥约定**（`EmptyContent` / `ErrorContent` / 骨架或遮罩）：
    - 空态（`EmptyContent`，Inbox 图标）：请求成功但无数据；
    - 错误态（`ErrorContent`，TriangleAlert 图标）：请求失败——列表页必须接
@@ -480,17 +518,17 @@ Sidebar
 
 ### 14.1 现状
 
-- `Skeleton`：`animate-pulse rounded-md bg-accent`（shadcn/ui）。
-- 路由级：bprogress 顶部进度条（路由切换时显示）。
-- 数据级：TanStack Query 全局配置（retry：开发 0 次 / 生产最多 3 次且 401/403 不重试；`refetchOnWindowFocus` 仅生产；`staleTime 10s`）。
-- 当前 Demo 页面均为静态数据，无页面级骨架屏实例。
+- `Skeleton`：**HeroUI（`@heroui/react`）组件**，非 shadcn/ui 的 `animate-pulse rounded-md bg-accent` 壳；与卡片同圆角时使用 `rounded-3xl`（默认档 24px，见 §8）。
+- 路由级：bprogress 顶部进度条（`@bprogress/react` + `src/lib/progress.ts` 状态机，由 api-client 与 `hooks/use-route-progress.ts` 共同驱动）。
+- 数据级：TanStack Query 全局配置**三端统一、不区分环境**（`src/lib/query-client.ts`：`retry: 1`、`staleTime: 60_000`、`refetchOnWindowFocus: false`）；无全局 `onError` toast（错误链路见 §12.1）。
+- **页面级骨架已全面落地**（早期「Demo 静态数据、无骨架实例」的状态已失效）：`DataTable` 首屏内置 6 行骨架（`SKELETON_ROWS = 6`，`isLoading && rows.length === 0` 时）；Dashboard 有整页 `DashboardSkeleton`（横幅 + KPI + 图表等高占位）；侧边栏菜单加载态有 `SidebarMenuSkeleton` / `CollapsedMenuSkeleton`；账户页 / 字典 / 组织 / 公告等页面各自使用 `Skeleton` 区块。
 
 ### 14.2 Better Admin Loading 规范
 
-1. 列表页加载：表格区域显示骨架（表头 + 6 行 `Skeleton`，`DataTable` 内置，React / Next / Vue 三端一致；有数据时的 refetch 仍用 Spinner 遮罩保留旧数据）。
+1. 列表页加载：表格区域显示骨架（表头 + 6 行 `Skeleton`，`DataTable` 内置，React / Next / Vue / Nuxt 四端一致；有数据时的 refetch 仍用 Spinner 遮罩保留旧数据）。
 2. Dashboard 加载：统计卡片与图表区域分别显示骨架卡片。
 3. 按钮加载：提交/保存中显示 spinner（lucide `LoaderCircle` 旋转）+ 禁用，文案保持动作含义。
-4. 路由切换保留顶部进度条；`refetchOnWindowFocus` 生产开启。
+4. 路由切换保留顶部进度条；`refetchOnWindowFocus` 全站关闭（窗口聚焦不自动重拉，见 §14.1）。
 5. 加载态与空态、错误态互斥：同一区域只呈现一种状态。
 
 ---
@@ -572,11 +610,11 @@ Sidebar
 | 数据请求 | TanStack Query + fetch 封装（`src/lib/api-client.ts`） |
 | 表格 | TanStack Table + 自研 DataTable 封装 |
 | 表单 | react-hook-form + zod + @hookform/resolvers |
-| 状态 | Zustand（全局）+ Context（主题/字体/布局/搜索）+ 页面 Provider |
+| 状态 | Zustand（`src/stores/*`：auth / design-theme / language / tabs / dict / displayed-path）+ Context（`src/provider.tsx` 的 i18next 与 HeroUI `I18nProvider`、`components/common/progress-provider`）+ 页面级 Provider |
 | 图表 | Recharts |
-| 图标 | lucide-react（+ 少量 Radix Icons） |
-| Toast | sonner |
-| 工具 | `cn()`（clsx + tailwind-merge）、`@` 别名指向 `src/` |
+| 图标 | lucide-react（品牌图标为仓库内联 SVG path，见 `src/lib/brand-icons.tsx`；**未引入** Radix Icons / Simple Icons 依赖） |
+| Toast | HeroUI `Toast`（命令式 `toast` 单例 + 根路由 `<Toast.Provider placement="top" />`，详见 §12.1；**无 sonner**） |
+| 工具 | `cn()`（由 `@heroui/react` 导出，项目未安装 clsx / tailwind-merge）、`@` 别名指向 `src/` |
 
 ### 18.2 Better Admin 组件使用原则
 
