@@ -5,6 +5,7 @@ import {
   supportsViewTransition,
 } from "theme-switch-animation";
 import {
+  ThemeAnimationDirection,
   ThemeAnimationType,
   useThemeAnimation,
 } from "theme-switch-animation/react";
@@ -34,24 +35,30 @@ import {
   useResolvedTheme,
 } from "@/stores/design-theme-store";
 
-/**
- * 与 React 端的差异：**本页不需要「摘名属性」**。
- *
- * React 端 AdminLayout 的 `<main>` 带常驻 `[view-transition-name:main-content]`，
- * 会形成独立快照组并静止叠放在 root 组之上、遮挡库的 mask 揭示，故 React 端在触发前
- * 临时挂 `data-theme-demo-vt` 把 main-content 并入 root 单组。
- *
- * Next 端 `<main>` **无常驻 view-transition-name**（路由过渡由 React `<ViewTransition>`
- * 承担，仅在其自身发起的导航 VT 期间临时挂 view-transition-class，见
- * app/(authenticated)/admin-shell.tsx 与 styles/theme-transition.css 的说明），
- * 第三方 VT 期间只有 root 一个快照组，单组揭示即可覆盖全屏。
- * 因此这里既不需要挂属性，也不需要 styles/theme-transition.css 里的对应规则。
- */
-/** 「动画期间禁用」比动画时长多保留一段，避免在计时边界上提前解禁。 */
+/** 演示页在转场期间挂到 `<html>` 的「摘名属性」（规则见 styles/theme-transition.css）。 */
+const DEMO_VT_ATTR = "data-theme-demo-vt";
+/** 摘名属性比动画时长多保留一段，避免在计时边界上提前摘名。 */
 const SETTLE_BUFFER_MS = 150;
 
 const DURATION_RANGE = { min: 200, max: 1500, step: 50 };
 const BLUR_RANGE = { min: 1, max: 10, step: 0.5 };
+/** BLINDS 叶片宽度合法域（库约定 16–200px，越界静默回落默认 72） */
+const SLAT_WIDTH_RANGE = { min: 16, max: 200, step: 2 };
+const SLAT_WIDTH_DEFAULT = 72;
+
+/** 消费 `direction` 选项的三种属性驱动类型（其余类型传入无效果） */
+const DIRECTION_CONSUMING_TYPES: readonly DemoAnimationType[] = [
+  ThemeAnimationType.BLINDS,
+  ThemeAnimationType.SCAN,
+  ThemeAnimationType.QR_GRID,
+];
+
+const DIRECTION_PRESETS = [
+  ThemeAnimationDirection.LTR,
+  ThemeAnimationDirection.RTL,
+  ThemeAnimationDirection.TTB,
+  ThemeAnimationDirection.BTT,
+] as const;
 
 const EASING_PRESETS = [
   { id: "ease-in-out", label: "ease-in-out" },
@@ -69,6 +76,30 @@ interface AnimationParams {
   easing: string;
   /** 模糊蒙版强度，仅 CIRCLE_BLUR 生效 */
   blurAmount: number;
+  /** 扫描方向，仅 BLINDS / SCAN / QR_GRID 生效（0.2.0 起四向擦除并入此选项） */
+  direction: ThemeAnimationDirection;
+  /** 百叶窗叶片宽度 px，仅 BLINDS 生效 */
+  slatWidth: number;
+}
+
+/**
+ * 摘名属性的模块级单例：所有触发按钮共用 `<html>` 上的同一个属性。
+ *
+ * 库内部 startViewTransition 是串行的（同一文档同一时刻只会有一轮转场），但快速连点
+ * 不同按钮时，若各实例各自计时，先点击的实例会提前摘名、让后一轮转场的 mask 揭示
+ * 重新被 main-content 快照组遮挡——故统一走一个计时器，只认最后一次触发。
+ */
+let releaseTimer: number | undefined;
+
+function holdDemoVtAttribute(duration: number): void {
+  const root = document.documentElement;
+
+  window.clearTimeout(releaseTimer);
+  root.setAttribute(DEMO_VT_ATTR, "");
+  releaseTimer = window.setTimeout(() => {
+    root.removeAttribute(DEMO_VT_ATTR);
+    releaseTimer = undefined;
+  }, duration + SETTLE_BUFFER_MS);
 }
 
 /**
@@ -78,11 +109,12 @@ interface AnimationParams {
  *   因此演示页切换后全站状态同步）；
  * - `onChange` 走 `applyThemeModeInstant`——只落状态、不编排动画，把转场编排权让给库的
  *   mask 揭示。若改走 `setThemeMode`，它内部会再开一次 View Transition，
- *   同一文档内后启动者抢占并跳过前者，库的揭示动画会失效。
+ *   同一文档内后启动者抢占并跳过前者，库的揭示动画会失效；
+ * - 触发前挂摘名属性，让 main-content 并入 root 单组（否则其静止快照会遮挡 mask 揭示）。
  *
- * 「动画期间禁用」按「本次时长 + 缓冲」计时，而不是消费库返回的 `finished`：
+ * 摘名与「动画期间禁用」都按「本次时长 + 缓冲」计时，而不是消费库返回的 `finished`：
  * 该值是 state，点击当次渲染里读到的仍是上一次的 promise（库文档：需等切换后的渲染
- * 才可见新值），用它会在动画刚开始时就把按钮解禁。
+ * 才可见新值），用它会在动画刚开始时就把属性摘掉。
  */
 function useDemoThemeAnimation(params: AnimationParams) {
   const isDark = useResolvedTheme() === "dark";
@@ -91,8 +123,10 @@ function useDemoThemeAnimation(params: AnimationParams) {
   const { ref, toggleTheme } = useThemeAnimation<HTMLDivElement>({
     animationType: params.animationType,
     blurAmount: params.blurAmount,
+    direction: params.direction,
     duration: params.duration,
     easing: params.easing,
+    slatWidth: params.slatWidth,
     isDark,
     onChange: (next) => applyThemeModeInstant(next ? "dark" : "light"),
   });
@@ -105,6 +139,9 @@ function useDemoThemeAnimation(params: AnimationParams) {
   );
 
   const toggle = () => {
+    // 摘名属性必须在库启动 startViewTransition 之前落地：快照捕获发生在转场启动时，
+    // 晚挂属性会让本次转场仍按「main-content 独立快照组」捕获。
+    holdDemoVtAttribute(params.duration);
     setIsAnimating(true);
     toggleTheme();
     window.clearTimeout(timerRef.current);
@@ -196,7 +233,7 @@ function AnimationTypeCard({
   );
 }
 
-/** 区块一：13 种动画类型，逐类型点击体验（圆心取圆钮中心，网格不同位置即不同起点）。 */
+/** 区块一：12 种动画类型，逐类型点击体验（圆心取圆钮中心，网格不同位置即不同起点）。 */
 function TypeGridSection({ params }: { params: AnimationParams }) {
   const { t } = useTranslation();
 
@@ -223,32 +260,42 @@ function TypeGridSection({ params }: { params: AnimationParams }) {
   );
 }
 
-/** 区块二：选中一种动画并调节时长 / 缓动 / 模糊强度，再以该参数触发一次切换。 */
+/** 区块二：选中一种动画并调节时长 / 缓动 / 模糊强度 / 方向 / 叶宽，再以该参数触发一次切换。 */
 function ParamsSection({
   animationType,
   blurAmount,
+  direction,
   duration,
   easing,
+  slatWidth,
   onAnimationTypeChange,
   onBlurAmountChange,
+  onDirectionChange,
   onDurationChange,
   onEasingChange,
+  onSlatWidthChange,
 }: {
   animationType: DemoAnimationType;
   blurAmount: number;
+  direction: ThemeAnimationDirection;
   duration: number;
   easing: EasingId;
+  slatWidth: number;
   onAnimationTypeChange: (type: DemoAnimationType) => void;
   onBlurAmountChange: (value: number) => void;
+  onDirectionChange: (value: ThemeAnimationDirection) => void;
   onDurationChange: (value: number) => void;
   onEasingChange: (value: EasingId) => void;
+  onSlatWidthChange: (value: number) => void;
 }) {
   const { t } = useTranslation();
   const { isAnimating, ref, toggle } = useDemoThemeAnimation({
     animationType,
     blurAmount,
+    direction,
     duration,
     easing,
+    slatWidth,
   });
 
   return (
@@ -290,6 +337,38 @@ function ParamsSection({
                 step={BLUR_RANGE.step}
                 value={blurAmount}
                 onChange={onBlurAmountChange}
+              />
+            </DemoControl>
+          ) : null}
+          {DIRECTION_CONSUMING_TYPES.includes(animationType) ? (
+            <DemoControl
+              label={t("features.playground.themeSwitchAnimation.direction")}
+            >
+              <DemoSegmented<ThemeAnimationDirection>
+                label={t("features.playground.themeSwitchAnimation.direction")}
+                options={DIRECTION_PRESETS.map((preset) => ({
+                  id: preset,
+                  label: t(
+                    `features.playground.themeSwitchAnimation.direction.${preset}`,
+                  ),
+                }))}
+                value={direction}
+                onChange={onDirectionChange}
+              />
+            </DemoControl>
+          ) : null}
+          {animationType === ThemeAnimationType.BLINDS ? (
+            <DemoControl
+              label={t("features.playground.themeSwitchAnimation.slatWidth")}
+            >
+              {/* 像素值不传 formatOptions：Intl 单位无 "pixel"，传入会抛 RangeError */}
+              <DemoSlider
+                label={t("features.playground.themeSwitchAnimation.slatWidth")}
+                maxValue={SLAT_WIDTH_RANGE.max}
+                minValue={SLAT_WIDTH_RANGE.min}
+                step={SLAT_WIDTH_RANGE.step}
+                value={slatWidth}
+                onChange={onSlatWidthChange}
               />
             </DemoControl>
           ) : null}
@@ -468,7 +547,7 @@ function EnvironmentSection() {
  * 演示场 › 主题切换动画：`theme-switch-animation`（View Transitions API 蒙版揭示）。
  *
  * 与项目既有主题切换（`stores/design-theme-store` 的 clip-path 四向揭示）**并存**：
- * 本页只演示库的 13 种蒙版动画，受控模式接入同一主题 store，不替换业务的主题动画实现。
+ * 本页只演示库的 12 种蒙版动画，受控模式接入同一主题 store，不替换业务的主题动画实现。
  */
 export function ThemeSwitchAnimationPage() {
   const [animationType, setAnimationType] = useState<DemoAnimationType>(
@@ -477,12 +556,27 @@ export function ThemeSwitchAnimationPage() {
   const [duration, setDuration] = useState(750);
   const [easing, setEasing] = useState<EasingId>("ease-in-out");
   const [blurAmount, setBlurAmount] = useState(2);
+  const [direction, setDirection] = useState<ThemeAnimationDirection>(
+    ThemeAnimationDirection.LTR,
+  );
+  const [slatWidth, setSlatWidth] = useState(SLAT_WIDTH_DEFAULT);
+
+  // 离开页面时兜底摘除摘名属性（正常路径由模块级计时器摘除），
+  // 避免遗留属性让路由过渡动画失去 main-content 独立快照组。
+  useEffect(
+    () => () => {
+      document.documentElement.removeAttribute(DEMO_VT_ATTR);
+    },
+    [],
+  );
 
   const params: AnimationParams = {
     animationType,
     blurAmount,
+    direction,
     duration,
     easing,
+    slatWidth,
   };
 
   return (
@@ -491,12 +585,16 @@ export function ThemeSwitchAnimationPage() {
       <ParamsSection
         animationType={animationType}
         blurAmount={blurAmount}
+        direction={direction}
         duration={duration}
         easing={easing}
+        slatWidth={slatWidth}
         onAnimationTypeChange={setAnimationType}
         onBlurAmountChange={setBlurAmount}
+        onDirectionChange={setDirection}
         onDurationChange={setDuration}
         onEasingChange={setEasing}
+        onSlatWidthChange={setSlatWidth}
       />
       <TriggerPointSection params={params} />
       <EnvironmentSection />

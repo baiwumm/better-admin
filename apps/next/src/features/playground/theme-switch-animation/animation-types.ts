@@ -1,16 +1,15 @@
 import type { LucideIcon } from "lucide-react";
 
 import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
+  Blinds,
   CircleDashed,
   CircleDot,
   CircleDotDashed,
   Diamond,
+  Grid3X3,
   Hexagon,
   RectangleHorizontal,
+  ScanLine,
   Square,
   Star,
   Triangle,
@@ -18,11 +17,13 @@ import {
 import { ThemeAnimationType } from "theme-switch-animation/react";
 
 /**
- * 13 种主题切换动画类型（顺序与库 `ThemeAnimationType` 的定义顺序一致）。
+ * 12 种主题切换动画类型（顺序与库 `ThemeAnimationType` 的定义顺序一致）。
  *
  * 每项三个字段：类型值（传给库）、卡片提示文案的 i18n 键、形状示意图标
  * （lucide kebab 名对应的组件，与菜单图标同图标集）。
- * 类型名（CIRCLE / LTR / STAR…）本身是技术专名，卡片上保留英文不译，提示文案走 i18n。
+ * 类型名（CIRCLE / BLINDS / STAR…）本身是技术专名，卡片上保留英文不译，提示文案走 i18n。
+ * 0.2.0 起四向擦除类型（LTR/RTL/TTB/BTT）移除、并入 `direction` 选项，
+ * 由 BLINDS / SCAN / QR_GRID 三种条带/格子类型消费。
  *
  * 卡片强调色不入本清单：按数组下标循环取 `DEMO_ACCENTS`（与其它演示页同口径——
  * 演示色板是组件参数值，不是项目 Design Token，不参与 §7.3 的 token 约束）。
@@ -42,26 +43,6 @@ export const DEMO_ANIMATION_TYPES = [
     type: ThemeAnimationType.CIRCLE_BLUR,
     hintKey: "features.playground.themeSwitchAnimation.type.circleBlur",
     icon: CircleDashed,
-  },
-  {
-    type: ThemeAnimationType.LTR,
-    hintKey: "features.playground.themeSwitchAnimation.type.ltr",
-    icon: ArrowRight,
-  },
-  {
-    type: ThemeAnimationType.RTL,
-    hintKey: "features.playground.themeSwitchAnimation.type.rtl",
-    icon: ArrowLeft,
-  },
-  {
-    type: ThemeAnimationType.TTB,
-    hintKey: "features.playground.themeSwitchAnimation.type.ttb",
-    icon: ArrowDown,
-  },
-  {
-    type: ThemeAnimationType.BTT,
-    hintKey: "features.playground.themeSwitchAnimation.type.btt",
-    icon: ArrowUp,
   },
   {
     type: ThemeAnimationType.SQUARE,
@@ -92,6 +73,21 @@ export const DEMO_ANIMATION_TYPES = [
     type: ThemeAnimationType.STAR,
     hintKey: "features.playground.themeSwitchAnimation.type.star",
     icon: Star,
+  },
+  {
+    type: ThemeAnimationType.BLINDS,
+    hintKey: "features.playground.themeSwitchAnimation.type.blinds",
+    icon: Blinds,
+  },
+  {
+    type: ThemeAnimationType.SCAN,
+    hintKey: "features.playground.themeSwitchAnimation.type.scan",
+    icon: ScanLine,
+  },
+  {
+    type: ThemeAnimationType.QR_GRID,
+    hintKey: "features.playground.themeSwitchAnimation.type.qrGrid",
+    icon: Grid3X3,
   },
 ] as const;
 
