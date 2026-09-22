@@ -19,7 +19,7 @@
 
 | # | 状态 | 事项 | 证据 | 处置 |
 | --- | --- | --- | --- | --- |
-| 1 | ⬜ | Nuxt 缺 `GET /logs/{id}` + `DELETE /logs/{id}`，日志单条删除运行时必 404；`findLog` 成死代码 | `apps/nuxt/server/api/` 只有 `logs.get.ts` / `logs.delete.ts`；调用方 `app/features/logs/log-api.ts:30` ← `LogsPage.vue:326`；契约 `openapi.yaml:3792`；Nest `logs.controller.ts` 有 `@Get(':id')` / `@Delete(':id')` | 补两个 Nitro 端点，并回改 feature-matrix 该行 ✅ 口径 |
+| 1 | ✅ | Nuxt 缺 `GET /logs/{id}` + `DELETE /logs/{id}`，日志单条删除运行时必 404；`findLog` 成死代码 | `apps/nuxt/server/api/` 只有 `logs.get.ts` / `logs.delete.ts`；调用方 `app/features/logs/log-api.ts:30` ← `LogsPage.vue:326`；契约 `openapi.yaml:3792`；Nest `logs.controller.ts` 有 `@Get(':id')` / `@Delete(':id')` | 已补 `server/api/logs/[id].get.ts` + `[id].delete.ts`（照 `roles/[id].*` 端内范式，SEARCH / DELETE 位分别对应）；服务层 `findLog` / `removeLog` 原已存在，直接接线。验证：eslint 0 error、`nuxt build` 通过、产物 `.output/server/chunks/routes/api/logs/_id_.{get,delete}.mjs` 注册为 `/api/logs/:id`。feature-matrix「日志管理」Nuxt 行 ✅ 自此名副其实 |
 | 2 | ⬜ | `GET /api/health` 全仓不存在，但已被当作 Render 保活前置条件（免费层 15 分钟休眠 / 冷启动 30–50 秒） | `apps/nest/src` 14 个 controller 无 health；`openapi.yaml` 47 路径无 health；`AGENTS.md` §17 ①；`docs/vue-plan.md:202` 误称「已上线」 | Nest 新增无鉴权、无 DB 访问的 health 端点 + 契约补录 + 改 vue-plan 该句 |
 | 42 | ⬜ | ⚠️ JWT 密钥存在可预测明文兜底，线上漏配即任何人可伪造登录态；Next/Nuxt 同类代码为显式抛错 | `apps/nest/src/auth/auth.module.ts:14`、`strategies/jwt.strategy.ts:25`：`process.env.JWT_SECRET ?? 'better-admin-secret'` | 去兜底、改 fail-fast；顺带核 `JWT_REFRESH_SECRET` 兜底与 `JWT_EXPIRES_IN`（example=1h / 代码=7d / auth.service=1h）三处漂移 |
 | 43 | ⬜ | ⚠️ 一次性脚本无环境守卫，直连共用线上库写弱口令账号 `testadmin / test123`（绑 admin 角色）；另一脚本同库改 `role_menus` | `apps/nest/scripts/create-test-user.ts:12-28`、`verify-rbac-scenario.ts`；四端共用同库（AGENTS §5） | 加 `DEMO_MODE`/`NODE_ENV` 守卫或删除脚本 |
