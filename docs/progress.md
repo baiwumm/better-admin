@@ -2,6 +2,13 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 补记：Vue 端 Dashboard 图表由手写内联 SVG 迁移到 Unovis（变更发生于 2026-09-20，本条为 2026-09-22 补记）
+
+- **为什么要补记**：上线前审计（`docs/launch-audit.md` #14）发现这次迁移**只回写了** §21 组件库策略、`mechanisms.md` §32 选型评审与 `nuxt-ui-guide.md` §9 使用事实，既没追加 progress 条目（违反 §13「每完成一个阶段/模块 → progress.md 新增条目置顶」），也没更新追踪「现状」的 `docs/feature-matrix.md` 与 `AGENTS.md` §19 —— 两处直到今天仍写「图表零依赖手写内联 SVG」。本条补齐历史，现状表述在同批提交中改写。
+- **迁移序列**（六个提交，按时间正序）：`7164b26` 引入 Unovis 并补 §21 第三方库评审记录（`@unovis/vue` + `@unovis/ts` 精确锁版 1.7.0，两端版本必须一致）→ `7169e7b` 新增 `lib/chart-theme.ts` 主题层与 `components/chart/AreaChart.vue` / `DonutChart.vue` 封装 → `0cf98e7` Dashboard 两图改用封装并异步分包 → `61869c5` 修 Unovis 封装的 `data` 容器与叶子组件各挂一份 → `e78eae6` 按走查反馈修描边与字号 → `3971e08` 角色环形图图例改用库内置 `VisBulletLegend`。
+- **仍保留手写的部分**：`features/dashboard/chart-geometry.ts` 收缩为 KPI sparkline 几何（`relativePoints` / `smoothPath` / `areaPath`）+ 趋势图 y 轴量程 `axisScale`（「步长向上取整的四等分」，不用库的 nice-ticks——它会把顶值 23 抬成 40、曲线只占半高）；环形图自绘弧路径 `donutSlicePath` 随迁移删除，用例数 11 → 6，端内总数 106 → **101**（实测 `vitest run`：10 文件 101 用例全绿）。KPI sparkline 维持手写内联 SVG，与 React / Next / Nuxt 三端同口径。
+- **待复跑**：feature-matrix 里「环形 6 扇区、3 条 sparkline 描边取色正确」两项 DOM 实测是手写 SVG 时期所做，Unovis 版未复跑；Dashboard 像素级 GUI 走查同样仍未回收（见 `launch-audit.md` #32）。
+
 ### 演示场「主题切换动画」页升级 theme-switch-animation 0.2.0：四端（2026-09-22）
 
 - **升级内容（库 0.2.0 changelog）**：新增三种属性驱动动画类型 `BLINDS`（百叶窗）/ `SCAN`（扫描）/ `QR_GRID`（方块格子）与 `direction`（LTR / RTL / TTB / BTT，默认 ltr）、`slatWidth`（16–200px，默认 72）选项；**breaking**：移除 `ThemeAnimationType.LTR / RTL / TTB / BTT` 四向擦除类型（由 `SCAN` + `direction` 承接），总类型数 13 → 12。

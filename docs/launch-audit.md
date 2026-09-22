@@ -31,7 +31,7 @@
 | # | 状态 | 事项 | 证据 | 处置 |
 | --- | --- | --- | --- | --- |
 | 11 | ⬜ | 对外文档站整片陈旧：仍写「四端 26/27、唯一缺口 Dashboard、Phase 0/C 未启动、Playground 7 页、契约 v1.10/v1.11」 | `apps/website/content/index.mdx:56`；`content/progress/feature-matrix.mdx:18-24`；`content/progress/roadmap.mdx:19-43`；`components/docs/diagrams.tsx:786,813,821,834-842`；`components/landing/faq.tsx:46`；`components/landing/stacks.tsx:95-111` | 按现状重写（27/27、10 页、契约 v1.13.0、Phase 0/C 已完成） |
-| 14 | ⬜ | Vue 端图表口径过期：已迁 Unovis，文档仍写「零依赖手写内联 SVG」 | 迁移提交 `7164b26`/`7169e7b`（2026-09-20），代码 `apps/vue/src/components/chart/AreaChart.vue`、`DonutChart.vue`；未回写处 `docs/feature-matrix.md:33`、`AGENTS.md` §19 | 改现状描述 + `progress.md` 补记该迁移（§13 更新触发漏执行） |
+| 14 | ✅ | Vue 端图表口径过期：已迁 Unovis，文档仍写「零依赖手写内联 SVG」 | 迁移提交 `7164b26`/`7169e7b`（2026-09-20），代码 `apps/vue/src/components/chart/AreaChart.vue`、`DonutChart.vue`；未回写处 `docs/feature-matrix.md:33`、`AGENTS.md` §19 | 已三处同步：feature-matrix Dashboard 行 Vue 段改写为 Unovis 事实（并连带修正过时计数——用例 106→**101**、chart-geometry 11→**6** 例，KPI sparkline 仍手写 SVG 三端同口径）；AGENTS §19 两处（当前待办的 Vue 段 + Nuxt 段的「Vue 端维持手写 SVG」）；`progress.md` 置顶补记该迁移（§13 更新触发此前漏执行）。**遗留待复跑**：该行「环形 6 扇区 / 3 条 sparkline 描边取色」两项 DOM 实测为手写时期所做，已在本条与 #32 标注，Unovis 版未复跑 |
 | 15 | ⬜ | `docs/feature-matrix.md` 自相矛盾：统计表 vs 全 ✅ 表格 | `:77-80`（React/Next/Nuxt 各缺 1）↔ `:33` 全 ✅、`:84-85`「27 项 100%」 | 重算统计并改注口径 |
 | 18 | ⬜ | Shadcn 幽灵条款：文档承诺「Hero UI 主 + Shadcn 补充」，实际两端无该目录无该依赖，与 AGENTS §7.2「不含 Shadcn 组件」冲突 | `requirements.md:105/453/469`、`ui-spec.md:570/596/641-644`；实测 `apps/react|next` 无 `src/components/ui/`、无 cmdk/shadcn 依赖 | 🚫 需拍板：正式作废该条款，还是补实现（本文按作废处理，待确认） |
 | 19 | ⬜ | `ui-spec.md` §8 圆角刻度停在 shadcn 时代 10/14px，HeroUI Card 实测 24px | `docs/ui-spec.md:328-342`；`progress.md:242` 已登记 | 按 HeroUI 实测值重写刻度 |
@@ -96,7 +96,7 @@
 | 3 | SPA 直链回退文件缺失：React/Vue 规划 CF Pages，却只有 `apps/react/vercel.json`（Vercel 语义），两端无 `public/_redirects`；Nest 无 `render.yaml` | `apps/react/vercel.json`；`find` 无 `_redirects` |
 | 4 | 上线前 admin 默认密码必须改（现 `admin123` 可登录，`.env.example` 亦同值） | `progress.md:1292`、`apps/nest/.env.example` |
 | 5 | Vue / Nuxt 品牌图标缺 PNG 组（8 项），`index.html` 无 apple-touch / manifest；与「五端图标由脚本统一生成」表述不符 | `assets/logo/build-assets.py:226-248`（`app_png_targets` 仅 react/next/website）、`:316` |
-| 32–39 | GUI 走查回收（okr-tree 画布三端、v1.13.0 关联用户三端、Dashboard 四端像素观感，**Nuxt Dashboard 走查仍见问题但细节未提供**）；Next/Nuxt 补跑 build；越权实机验证（换未授权角色）；双端契约冒烟（需两端同时在线）；`git tag v0.2.0` 未打；五端部署 + 线上 `DEMO_MODE=true` + **`LOG_API_SKIP_GET` 显式开启（§5 人工清单漏此条）** | `progress.md:11/:22/:203/:509/:1292` |
+| 32–39 | GUI 走查回收（okr-tree 画布三端、v1.13.0 关联用户三端、Dashboard 四端像素观感，**Nuxt Dashboard 走查仍见问题但细节未提供**；另含 #14 遗留：Vue 端 Unovis 版两图的 DOM 实测未复跑）；Next/Nuxt 补跑 build；越权实机验证（换未授权角色）；双端契约冒烟（需两端同时在线）；`git tag v0.2.0` 未打；五端部署 + 线上 `DEMO_MODE=true` + **`LOG_API_SKIP_GET` 显式开启（§5 人工清单漏此条）** | `progress.md:11/:22/:203/:509/:1292` |
 
 ---
 
