@@ -102,7 +102,7 @@
 | # | 事项 | 证据 |
 | --- | --- | --- |
 | 3 | SPA 直链回退文件缺失：React/Vue 规划 CF Pages，却只有 `apps/react/vercel.json`（Vercel 语义），两端无 `public/_redirects`；Nest 无 `render.yaml` | `apps/react/vercel.json`；`find` 无 `_redirects` |
-| 4 | 上线前 admin 默认密码必须改（现 `admin123` 可登录，`.env.example` 亦同值） | `progress.md:1292`、`apps/nest/.env.example` |
+| 4 | ✅ **已由用户改密**（2026-09-22 实测：`POST /api/auth/login` 用 `admin/admin123` 返回 401 `INVALID_CREDENTIALS`）。`.env.example` 的 `SEED_ADMIN_PASSWORD` 已补注释说明语义 | `apps/nest/.env.example:20-23`、实机 curl 验证 | 用户已改线上/共库 admin 密码；本轮只做两件：① `.env.example` 补语义注释——该值**仅对全新库首次 seed 生效**，已有 admin 的库重跑 seed 因 `onConflictDoNothing`（`seed.ts:109-121`）不会覆盖，故留默认值不影响已上线账号；② 台账销项。新建库/演示库重置仍需显式强口令 |
 | 5 | Vue / Nuxt 品牌图标缺 PNG 组（8 项），`index.html` 无 apple-touch / manifest；与「五端图标由脚本统一生成」表述不符 | `assets/logo/build-assets.py:226-248`（`app_png_targets` 仅 react/next/website）、`:316` |
 | 32–39 | GUI 走查回收（okr-tree 画布三端、v1.13.0 关联用户三端、Dashboard 四端像素观感，**Nuxt Dashboard 走查仍见问题但细节未提供**；另含 #14 遗留：Vue 端 Unovis 版两图的 DOM 实测未复跑）；Next/Nuxt 补跑 build；越权实机验证（换未授权角色）；双端契约冒烟（需两端同时在线）；`git tag v0.2.0` 未打；五端部署 + 线上 `DEMO_MODE=true` + **`LOG_API_SKIP_GET` 显式开启（§5 人工清单漏此条）** | `progress.md:11/:22/:203/:509/:1292` |
 
