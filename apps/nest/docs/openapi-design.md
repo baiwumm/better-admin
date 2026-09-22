@@ -12,6 +12,11 @@
 
 ---
 
+> **文档状态：已落地并随实现持续更新（非立项提案）**。本文件是 API Contract 的**设计说明**，契约真源是 `openapi/openapi.yaml`；
+> 文中若残留 Phase 2 立项期的提案口吻（如「仅方案，未开发」「建议 yaml 结构 `version: 1.0.0`」），均为历史记录，按 AGENTS §13 不回改，
+> 实际状态以本文件 §9 变更记录与 openapi.yaml 为准。（2026-09-22 标注，见 `docs/launch-audit.md` #55）
+
+
 ## 0. Contract 真源策略（来自 AGENTS.md 第 6 节）
 
 - **OpenAPI 是 API Contract 唯一事实来源（Single Source of Truth）**。

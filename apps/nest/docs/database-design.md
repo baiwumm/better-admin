@@ -12,6 +12,10 @@
 
 ---
 
+> **文档状态：已落地并随实现持续更新（非立项提案）**。本文件是数据库设计说明，**迁移真源在 `drizzle/`、schema 真源在 `src/db/schema/`**；
+> 文中若残留 Phase 2 立项期的提案口吻，均为历史记录，按 AGENTS §13 不回改，实际状态以 §9 变更记录与代码为准。（2026-09-22 标注，见 `docs/launch-audit.md` #55）
+
+
 ## 0. 设计原则（来自 AGENTS.md 硬性约束）
 
 1. **统一数据库**：所有技术栈（React/Vue/Next/Nuxt/Nest）共用同一套 PostgreSQL Schema，禁止维护不同的数据库结构。
