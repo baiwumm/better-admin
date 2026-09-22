@@ -13,7 +13,9 @@
     "typecheck": "nuxt typecheck",
     "test": "vitest run",
     "pretest": "node scripts/sync-locales.mjs",
-    "sync-locales": "node scripts/sync-locales.mjs"
+    "sync-locales": "node scripts/sync-locales.mjs",
+    "check-locales": "node scripts/check-locales.mjs",
+    "db:clean-logs": "node scripts/clean-logs.mjs"
   },
   "dependencies": {
     "@bprogress/vue": "^1.1.5",
