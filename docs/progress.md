@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 审计裁决落地：上线前置五项 + 第二批 9 项（2026-09-22 同日续）
+
+- **上线前置五项（用户批准）**：#3 React/Vue 改按 **Workers Static Assets** 部署（各端 `wrangler.jsonc` + `not_found_handling=single-page-application`，删 `apps/react/vercel.json`；查官方文档确认 Pages 的 `_redirects` / 根 `404.html` 在 Workers 不生效，故未加也不该加）；#4 用户已改密，实测 `admin/admin123` 返回 401 `INVALID_CREDENTIALS`，并核实 `SEED_ADMIN_PASSWORD` 仅对全新库首次 seed 生效（重跑 seed 因 `onConflictDoNothing` 不覆盖既有密码）；#5 Vue/Nuxt 补 7 项 PNG + `site.webmanifest` + 两端 head 五条 link；#9 幂等回填 super_admin 4 条授权；#45 新增 `.github/workflows/ci.yml` 六端 17 步矩阵。
+- **第二批裁决**：#18 **作废 Shadcn 层级**（React/Next 改两级，连带按实测重写 ui-spec §10.1——原文整节是不存在的 shadcn Form 原语）；#47 `/settings` **四端统一不建页**（删三端兜底页 + 清 Vue/Nuxt 两处登记表，依据是菜单库中无 `to='/settings'` 记录）；#55 两份后端文档加「已落地/存档」标头；#26 **不裁剪**双令牌并把理由写进契约 description（不升版本，纯说明）；#25 两级卡片分层**废弃**；#27 phone **Next + Nuxt 同批**对齐 Nest；#51 文档站 `theme-switch-animation` 升 0.2.0（补 `minimumReleaseAgeExclude` 后 frozen 校验通过）；#29 复核为**早已实现**；Nuxt Dashboard 走查确认解决、双端契约冒烟改随上线后全量跑。
+- **本轮推翻的自我结论（四处，均已就地纠正，别当结论引用）**：① #28 我上轮建议的「React 基准 = 一律带参」前提错误——守卫层四端早已收敛、React 恰是唯一从不带参的端，真实残留仅 api-client 层三端裸跳，已转待拍板方案 B；② #9 原记「24/28、缺主题切换动画页」错，实为 30/26、缺异常页目录+三子页；③ #5 我上轮称"已验证"却漏跑 `nuxt typecheck`，`alternate icon` 直接 TS2322，已按 React 基准改 `shortcut icon` / 去 ico 那条；④ #29/#50/#11 三条台账描述各自过期或为误判。
+- **验证口径**：矩阵内 17 个步骤命令逐条本地实跑全绿（六端 build、react/vue/nuxt test、各端 lint/typecheck、文档站 next build）；#9 首跑补 4 条 + 二跑报「无缺口未写入」证幂等 + 独立 SQL 复核 `menus=30 / sa=30 / gap=0`；#2 起本地 Nest 实测 health 200 并查库确认未落 api 日志（同窗口 login 有日志作正向对照）；Nuxt #5 改动经 typecheck 由 exit 2 转 0。
+- **仍未闭环**：#28 方案 B、#27 残留（Next `phone: ""` 归一 null vs Nest 400）、#45 半个（clean-logs 生产写凭据）、#3 派生项（Workers 额度口径未核对，我没编数字）、#46 / #12 / #30 原有拍板项；GUI 走查余量与部署动作见台账。
+
 ### 上线前全量审计：P0 四项修复 + 台账 56 条（2026-09-22）
 
 - **触发**：四端功能宣告 100% 对齐后，用户要求先做一次「上线前文档干净无遗漏」盘点。产出编号台账 **`docs/launch-audit.md`**（已登记进 AGENTS §13 文档体系表），按 P0（线上会出事）/ P1（真源与门面失真）/ P2（内部文档陈旧）/ P3（登记不修）+ 需拍板 + 上线环节 + 已核实干净 分层，逐条带证据路径与处置状态。
