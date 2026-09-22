@@ -1,0 +1,122 @@
+# 六端构建校验矩阵（审计台账 #45）
+#
+# 背景：此前仓库只有 check-locales（仅装 apps/next）与 clean-logs 两个 workflow，
+# 六端的 lint / typecheck / test / build **从未在 CI 上被验证过**——本轮上线前审计
+# 发现的 Nuxt 缺 `/logs/{id}` 端点、文档站整片数字失真，本质都是"没有机器替我们看"。
+#
+# 设计约束（与 AGENTS §3 / §15 一致性对齐）：
+#   · 各端是相互独立的应用，各有自己的 pnpm-lock.yaml（lockfileVersion 全部 9.0），
+#     仓库不引入 workspace；故用 working-directory 逐端安装，不做根级统一 install。
+#   · pnpm 版本取各端自己的声明：nuxt 的 package.json 钉了 packageManager=pnpm@12.3.4，
+#     其余五端无此字段，沿用本仓库已验证可行的 pnpm 11（与 check-locales.yml 一致）。
+#   · 执行的是各端 package.json 里既有的 script，不另造命令。注意 react / vue / next /
+#     nest 的 `lint` 自带 --fix：CI 里它会改工作区文件但不回推，只用于取退出码。
+#   · website 仅有 dev/build/start，故只跑 build（Next 会顺带做类型检查）。
+#   · 无 `test` 脚本的端（next / nest / website）跳过 test，不为此新增依赖或框架
+#     ——那属台账 #46 的架构级待拍板项。
+#
+# 若 nuxt 在 pnpm 12 下因供应链策略（allowBuilds / minimumReleaseAge）报红，
+# 处理顺序见 docs/mechanisms.md §35，不要直接放宽策略。
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 同一分支的新提交取消仍在跑的旧任务，避免白烧额度
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: ${{ matrix.app }} · ${{ matrix.step }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ---- React（UI Source of Truth）----
+          - app: react
+            pnpm: 11
+            step: lint
+          - app: react
+            pnpm: 11
+            step: test
+          - app: react
+            pnpm: 11
+            step: build
+          # ---- Vue ----
+          - app: vue
+            pnpm: 11
+            step: lint
+          - app: vue
+            pnpm: 11
+            step: type-check
+          - app: vue
+            pnpm: 11
+            step: test
+          - app: vue
+            pnpm: 11
+            step: build
+          # ---- Next.js（build 内含类型检查；无 test 脚本）----
+          - app: next
+            pnpm: 11
+            step: lint
+          - app: next
+            pnpm: 11
+            step: check-locales
+          - app: next
+            pnpm: 11
+            step: build
+          # ---- Nuxt（packageManager 钉 pnpm 12.3.4）----
+          - app: nuxt
+            pnpm: 12.3.4
+            step: lint
+          - app: nuxt
+            pnpm: 12.3.4
+            step: typecheck
+          - app: nuxt
+            pnpm: 12.3.4
+            step: test
+          - app: nuxt
+            pnpm: 12.3.4
+            step: build
+          # ---- NestJS（无 test 脚本，见台账 #46）----
+          - app: nest
+            pnpm: 11
+            step: lint
+          - app: nest
+            pnpm: 11
+            step: build
+          # ---- 文档站（仅 build）----
+          - app: website
+            pnpm: 11
+            step: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ matrix.pnpm }}
+
+      - uses: actions/setup-node@v4
+        with:
+          # 与各端 lockfile（9.0）及本地 Volta 环境同大版本线
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/${{ matrix.app }}/pnpm-lock.yaml
+
+      - name: Install (${{ matrix.app }})
+        working-directory: apps/${{ matrix.app }}
+        run: pnpm install --frozen-lockfile
+
+      - name: ${{ matrix.step }} (${{ matrix.app }})
+        working-directory: apps/${{ matrix.app }}
+        run: pnpm run ${{ matrix.step }}
