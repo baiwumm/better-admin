@@ -35,8 +35,9 @@ pnpm check-locales  # 语言包与 react/src/i18n/locales 一致性检查（CI �
 
 - Root Directory 指向 `next/`，环境变量在 Vercel 项目配置（同名于 .env.example）
 - 数据库迁移**不**在 Vercel 执行（真源在 Nest 端）；`db:pull` 仅本地开发使用
-- 日志清理：GitHub Actions cron 调用 `db:clean-logs`（workflow 挂接见仓库级 CI 安排），
-  需在 GitHub Secrets 配置 `DATABASE_URL`；与 Nest 端 schedule 重复执行无害（幂等）
+- 日志清理：自动路径唯一，由 **Nest 进程内 `@Cron`** 承担（`LOG_CLEANUP_CRON` / `LOG_RETENTION_DAYS`）。
+  本端的 `db:clean-logs` 仅作人工补跑：`.github/workflows/clean-logs.yml` 的定时触发已于 2026-09-22 移除，
+  理由是避免「能删生产库的写凭据每天被自动使用」，保留 `workflow_dispatch` 用于 Nest 侧故障后补跑（见 `docs/launch-audit.md` #45）。
 
 ## 已知差异（相对 React 版，均为已确认决策）
 

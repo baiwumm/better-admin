@@ -1,16 +1,22 @@
-# 日志定时清理：直连数据库执行 apps/next/scripts/clean-logs.mjs（默认清理 30 天前日志）。
-# 与 Nest 端 log-cleanup.service（进程内 schedule）幂等重复，无害；载体的取舍
-# 见 docs/progress.md「Next.js 全栈版分期落地」条目（Vercel Cron 无法直接跑脚本）。
+# 日志清理——**仅手动补跑入口**（2026-09-22 决定 A，见 docs/launch-audit.md #45）。
 #
-# 前置：仓库 Secrets 配置 DATABASE_URL（Supabase 连接串，与 Nest 端同库）。
-# 时区：GitHub Actions cron 为 UTC；03:00（UTC+8）= 前一日 19:00 UTC。
+# 自动路径已收敛为 Nest 进程内唯一一条：apps/nest/src/modules/logs/log-cleanup.service.ts
+# （@Cron LOG_CLEANUP_CRON，缺省每日 03:00 Asia/Shanghai，LOG_RETENTION_DAYS=30）。
+# 本 workflow 原先也带每日 schedule，与 Nest 侧幂等重复、结果无害，但代价是
+# 「一份能 DELETE 生产库的写凭据每天被自动使用一次」；GitHub 侧并非必需（Nest 常驻
+# 就能完成清理），故去掉定时触发，只保留 workflow_dispatch 作为 Nest 侧故障 / 停机后
+# 的人工补跑通道。
+#
+# ⚠️ 依赖关系：Nest 部署在 Render 免费层，15 分钟不活跃即休眠 ⇒ 进程内 cron 不跑。
+# 因此本决定的成立前提是 AGENTS §17 ① 的保活 ping（GET /api/health + UptimeRobot /
+# CF Worker Cron 每 5-10 分钟）已配置；未配置前日志可能长期不清理（只影响表大小，
+# 不影响功能）。补跑时：仓库 Secrets 需有 DATABASE_URL（与 Nest 同库）。
 
 name: clean-logs
 
 on:
-  schedule:
-    - cron: "0 19 * * *" # 每日 03:00 UTC+8
-  workflow_dispatch: {} # 支持手动触发（首次验证 / 补跑）
+  # 定时触发已移除（决定 A）：自动清理由 Nest 进程内 @Cron 承担，此处仅留人工补跑。
+  workflow_dispatch: {}
 
 concurrency:
   group: clean-logs
