@@ -26,6 +26,7 @@ import { Route as AuthenticatedSettingsMenusRouteImport } from './routes/_authen
 import { Route as AuthenticatedSettingsLogsRouteImport } from './routes/_authenticated/settings/logs'
 import { Route as AuthenticatedSettingsDictsRouteImport } from './routes/_authenticated/settings/dicts'
 import { Route as AuthenticatedPlaygroundThemeSwitchAnimationRouteImport } from './routes/_authenticated/playground/theme-switch-animation'
+import { Route as AuthenticatedPlaygroundOkrTreeRouteImport } from './routes/_authenticated/playground/okr-tree'
 import { Route as AuthenticatedPlaygroundLoadersRouteImport } from './routes/_authenticated/playground/loaders'
 import { Route as AuthenticatedPlaygroundGithubActivityRouteImport } from './routes/_authenticated/playground/github-activity'
 import { Route as AuthenticatedPlaygroundCodeBlockRouteImport } from './routes/_authenticated/playground/code-block'
@@ -133,6 +134,12 @@ const AuthenticatedPlaygroundThemeSwitchAnimationRoute =
   AuthenticatedPlaygroundThemeSwitchAnimationRouteImport.update({
     id: '/playground/theme-switch-animation',
     path: '/playground/theme-switch-animation',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundOkrTreeRoute =
+  AuthenticatedPlaygroundOkrTreeRouteImport.update({
+    id: '/playground/okr-tree',
+    path: '/playground/okr-tree',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPlaygroundLoadersRoute =
@@ -253,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/playground/code-block': typeof AuthenticatedPlaygroundCodeBlockRoute
   '/playground/github-activity': typeof AuthenticatedPlaygroundGithubActivityRoute
   '/playground/loaders': typeof AuthenticatedPlaygroundLoadersRoute
+  '/playground/okr-tree': typeof AuthenticatedPlaygroundOkrTreeRoute
   '/playground/theme-switch-animation': typeof AuthenticatedPlaygroundThemeSwitchAnimationRoute
   '/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/settings/logs': typeof AuthenticatedSettingsLogsRoute
@@ -287,6 +295,7 @@ export interface FileRoutesByTo {
   '/playground/code-block': typeof AuthenticatedPlaygroundCodeBlockRoute
   '/playground/github-activity': typeof AuthenticatedPlaygroundGithubActivityRoute
   '/playground/loaders': typeof AuthenticatedPlaygroundLoadersRoute
+  '/playground/okr-tree': typeof AuthenticatedPlaygroundOkrTreeRoute
   '/playground/theme-switch-animation': typeof AuthenticatedPlaygroundThemeSwitchAnimationRoute
   '/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/settings/logs': typeof AuthenticatedSettingsLogsRoute
@@ -324,6 +333,7 @@ export interface FileRoutesById {
   '/_authenticated/playground/code-block': typeof AuthenticatedPlaygroundCodeBlockRoute
   '/_authenticated/playground/github-activity': typeof AuthenticatedPlaygroundGithubActivityRoute
   '/_authenticated/playground/loaders': typeof AuthenticatedPlaygroundLoadersRoute
+  '/_authenticated/playground/okr-tree': typeof AuthenticatedPlaygroundOkrTreeRoute
   '/_authenticated/playground/theme-switch-animation': typeof AuthenticatedPlaygroundThemeSwitchAnimationRoute
   '/_authenticated/settings/dicts': typeof AuthenticatedSettingsDictsRoute
   '/_authenticated/settings/logs': typeof AuthenticatedSettingsLogsRoute
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
     | '/playground/code-block'
     | '/playground/github-activity'
     | '/playground/loaders'
+    | '/playground/okr-tree'
     | '/playground/theme-switch-animation'
     | '/settings/dicts'
     | '/settings/logs'
@@ -394,6 +405,7 @@ export interface FileRouteTypes {
     | '/playground/code-block'
     | '/playground/github-activity'
     | '/playground/loaders'
+    | '/playground/okr-tree'
     | '/playground/theme-switch-animation'
     | '/settings/dicts'
     | '/settings/logs'
@@ -430,6 +442,7 @@ export interface FileRouteTypes {
     | '/_authenticated/playground/code-block'
     | '/_authenticated/playground/github-activity'
     | '/_authenticated/playground/loaders'
+    | '/_authenticated/playground/okr-tree'
     | '/_authenticated/playground/theme-switch-animation'
     | '/_authenticated/settings/dicts'
     | '/_authenticated/settings/logs'
@@ -573,6 +586,13 @@ declare module '@tanstack/react-router' {
       path: '/playground/theme-switch-animation'
       fullPath: '/playground/theme-switch-animation'
       preLoaderRoute: typeof AuthenticatedPlaygroundThemeSwitchAnimationRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/okr-tree': {
+      id: '/_authenticated/playground/okr-tree'
+      path: '/playground/okr-tree'
+      fullPath: '/playground/okr-tree'
+      preLoaderRoute: typeof AuthenticatedPlaygroundOkrTreeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/playground/loaders': {
@@ -724,6 +744,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPlaygroundCodeBlockRoute: typeof AuthenticatedPlaygroundCodeBlockRoute
   AuthenticatedPlaygroundGithubActivityRoute: typeof AuthenticatedPlaygroundGithubActivityRoute
   AuthenticatedPlaygroundLoadersRoute: typeof AuthenticatedPlaygroundLoadersRoute
+  AuthenticatedPlaygroundOkrTreeRoute: typeof AuthenticatedPlaygroundOkrTreeRoute
   AuthenticatedPlaygroundThemeSwitchAnimationRoute: typeof AuthenticatedPlaygroundThemeSwitchAnimationRoute
   AuthenticatedSettingsDictsRoute: typeof AuthenticatedSettingsDictsRoute
   AuthenticatedSettingsLogsRoute: typeof AuthenticatedSettingsLogsRoute
@@ -756,6 +777,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPlaygroundGithubActivityRoute:
     AuthenticatedPlaygroundGithubActivityRoute,
   AuthenticatedPlaygroundLoadersRoute: AuthenticatedPlaygroundLoadersRoute,
+  AuthenticatedPlaygroundOkrTreeRoute: AuthenticatedPlaygroundOkrTreeRoute,
   AuthenticatedPlaygroundThemeSwitchAnimationRoute:
     AuthenticatedPlaygroundThemeSwitchAnimationRoute,
   AuthenticatedSettingsDictsRoute: AuthenticatedSettingsDictsRoute,
