@@ -24,8 +24,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
+# local env files（真实密钥严禁提交；.env.example 例外）
+.env
+.env.*
+!.env.example
 
 # drizzle-kit pull 暂存目录（迁移 SQL/meta 不进仓库，真源在 nest/drizzle/）
 .drizzle-scratch/

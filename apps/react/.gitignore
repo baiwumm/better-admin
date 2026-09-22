@@ -29,8 +29,10 @@ bun.lockb
 # heroui-agents-md
 .heroui-docs/
 
-# 本地环境变量（含品牌名等，仅本地/部署平台，禁止提交）
+# 本地环境变量（含品牌名等，仅本地/部署平台配置）——真实密钥严禁提交
 .env
+.env.*
+!.env.example
 
 # TypeScript 增量构建缓存与 vite.config 编译产物（tsc -b 生成，勿提交）
 *.tsbuildinfo

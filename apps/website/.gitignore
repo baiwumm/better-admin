@@ -17,4 +17,6 @@ next-env.d.ts
 # misc
 .DS_Store
 *.tsbuildinfo
-.env*
+.env
+.env.*
+!.env.example

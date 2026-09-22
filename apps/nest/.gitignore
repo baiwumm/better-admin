@@ -5,10 +5,10 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# runtime / env — 真实密钥严禁提交
+# runtime / env — 真实密钥严禁提交（.env.example 例外）
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # drizzle local
 .drizzle/
