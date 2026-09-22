@@ -41,7 +41,7 @@
 | 24 | ✅ | `plan-dashboard-playground.md` 勾选未回填 + 多处陈旧现状 + 页数停在 7/8 页 | 逐条对照 progress.md / 代码 / 迁移脚本 | 已补勾 11 项（§3.4 五条经源码取证：`logging.interceptor.ts:18/38`、`http-exception.filter.ts:104`、`auth.service.ts:230/419`、`log-cleanup.service.ts:14/68` + `demo.constants.ts:27`、`refresh-token-cleanup.service.ts`；Step 8 两项；§4.4 三项）；**Step 8 第 1/3 项与 §4.4 第 7 项保持未勾**——判据指向线上口径或深浅色响应式逐项过检，未做就不勾。§9.2 / §9.3 各加一行「本节为线上部署后验收项」并全部保持未勾。陈旧现状 6 处改准；页数补至 **10 页**（§6 表补两行、§5.1 菜单树补两叶、图标清单补 loader-circle sort 5 / workflow sort 6，取证自两个 migrate 脚本 + `registry.ts` 的 10 条）。带日期的旧实施记录（「7 页占位」「共 8 页」）保留原文、只在其后追加现状 |
 | 56 | ⬜ | `usedIn` 长期未回填（plan §302 承诺「Phase C 后回填」，但 Dashboard 早已落地）：四端 `features/playground/number-flow/meta.ts:9` 仍是同一条 TODO，全仓 `usedIn` 只出现在类型定义与 `PlaygroundIntro` 渲染分支，**无一处 meta 赋值** → 演示页「用于生产」关联区一直空着 | `grep -rn usedIn` 四端 features/playground 实测 | 属代码改动（补 4 端 meta），未擅自执行；已在 plan §302 标为遗留待办。要修需四端同批（UI 一致性），量级约 4 行注释替换为数组 |
 | 44 | ✅ | `CORS_ORIGINS` 未被模板纳管（AGENTS §9 要求）；且 §17 ③「四端域名」口径可能本身过宽——Next/Nuxt 不消费 Nest | `apps/nest/main.ts:22-33` 缺省含 localhost×5 + react/vue；`.env.example` 无该变量 | 补 `.env.example`；🚫 白名单范围需确认 |
-| 45 | 🔧 | CI 从未验证任何一端的构建；`clean-logs.yml` 以生产库写权限长期挂在 GitHub Secrets | `.github/workflows/` 原仅 `check-locales.yml`（只装 apps/next）+ `clean-logs.yml` | **CI 矩阵已建**：新增 `.github/workflows/ci.yml`，PR / push(main) / 手动三触发 + `concurrency` 取消同分支旧任务省额度，17 个步骤按端拆分（react 3 / vue 4 / next 3 / nuxt 4 / nest 2 / website 1）。pnpm 版本取各端自身声明——nuxt 的 `packageManager=pnpm@12.3.4`，其余沿用本仓已验证的 pnpm 11；node 22 与 check-locales.yml 对齐；各端 `working-directory` 独立 install，不引入 workspace。**交付前已把矩阵里 17 个步骤的命令逐条本地实跑全绿**（lint / test / type-check / typecheck / check-locales / build 各端），YAML 解析与矩阵展开亦校验。**未做的半个决策**：`clean-logs.yml` 仍持生产库写凭据——改只读要你在 GitHub 建一个新的受限 Secret，**用户采纳方案 A，已执行**：移除 `clean-logs.yml` 的 `schedule` 触发、只留 `workflow_dispatch` 作人工补跑（不删文件＝可逆，加回两行即恢复定时），自动清理唯一路径收敛为 Nest 进程内 `@Cron`。真实理由不是「重复有害」（两处幂等），而是**没必要让一份能 DELETE 生产库的写凭据每天被自动使用一次**。⚠️ 依赖前提已写进 workflow 头注：Nest 在 Render 免费层会休眠 ⇒ 进程内 cron 不跑，故 §17 ① 保活 ping 必须先配好；`apps/next/README.md` 部署说明同步改写。无 test 脚本的 next / nest / website 本轮**不为跑测试而引入框架**（属 #46） |
+| 45 | ✅ | CI 从未验证任何一端的构建；`clean-logs.yml` 以生产库写权限长期挂在 GitHub Secrets | `.github/workflows/` 原仅 `check-locales.yml`（只装 apps/next）+ `clean-logs.yml` | **CI 矩阵已建**：新增 `.github/workflows/ci.yml`，PR / push(main) / 手动三触发 + `concurrency` 取消同分支旧任务省额度，17 个步骤按端拆分（react 3 / vue 4 / next 3 / nuxt 4 / nest 2 / website 1）。pnpm 版本取各端自身声明——nuxt 的 `packageManager=pnpm@12.3.4`，其余沿用本仓已验证的 pnpm 11；node 22 与 check-locales.yml 对齐；各端 `working-directory` 独立 install，不引入 workspace。**交付前已把矩阵里 17 个步骤的命令逐条本地实跑全绿**（lint / test / type-check / typecheck / check-locales / build 各端），YAML 解析与矩阵展开亦校验。**未做的半个决策**：`clean-logs.yml` 仍持生产库写凭据——改只读要你在 GitHub 建一个新的受限 Secret，**用户采纳方案 A，已执行**：移除 `clean-logs.yml` 的 `schedule` 触发、只留 `workflow_dispatch` 作人工补跑（不删文件＝可逆，加回两行即恢复定时），自动清理唯一路径收敛为 Nest 进程内 `@Cron`。真实理由不是「重复有害」（两处幂等），而是**没必要让一份能 DELETE 生产库的写凭据每天被自动使用一次**。⚠️ 依赖前提已写进 workflow 头注：Nest 在 Render 免费层会休眠 ⇒ 进程内 cron 不跑，故 §17 ① 保活 ping 必须先配好；`apps/next/README.md` 部署说明同步改写。无 test 脚本的 next / nest / website 本轮**不为跑测试而引入框架**（属 #46） |
 
 ---
 
@@ -62,7 +62,7 @@
 | 16 | ✅ | AGENTS §19 现状标记失效：「改动未提交」早已入库；Vue 端模块行的 Playground 页数仍写 9 页 | 实测 `git status --porcelain`（含 `-uall`）为空；`playground` 实为 10 页（见本页 feature-matrix 行与 #15 行数实测） | 已改：§19 两处「改动未提交」→「改动已入库」（保留仍然为真的「待 GUI 走查 / 审核」）；Vue 端模块行的「Playground 演示场（9 页…）」改为 10 页并补第 10 页组织架构树。progress.md 内 7 处同类「未提交」表述按 §13「历史记录永不回改」原则不动 |
 | 17 | ✅ | `requirements.md` 多处陈旧/自相矛盾（契约 v1.9.0、Dashboard 未实现、个人链接"后续"、Phase 6 待决策、目录树无 `apps/`、「可选 Workspace」） | `:564`、`:574/:602/:613`、`:628`、`:826`、`:73-82`、`:81` | 逐条刷新（Workspace 一条与 §3 明文一致，属错误表述） |
 | 23 | ✅ | `docs/react.md` 技术栈表 HeroUI 写 3.2.4，实际 3.2.6（表头自注「记录于 2026-08-30」） | `:33`；`apps/react/package.json` | 刷新版本 |
-| 46 | ⬜ | 测试面真实缺口：`apps/next` / `apps/nest` 无 `test` 脚本（Next 0 测试文件）；website 无 lint/test/typecheck；Nest 测试基建备案仍成立。**另发现 lint 覆盖盲区**：Nest 的 `"lint": "eslint \"{src,apps,libs,test}/**/*.ts\""` 不含 `scripts/`，该目录下的 error 永远跑不到（#43 顺手修的那处未使用 import 就是这么漏掉的） | 各 `package.json`；`docs/code-review-backlog.md:33-37`；`apps/nest/package.json:22` | 🚫 立项需拍板（引入框架属架构级）。lint  glob 扩到 `scripts/` 属低风险，可与 #45 CI 挂接一并做 |
+| 46 | 🚫 | 测试面真实缺口：`apps/next` / `apps/nest` 无 `test` 脚本（Next 0 测试文件）；website 无 lint/test/typecheck；Nest 测试基建备案仍成立。**另发现 lint 覆盖盲区**：Nest 的 `"lint": "eslint \"{src,apps,libs,test}/**/*.ts\""` 不含 `scripts/`，该目录下的 error 永远跑不到（#43 顺手修的那处未使用 import 就是这么漏掉的） | 各 `package.json`；`docs/code-review-backlog.md:33-37`；`apps/nest/package.json:22` | 🚫 立项需拍板（引入框架属架构级）。lint  glob 扩到 `scripts/` 属低风险，可与 #45 CI 挂接一并做 |
 | 47 | ✅ | ① React / Next 两端 `placeholder-page.tsx` 零引用；② `/settings` 直连四端三种表现（Vue / Nuxt 占位页、React 空 div、Next 404） | ① 两端 grep 除自身定义外 0 命中；② 实测菜单库中**无任何 `to = '/settings'` 记录**（只有 `/settings/users` 等子页），分组节点 `to` 为空 | **按你裁决走最小方案 = 四端都不建页**：① 删两端死文件；② 删三端兜底页（React `settings/index.tsx` / Vue·Nuxt `settings/index.vue`，Next 本就无）并移除 Vue / Nuxt `route-access.ts` 的 `MENU_REQUIRED_PATHS` 与 `ROUTE_TITLE_KEYS` 两处 `/settings` 登记；直连一律 404，与路由表「分组节点正常导航不可达」的既有定义一致。文档同步三处（routing 目录树与路由表、ui-spec 目录树、mechanisms 同名组件近似条目标为不触发但保留结论）。验证：react build（routeTree 重生成）/ vue type-check·test·build / nuxt typecheck·test(99)·build 全绿 |
 | 48 | ✅ | gitignore 口子：Next 只忽略 `.env*.local`（裸 `.env` 不被忽略）、Nest 不覆盖 `.env.production`、website 的 `.env*` 连 `.env.example` 一起吃掉 | `apps/next/.gitignore:28`、`apps/nest/.gitignore`、`apps/website/.gitignore:20` | 统一 `.env*` + `!.env.example` |
 | 49 | ✅ | 孤儿脚本未挂 npm script | `apps/nuxt/scripts/check-locales.mjs`、`clean-logs.mjs`；react/next `scan-stale-tokens.cjs` | Nuxt 两个已按 Next 端命名惯例挂上 `check-locales` / `db:clean-logs`（实跑 check-locales 通过：14 文件与 React 端一致，退出码 0；clean-logs 会连共用线上库故未实跑）。`scan-stale-tokens.cjs` **保留不挂**：它是 v2→v3 token 迁移期的一次性审计工具，`progress.md:1324` 明确记为「留存供其他端复用」，属有意保留而非疏漏 |
@@ -85,7 +85,7 @@
 
 | # | 事项 | 出处 |
 | --- | --- | --- |
-| 25 | 🚫 | Dashboard 两级卡片分层（浅色下会变「凹陷」）——曾是唯一挂起的设计决策 | `progress.md:242` | **用户裁决：废弃，不改**（原话「没什么感觉，现状挺好的」）。现状 = 单层卡片 + 页头欢迎横幅承担层次；本条结案，不再出现在待办 |
+| 25 | ✅ | Dashboard 两级卡片分层（浅色下会变「凹陷」）——曾是唯一挂起的设计决策 | `progress.md:242` | **用户裁决：废弃，不改**（原话「没什么感觉，现状挺好的」）。现状 = 单层卡片 + 页头欢迎横幅承担层次；本条结案，不再出现在待办 |
 | 18 | Shadcn 补充条款：正式作废，还是补实现 | 见 P1 #18 |
 | 44 | Nest CORS 白名单范围（两端 vs 四端） | 见 P1 #44 |
 | 26 | ✅ | Next 登录/刷新响应体是否裁剪双 token（原记为 P2 未做项，称其削弱 httpOnly 防线） | `progress.md:1387`；`apps/next/src/app/api/auth/login/route.ts:13` 注释说明「响应体仍按契约返回，客户端可忽略令牌字段」 | **用户裁决：不裁剪**，改为在契约里写明这是有意双形态。理由：裁剪会让四端共用同一份 Contract 的前提失效（React / Vue 就是靠响应体取令牌），而客户端忽略字段即可、真正防线是 Cookie 的 HttpOnly（已具备），无安全增益。已在 `openapi.yaml` 的 `POST /auth/login` 补 `description` 注记（纯文档性说明，不改响应 schema，故**不升契约版本**） |
@@ -123,6 +123,12 @@
 
 ## 处置进度（2026-09-22 收尾·第二轮）
 
+> **状态实测分布（脚本统计，非手填）**：共 45 个编号项。
+> - `\u2705` **39** 项：#1 #2 #42 #43 #11 #14 #15 #18 #19 #20 #21 #22 #24 #44 #45 #6 #52 #53 #54 #55 #7 #8 #9 #13 #16 #17 #23 #47 #48 #49 #50 #51 #25 #26 #27 #28 #29 #3 #5
+> - `\u2b1c` **2** 项：#56 #31
+> - `\U0001f5` **1** 项：#12
+> - `\U0001f6` **1** 项：#46
+> - `\u23f8\u` **2** 项：#30 #39
 **✅ 已闭环（48 个带状态行中：✅ 41 · 🚫 需拍板 4 · 🔧 半闭环 2 · ⏸️ 登记 2）**
 - P0 #1 #2 #42 #43；P1 #6 #8 #11 #14 #15 #16 #19 #20 #21 #22 #23 #24 #50 #52 #53 #54；P2 #7 #13 #44 #48 #49。
 - 上线前置五项（用户批准）：#3（Workers Static Assets + `not_found_handling`，删 vercel.json，五处平台表述同步）、#4（用户已改密，实测 401；seed 作用域补注释）、#5（Vue/Nuxt 图标 + manifest + 两端 head，并修掉 Nuxt head 类型错误）、#9（幂等回填 4 条超管授权，gap=0 复核）、#45（CI 六端 17 步矩阵，交付前逐条本地跑绿）。
