@@ -54,7 +54,7 @@
 | 9 | ⬜ | `super_admin` 的 role_menus 仅 24/28（缺 exception 三页 + 主题切换动画页），靠 -1n 全量位免检掩盖 | `progress.md:352` | 补授权数据（幂等脚本）或明确接受 |
 | 12 | ⬜ | AGENTS §19 称文档站内容「由 `docs/` 真源自动同步」，实为手写 MDX、无同步脚本 | `apps/website/content/**`；根 `scripts/` 仅 `sync-versions.mjs` | 改表述，或立项同步机制（🚫 二选一需拍板） |
 | 13 | ⬜ | website 版本停在 0.1.0，被 `sync-versions.mjs` 排除，且脚本注释与硬编码列表不符 | `apps/website/package.json`；`scripts/sync-versions.mjs:16-22` | 纳入 SUB_PROJECTS |
-| 16 | ⬜ | AGENTS §19「改动未提交」标记全部失效 | 实测 `git status --porcelain`（含 `-uall`）为空 | 清理该批表述 |
+| 16 | ✅ | AGENTS §19 现状标记失效：「改动未提交」早已入库；Vue 端模块行的 Playground 页数仍写 9 页 | 实测 `git status --porcelain`（含 `-uall`）为空；`playground` 实为 10 页（见本页 feature-matrix 行与 #15 行数实测） | 已改：§19 两处「改动未提交」→「改动已入库」（保留仍然为真的「待 GUI 走查 / 审核」）；Vue 端模块行的「Playground 演示场（9 页…）」改为 10 页并补第 10 页组织架构树。progress.md 内 7 处同类「未提交」表述按 §13「历史记录永不回改」原则不动 |
 | 17 | ⬜ | `requirements.md` 多处陈旧/自相矛盾（契约 v1.9.0、Dashboard 未实现、个人链接"后续"、Phase 6 待决策、目录树无 `apps/`、「可选 Workspace」） | `:564`、`:574/:602/:613`、`:628`、`:826`、`:73-82`、`:81` | 逐条刷新（Workspace 一条与 §3 明文一致，属错误表述） |
 | 23 | ⬜ | `docs/react.md` 技术栈表 HeroUI 写 3.2.4，实际 3.2.6（表头自注「记录于 2026-08-30」） | `:33`；`apps/react/package.json` | 刷新版本 |
 | 46 | ⬜ | 测试面真实缺口：`apps/next` / `apps/nest` 无 `test` 脚本（Next 0 测试文件）；website 无 lint/test/typecheck；Nest 测试基建备案仍成立。**另发现 lint 覆盖盲区**：Nest 的 `"lint": "eslint \"{src,apps,libs,test}/**/*.ts\""` 不含 `scripts/`，该目录下的 error 永远跑不到（#43 顺手修的那处未使用 import 就是这么漏掉的） | 各 `package.json`；`docs/code-review-backlog.md:33-37`；`apps/nest/package.json:22` | 🚫 立项需拍板（引入框架属架构级）。lint  glob 扩到 `scripts/` 属低风险，可与 #45 CI 挂接一并做 |
