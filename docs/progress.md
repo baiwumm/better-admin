@@ -2,6 +2,23 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 上线前全量审计：P0 四项修复 + 台账 56 条（2026-09-22）
+
+- **触发**：四端功能宣告 100% 对齐后，用户要求先做一次「上线前文档干净无遗漏」盘点。产出编号台账 **`docs/launch-audit.md`**（已登记进 AGENTS §13 文档体系表），按 P0（线上会出事）/ P1（真源与门面失真）/ P2（内部文档陈旧）/ P3（登记不修）+ 需拍板 + 上线环节 + 已核实干净 分层，逐条带证据路径与处置状态。
+- **P0 四项（一条一提交，各自验证）**：
+  1. `d1284f6` Nuxt 补 `GET /logs/{id}` + `DELETE /logs/{id}`——契约有、Nest/Next 有、服务层 `findLog`/`removeLog` 也早已写好，唯独 Nitro 路由没建，而 `LogsPage.vue:326` 的单条删除按钮真实在调它，运行时必 404。取证方式：`nuxt build` 后在 `.output/server/chunks/routes/api/logs/_id_.*.mjs` 里查到注册路径。⚠️ 这条也说明「四端 100% 对齐」的断言此前**未被端点级比对验证过**。
+  2. `e94b860` Nest 新增 `GET /api/health` + 契约升 **v1.14.0**：AGENTS §17 ① 与 vue-plan §M4 一直把保活 ping 当前提，端点却从未存在。附带一个必要修正——全局 `LoggingInterceptor` 显式跳过 `/api/health`，否则每 5-10 分钟一次探活会持续写 api 日志，让「零依赖探针」重新依赖数据库。**实机 curl 未做**：Nest 进程带日志清理 cron 且连四端共用线上库，不宜为验证而启动。
+  3. `52b28bd` JWT 去明文兜底：`?? 'better-admin-secret'` 出现在 auth.module 与 jwt.strategy 两处，虽有 `loadConfig()` 在启动期拦截，但任何绕过 main.ts 的入口都会静默用仓库内可见密钥签发令牌。收成 `src/config/env.ts` 单一取值源后，实测又挖出两个同源缺陷：**`JWT_EXPIRES_IN` 三处兜底不一致**（7d / 1h / 7d，实际生效的一直是 1h）；**`JWT_REFRESH_SECRET` 用 `??` 不回退空串**——`.env.example` 恰是 `JWT_REFRESH_SECRET=` 空值写法，照模板配置就会把空串当密钥传给 jsonwebtoken。裁决：默认统一 1h（行为零变化），空串/纯空白归一为「未设置」。
+  4. `79165b3` 写库脚本补 `--confirm`：`create-test-user.ts` 无守卫写 `testadmin/test123` 绑 admin 角色，`verify-rbac-scenario.ts` 更会**清空并重建 admin 角色的全部 role_menus**。为何不用 `NODE_ENV`/host 判断——实测 `DATABASE_URL` 直指 Supabase pooler，本仓库 dev 与线上本就是同一个库，无法据此区分，只能靠显式确认（沿用端内 `demo-reset.ts` 既有安全阀口径）。顺带修掉一处「lint script 的 glob 不含 `scripts/`」导致的检查盲区。
+- **关键校正（现状与真源）**：功能矩阵分母实为 **29 项**（核心 10 + 组织 8 + 基础设施 11），旧「27 项」自 09-11 起未随新增「演示模式」「Playground」两行更新——同一处口径第三次失真（23→27→29），已重写统计并在文档站同步；契约规模 **48 路径 / 77 操作**（Nest 77、Next 与 Nuxt 各 76，差额 `/health`）；`openapi-design.md` §9 断更 5 个版本 + §3 端点清单缺失八个模块，一次性补录（历史行零改写）；`database-design.md` 的 `refresh_tokens`（契约 v1.2 建表）长期无小节、`users` 漏记 `token_version` 与 `gender`，均已补。
+- **两处我自己判断错、随后纠正的记录（重要，避免误信本轮结论）**：
+  ① 我据 `grep pgTable` 得 18 就断言「物理 18 张表、文档 17 张写错」——复核 drizzle 快照 `0009_snapshot.json` 为 **17 张**，`settings` 已由迁移 `0002_*` DROP、源码只留一份未进 barrel 的死声明；文档站「17 张」本就正确。
+  ② 我给文档站写的「Next 77 操作零缺口」也错，实测 Next 无 health、是 76/77（`ce0de03` 单独纠正）。
+- **配置与工具**：`sync-versions.mjs` 的手写清单漏了 website（根升 0.2.0 时文档站仍 0.1.0），改为枚举 `apps/` 实际目录、六端归一；四端 `.gitignore` 统一 `.env` / `.env.*` / `!.env.example`（next 原先只防 `.env*.local`、website 的 `.env*` 反把模板文件吃掉）；Nuxt 补 `check-locales` / `db:clean-logs` / `contract-diff` 三个 npm 入口；`contract-diff.mjs` 从 20 条扩到 **31 条步骤**（最近两次契约变更的端点此前从未被冒烟覆盖），引用解析泛化为批量取 7 个 id 并在取不到时告警，避免两侧同 404 的假通过；`CORS_ORIGINS` 补进 `.env.example`。
+- **裁决记录**：#54「设计文档写 `varchar(N)`、实现全是 `text`」→ 用户拍板**文档改口径**（不把 schema 改回 varchar，避免五端共用库做无收益迁移）；33 处改 `text（≤N）`，并在 §2 头区分用户输入列（N 为 DTO 实际校验上限）与服务端自写列（无 DTO 约束，N 仅容量参考）。
+- **已知限制 / 未闭环**：① **#45 挂 CI** 未做——新建 workflow 会立即消耗 Actions 额度并可能对现有分支报红，属影响共享系统的变更，待批准；② **#9 super_admin role_menus 24/28** 未补——需写共用线上库且超管授权是权限命脉，不擅自动；③ **#47 另一半**（`/settings` 直连四端行为不一致：占位页 / 空 div / 404）待统一形态；④ **#51 文档站 `theme-switch-animation` 仍 0.1.0**（升级要动供应链白名单）；⑤ **#56 `usedIn` 承诺未兑现**（四端 meta 仍是 TODO、全仓无赋值）；⑥ 全部 GUI 走查、双端契约冒烟、Next/Nuxt 补跑 build、`git tag v0.2.0`、Shadcn 幽灵条款（#18）等**需拍板项**见台账。
+- **文档站门面**：`apps/website` 的 26/27、Dashboard 未实现、Phase 0/C 未启动、Playground 7 页、契约 v1.10/v1.11 全部按现状重写（含 4 处组件硬编码）；顺带发现 API 页端点表恰好 44 行、漏了 4 个已实现端点与两处批量 DELETE，已补齐。
+
 ### 补记：Vue 端 Dashboard 图表由手写内联 SVG 迁移到 Unovis（变更发生于 2026-09-20，本条为 2026-09-22 补记）
 
 - **为什么要补记**：上线前审计（`docs/launch-audit.md` #14）发现这次迁移**只回写了** §21 组件库策略、`mechanisms.md` §32 选型评审与 `nuxt-ui-guide.md` §9 使用事实，既没追加 progress 条目（违反 §13「每完成一个阶段/模块 → progress.md 新增条目置顶」），也没更新追踪「现状」的 `docs/feature-matrix.md` 与 `AGENTS.md` §19 —— 两处直到今天仍写「图表零依赖手写内联 SVG」。本条补齐历史，现状表述在同批提交中改写。

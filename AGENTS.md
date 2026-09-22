@@ -202,6 +202,7 @@ ci: CI 配置变更
 | `docs/react.md` / `docs/routing.md` | React 版本说明 / 路由说明（只描述技术栈 / 结构 / 约束，**不维护完成状态**） |
 | `docs/react-performance.md` | Vercel 官方 React / Next Skills（性能 / 组合模式 / View Transitions）的项目适用政策 |
 | `docs/nuxt-ui-guide.md` | Nuxt UI 组件使用指引（Vue / Nuxt 端操作细则，§21 指向） |
+| `docs/launch-audit.md` | **上线前审计台账**：四端对齐后全量盘点出的编号待办（P0–P3 + 需拍板 + 上线环节 + 已核实干净），逐条记处置状态与取证 |
 | `docs/code-review-backlog.md` | 代码审查行为级未修项追踪（已修复 / 暂缓备案 / 销项） |
 | `docs/plan-dashboard-playground.md` | 演示站路线图（Phase 0 演示准备 → Dashboard → Playground，Gate 后启动） |
 | `docs/vue-plan.md` | Vue 端开发方案（M0-M4 已完成，存档；§M4 部署清单在统一上线时使用，上线后可删） |
