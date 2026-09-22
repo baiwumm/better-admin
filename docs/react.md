@@ -21,7 +21,7 @@ Browser → React → NestJS API → PostgreSQL
 
 ## 2. 技术栈
 
-> 版本以 `apps/react/package.json` 为准（记录于 2026-08-30）。
+> 版本以 `apps/react/package.json` 为准（下表按 2026-09-22 的 package.json 逐项核对刷新）。
 
 | 类别 | 选型 | 版本 |
 | --- | --- | --- |
@@ -30,7 +30,7 @@ Browser → React → NestJS API → PostgreSQL
 | 构建工具 | Vite（含 `@vitejs/plugin-react`） | `8.0.16` |
 | 样式 | Tailwind CSS（v4，CSS-first，`@tailwindcss/vite` 插件，无 `tailwind.config`） | `4.3.1` |
 | 字体 | 默认 **Maple Mono CN**（`index.html` 内联声明）+ system 回退 | — |
-| UI 组件库 | **Hero UI**（`@heroui/react` + `@heroui/styles`）；**当前无任何 shadcn / radix 组件**，Shadcn UI 仅为策略上的补充选项（按需引入） | `3.2.4` |
+| UI 组件库 | **Hero UI**（`@heroui/react` + `@heroui/styles`）；**当前无任何 shadcn / radix 组件**，Shadcn UI 仅为策略上的补充选项（按需引入） | `3.2.6` |
 | 路由 | TanStack Router（文件式路由 `src/routes/`，自动生成 `src/routeTree.gen.ts`） | `1.168.22` |
 | 状态管理 | Zustand（全局 store，如 `src/stores/auth-store.ts`） | `5.0.12` |
 | 数据请求 | TanStack Query + fetch 封装（统一走 `src/lib/api-client.ts` 请求 NestJS REST API，无 axios） | `5.99.0` |
@@ -50,8 +50,8 @@ Browser → React → NestJS API → PostgreSQL
 
 ### 状态管理
 
-- **Zustand**：`src/stores/auth-store.ts`（登录态 + accessToken/refreshToken + 用户权限位；「记住我」决定 refreshToken 是否持久化）。
-- **React Context**：`src/context/*`（theme 等 HeroUI/react-aria 运行时上下文）。
+- **Zustand**：`src/stores/*`（`auth-store`（登录态 + accessToken/refreshToken + 用户权限位；「记住我」决定 refreshToken 是否持久化）、`design-theme-store`（主题色 / 明暗模式 / 圆角 / 色彩模式 / 路由过渡等偏好）、`language-store`、`tabs-store`、`dict-store`、`displayed-path-store`）。
+- **React Context**：`src/provider.tsx`（自建 i18next 实例注入 + HeroUI `I18nProvider` 的 react-aria locale）与 `src/components/common/progress-provider`（bprogress 状态机）；**主题明暗不在 Context 中**，由 `design-theme-store` 直接操作 DOM（见下文「主题 / Dark Mode」）。项目无 `src/context/` 目录。
 
 ### 数据请求
 
@@ -61,8 +61,9 @@ Browser → React → NestJS API → PostgreSQL
 
 ### 主题 / Dark Mode
 
-- 自定义 `ThemeProvider`（`src/context/theme-provider.tsx`），在 `<html>` 上切换 `light`/`dark` class，支持 `system`，cookie 持久化。
-- Tailwind v4 通过 `@custom-variant dark` 实现 class 策略（`src/styles/index.css`）。
+- 主题明暗由 `src/stores/design-theme-store.ts`（zustand store，非 React Context）管理：`system`（默认）/ `light` / `dark` 三态，解析结果经 `applyThemeModeToDOM()` 落到 `<html>`——移除旧明暗 class、加新 class 并写 `data-theme`（行为对齐 HeroUI `applyTheme`）；`system` 读 `matchMedia('(prefers-color-scheme: dark)')` 并监听 `change` 实时跟随。
+- 持久化为 **localStorage**（键 `better-admin-theme-mode`，永不过期；**不使用 Cookie**）；其余偏好键统一 `better-admin-*` 前缀。用户入口是 Header 右侧的主题设置抽屉（`src/layouts/components/theme-settings-drawer.tsx`，含主题色 / 明暗模式 / 色彩模式 / 主题动画方向 / 页面切换动画 / 速度 / 圆角 / 显示多标签页八项 + 重置）。
+- Tailwind v4 通过 `@custom-variant dark (&:is(.dark *))` 实现 class 策略（`src/styles/globals.css`）。
 
 ### 关于 pnpm 构建脚本（pnpm-workspace.yaml）
 
@@ -89,8 +90,10 @@ react/
 │   │   └── admin-layout.tsx   # 双栏布局 + 权限门卫
 │   ├── hooks/                 # 自定义 Hooks（use-menus）
 │   ├── lib/                   # 工具（api-client、menu-utils、menu-fetch、permission 等）
-│   ├── routes/                # TanStack Router 文件式路由 + 页面
-│   ├── stores/                # Zustand store（auth-store）
+│   ├── routes/                # TanStack Router 文件式路由（薄壳：布局挂载 / 权限门卫 / 页面导出）
+│   ├── features/              # 业务特性模块（users / roles / permissions / menus / dicts / logs /
+│   │                          #   account / org / notice / dashboard / playground），页面与模块私有组件在此
+│   ├── stores/                # Zustand store（auth-store / design-theme-store / tabs-store 等）
 │   ├── styles/                # Tailwind v4 CSS（globals.css、theme.css）
 │   ├── provider.tsx           # Provider 壳
 │   ├── main.tsx               # 应用入口
@@ -126,7 +129,7 @@ react/
 ## 4. 开发命令
 
 ```bash
-cd react
+cd apps/react
 
 pnpm install        # 安装依赖
 pnpm dev            # 启动 Vite 开发服务器（默认 http://localhost:5173）
@@ -136,7 +139,7 @@ pnpm test           # Vitest 测试
 pnpm preview        # 预览生产构建
 ```
 
-> 环境变量：`/react/.env.example` 为参考模板（前端可见变量带 `VITE_` 前缀）；真实密钥不入仓库（见 AGENTS.md §9）。
+> 环境变量：`apps/react/.env.example` 为参考模板（前端可见变量带 `VITE_` 前缀）；真实密钥不入仓库（见 AGENTS.md §9）。
 
 ---
 
