@@ -85,7 +85,7 @@
 
 | # | 事项 | 出处 |
 | --- | --- | --- |
-| 25 | Dashboard 两级卡片分层（浅色下会变「凹陷」）——唯一还挂起的设计决策 | `progress.md:242` |
+| 25 | 🚫 | Dashboard 两级卡片分层（浅色下会变「凹陷」）——曾是唯一挂起的设计决策 | `progress.md:242` | **用户裁决：废弃，不改**（原话「没什么感觉，现状挺好的」）。现状 = 单层卡片 + 页头欢迎横幅承担层次；本条结案，不再出现在待办 |
 | 18 | Shadcn 补充条款：正式作废，还是补实现 | 见 P1 #18 |
 | 44 | Nest CORS 白名单范围（两端 vs 四端） | 见 P1 #44 |
 | 26 | Next 登录/刷新响应体是否裁剪双 token（`login/route.ts:13` 注释称守共用契约，砍则破坏 React/Vue 响应形状） | `progress.md:1387` |
@@ -104,7 +104,7 @@
 | 3 | ✅ | SPA 直链回退缺失：React / Vue 深链（如 `/settings/users`）刷新或直达会 404；且仓库只有 `apps/react/vercel.json`（Vercel 语义）与既定平台矛盾 | ⚠️ **平台口径经用户改判**：原 requirements §13 / progress 2026-09-12 拍板为 Cloudflare **Pages**（依据「Pages 免费静态请求 / 带宽无限」），2026-09-22 用户确认实际按 **Workers（Static Assets）** 部署 | 已落地：① 各端新增 `wrangler.jsonc`（`assets.directory=./dist` + **`not_found_handling=single-page-application`**——官方文档确认这是 Workers 侧 SPA 回退机制，Pages 的 `_redirects` / 根 `404.html` 在 Workers **不生效**，故未加也不会加）；② 删 `apps/react/vercel.json`；③ 平台表述五处同步改准（AGENTS §17 + §19、requirements §12/§13 域名表与架构图、vue-plan §M4 部署清单、文档站 feature-matrix 与 roadmap 两页）。**wrangler 未进 package.json 依赖**（§15 不擅自加依赖），部署用 `npx wrangler deploy`。**⚠️ 一项未随迁移复核的前提**：原拍板的「带宽无限」理由不成立于 Workers，Workers 计划按请求计费、静态资源另有额度口径——本轮**没有核对当期官方定价**，requirements §13 已就地标注需上线前另行核对，不在文档里写未经核实的数字。验证：两份 jsonc 去注释后 JSON 解析通过（name / not_found_handling / directory 逐项核对）、`next build` 通过 |
 | 4 | ✅ **已由用户改密**（2026-09-22 实测：`POST /api/auth/login` 用 `admin/admin123` 返回 401 `INVALID_CREDENTIALS`）。`.env.example` 的 `SEED_ADMIN_PASSWORD` 已补注释说明语义 | `apps/nest/.env.example:20-23`、实机 curl 验证 | 用户已改线上/共库 admin 密码；本轮只做两件：① `.env.example` 补语义注释——该值**仅对全新库首次 seed 生效**，已有 admin 的库重跑 seed 因 `onConflictDoNothing`（`seed.ts:109-121`）不会覆盖，故留默认值不影响已上线账号；② 台账销项。新建库/演示库重置仍需显式强口令 |
 | 5 | ✅ | **Vue / Nuxt 品牌图标不完整**：两端 `public/` 只有 SVG/ICO，缺 `apple-touch-icon.png` 等 7 项 PNG，且页面根本没声明这些图标——Nuxt 连 `app.head` 块都没有，标签页图标纯靠浏览器自动请求 `/favicon.ico` 兜底；与 AGENTS §19 / ui-spec §19「五端图标由脚本统一生成」不符 | `assets/logo/build-assets.py` 的 `app_png_targets` 原只列 react / next / website；`apps/vue/index.html` 原仅 1 条 `favicon.svg` link；`apps/nuxt/nuxt.config.ts` 原无 head | 已补：① 脚本目标表加 vue / nuxt 各 7 项 PNG（`favicon_light.png` 是 react / next 历史兼容项，不给两端复制），并由脚本产出 `site.webmanifest`；② Vue `index.html` 与 Nuxt `app.head.link` 各补 5 条声明（icon / alternate icon / 96 PNG / apple-touch-icon / manifest）；③ ui-spec §19 加「装配范围 + head 声明」说明与**「光生成资产不等于生效」**的验收口径。**验证**：`vite build` 后 `dist/index.html` 五条 link 齐全、图标与 manifest 均进 `dist/`；`nuxt build` 后 `.output/server/chunks/_/nitro.mjs` 含 apple-touch-icon、`.output/public/` 五个新资产到位；nuxt eslint（含 `nuxt-config-keys-order` 规则，`app` 须在 `modules` 之后）与 typecheck 通过 |
-| 32–39 | GUI 走查回收（okr-tree 画布三端、v1.13.0 关联用户三端、Dashboard 四端像素观感，**Nuxt Dashboard 走查仍见问题但细节未提供**；另含 #14 遗留：Vue 端 Unovis 版两图的 DOM 实测未复跑）；Next/Nuxt 补跑 build；越权实机验证（换未授权角色）；双端契约冒烟（需两端同时在线）；`git tag v0.2.0` 未打；五端部署 + 线上 `DEMO_MODE=true` + **`LOG_API_SKIP_GET` 显式开启（§5 人工清单漏此条）** | `progress.md:11/:22/:203/:509/:1292` |
+| 32–39 | 📋 **（2026-09-22 部分销项）**~~Nuxt Dashboard GUI 走查问题~~ 已由用户确认解决；双端契约冒烟改**随四端上线后全量跑一次**。**仍未回收**：okr-tree 画布三端走查、v1.13.0 关联用户三端走查、Next / Vue Dashboard 像素观感走查、#14 的 Vue Unovis 版 DOM 实测复跑、越权实机验证（换未授权角色）、`git tag v0.2.0`、五端部署 + `DEMO_MODE=true` + `LOG_API_SKIP_GET` 显式开启。注：Next / Nuxt 补跑 build 已在本轮 #45 中本地全量实跑（六端 build 全绿） | `progress.md:11/:22/:203/:509/:1292` |
 
 ---
 
