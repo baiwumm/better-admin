@@ -612,7 +612,7 @@ API Contract 的唯一事实来源是 [`apps/nest/openapi/openapi.yaml`](../apps
 - 系统状态
 - 快捷操作
 
-（**已实现**：2026-09-18 React 基准 → 2026-09-19 Next / Vue / Nuxt 对齐，四端 + NestJS 全 ✅。数据由单一聚合接口 `GET /stats/overview` 提供（契约 v1.11.0 引入、v1.12.0 定稿取数口径：去掉 `days` 参数、`loginTrend` 固定近 30 日，7/30 日区间由前端本地截取）；页面落地为欢迎横幅与快捷入口、4 张 KPI 卡（sparkline + 环比）、登录趋势面积图、角色占比环形图、最近动态与最新公告；原始规划项中的「系统状态」未单列区块。实施记录见 `docs/progress.md`，方案见 `docs/plan-dashboard-playground.md` §4。）
+（**已实现**：2026-09-18 React 基准 → 2026-09-19 Next / Vue / Nuxt 对齐，四端 + NestJS 全 ✅。数据由单一聚合接口 `GET /stats/overview` 提供（契约 v1.11.0 引入、v1.12.0 定稿取数口径：去掉 `days` 参数、`loginTrend` 固定近 30 日，7/30 日区间由前端本地截取）；页面落地为欢迎横幅与快捷入口、4 张 KPI 卡（sparkline + 环比）、登录趋势面积图、角色占比环形图、最近动态与最新公告；原始规划项中的「系统状态」未单列区块。实施记录见 `docs/progress.md` 2026-09-19 条目（原方案文档 plan-dashboard-playground.md 已随文档清理删除）。）
 
 ## 10.6 日志
 

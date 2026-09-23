@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.2.0",
   "description": "Better Admin — 同一套产品、同一套数据库，用 React / Vue / Next.js / Nuxt / NestJS 分别实现的全栈 Admin 系统（仓库级版本真源，不放依赖）",
+  "license": "MIT",
   "author": "baiwumm",
   "repository": {
     "type": "git",

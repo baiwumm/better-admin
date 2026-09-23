@@ -1148,6 +1148,8 @@ fumadocs 的 MDX 内容与 UI 层并非耦合：`fumadocs-core` 只承担 MDX �
 
 - 依据：`apps/website/mdx-components.tsx` 头注与映射表、`components/docs/*`、`app/api/search/route.ts`；静态导出构建 20/20 页通过验证。
 
+> **范围修正（2026-09-23 同日）**：§37 描述的「整层替换」落地数小时后按用户拍板**收窄**——beUI 自绘仅保留在首页（landing：按钮 / 卡片 / 顶部导航 / Badge / Questions 手风琴，`components/landing/accordion.tsx` 即迁移后的自绘组件）；`/docs` 文档区**回退 fumadocs-ui**（RootProvider / 侧栏 / 搜索 / TOC / Tabs / CodeBlock），靠 globals.css 的 `--color-fd-*` 覆盖段与站点黑白 token 对齐。「UI 层可整体替换」的机制结论本身仍成立，本节作为可行性取证保留。
+
 ## 38. 本项目不经过 Supabase Data API：新建表**不需要** GRANT，勿照 Supabase 权限邮件往迁移里加 `grant to anon / authenticated`（全端，2026-09-23）
 
 Supabase 于 2026-10-30 起停止为**既有项目** `public` schema 的新建表自动授予 Data API 访问权（新表须显式 `GRANT` 才能被 supabase-js / PostgREST / GraphQL 读到；官方邮件的示例模板是 `grant ... to anon` + `to authenticated` + `to service_role`）。**该变更对本项目零影响**，机理是本项目的数据库访问链路根本不经过 Data API 这一层：
@@ -1178,3 +1180,23 @@ Supabase 于 2026-10-30 起停止为**既有项目** `public` schema 的新建�
 
 - 依据：UptimeRobot 面板与编辑页取证截图（`PING nest.baiwumm.com/api/health` / Down 6h51m / No response time data）；`curl` 实测 2026-09-23 08:22:25→08:40:02 UTC 五次采样 `uptimeSeconds` 111→147→173→475→1168（差值 36/26/302/693 与真实间隔精确一致，末次 1168 秒 = 19 分 28 秒已跨过 15 分钟休眠线 ⇒ 上述三步口径全过，HTTP 200 / 0.7–0.9s）；改判 HTTP(S) 类型后面板 `Up / 100% / 276ms`；`nest.baiwumm.com` 解析到 Cloudflare 边缘 IP `216.24.57.18`（`CF-RAY …-LAX`）；`apps/nest/src/modules/health/health.controller.ts` + `apps/nest/src/main.ts:19`（全局前缀 `api`，故健康端点是 `/api/health` 而非 `/health`，后者实测 404）。执行记录与处置见 `docs/launch-runbook.md` §1.2 步骤 4 / §1.3 保活类型修正注记与 progress.md 对应条目。
 
+## 40. beUI registry 组件落盘口径：条目 JSON 自带 lib 依赖、**无进度条也无通用 Card**，且 `AnimatedBadge` 不能当控件（website，2026-09-23）
+
+beUI（<https://beui.dev>）是 shadcn registry，取用的是**逐字源码**而非 npm 包，因此「装了就是上游」：
+
+- **取用端点**：`curl https://beui.dev/r/{slug}` 返回 registry item JSON，`files[].content` 即源码，且**条目会连带给出自己的内部依赖文件**——`button-base` 一条就附带 `components/motion/button/base.tsx` + `lib/ease.ts` + `lib/hooks/use-hover-capable.ts` + `lib/utils.ts`（外加一个 preview 文件，落盘时按路径白名单剔除）。⚠️ 不要用 `/r/{slug}/raw`：那是**单文件裸源码**，多文件条目拿不到依赖清单。全量清单在 `https://beui.dev/registry.json`（124 项），**没有 `/r/index.json`**（实测 404）。
+- **能力边界（按 registry.json 全量筛过 title+description）**：徽章有 `animated-badge`、按钮有 `button-base/stateful/magnetic/metallic`；但**没有通用进度条**——只有 `scroll-progress`（阅读进度）、`range-slider*` 六变体（可拖拽滑块）、`agent-progress`（活动 glyph + 计时），语义全不对；**也没有通用 Card**（只有 `tilt-card` / `card-folder` / `infinite-masonry` 等专用件）。结论：首页「功能对齐 29/29」那根进度条与卡片/面板表面**必须继续自绘**，这不是偷懒而是库确实没有（用户已就此拍板保留自绘）。
+- **依赖面**：beUI 源码的 `cn` 走 `@/lib/utils` = `clsx` + `tailwind-merge`（registry 自己在 `dependencies` 里声明），website 原先两者皆无 → 落盘即需引入这两枚精确锁版小依赖（`clsx 2.1.1` / `tailwind-merge 3.6.0`，与 theme-switch-animation docs 站解析结果同版）；`motion` / `lucide-react` 站点本就有。
+- **语义边界（两条硬约束）**：① `AnimatedBadge` 渲染 `motion.span`，**不可用作可点击控件**（丢点击与键盘语义），带链接的公告胶囊条仍须原生 `<a>`；② beUI `Button` / `ButtonLink` **没有 `asChild` / Slot**，内部路由链接一旦用 `ButtonLink` 就退化成整页导航（丢客户端路由与预取）——这是 copy-paste 组件的固有代价，要保留 SPA 导航只能改上游组件，属偏离上游、已按「零覆写」口径放弃。
+- **token 前提**：beUI 的实色 `bg-card` 表面成立的前提是 `--card` 与 `--background` 有分离度。website 亮色档原为纯白（`oklch(1 0 0)`，零分离）→ 按既定口径**改 token 层而非逐组件覆写**：`--card: oklch(0.97 0 0)`（与 beui.dev、theme-switch-animation docs 站同值）。影响面实测：`--card` 仅被首页容器层（`card-premium` / `panel-premium` / `window-premium` / `navbar-premium` / FAQ 手风琴）与 beUI 组件消费，`/docs` 区走 `--color-fd-*` 覆盖段、不受影响。
+- **顺带两条 fumadocs 结论**：① `DocsLayout` 的 `links` 支持任意 `type: 'icon'` 自定义条目（icon 型落侧栏底部操作条，与主题切换同排），且 `fumadocs-core` 的 `Link` 对匹配 `^\w+:` 的绝对 URL **自动**渲染 `<a target="_blank" rel="noreferrer noopener">`（`node_modules/fumadocs-core/dist/link.js:5-11`），不必手写 target；② lucide 的 `Github` 品牌图标已废弃，品牌图标统一走 `apps/website/components/ui/brand-icons.tsx`（Simple Icons path）。
+
+- 依据：`apps/website/components/motion/**`（与 registry `files[].content` 逐字一致）、`apps/website/lib/{utils,ease,hooks/use-hover-capable}.ts`、`apps/website/app/globals.css` 的 `--card` 与容器层注释、`apps/website/app/docs/layout.tsx`、`apps/website/lib/site.ts` 的 `DEMOS`；registry 取证于 2026-09-23 实测（`/r/button-base`、`/r/animated-badge`、`/registry.json` 124 项筛选、`/r/progress` 与 `/r/badge` 均 404）。
+
+## 41. README 门面徽章取证：中文标签必须 percent-encode，Nest 冷启动会让 shields 实时探测误报 offline（仓库门面，2026-09-23）
+
+- **中文标签**：shields 静态徽章把 label/message 放在 URL 路径段里，**原始 UTF-8 会被按 Latin-1 解码成乱码**（实测 `badge/功能对齐-29%2F29-…` 直接写中文 → 返回 `<title>¹¦ÄÜ¶ÔÆë: 29/29</title>`）。必须 percent-encode（`encodeURIComponent`）后才是 `<title>功能对齐: 29/29</title>`；message 里的 `/` 要写 `%2F`、`-` 要写成 `--`（`2026--09--23` 才渲染成 `2026-09-23`）。
+- **不要用 shields 的 `website` 实时徽章探六端**：实测 `https://nest.baiwumm.com/api/health` 首次请求 **18 秒**才返回 200（Render 免费层冷启动，UptimeRobot 5min 保活挡不住首次），shields 的探测超时后当场判 `offline`（实测返回 `<title>NestJS: offline</title>`），会在 README 上长期误报。其余五端 1.1–6.4 秒返回 200。→ 六端状态用**静态徽章**（它是上线记录，不是监控），监控留给 UptimeRobot。
+- **图标 slug 有效性判据**：无效 slug 不报错、只是不嵌图标，可用响应体积分档识别（本机实测：无效 slug 恒为 1226 字节，有效的 `react` / `vuedotjs` / `nextdotjs` / `nuxt` / `nestjs` / `postgresql` / `drizzle` 均 1.5–9.8 KB）。Next.js 的 slug 是 `nextdotjs`（`vercel` 是另一枚）。
+- **GitHub README 的 logo 明暗双档**：`assets/logo/logo.svg` 是 `currentColor` 填充，在 `<img>` 里解析为黑色、暗色档下不可读 → 门面必须用静态变体，`<picture>` + `media="(prefers-color-scheme: dark)"` 映射（亮档 `logo-dark.svg`＝黑底白块、暗档 `logo-light.svg`＝白底黑块）。⚠️ `assets/logo/` 按「图形自身外观」命名、与 `apps/*/public/` 的「按主题」命名**语义相反**（`ui-spec.md` §19.3 命名陷阱表）。
+- **license 徽章的前提是真有文件**：本仓库此前**既无 `LICENSE` 也无 `license` 字段**，徽章只能随文件一起补（2026-09-23 补 MIT，版权行 `Copyright (c) 2026 baiwumm`，与姊妹仓 `vue3-okr-tree` 同文本；`react-okr-tree` 用的是真名，两仓口径本就不一致）。GitHub 首页的 license 标识由它扫根 `LICENSE` 得出，需 push 到默认分支后才显示。
