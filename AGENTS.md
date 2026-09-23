@@ -281,8 +281,8 @@ https://nest.baiwumm.com
 - **数据库**：Supabase PostgreSQL。
 - 每个子项目应能独立构建、独立部署；环境变量在对应部署平台配置。
 
-> **统一上线清单（⚠️ 重要：Nest Render 保活 ping 必做——免费层 15 分钟不活跃即休眠，冷启动 30-50 秒）**
-> ① **Nest 保活（2026-09-12 关键决策）**：上线时**新增无鉴权 `GET /api/health` 健康端点**（无 DB 访问，契约补录）+ 配置 **UptimeRobot / CF Worker Cron 每 5-10 分钟 ping**——Render 免费 750 实例小时/月 ≥ 单服务常驻 744h，免费额度恰好覆盖，冷启动彻底消除。已评估并否决的替代平台：Koyeb（同样休眠）、Oracle Always Free（常驻 VPS 但需绑卡自运维，留作将来升级选项）、Cloud Run / Vercel serverless（需绑卡 / 违背平台分散）。
+> **统一上线清单（⚠️ 重要：Nest Render 外部保活必做——免费层 15 分钟不活跃即休眠，冷启动 30-50 秒）**
+> ① **Nest 保活（2026-09-12 关键决策）**：上线时**新增无鉴权 `GET /api/health` 健康端点**（无 DB 访问，契约补录）+ 配置 **UptimeRobot / CF Worker Cron 每 5-10 分钟以 HTTP(S) 类型探活**（⚠️ **禁止 PING（ICMP）类型**——它不发 HTTP 请求、Render 入口也不响应 ICMP，配置后只会永远 Down 而服务其实健康；2026-09-23 即因此空转 6 小时，机理与验证口径见 `docs/mechanisms.md` §39）——Render 免费 750 实例小时/月 ≥ 单服务常驻 744h，免费额度恰好覆盖，冷启动彻底消除。已评估并否决的替代平台：Koyeb（同样休眠）、Oracle Always Free（常驻 VPS 但需绑卡自运维，留作将来升级选项）、Cloud Run / Vercel serverless（需绑卡 / 违背平台分散）。
 > ② React / Vue：CF Workers（Static Assets）绑定 + **SPA 直链回退验证**——回退由 `wrangler.jsonc` 的 `not_found_handling=single-page-application` 提供（2026-09-22 由 Pages 改判为 Workers，原 `_redirects` 方案作废，清单见 `vue-plan.md` §M4）。
 > ③ **Nest CORS 白名单**：逐一加入四端域名。
 > ④ 各端部署前冒烟按各自 plan 文档执行。

@@ -1147,3 +1147,34 @@ Unovis 已确认的代价（落地时按已知项接受，不要当成 bug 排�
 fumadocs 的 MDX 内容与 UI 层并非耦合：`fumadocs-core` 只承担 MDX 编译、路由生成与搜索索引，`fumadocs-ui` 提供的排版/组件层可以整层替换。做法是在 `mdx-components.tsx` 用 `useMDXComponents` 把默认映射全部覆盖为 `components/docs/` 自绘组件（docs-shell / sidebar-nav / doc-page / code-block / search-dialog / toc 等 15 个，黑白 beUI 风格），且**保持原组件 API 兼容（Callout / Card / Tabs / Steps / Accordion / Tabs.Tab 等）**——`content/**` 手写 MDX 一个字不用改。两点约束：① 搜索走静态导出，`/api/search` 须 `force-static` + 静态 GET（构建期固化索引，浏览器本地查），RootProvider 用 `type: 'static'`；② 静态导出下所有动态路由 / og / robots / sitemap 必须显式 `export const dynamic = 'force-static'`，缺一个 build 即报「dynamic/revalidate not configured on route」。
 
 - 依据：`apps/website/mdx-components.tsx` 头注与映射表、`components/docs/*`、`app/api/search/route.ts`；静态导出构建 20/20 页通过验证。
+
+## 38. 本项目不经过 Supabase Data API：新建表**不需要** GRANT，勿照 Supabase 权限邮件往迁移里加 `grant to anon / authenticated`（全端，2026-09-23）
+
+Supabase 于 2026-10-30 起停止为**既有项目** `public` schema 的新建表自动授予 Data API 访问权（新表须显式 `GRANT` 才能被 supabase-js / PostgREST / GraphQL 读到；官方邮件的示例模板是 `grant ... to anon` + `to authenticated` + `to service_role`）。**该变更对本项目零影响**，机理是本项目的数据库访问链路根本不经过 Data API 这一层：
+
+- **读写走 TCP 直连**：Nest 用 `pg` 的 `Pool`、Next / Nuxt 用 `postgres.js`，连 Supabase pooler（5432 session / 6543 transaction），以 `postgres` 角色 + Drizzle 生成原生 SQL；SSL 在代码层配 `ssl: { rejectUnauthorized: false }`、URL 不带 `sslmode`（见 §mechanisms 相关端口说明）。
+- **迁移不走 Supabase 工具链**：`apps/nest/drizzle/*.sql` 由 drizzle-kit 生成、`pnpm db:migrate` 直连执行（`apps/nest/scripts/migrate.ts`），`CREATE TABLE` 的 owner 即连接角色 `postgres` 本身，直连读写天然有权。表也不带 RLS：十个迁移里 `GRANT` / `ENABLE ROW LEVEL SECURITY` / `CREATE POLICY` **零匹配**（AGENTS §5「不使用 Supabase Auth / RLS / Edge Functions」的直接结果）。
+- **`anon` / `authenticated` 两个角色在本项目连接链路中不存在**，往迁移里加它们指向的授权是无意义噪音。
+- **`@supabase/supabase-js` 只承担 Storage**：头像上传 / 删除走 `.storage.from('avatars')`、bucket 初始化走 `POST /storage/v1/bucket`（`apps/nest/scripts/init-storage.ts`），公开读走 `/storage/v1/object/public/...`——全是 Storage API，不是 Data API；且 Storage 内部表位于 `storage` schema，本次变更只针对 `public`。全仓（排除 lockfile）零处 `/rest/v1` / `postgrest` / `graphql/v1` / `supabase.from()`。
+- 邮件未提及但同源的**旧 service_role JWT key 年底废弃**，项目已于 v1.5.0 起改用 `sb_secret_` 前缀密钥 + `apikey` 请求头（`apps/nest/.env.example`），已提前合规。
+
+**处置（2026-09-23 用户拍板）**：代码与数据一律不动，Dashboard 侧亦不做变更（Data API 的 `public` 暴露面维持现状，不主动关闭）；本节仅作为**防误判依据**——后续任何 Agent 读到同类 Supabase 权限公告时，先核对本节再决定是否动手，禁止「顺手合规」往迁移 SQL 添加 GRANT。若将来确实引入 Data API 访问（目前无此规划），本结论即失效、须重估。
+
+- 依据：`apps/nest/src/db/client.ts`、`apps/next/src/db/client.ts`、`apps/nuxt/server/db/client.ts`、`apps/nest/scripts/migrate.ts`、`apps/nest/drizzle/*.sql`（GRANT/RLS 零匹配）、`apps/nest/src/account/avatar-storage.service.ts` 与 Next / Nuxt 同构文件、`apps/nest/scripts/init-storage.ts`；上述 grep 取证于 2026-09-23 实测。
+
+## 39. 免费层保活必须用 **HTTP(S) 类型**探活：PING（ICMP）对 Render 入口永远 Down，且「监控 Up ≠ 保活生效」的三步验证口径（Nest / Render，2026-09-23）
+
+**机理**：UptimeRobot 的 PING 类型做的是 **ICMP echo 到主机**——它不发 HTTP 请求，URL 里 `/api/health` 这段路径对它毫无意义；而 Render 自定义域入口挂在 Cloudflare for SaaS 之后，边缘**不响应 ICMP**。两条叠加 ⇒ 该监控自配置起必然持续 Down，与被监控服务的真实健康完全无关。只有 **HTTP(S)** 类型才真正 `GET` 那个 URL，也才真正产生 Render 计入活跃判定的入站请求。
+
+**一眼识别误配（下次不必再排查 6 小时）**：① 监控名带 `PING` 前缀、副标题写「Ping monitor for …」；② 编辑页字段标签是 **「IP or host to monitor」**（HTTP(S) 类型是「URL to monitor」）——UptimeRobot **不提供修改已有监控的类型**，只能新建 + 删旧；③ 面板显示「No response time data」；④ 同时 `Current status: Down` 而本机 `curl` 同一 URL 秒回 200。
+
+**为什么这类失败特别危险**：它只发误报、不伤服务，于是很容易被当成「监控平台抽风」长期搁置；但它承载的是**免费层常驻**这个硬前提——它静默失效，等于 Render 15 分钟休眠从未被挡住，连带 Nest 进程内 `@Cron` 日志 / refresh_token 清理（每日 03:00 / 03:30 北京时间）失去常驻前提（该依赖链见 `.github/workflows/clean-logs.yml` 头注）。**结论：保活监控的告警必须当成真故障处理，判据是自己 curl 一次源站，而不是"看着像误报"。**
+
+**验证口径（三步，缺一不可；单次 Up 不足以证明保活生效——实例可能只是刚被真实用户流量唤醒）**：
+
+1. 面板 `Up` **且有响应时间数据**（本次实测 276ms）⇒ 证明探测确实拿到了源站 200，而不是 ICMP 层的假信号；
+2. 连续多次 `curl https://nest.baiwumm.com/api/health` 读信封里的 `uptimeSeconds`，**相邻差值与真实时间差逐秒吻合** ⇒ 证明进程零重启（该字段来自零 DB 依赖的 `HealthController`，正是为此类判定准备的低成本探针）；
+3. 关键阈值：`uptimeSeconds` 必须**明显大于 900** 仍在增长，才算跨过 Render 免费层 15 分钟休眠线。
+
+- 依据：UptimeRobot 面板与编辑页取证截图（`PING nest.baiwumm.com/api/health` / Down 6h51m / No response time data）；`curl` 实测 2026-09-23 08:22:25→08:40:02 UTC 五次采样 `uptimeSeconds` 111→147→173→475→1168（差值 36/26/302/693 与真实间隔精确一致，末次 1168 秒 = 19 分 28 秒已跨过 15 分钟休眠线 ⇒ 上述三步口径全过，HTTP 200 / 0.7–0.9s）；改判 HTTP(S) 类型后面板 `Up / 100% / 276ms`；`nest.baiwumm.com` 解析到 Cloudflare 边缘 IP `216.24.57.18`（`CF-RAY …-LAX`）；`apps/nest/src/modules/health/health.controller.ts` + `apps/nest/src/main.ts:19`（全局前缀 `api`，故健康端点是 `/api/health` 而非 `/health`，后者实测 404）。执行记录与处置见 `docs/launch-runbook.md` §1.2 步骤 4 / §1.3 保活类型修正注记与 progress.md 对应条目。
+

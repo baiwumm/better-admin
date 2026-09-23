@@ -2,6 +2,16 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Nest 保活监控类型纠偏：PING（ICMP）→ HTTP(S)，外部保活自此才真正生效（2026-09-23）
+
+- **背景（用户报障）**：UptimeRobot 面板 `nest.baiwumm.com/api/health` 持续 Down 6h51m、`No response time data`。实测服务端完全健康（`curl` 同一 URL **200 / 0.76s**），根因是**监控类型选成了 PING（ICMP）**：它只探测主机、不发 HTTP 请求（URL 路径对它毫无意义），而 Render 入口挂在 Cloudflare for SaaS 后、边缘不响应 ICMP ⇒ 必然永远 Down。也就是说 AGENTS §17 ① 与 launch-runbook §1.3 第 6 项记录的「保活已配置 ✅」**实际从未生效**：Render 免费层 15 分钟休眠未被挡住，进程内日志 / refresh_token 清理 cron（03:00 / 03:30 北京时间）随之失去常驻前提。
+- **处置（全部在 UptimeRobot 侧，代码零改动）**：新建 **HTTP(S)** 类型监控指向 `https://nest.baiwumm.com/api/health`（5 分钟间隔，名称「Better Admin Nest 服务保活」，tag `Nest.js`），旧 PING 监控删除。⚠️ 记一笔操作陷阱：UptimeRobot **不提供修改已有监控的类型**（编辑页无该字段），只能新建 + 删旧；另外通知项里 SMS / Voice 的号码带 ⚠️ 未验证，实际只有 email 生效。
+- **验证（三步口径已全过，见 `mechanisms.md` §39）**：新监控 `Up / 100% / 276ms`（有响应时间数据 = 探测确实拿到源站 200）；`curl` 五次采样 `uptimeSeconds` **111→147→173→475→1168**（08:22:25→08:40:02 UTC，相邻差值 36/26/302/693 与真实间隔**逐秒吻合 ⇒ 进程零重启**）；末次 **1168 秒（19 分 28 秒）已跨过 Render 免费层 15 分钟休眠线仍在增长** ⇒ 外部保活自此实锤生效。
+- **文档口径同步（本轮改动）**：AGENTS §17 标题与 ① 项去掉「ping」措辞、显式写明「以 **HTTP(S) 类型**探活」并禁止 PING 类型；launch-runbook §1.2 步骤 4 加同一条硬约束、§1.3 追加**保活类型修正**注记（第 6 项原文按「历史记录不回改」保留），§1.2 / §1.3 三处「外部 ping」泛指措辞统一为「探活」；`.github/workflows/clean-logs.yml` 头注的依赖链同步（探活类型误配等同没配）；机理、误配的一眼识别特征与验证口径沉淀 `mechanisms.md` §39。
+- **同日另一条机制沉淀**：Supabase 2026-10-30「新表不再自动授予 Data API 访问权」公告经取证**对本项目零影响**（DB 走 pg / postgres.js TCP 直连、迁移不经 Supabase 工具链、`anon` / `authenticated` 角色在连接链路中不存在、supabase-js 仅承担 Storage），结论与反误判依据落 `mechanisms.md` §38；用户拍板代码与 Dashboard 一律不动。
+- **website 文档站同步修正（用户批准）**：`content/progress/roadmap.mdx` 上线收官表里「NestJS 保活 ping / 冷启动消除」一行改写为准确表述——探活必须是 HTTP(S) 类型、当日曾误配 PING 空转 6 小时已改判并复验、冷启动**自此**消除，并补注契约相对路径与实际路径的关系。该改动需随 website 下次重新部署 CF Workers 才在线上生效。
+- **顺带更正本轮一处初判（防复发）**：我曾把文档站与契约里的 `GET /health` 当成「路径口径错误」，经核实**是误判**——`openapi.yaml:210` 的 `servers.url` 即 `https://nest.baiwumm.com/api`（本地 `http://localhost:3000/api`），全站端点在契约与文档站一律写相对路径（`/users` / `/menus` / `/health`），拼上前缀才是实机路径。故 `architecture/api.mdx` 与 `feature-matrix.mdx` 各处**保持原样不动**。教训：判「路径写错」之前必须先读契约的 `servers` 段。
+
 ### 上线后文档收尾：website beUI 风格改造 + 六端 README 重写 + 一次性脚本清理（2026-09-23）
 
 - **website 风格改造为 beUI 体系（参照 `theme-switch-animation` 仓 docs 站同一视觉语言）**：移除 `fumadocs-ui` 依赖（fumadocs-core 保留，仅承担 MDX 编译 / 路由 / 搜索索引），`components/docs/` 自建 15 个文档组件（docs-shell / docs-navbar / sidebar-nav / doc-page / toc / code-block + copy-button / search-dialog / tabs / accordion / callout / cards / steps / stack-tabs / diagrams），`mdx-components.tsx` 全量自绘映射且**保持原 fumadocs-ui 组件 API 兼容（Callout / Card / Tabs / Steps / Accordion），MDX 内容零改动**；黑白极简风格 + 等宽标题字。验证：静态导出构建 20/20 页全绿（⚠️ 本机曾因上一会话遗留的两个 `npx serve` 预览进程锁住 `out/` 连续 EBUSY，整树结束后恢复；CI 的 website build 步骤不受影响）。

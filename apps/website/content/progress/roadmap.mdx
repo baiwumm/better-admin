@@ -37,7 +37,7 @@ Playground 演示场分两个阶段推进，之后的 Phase 0 / Phase C 也都�
 
 | 事项 | 落地结果 |
 | --- | --- |
-| NestJS 保活 ping | `GET /health` 已实现，UptimeRobot 每 5 分钟探活，冷启动消除 |
+| NestJS 外部保活 | `GET /health` 已实现（契约相对路径，实际带全局前缀为 `/api/health`）；UptimeRobot 以 **HTTP(S) 类型**每 5 分钟探活——⚠️ 上线当日曾误配为 PING（ICMP）类型，它对 Render 入口永远 Down、保活实际未生效 6 小时，已改判并复验（`uptimeSeconds` 跨采样连续）；冷启动自此消除 |
 | CORS 白名单收敛 | 已收敛为线上域名；Nest 只服务 React / Vue 两端，Next / Nuxt 是独立全栈不走它 |
 | SPA 直链回退 | React / Vue 由 `wrangler.jsonc` 的 `not_found_handling=single-page-application` 提供 |
 | 演示模式开关 | 三端（Nest / Next / Nuxt）线上配 `DEMO_MODE=true`，只读守卫 + 快捷登录生效 |

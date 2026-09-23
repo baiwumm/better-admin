@@ -63,17 +63,17 @@ Nest 必须最先：React / Vue 的 API 直接指向它；保活必须紧随其�
 1. Render 创建 Web Service，连接本仓库，Root Directory 指向 `apps/nest`，填 Build / Start Command 与 1.1 全部环境变量。
 2. 部署完成后验证 `GET https://nest.baiwumm.com/api/health` 返回 200 信封。
 3. **本地跑一次 `pnpm storage:init`**（幂等创建 Supabase `avatars` bucket，public read；只需一次，与 Render 部署无依赖关系）。
-4. **立即配置外部保活（必做，见 0.1②）**：UptimeRobot 或 CF Worker Cron，每 5-10 分钟 ping `https://nest.baiwumm.com/api/health`。
+4. **立即配置外部保活（必做，见 0.1②）**：UptimeRobot 或 CF Worker Cron，每 5-10 分钟以 **HTTP(S) 类型**探测 `https://nest.baiwumm.com/api/health`。⚠️ **禁止选 PING（ICMP）类型**——它不发 HTTP 请求、URL 路径对它无意义，且 Render 入口不响应 ICMP，结果永远是 Down 而服务其实健康（本次上线即因此空转，见 §1.3 注记与 `docs/mechanisms.md` §39）。
 
-> ⚠️ Render 自带的 Health Check Path **不等于保活**：它只服务于平台监控与部署失败判定，不计入外部入站流量、**不会阻止免费层 15 分钟休眠**——上一步的外部 ping 不能被它替代，两者都要配。
+> ⚠️ Render 自带的 Health Check Path **不等于保活**：它只服务于平台监控与部署失败判定，不计入外部入站流量、**不会阻止免费层 15 分钟休眠**——上一步的外部探活不能被它替代，两者都要配。
 
 ### 自定义域与 CF DNS（`nest.baiwumm.com`，zone 托管在 Cloudflare）
 
 1. Render：Settings → Custom Domains → 添加 `nest.baiwumm.com`，记下它给的 CNAME 目标（形如 `<service>.onrender.com`）。
 2. **先查旧记录**：CF DNS 里该子域若已有指向历史旧项目的 A / CNAME 记录（react / next 现域名即指向旧项目），直接**改**那条记录，不要并存两条。
 3. CF DNS 添加 / 修改 CNAME：`nest` → `<service>.onrender.com`，**代理状态选「仅 DNS」（灰云）**；回 Render 完成验证，证书由 Render 自动签发。
-4. **推荐灰云直连**：API 后端不需要 CDN，少一层代理 = 少 CORS / 缓存 / 代理超时 / Bot 拦截一整类故障面，外部保活 ping 也直达源站。
-5. 若坚持开橙云（代理），四件事必须处理：① CF SSL/TLS 加密模式设 `Full`（绝不可 Flexible——Render 强制 HTTPS 会无限重定向循环）；② 加 Cache Rule 对 `/api/*` Bypass 缓存；③ CF 免费版代理超时 100s（Render 冷启动 30-50s 在限内，但保活探测端的超时要调得大于冷启动，否则误报）；④ 若 zone 开了 Bot Fight Mode / Under Attack，UptimeRobot 的 ping 会被当 bot 拦截，须加白名单或关闭。
+4. **推荐灰云直连**：API 后端不需要 CDN，少一层代理 = 少 CORS / 缓存 / 代理超时 / Bot 拦截一整类故障面，外部保活探活也直达源站。
+5. 若坚持开橙云（代理），四件事必须处理：① CF SSL/TLS 加密模式设 `Full`（绝不可 Flexible——Render 强制 HTTPS 会无限重定向循环）；② 加 Cache Rule 对 `/api/*` Bypass 缓存；③ CF 免费版代理超时 100s（Render 冷启动 30-50s 在限内，但保活探测端的超时要调得大于冷启动，否则误报）；④ 若 zone 开了 Bot Fight Mode / Under Attack，UptimeRobot 的 HTTP 探测会被当 bot 拦截，须加白名单或关闭。
 
 ### 1.3 上线后冒烟清单（✅ 2026-09-23 实测全绿）
 
@@ -86,6 +86,8 @@ Nest 必须最先：React / Vue 的 API 直接指向它；保活必须紧随其�
 - [x] 演示只读验证：带 token `POST /users` → 403 `DEMO_READONLY`（「演示环境，禁止修改数据」）——`DEMO_MODE=true` 生效
 
 > **指纹判据修正（实测纠偏）**：Render 平台自身挂在 Cloudflare for SaaS 后面，任何 Render 服务的响应都带 `server: cloudflare` / `cf-ray` 头——**不能**以「有无 cf 头」判断本 zone 是否开了橙云；正确判据是 DNS 解析链（见第一条）。
+
+> **保活类型修正（2026-09-23 二次纠偏，以本条为准）**：上表第 6 项记录的「UptimeRobot 5 分钟 **PING** 已配置」经复核**实际无效**——监控类型选成了 PING（ICMP），它只探测主机、不发 HTTP 请求（填进去的 URL 路径对它毫无意义），而 `nest.baiwumm.com` 的入口（Render 挂在 Cloudflare for SaaS 后）不响应 ICMP。后果是该监控自配置起持续 Down 6h51m 且 `No response time data`，而同期 `GET /api/health` 实测 **200 / 0.76s**——即**保活从未生效过**：Render 免费层 15 分钟休眠未被挡住，进程内日志 / refresh_token 清理 cron（每日 03:00 / 03:30 北京时间）失去常驻前提。处置：新建 **HTTP(S)** 类型监控指向 `https://nest.baiwumm.com/api/health`（5 分钟间隔），旧 PING 监控删除；改后 UptimeRobot `Up / 100% / 276ms`，`uptimeSeconds` 五次采样 111→147→173→475→1168（08:22:25→08:40:02 UTC）逐秒连续、进程零重启，末次 **1168 秒已跨过 15 分钟休眠线仍在涨 ⇒ 保活实锤生效**。第 6 项原文按 §13「历史记录不回改」保留。机理、误报识别与验证口径见 `docs/mechanisms.md` §39。
 
 ### 1.4 回滚
 
