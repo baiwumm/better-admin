@@ -40,6 +40,11 @@ jobs:
     name: ${{ matrix.app }} · ${{ matrix.step }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      # next build 收集 /api/* page data 时会执行 server 模块顶层，要求 DATABASE_URL 已设置；
+      # postgres.js 为惰性连接，占位值仅通过构建期初始化、不会发生真实数据库访问。
+      # 本地 build 不受影响（读各端 .env 的真实值）。
+      DATABASE_URL: postgresql://build-placeholder:build-placeholder@localhost:5432/build
     strategy:
       fail-fast: false
       matrix:

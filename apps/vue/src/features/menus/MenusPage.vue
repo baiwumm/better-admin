@@ -416,7 +416,7 @@ const columnOrder = computed<ColumnOrderState>({
         :data="data ?? []"
         :columns="columns"
         :get-sub-rows="menuSubRows"
-        :get-row-id="(row) => row.id"
+        :get-row-id="(row: MenuNode) => row.id"
         :ui="{
           thead: '[&>tr]:bg-elevated/50 [&>tr]:after:content-none',
           tr: 'group',

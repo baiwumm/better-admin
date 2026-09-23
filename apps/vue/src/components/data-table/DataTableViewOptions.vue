@@ -280,7 +280,10 @@ useSortable(listEl, orderIds, {
                 :aria-label="columnLabel(id)"
                 :disabled="!canToggle(id)"
                 :model-value="isVisible(id)"
-                @update:model-value="(value) => setVisible(id, value === true)"
+                @update:model-value="
+                  (value: boolean | 'indeterminate') =>
+                    setVisible(id, value === true)
+                "
               />
               <span class="flex-1 truncate text-sm">{{ columnLabel(id) }}</span>
             </div>
