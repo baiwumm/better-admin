@@ -94,5 +94,6 @@
       "esbuild",
       "vue-demi"
     ]
-  }
+  },
+  "packageManager": "pnpm@11.24.0"
 }

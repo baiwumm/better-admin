@@ -9,7 +9,8 @@
   // 部署：npx wrangler deploy（wrangler 有意不写入 package.json 依赖，
   //       见 AGENTS §15「不擅自引入依赖」；也可在 CF 控制台用 Git 集成构建 dist/ 后发布）
   // 自定义域 react.baiwumm.com 在 Cloudflare 控制台绑定，不写在配置里。
-  "name": "better-admin-react",
+  // name 与 CF Dashboard 的 Git 集成项目同名（better-admin），否则 Workers Builds 会报配置漂移。
+  "name": "better-admin",
   "compatibility_date": "2026-09-01",
   "assets": {
     "directory": "./dist",

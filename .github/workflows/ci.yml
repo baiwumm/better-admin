@@ -7,8 +7,11 @@
 # 设计约束（与 AGENTS §3 / §15 一致性对齐）：
 #   · 各端是相互独立的应用，各有自己的 pnpm-lock.yaml（lockfileVersion 全部 9.0），
 #     仓库不引入 workspace；故用 working-directory 逐端安装，不做根级统一 install。
-#   · pnpm 版本取各端自己的声明：nuxt 的 package.json 钉了 packageManager=pnpm@12.3.4，
-#     其余五端无此字段，沿用本仓库已验证可行的 pnpm 11（与 check-locales.yml 一致）。
+#   · pnpm 版本取各端自己的声明：react / vue / nuxt 的 package.json 钉了 packageManager
+#     （react / vue = 11.24.0，nuxt = 12.3.4；2026-09-23 起 react / vue 钉版本，
+#     因 CF Workers Builds 默认 pnpm 10 会把纯配置的 pnpm-workspace.yaml 误判为
+#     workspace 声明而报「packages field missing or empty」），next / nest / website
+#     无此字段，沿用本仓库已验证可行的 pnpm 11（与 check-locales.yml 一致）。
 #   · 执行的是各端 package.json 里既有的 script，不另造命令。注意 react / vue / next /
 #     nest 的 `lint` 自带 --fix：CI 里它会改工作区文件但不回推，只用于取退出码。
 #   · website 仅有 dev/build/start，故只跑 build（Next 会顺带做类型检查）。
@@ -43,26 +46,26 @@ jobs:
         include:
           # ---- React（UI Source of Truth）----
           - app: react
-            pnpm: 11
+            pnpm: 11.24.0
             step: lint
           - app: react
-            pnpm: 11
+            pnpm: 11.24.0
             step: test
           - app: react
-            pnpm: 11
+            pnpm: 11.24.0
             step: build
           # ---- Vue ----
           - app: vue
-            pnpm: 11
+            pnpm: 11.24.0
             step: lint
           - app: vue
-            pnpm: 11
+            pnpm: 11.24.0
             step: type-check
           - app: vue
-            pnpm: 11
+            pnpm: 11.24.0
             step: test
           - app: vue
-            pnpm: 11
+            pnpm: 11.24.0
             step: build
           # ---- Next.js（build 内含类型检查；无 test 脚本）----
           - app: next
