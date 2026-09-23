@@ -1,64 +1,33 @@
-# Nuxt Starter Template
+# Better Admin — Nuxt 版
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
+Better Admin 的 **Nuxt 独立全栈实现**（不依赖 NestJS）：以 React 版为 UI 基准、Vue 版为组件实现蓝本、Next 版为服务端蓝本，服务端业务逻辑自 NestJS 逐字平移。
 
-Use this template to get started with [Nuxt UI](https://ui.nuxt.com) quickly.
+- 在线地址：<https://nuxt.baiwumm.com>（Vercel，Nitro node preset）
+- 服务端：`server/api/**` 76 个方法文件 + `server/lib/**` 业务 service，直连 PostgreSQL（postgres.js），对齐 [`openapi.yaml`](../nest/openapi/openapi.yaml) 契约（除保活专用 `GET /health` 外全覆盖）；**迁移真源在 `nest/drizzle/`，本端不生成 / 不执行迁移**
+- UI 组件：**Nuxt UI v4**（唯一组件库）+ 官方 Dashboard 套件；图表用 **nuxt-charts**（底层 vccs，Recharts 的 Vue 移植）
+- 核心依赖：Nuxt 4 · Nitro · TanStack vue-query · Pinia · Tailwind CSS 4 · TypeScript
 
-- [Live demo](https://starter-template.nuxt.dev/)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/nuxt)
+## 功能范围
 
-<a href="https://starter-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png">
-    <img alt="Nuxt Starter Template" src="https://ui.nuxt.com/assets/templates/nuxt/starter-light.png" width="830" height="466">
-  </picture>
-</a>
+与 React 基准功能对齐 29/29（对齐状态见 [`docs/feature-matrix.md`](../../docs/feature-matrix.md)）：认证 · Dashboard 概览 · 用户 / 角色 / 权限 / 菜单 / 字典 / 日志管理 · 我的账户 · 组织中心全套 · 偏好设置 · 多标签页（NuxtPage 内置 keepalive）· 命令面板 · 全站国际化 · 路由过渡动画 · Playground 演示场。
 
-> The starter template for Vue is on https://github.com/nuxt-ui-templates/starter-vue.
-
-## Quick Start
-
-```bash [Terminal]
-npm create nuxt@latest -- -t ui
-```
-
-## Deploy your own
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-name=starter&repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fstarter&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fnuxt%2Fstarter-dark.png&demo-url=https%3A%2F%2Fstarter-template.nuxt.dev%2F&demo-title=Nuxt%20Starter%20Template&demo-description=A%20minimal%20template%20to%20get%20started%20with%20Nuxt%20UI.)
-
-## Setup
-
-Make sure to install the dependencies:
+## 常用命令
 
 ```bash
-pnpm install
+pnpm dev            # 开发
+pnpm build          # 生产构建
+pnpm typecheck      # 类型检查
+pnpm lint           # ESLint
+pnpm test           # Vitest
+pnpm check-locales  # 语言包一致性检查（CI 强制）
+pnpm sync-locales   # 从 React 端同步语言包（predev / pretest 自动执行）
+pnpm contract-diff  # 与 Nest 服务的契约冒烟对比（需 Nest 在线；上线验收工具）
 ```
 
-## Development Server
+## 环境变量
 
-Start the development server on `http://localhost:3000`:
+见 [`.env.example`](./.env.example)：`DATABASE_URL`、`JWT_SECRET` / `JWT_REFRESH_SECRET`、`SUPABASE_URL` / `SUPABASE_SECRET_KEY`（头像 Storage 中转）、`DEMO_MODE`、`NUXT_PUBLIC_*`。密钥仅存在于服务端环境变量，严禁提交。
 
-```bash
-pnpm dev
-```
+## 部署
 
-## Production
-
-Build the application for production:
-
-```bash
-pnpm build
-```
-
-Locally preview production build:
-
-```bash
-pnpm preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
-
-## Renovate integration
-
-Install [Renovate GitHub app](https://github.com/apps/renovate/installations/select_target) on your repository and you are good to go.
+Vercel（Root Directory 指向 `nuxt/`，Nitro node preset——postgres.js TCP 直连不支持 Workers 运行时）：环境变量在 Vercel 项目配置，迁移不在部署时执行。

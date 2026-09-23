@@ -1141,3 +1141,9 @@ Unovis 已确认的代价（落地时按已知项接受，不要当成 bug 排�
 **三、SSR：`watch(..., { immediate: true })` 在服务端 setup 期也会执行**——2026-09-21 progress 条目「SSR 期 watch 回调不执行」说法有误，特此更正（此前未炸只是因为回调体是可选链、无浏览器 API）。immediate 回调里要调浏览器 API（`requestAnimationFrame` / DOM 测量）时必须加 `import.meta.server` 守卫（如本页 `fit()`）或把初始化移到 `onMounted`。
 
 - 依据：`react-okr-tree@1.13.0` / `vue3-okr-tree@1.13.0` 的 style.css（`.vertical .org-chart-node { float: left }`）与 es.js（`onDoubleClick: reset`、根元素仅透传 className/style）取证；React / Vue 双端用户 GUI 实测复现（纵向偏下、reset/双击跳左上角）与修复后确认。
+
+## 37. website 去 fumadocs-ui 改自绘 beUI 风格组件层：接缝全在 `mdx-components.tsx`，组件 API 兼容则 MDX 零改动（website，2026-09-23）
+
+fumadocs 的 MDX 内容与 UI 层并非耦合：`fumadocs-core` 只承担 MDX 编译、路由生成与搜索索引，`fumadocs-ui` 提供的排版/组件层可以整层替换。做法是在 `mdx-components.tsx` 用 `useMDXComponents` 把默认映射全部覆盖为 `components/docs/` 自绘组件（docs-shell / sidebar-nav / doc-page / code-block / search-dialog / toc 等 15 个，黑白 beUI 风格），且**保持原组件 API 兼容（Callout / Card / Tabs / Steps / Accordion / Tabs.Tab 等）**——`content/**` 手写 MDX 一个字不用改。两点约束：① 搜索走静态导出，`/api/search` 须 `force-static` + 静态 GET（构建期固化索引，浏览器本地查），RootProvider 用 `type: 'static'`；② 静态导出下所有动态路由 / og / robots / sitemap 必须显式 `export const dynamic = 'force-static'`，缺一个 build 即报「dynamic/revalidate not configured on route」。
+
+- 依据：`apps/website/mdx-components.tsx` 头注与映射表、`components/docs/*`、`app/api/search/route.ts`；静态导出构建 20/20 页通过验证。

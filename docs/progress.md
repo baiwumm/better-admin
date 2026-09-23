@@ -2,6 +2,15 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 上线后文档收尾：website beUI 风格改造 + 六端 README 重写 + 一次性脚本清理（2026-09-23）
+
+- **website 风格改造为 beUI 体系（参照 `theme-switch-animation` 仓 docs 站同一视觉语言）**：移除 `fumadocs-ui` 依赖（fumadocs-core 保留，仅承担 MDX 编译 / 路由 / 搜索索引），`components/docs/` 自建 15 个文档组件（docs-shell / docs-navbar / sidebar-nav / doc-page / toc / code-block + copy-button / search-dialog / tabs / accordion / callout / cards / steps / stack-tabs / diagrams），`mdx-components.tsx` 全量自绘映射且**保持原 fumadocs-ui 组件 API 兼容（Callout / Card / Tabs / Steps / Accordion），MDX 内容零改动**；黑白极简风格 + 等宽标题字。验证：静态导出构建 20/20 页全绿（⚠️ 本机曾因上一会话遗留的两个 `npx serve` 预览进程锁住 `out/` 连续 EBUSY，整树结束后恢复；CI 的 website build 步骤不受影响）。
+- **website content 手写 MDX 口径回写（上线前遗留待办）**：`index.mdx` 当前状态改为六端已上线 + 六端域名表、roadmap 卡片描述同步；`progress/roadmap.mdx` 尾节「下一步：统一上线」改写为「上线收官（2026-09-23）」落地结果表（含本站改判 CF Workers 静态导出、CI 17 步矩阵已挂接）。
+- **六端 README 重写 / 新建**：根 README 重写（六端域名 / 平台表、演示模式说明、快速开始、文档索引；删除「四端均未部署上线」过期口径）；`apps/react`（原 HeroUI 模板文）、`apps/nuxt`（原 Nuxt 模板文）重写为产品 README；新建 `apps/vue` / `apps/nest` / `apps/website` README；`apps/next` 顶部补在线地址。内容只描述定位 / 技术栈 / 命令 / 环境变量 / 部署，不维护完成状态（完成状态唯一源 = `feature-matrix.md`）。
+- **一次性脚本清理（13 个，launch-audit #43 「留待确认」就此拍板）**：nest 侧 10 个——`create-test-user.ts` / `verify-rbac-scenario.ts`（#43 失效脚本）、`clean-dead-notifications.ts`（一次性数据修复）、`migrate-settings-menu.ts`（v1.3 后结构已移除）、`migrate-menus-add-{dicts,org,org-chart,grant-bit,export-bit,super-admin-grants}.ts`（菜单/位均已并入 seed，`rolesMenuBits` / `directoryMenuBits` 常量即证）；vue `scripts/m1-dicts-base.mjs`（M1 一次性补丁，早已应用）；react / next `scan-stale-tokens.cjs`（自述「临时排查」且硬编码旧机器路径）。**保留**：nest `migrate.ts` / `demo-reset.ts` / `init-storage.ts`（package.json 挂载）+ `migrate-menus-add-{playground,playground-loaders,playground-okr-tree,theme-switch-animation}.ts`（**Playground 菜单树不在 seed，仍是新库引导唯一来源**——后续如要删需先并入 seed）、next `sync-pulled-schema.mjs`（`db:pull` 引用）、各端 check-locales / sync-locales / clean-logs / contract-diff、website `gen-stack-icons.mjs`（再生成工具）。
+- **文档口径同步**：`requirements.md` §13 域名规划（文档站平台改判 CF Workers + 上线状态刷新为 2026-09-23 六端已上线）；launch-audit #43 补记删除处置。
+- **已知限制**：① git 历史中的被删脚本可随时从历史提交找回；② website beUI 改造待部署 CF Workers 后由用户 GUI 走查。
+
 ### 六端统一上线完成（2026-09-23）
 
 - **前夜全量测试（01:01–01:15，无人值守定时任务）**：判定 ✅ 可上线——六端 lint/typecheck/test/build 17/17 绿（与 CI 矩阵同口径）+ react/next/nuxt `check-locales` 全一致 + 契约冒烟 31 步一致（30 OK + 1 KNOWN：`/permissions` label 中英文既有差异）+ 工作区零残留。报告与手册两份交付物入库于 `30e783e`。

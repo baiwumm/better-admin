@@ -747,15 +747,15 @@ Supabase PostgreSQL。
 
 | 项目 | 域名 | 平台 |
 | --- | --- | --- |
-| 官方文档站 | `better-admin.baiwumm.com` | Vercel |
+| 官方文档站 | `better-admin.baiwumm.com` | Cloudflare Workers（静态导出） |
 | Next.js | `next.baiwumm.com` | Vercel |
 | Nuxt | `nuxt.baiwumm.com` | Vercel |
 | React | `react.baiwumm.com` | Cloudflare Workers（Static Assets） |
 | Vue | `vue.baiwumm.com` | Cloudflare Workers（Static Assets） |
 | NestJS API | `nest.baiwumm.com` | Render |
 
-> **上线状态（2026-09-12）**：四端均未部署上线——现域名指向历史旧项目；全部版本开发完成后**统一上线**（详见 `AGENTS.md` §17）。官方文档站待 Vercel 部署绑定。
-> **平台分化**：**React / Vue**（纯静态 SPA）部署到 **Cloudflare Workers（Static Assets）**，配置为各端 `wrangler.jsonc`（`assets.directory=./dist` + `not_found_handling=single-page-application` 负责 SPA 深链回退）；**Next / Nuxt** 全栈部署到 **Vercel**——服务端数据层走 `postgres.js` TCP 直连，Cloudflare Workers 运行时不支持（Hyperdrive 需付费且驱动兼容性存疑，重写数据层违反「行为不变」）；**NestJS** 留 **Render**，**配合保活 ping 消除免费层冷启动（上线必做，见 AGENTS §17 统一上线清单标题）**；官方文档站留 **Vercel**。DNS（baiwumm.com zone）已托管于 Cloudflare（实测 NS = `elma / tadeo.ns.cloudflare.com`），自定义域直接绑定。SPA 在浏览器直连 `nest.baiwumm.com/api`（跨域 XHR），与托管平台无关——Nest CORS 白名单按域名维持不变。
+> **上线状态（2026-09-23）**：**六端已全部部署上线，域名全部生效**，线上即演示环境（Nest / Next / Nuxt `DEMO_MODE=true`）。全过程与环境变量见 [`launch-runbook.md`](launch-runbook.md)；上线状态细节以 `AGENTS.md` §17 为准。
+> **平台分化**：**React / Vue**（纯静态 SPA）部署到 **Cloudflare Workers（Static Assets）**，配置为各端 `wrangler.jsonc`（`assets.directory=./dist` + `not_found_handling=single-page-application` 负责 SPA 深链回退）；**Next / Nuxt** 全栈部署到 **Vercel**——服务端数据层走 `postgres.js` TCP 直连，Cloudflare Workers 运行时不支持（Hyperdrive 需付费且驱动兼容性存疑，重写数据层违反「行为不变」）；**NestJS** 留 **Render**，配合 UptimeRobot 每 5 分钟探活 `GET /api/health` 消除免费层冷启动；**官方文档站为 Cloudflare Workers 静态导出**（2026-09-23 由 Vercel 改判，`wrangler.jsonc` 指向 `out/`）。DNS（baiwumm.com zone）已托管于 Cloudflare（实测 NS = `elma / tadeo.ns.cloudflare.com`），自定义域直接绑定。SPA 在浏览器直连 `nest.baiwumm.com/api`（跨域 XHR），与托管平台无关——Nest CORS 白名单按域名维持不变。
 
 ---
 

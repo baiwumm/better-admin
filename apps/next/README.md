@@ -1,5 +1,7 @@
 # Better Admin — Next.js 全栈版
 
+- 在线地址：<https://next.baiwumm.com>（Vercel；线上 `DATABASE_URL` 走 Supabase pooler 6543）
+
 同一套 Better Admin 产品（见仓库根 [AGENTS.md](../AGENTS.md)）的 **Next.js 独立全栈实现**：
 App Router + Server Components/Route Handlers + PostgreSQL（Drizzle ORM），不依赖 NestJS。
 
