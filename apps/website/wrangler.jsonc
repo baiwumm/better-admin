@@ -1,0 +1,13 @@
+{
+  // 文档站 Cloudflare Workers 静态资产部署配置（Git 集成 Workers Builds，Root Directory=apps/website）。
+  // 纯静态资产：next build 以 output:'export' 导出到 ./out，无 Worker 运行时（同 react-okr-tree 站链路）。
+  // ⚠️ name 必须与 CF Dashboard 的 Git 集成项目同名（当前 better-admin-website，项目名不同则改此处）。
+  // 多页静态站不用 SPA 回退：未命中路径走 out/404.html（app/not-found.tsx 导出，not_found_handling=404-page）。
+  "name": "better-admin-website",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./out",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

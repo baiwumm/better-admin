@@ -1,5 +1,8 @@
 import { ImageResponse } from "next/og";
 
+// 静态导出（output:'export'）要求显式 force-static：build 期预渲染为 out/opengraph-image 静态文件
+export const dynamic = "force-static";
+
 export const size = {
   width: 1200,
   height: 630,

@@ -55,6 +55,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="flex min-h-screen flex-col font-sans antialiased">
         <RootProvider
           i18n={{ locale: "zh-CN", translations: UI_TRANSLATIONS }}
+          // type:'static' → fumadocs 用 staticClient 拉取 app/api/search 构建期导出的静态
+          // 索引（out/api/search），在浏览器里本地搜索——静态导出无服务端运行时
+          search={{ options: { type: "static", api: "/api/search" } }}
           theme={{
             attribute: "class",
             defaultTheme: "system",
