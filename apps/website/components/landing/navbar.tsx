@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Logo } from "@/components/logo";
+import { Button, ButtonLink } from "@/components/motion/button/base";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SITE } from "@/lib/site";
 
@@ -12,7 +13,11 @@ export function Navbar() {
 
   return (
     <header className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
-      <nav className="navbar-premium w-full max-w-2xl rounded-2xl px-4 py-2">
+      <nav
+        className={`navbar-premium w-full max-w-2xl px-5 py-2 ${
+          open ? "rounded-3xl" : "rounded-full"
+        }`}
+      >
         <div className="flex items-center justify-between">
           <Link
             href="/"
@@ -23,59 +28,58 @@ export function Navbar() {
           </Link>
 
           <div className="hidden items-center gap-1 sm:flex">
-            <Link
-              href="/docs"
-              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-            >
+            <ButtonLink href="/docs" variant="ghost" size="sm">
               文档
-            </Link>
-            <a
+            </ButtonLink>
+            <ButtonLink
               href={SITE.github}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              variant="ghost"
+              size="sm"
             >
               GitHub
-            </a>
+            </ButtonLink>
             <ThemeToggle />
-            <Link
-              href="/docs"
-              className="btn-solid ms-1 px-4 py-1.5 text-xs font-bold"
-            >
+            <ButtonLink href="/docs" size="sm" className="ms-1">
               开始阅读
-            </Link>
+            </ButtonLink>
           </div>
 
           <div className="flex items-center gap-1 sm:hidden">
             <ThemeToggle />
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label="展开导航"
               onClick={() => setOpen(!open)}
-              className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <Menu size={16} />
-            </button>
+            </Button>
           </div>
         </div>
 
         {open ? (
           <div className="mt-2 flex flex-col gap-1 border-t border-dashed pt-2 sm:hidden">
-            <Link
+            <ButtonLink
               href="/docs"
               onClick={() => setOpen(false)}
-              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+              variant="ghost"
+              size="sm"
+              className="justify-start"
             >
               文档
-            </Link>
-            <a
+            </ButtonLink>
+            <ButtonLink
               href={SITE.github}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+              variant="ghost"
+              size="sm"
+              className="justify-start"
             >
               GitHub
-            </a>
+            </ButtonLink>
           </div>
         ) : null}
       </nav>

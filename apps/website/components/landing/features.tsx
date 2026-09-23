@@ -1,4 +1,5 @@
 import { FileJson, Layers, ShieldCheck } from "lucide-react";
+import { AnimatedBadge } from "@/components/motion/animated-badge";
 
 const FEATURES = [
   {
@@ -26,9 +27,9 @@ export function Features() {
     <section className="px-6 py-24">
       <div className="mx-auto max-w-5xl">
         <div className="mb-12 text-center">
-          <p className="pill-badge mx-auto mb-5 w-fit rounded-full px-3 py-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+          <AnimatedBadge size="sm" className="mb-5">
             Design First
-          </p>
+          </AnimatedBadge>
           <h2 className="text-balance text-3xl font-bold tracking-tight">
             设计先行，一致性是硬性规则
           </h2>

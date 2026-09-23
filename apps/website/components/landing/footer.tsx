@@ -1,10 +1,10 @@
 "use client";
 
-import { Github } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/logo";
+import { ButtonLink } from "@/components/motion/button/base";
 import { TextScramble } from "@/components/text-scramble";
+import { GithubIcon } from "@/components/ui/brand-icons";
 import { SITE } from "@/lib/site";
 
 /** ogimg 风格页脚：品牌+简介居左、社交图标居右，底行版权 + 乱码渐显署名 */
@@ -47,21 +47,19 @@ export function Footer() {
               aria-label="相关链接"
               className="flex items-center gap-2 md:justify-end md:pt-1"
             >
-              <Link
-                href="/docs"
-                className="btn-outline px-4 py-1.5 text-xs font-bold text-foreground"
-              >
+              <ButtonLink href="/docs" variant="secondary" size="sm">
                 阅读文档
-              </Link>
-              <a
+              </ButtonLink>
+              <ButtonLink
                 href={SITE.github}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Better Admin on GitHub"
-                className="btn-outline size-9 p-0 text-muted-foreground hover:text-foreground"
+                variant="secondary"
+                size="icon"
               >
-                <Github size={16} />
-              </a>
+                <GithubIcon className="size-4" />
+              </ButtonLink>
             </nav>
           </div>
 

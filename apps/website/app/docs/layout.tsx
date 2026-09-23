@@ -1,11 +1,52 @@
+import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import type { ReactNode } from "react";
-import { DocsShell } from "@/components/docs/docs-shell";
+import { Logo } from "@/components/logo";
+import { StackGlyph } from "@/components/icons/stack-icons";
+import { GithubIcon } from "@/components/ui/brand-icons";
+import { DEMOS, SITE } from "@/lib/site";
 import { source } from "@/lib/source";
 
 /**
- * 文档区布局（beUI 自绘壳：顶栏 + 侧边栏，见 components/docs/docs-shell.tsx）。
- * 正文与目录列在页面内组织（目录依赖每页数据）。
+ * 文档区布局
+ *
+ * 侧边栏顶部：nav.title 提供项目 Logo + 站名（不传 nav 时只剩一个折叠按钮）。
+ * 侧边栏底部：links 里的 icon 型链接会被渲染进底部操作条（与主题切换同排）。
+ *             这里刻意不再挂 sidebar.footer——底部只留操作，不放内容卡片。
+ *             url 是绝对地址时 fumadocs 的 Link 会自动带 target="_blank"，新窗口打开。
  */
 export default function Layout({ children }: { children: ReactNode }) {
-  return <DocsShell tree={source.pageTree.children}>{children}</DocsShell>;
+  return (
+    <DocsLayout
+      tree={source.pageTree}
+      nav={{
+        title: (
+          <>
+            <Logo size={24} className="rounded-md" />
+            <span className="font-semibold">{SITE.name}</span>
+          </>
+        ),
+        url: "/",
+      }}
+      links={[
+        {
+          type: "icon",
+          url: SITE.github,
+          icon: <GithubIcon className="size-4" />,
+          text: "GitHub",
+          label: "GitHub 仓库",
+          external: true,
+        },
+        ...DEMOS.map((demo) => ({
+          type: "icon" as const,
+          url: demo.url,
+          icon: <StackGlyph stack={demo.icon} className="size-4" />,
+          text: `${demo.name} 演示站`,
+          label: `${demo.name} 演示站（新窗口打开）`,
+          external: true,
+        })),
+      ]}
+    >
+      {children}
+    </DocsLayout>
+  );
 }

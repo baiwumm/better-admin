@@ -50,15 +50,19 @@ description: 四种前端实现的功能对齐状态与两处有意保留的架�
 | 09-19 | **Dashboard 概览四端对齐**（Phase C）：KPI + 登录趋势 + 角色占比，契约升到 v1.12.0 |
 | 09-21 | 演示场第 9 页「加载动画」、第 10 页「组织架构树」四端对齐；**功能矩阵 29 项全部对齐** |
 | 09-22 | 契约升 v1.14.0：新增 `GET /health` 存活探针（Render 保活前置） |
+| 09-23 | **六端统一上线**：全部域名生效，线上即演示环境；线上 contract-diff 31 步一致 |
 
 ## 部署状态
 
-**五个应用目前都还没有正式上线。** 规划的平台分工：
+**六个应用已于 2026-09-23 全部上线**，域名全部生效，线上即演示环境（只读演示模式，登录页可快捷登录）：
 
-| 应用 | 目标平台 |
-| --- | --- |
-| React · Vue | Cloudflare Workers（Static Assets） |
-| Next.js · Nuxt · website | Vercel |
-| NestJS | Render |
+| 应用 | 线上地址 | 平台 |
+| --- | --- | --- |
+| React | [react.baiwumm.com](https://react.baiwumm.com) | Cloudflare Workers（Static Assets） |
+| Vue | [vue.baiwumm.com](https://vue.baiwumm.com) | Cloudflare Workers（Static Assets） |
+| Next.js | [next.baiwumm.com](https://next.baiwumm.com) | Vercel |
+| Nuxt | [nuxt.baiwumm.com](https://nuxt.baiwumm.com) | Vercel |
+| NestJS | [nest.baiwumm.com](https://nest.baiwumm.com) | Render |
+| website（本站） | [better-admin.baiwumm.com](https://better-admin.baiwumm.com) | Cloudflare Workers（静态导出） |
 
-统一上线前还有一份待执行清单，其中包含 NestJS 的保活 ping 与 CORS 白名单收敛 —— 详见[路线图](/docs/progress/roadmap)。
+部署与冒烟全记录见[路线图](/docs/progress/roadmap)的「上线收官」一节。

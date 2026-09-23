@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { ButtonLink } from "@/components/motion/button/base";
 
 export function Cta() {
   return (
@@ -12,18 +12,10 @@ export function Cta() {
           的架构约定、数据库设计与多技术栈实现细节。
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/docs/start/quick-start"
-            className="btn-solid px-6 py-2.5 text-sm font-bold"
-          >
-            从快速开始读起
-          </Link>
-          <Link
-            href="/docs/architecture/database"
-            className="btn-outline px-6 py-2.5 text-sm font-bold text-foreground"
-          >
+          <ButtonLink href="/docs/start/quick-start">从快速开始读起</ButtonLink>
+          <ButtonLink href="/docs/architecture/database" variant="secondary">
             看数据库设计
-          </Link>
+          </ButtonLink>
         </div>
       </div>
     </section>

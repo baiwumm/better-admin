@@ -819,12 +819,16 @@ export function FeatureMatrixDiagram() {
         );
       })}
 
-      <Box x={20} y={186} w={680} h={66} rx={12} dashed />
-      <T x={38} y={212} className="fill-foreground text-[12px] font-semibold">
+      <Box x={20} y={182} w={680} h={80} rx={12} dashed />
+      <T x={38} y={206} className="fill-foreground text-[12px] font-semibold">
         两处有意保留的架构差异（不算功能缺失）
       </T>
-      <T x={38} y={232} className="fill-muted-foreground text-[10.5px]">
-        Next.js 无页面保活（App Router 无等价原语）· 认证载体不同（React/Vue 走 Bearer，Next 走 httpOnly Cookie），契约完全一致
+      {/* SVG text 不自动换行：长句必须手动拆行，否则溢出 viewBox 被裁断 */}
+      <T x={38} y={224} className="fill-muted-foreground text-[10.5px]">
+        Next.js 无页面保活（App Router 无等价原语）
+      </T>
+      <T x={38} y={240} className="fill-muted-foreground text-[10.5px]">
+        认证载体不同（React/Vue 走 Bearer，Next 走 httpOnly Cookie）· 契约完全一致
       </T>
     </Frame>
   );
@@ -919,7 +923,7 @@ const QUICK_STEPS = [
 
 export function QuickStartFlow() {
   return (
-    <div className="docs-scrollbar overflow-x-auto">
+    <div className="overflow-x-auto">
       {/* 小屏下保持可读字号，横向滑动查看；桌面端不受影响（≤720px 全宽显示） */}
       <div className="min-w-[560px]">
         <QuickStartFlowSvg />

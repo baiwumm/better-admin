@@ -109,6 +109,6 @@ NUXT_PUBLIC_API_BASE_URL=
 
 <Callout title="版本锁定">
 
-Nuxt 端在 `package.json` 里显式声明了 `packageManager: pnpm@12.3.4`，是五个应用里唯一锁定包管理器版本的 —— 安装时请遵循该声明。
+Nuxt 端在 `package.json` 里显式声明了 `packageManager: pnpm@12.3.4`，安装时请遵循该声明。这不是个例：仓库里 react / vue / website 三端同样显式锁版（`pnpm@11.24.0`），只有 next / nest 未声明、沿用仓库已验证可行的 pnpm 11（各端 CI 取自身声明版本，见 `.github/workflows/ci.yml`）。
 
 </Callout>

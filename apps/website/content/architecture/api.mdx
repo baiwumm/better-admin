@@ -106,7 +106,7 @@ description: 统一响应信封、分页约定、错误码规范与完整端点�
 | `GET` | `/permissions` | 权限点枚举字典（只读，界面不可增删改） |
 | `GET` `POST` `DELETE` | `/users` | 用户列表 / 新建 / 批量删除（`?ids=`，全有全无） |
 | `GET` `PUT` `DELETE` | `/users/{id}` | 用户详情 / 更新 / 删除 |
-| `PUT` | `/users/{id}/reset-password` | 重置密码（需 `RESET_PASSWORD` 位） |
+| `POST` | `/users/{id}/reset-password` | 重置密码（需 `RESET_PASSWORD` 位） |
 | `PUT` | `/users/{id}/status` | 启用 / 停用 |
 | `GET` `POST` | `/roles` | 角色列表 / 新建 |
 | `GET` `PUT` `DELETE` | `/roles/{id}` | 角色详情 / 更新 / 删除 |
@@ -138,11 +138,11 @@ description: 统一响应信封、分页约定、错误码规范与完整端点�
 | --- | --- | --- |
 | `GET` | `/org/depts/tree` | 部门树 |
 | `GET` `POST` | `/org/depts` | 部门列表 / 新建 |
-| `PUT` | `/org/depts/sort` | 部门排序 |
+| `PATCH` | `/org/depts/sort` | 部门排序 |
 | `GET` `PUT` `DELETE` | `/org/depts/{id}` | 部门详情 / 更新 / 删除 |
 | `GET` `POST` | `/org/posts` | 岗位列表 / 新建 |
 | `GET` `PUT` `DELETE` | `/org/posts/{id}` | 岗位详情 / 更新 / 删除 |
-| `GET` `PUT` | `/org/posts/{id}/members` | 岗位成员 |
+| `GET` | `/org/posts/{id}/members` | 岗位成员（只读，无写端点） |
 | `GET` | `/org/directory` | 人员通讯录 |
 | `GET` `POST` | `/notices` | 公告列表 / 新建 |
 | `GET` | `/notices/mine` | 我收到的公告 |
@@ -152,8 +152,8 @@ description: 统一响应信封、分页约定、错误码规范与完整端点�
 | `POST` | `/notices/{id}/remind` | 催办未读 |
 | `GET` | `/notifications` | 站内信列表 |
 | `GET` | `/notifications/unread-count` | 未读数 |
-| `PUT` | `/notifications/read-all` | 全部已读 |
-| `PUT` | `/notifications/{id}/read` | 单条已读 |
+| `POST` | `/notifications/read-all` | 全部已读 |
+| `POST` | `/notifications/{id}/read` | 单条已读 |
 
 </Tab>
 

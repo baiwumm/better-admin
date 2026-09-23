@@ -1,0 +1,23 @@
+/** fumadocs-ui 界面文案的中文翻译（键格式见 fumadocs-ui 的 translations keys） */
+export const UI_TRANSLATIONS = {
+  "Search(search trigger)": "搜索文档",
+  "Search(search dialog)": "搜索文档",
+  "No results found(search dialog)": "没有找到相关结果",
+  "Close Search(search dialog)(aria-label)": "关闭搜索",
+  "On this page(table of contents)": "本页目录",
+  "No Headings(table of contents)": "本页无标题",
+  "Previous Page(pagination)": "上一页",
+  "Next Page(pagination)": "下一页",
+  "Last updated on(page footer)": "最后更新于",
+  "Page Not Found(404 page)": "页面不存在",
+  "Back to Home(404 page)": "返回首页",
+  "Copy Text(code block)(aria-label)": "复制代码",
+  "Copied Text(code block)(aria-label)": "已复制",
+  "Collapse Sidebar(sidebar)(aria-label)": "收起侧边栏",
+  "Open Sidebar(sidebar)(aria-label)": "展开侧边栏",
+  "Toggle Theme(theme switcher)(aria-label)": "切换主题",
+  "Light(theme switcher)(aria-label)": "亮色模式",
+  "Dark(theme switcher)(aria-label)": "暗色模式",
+  "System(theme switcher)(aria-label)": "跟随系统",
+  "Table of Contents(inline table of contents)": "本页目录",
+};

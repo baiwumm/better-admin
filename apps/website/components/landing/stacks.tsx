@@ -1,48 +1,44 @@
 import Link from "next/link";
+import { AnimatedBadge } from "@/components/motion/animated-badge";
 import { type StackKey, StackGlyph } from "@/components/icons/stack-icons";
 
+/** 六端已于 2026-09-23 统一上线（AGENTS.md §17），五个应用状态一致 */
 const STACKS: {
   name: string;
   /** 卡片头部的技术栈图标 */
   icon: StackKey;
   role: string;
   status: string;
-  active: boolean;
 }[] = [
   {
     name: "React 19",
     icon: "react",
     role: "UI Source of Truth，Hero UI 模板实现",
-    status: "已完成",
-    active: true,
+    status: "已上线",
   },
   {
     name: "Next.js 16",
     icon: "nextjs",
     role: "独立全栈实现，不依赖 NestJS",
     status: "已上线",
-    active: true,
   },
   {
     name: "NestJS + Drizzle",
     icon: "nestjs",
     role: "REST API，PostgreSQL 统一数据库",
     status: "已上线",
-    active: true,
   },
   {
     name: "Vue 3 + Nuxt UI",
     icon: "vue",
     role: "复刻 React 版本的页面与交互",
-    status: "进行中",
-    active: false,
+    status: "已上线",
   },
   {
     name: "Nuxt",
     icon: "nuxt",
     role: "独立全栈实现，不依赖 NestJS",
-    status: "未启动",
-    active: false,
+    status: "已上线",
   },
 ];
 
@@ -51,9 +47,9 @@ export function Stacks() {
     <section className="px-6 py-24">
       <div className="mx-auto max-w-5xl">
         <div className="mb-12 text-center">
-          <p className="pill-badge mx-auto mb-5 w-fit rounded-full px-3 py-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+          <AnimatedBadge size="sm" className="mb-5">
             Stacks
-          </p>
+          </AnimatedBadge>
           <h2 className="text-balance text-3xl font-bold tracking-tight">
             技术栈与进度
           </h2>
@@ -75,15 +71,9 @@ export function Stacks() {
                     </span>
                     <h3 className="font-semibold">{stack.name}</h3>
                   </div>
-                  {stack.active ? (
-                    <span className="rounded-full bg-foreground px-2.5 py-0.5 text-[11px] font-bold text-background shadow-[inset_0_1px_0_rgb(255_255_255/0.24),0_1px_2px_rgb(0_0_0/0.18)]">
-                      {stack.status}
-                    </span>
-                  ) : (
-                    <span className="pill-badge rounded-full px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                      {stack.status}
-                    </span>
-                  )}
+                  <AnimatedBadge status="success" size="sm">
+                    {stack.status}
+                  </AnimatedBadge>
                 </div>
                 <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                   {stack.role}
@@ -101,9 +91,10 @@ export function Stacks() {
                 29 / 29
               </span>
             </div>
-            <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-muted shadow-[inset_0_1px_2px_rgb(0_0_0/0.06)] dark:shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]">
+            <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted shadow-[inset_0_1px_2px_rgb(0_0_0/0.06)] dark:shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]">
+              {/* beUI registry（124 项）无通用进度条，此处保留自绘：填充用纵向渐变 + 顶高光 + 底内描边 */}
               <div
-                className="h-full rounded-full bg-foreground"
+                className="h-full rounded-full bg-gradient-to-b from-foreground/90 to-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.28),inset_0_-1px_0_rgb(0_0_0/0.12)] transition-[width] duration-700 ease-out"
                 style={{ width: "100%" }}
               />
             </div>

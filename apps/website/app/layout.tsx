@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { ThemeProvider } from "next-themes";
+import { RootProvider } from "fumadocs-ui/provider/next";
+import { UI_TRANSLATIONS } from "@/lib/i18n";
 import { SITE } from "@/lib/site";
 import "./globals.css";
 
@@ -50,17 +51,22 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    // suppressHydrationWarning：next-themes 依 class 方案在首帧前同步改 <html>，属预期不一致
     <html lang="zh-CN" suppressHydrationWarning>
       <body className="flex min-h-screen flex-col font-sans antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
+        <RootProvider
+          i18n={{ locale: "zh-CN", translations: UI_TRANSLATIONS }}
+          // type:'static' → fumadocs 用 staticClient 拉取 app/api/search 构建期导出的静态
+          // 索引（out/api/search），在浏览器里本地搜索——静态导出无服务端运行时
+          search={{ options: { type: "static", api: "/api/search" } }}
+          theme={{
+            attribute: "class",
+            defaultTheme: "system",
+            enableSystem: true,
+            disableTransitionOnChange: true,
+          }}
         >
           {children}
-        </ThemeProvider>
+        </RootProvider>
       </body>
     </html>
   );

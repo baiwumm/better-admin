@@ -1,7 +1,7 @@
 import {
+  ArrowRight,
   BookOpen,
   FolderTree,
-  Github,
   KeyRound,
   LayoutDashboard,
   Plus,
@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
-import Link from "next/link";
+import { GithubIcon } from "@/components/ui/brand-icons";
+import { ButtonLink } from "@/components/motion/button/base";
 import { SITE } from "@/lib/site";
 
 /**
@@ -56,21 +57,15 @@ function AdminMockup() {
     <div
       aria-hidden
       className="pointer-events-none mx-auto mt-20 max-w-4xl select-none"
-      style={{ transform: "perspective(1400px) rotateX(8deg)" }}
     >
-      {/*
-        透视必须挂在外层、入场动画挂在内层：
-        `fade-up` 的末帧是 `transform: none`，而动画（即使已结束、fill-mode: both）
-        在层叠里优先于内联 style——两者放同一个元素上，透视会被静默吃掉。
-      */}
       <div className="animate-fade-up-delay-4">
         <div className="window-premium overflow-hidden rounded-2xl text-left">
-          {/* 浏览器窗口条 */}
-          <div className="flex items-center gap-2 border-b px-4 py-2.5">
-            <span className="size-2.5 rounded-full bg-foreground/15" />
-            <span className="size-2.5 rounded-full bg-foreground/15" />
-            <span className="size-2.5 rounded-full bg-foreground/15" />
-            <span className="ms-3 flex h-5 flex-1 items-center justify-center rounded-full bg-muted text-[10px] text-muted-foreground/70">
+          {/* Mac 风窗口条：左上角红黄绿交通灯 + 居中地址栏（正常平视展示，无倾斜） */}
+          <div className="flex items-center gap-2.5 border-b bg-muted/40 px-4 py-3">
+            <span className="size-3 rounded-full bg-[#ff5f57] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]" />
+            <span className="size-3 rounded-full bg-[#febc2e] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]" />
+            <span className="size-3 rounded-full bg-[#28c840] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)]" />
+            <span className="ms-3 flex h-5 flex-1 items-center justify-center rounded-full bg-background/80 text-[10px] text-muted-foreground/70">
               {host}/users
             </span>
           </div>
@@ -195,9 +190,20 @@ export function Hero() {
         className="dot-grid pointer-events-none absolute inset-x-0 top-0 h-[560px] opacity-60"
       />
       <div className="relative">
-        <div className="pill-badge animate-fade-up mx-auto mb-6 w-fit rounded-full px-4 py-1 text-xs font-medium text-muted-foreground">
-          同一套产品 · 五种技术栈实现
-        </div>
+        <a
+          href={SITE.github}
+          target="_blank"
+          rel="noreferrer"
+          className="animate-fade-up group mx-auto mb-6 flex w-fit items-center gap-3 rounded-full border bg-background/80 p-1 ps-4 text-xs font-medium text-muted-foreground shadow-md backdrop-blur transition-colors duration-300 hover:bg-muted hover:text-foreground"
+        >
+          <span>同一套产品 · 五种技术栈实现</span>
+          <span className="hidden h-4 w-px bg-border sm:block" />
+          {/* 箭头循环滑入：两支箭头错开一个圆宽，悬停时整体右移，视觉上无限推进 */}
+          <span className="relative flex size-6 items-center justify-center overflow-hidden rounded-full bg-muted transition-colors group-hover:bg-background">
+            <ArrowRight className="absolute inset-0 m-auto size-3.5 transition-transform duration-300 ease-out group-hover:translate-x-6" />
+            <ArrowRight className="absolute inset-0 m-auto size-3.5 -translate-x-6 transition-transform duration-300 ease-out group-hover:translate-x-0" />
+          </span>
+        </a>
         <h1 className="animate-fade-up-delay-1 text-balance text-5xl font-bold tracking-tight text-foreground sm:text-6xl">
           一套 Admin 系统
           <br />
@@ -208,22 +214,19 @@ export function Hero() {
           React、Vue、Next.js、Nuxt 与 NestJS 独立实现。
         </p>
         <div className="animate-fade-up-delay-3 mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/docs"
-            className="btn-solid px-6 py-2.5 text-sm font-bold"
-          >
+          <ButtonLink href="/docs">
             <BookOpen size={16} />
             阅读文档
-          </Link>
-          <a
+          </ButtonLink>
+          <ButtonLink
             href={SITE.github}
             target="_blank"
             rel="noreferrer"
-            className="btn-outline px-6 py-2.5 text-sm font-bold text-foreground"
+            variant="secondary"
           >
-            <Github size={16} />
+            <GithubIcon className="size-4" />
             GitHub
-          </a>
+          </ButtonLink>
         </div>
         <AdminMockup />
       </div>

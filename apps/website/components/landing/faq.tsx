@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Accordion, Accordions } from "@/components/docs/accordion";
+import { BouncyAccordion } from "@/components/landing/bouncy-accordion";
 import { SITE } from "@/lib/site";
 
 const QUESTIONS = [
@@ -72,22 +72,13 @@ export function Faq() {
             提出你的问题。
           </p>
         </div>
-        <Accordions
-          type="single"
-          collapsible
-          className="-space-y-px w-full rounded-xl border bg-card shadow-[0_1px_2px_rgb(0_0_0/0.04),0_12px_32px_-20px_rgb(0_0_0/0.22)] dark:shadow-[0_1px_2px_rgb(0_0_0/0.4),0_12px_32px_-20px_rgb(0_0_0/0.8)]"
-        >
-          {QUESTIONS.map((item) => (
-            <Accordion
-              key={item.value}
-              value={item.value}
-              title={item.title}
-              className="relative border-b border-dashed border-black/10 last:border-b-0 dark:border-white/10"
-            >
-              {item.content}
-            </Accordion>
-          ))}
-        </Accordions>
+        <BouncyAccordion
+          items={QUESTIONS.map((item) => ({
+            id: item.value,
+            title: item.title,
+            description: item.content,
+          }))}
+        />
         <p className="text-center text-muted-foreground">
           没有找到想问的？欢迎在{" "}
           <Link
