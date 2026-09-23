@@ -1,16 +1,14 @@
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "fumadocs-ui/components/tabs";
-import { Children, isValidElement, type ReactNode } from "react";
+"use client";
+
+import { useState, type ReactNode } from "react";
+import { Children, isValidElement } from "react";
+import { SegmentedControl } from "@/components/docs/tabs";
 import { STACK_ICON_ENTRIES, StackGlyph } from "@/components/icons/stack-icons";
 
 /**
  * 带技术栈图标的分栏（Tabs）
  *
- * 用法与 fumadocs 的简单模式一致——只是把 `<Tabs items={[...]}>` 换成 `<StackTabs>`：
+ * 用法：
  *
  * ```mdx
  * <StackTabs>
@@ -19,9 +17,9 @@ import { STACK_ICON_ENTRIES, StackGlyph } from "@/components/icons/stack-icons";
  * </StackTabs>
  * ```
  *
- * 为什么需要这个包装：fumadocs `Tabs` 的 `items` 只接受 `string[]`，生成的触发标签
- * 是纯文本、插不进图标；这里改用它的进阶 API 自己拼 `TabsList` / `TabsTrigger`，
- * 顺带把「标签文案」收敛到 `<Tab value>` 一处，避免原来 items 与 value 写两遍。
+ * 触发器带技术栈图标，因此不用通用 Tabs 的纯文本触发器；
+ * 这里借 SegmentedControl（受控）自行管理选中态，把「标签文案」收敛到
+ * `<Tab value>` 一处，避免 items 与 value 写两遍。
  *
  * 图标按 `value` 文案自动识别：命中几个技术栈就渲染几个图标，
  * 因此 "React / Vue（纯前端）" 这类合并标题会并排出现两枚图标。
@@ -41,7 +39,7 @@ function StackIcons({ value }: { value: string }) {
   );
 }
 
-/** 只读 `<Tab>` 元素的 props，不渲染它们——内容会被搬进 TabsContent 里 */
+/** 只读 `<Tab>` 元素的 props，不渲染它们——内容被搬进受控面板里 */
 function collectTabs(children: ReactNode) {
   return Children.toArray(children).flatMap((child) => {
     if (!isValidElement(child)) return [];
@@ -55,6 +53,7 @@ function collectTabs(children: ReactNode) {
 
 export function StackTabs({ children }: { children: ReactNode }) {
   const tabs = collectTabs(children);
+  const [active, setActive] = useState(tabs[0]?.value ?? "");
 
   if (tabs.length === 0) {
     throw new Error(
@@ -62,21 +61,29 @@ export function StackTabs({ children }: { children: ReactNode }) {
     );
   }
 
+  const current = tabs.find(({ value }) => value === active) ?? tabs[0];
+
   return (
-    <Tabs defaultValue={tabs[0].value}>
-      <TabsList>
-        {tabs.map(({ value }) => (
-          <TabsTrigger key={value} value={value}>
-            <StackIcons value={value} />
-            <span>{value}</span>
-          </TabsTrigger>
-        ))}
-      </TabsList>
-      {tabs.map(({ value, content }) => (
-        <TabsContent key={value} value={value}>
-          {content}
-        </TabsContent>
-      ))}
-    </Tabs>
+    <div className="my-4">
+      <SegmentedControl
+        options={tabs.map(({ value }) => ({
+          value,
+          label: (
+            <>
+              <StackIcons value={value} />
+              <span>{value}</span>
+            </>
+          ),
+        }))}
+        value={current.value}
+        onValueChange={setActive}
+      />
+      <div
+        role="tabpanel"
+        className="mt-3 rounded-xl border border-border bg-card/60 px-5 py-4"
+      >
+        {current.content}
+      </div>
+    </div>
   );
 }

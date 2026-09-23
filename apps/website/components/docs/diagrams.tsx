@@ -919,6 +919,17 @@ const QUICK_STEPS = [
 
 export function QuickStartFlow() {
   return (
+    <div className="docs-scrollbar overflow-x-auto">
+      {/* 小屏下保持可读字号，横向滑动查看；桌面端不受影响（≤720px 全宽显示） */}
+      <div className="min-w-[560px]">
+        <QuickStartFlowSvg />
+      </div>
+    </div>
+  );
+}
+
+function QuickStartFlowSvg() {
+  return (
     <Frame
       title="快速开始四步：安装依赖、配置环境变量、初始化数据库、启动"
       viewBox="0 0 720 168"

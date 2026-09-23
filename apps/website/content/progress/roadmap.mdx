@@ -1,6 +1,6 @@
 ---
 title: 路线图
-description: 演示场、演示准备、概览页三个阶段均已完成，下一步是统一上线。
+description: 演示场、演示准备、概览页三个阶段均已完成，六端已于 2026-09-23 统一上线。
 ---
 
 <RoadmapDiagram />
@@ -31,17 +31,17 @@ Playground 演示场分两个阶段推进，之后的 Phase 0 / Phase C 也都�
 
 真源始终是 `apps/nest/openapi/openapi.yaml`，共 **48 条路径 / 77 个操作**。
 
-## 下一步：统一上线
+## 上线收官（2026-09-23）
 
-五个应用功能都已就绪，剩下的全是部署环节。上线清单：
+六个应用功能全部就绪后统一上线，全部域名已生效，线上即演示环境：
 
-| 事项 | 为什么必须做 |
+| 事项 | 落地结果 |
 | --- | --- |
-| NestJS 保活 ping | 免费实例 15 分钟不活跃即休眠，冷启动 30–50 秒会直接拖垮演示第一印象。`GET /health` 端点已实现，还需配 UptimeRobot / CF Worker Cron 每 5–10 分钟打一次 |
-| CORS 白名单收敛 | 从本地端口改为线上域名；Nest 只服务 React / Vue 两端，Next / Nuxt 是独立全栈不走它 |
-| SPA 直链回退 | React / Vue 是纯静态站，直接分享子路由链接需要回退到 `index.html` |
-| 演示模式开关 | 线上配 `DEMO_MODE=true`；`LOG_API_SKIP_GET` 默认关闭，需显式开启才降噪 |
-| 环境变量与迁移 | 各平台配齐变量（密钥不进仓库），数据库迁移在目标环境执行到位 |
-| 构建验证 | 各端构建产物验证通过；CI 目前只有语言包与日志清理两个 cron，lint / test / build 尚未挂接 |
+| NestJS 保活 ping | `GET /health` 已实现，UptimeRobot 每 5 分钟探活，冷启动消除 |
+| CORS 白名单收敛 | 已收敛为线上域名；Nest 只服务 React / Vue 两端，Next / Nuxt 是独立全栈不走它 |
+| SPA 直链回退 | React / Vue 由 `wrangler.jsonc` 的 `not_found_handling=single-page-application` 提供 |
+| 演示模式开关 | 三端（Nest / Next / Nuxt）线上配 `DEMO_MODE=true`，只读守卫 + 快捷登录生效 |
+| 环境变量与迁移 | 各平台变量配齐（密钥不进仓库）；迁移真源在 Nest 端，线上库一次到位 |
+| 构建验证 | CI 已挂接六端 17 步矩阵（lint / typecheck / test / build）；上线当日线上 contract-diff 31 步一致 |
 
-平台分工：React / Vue → Cloudflare Workers（Static Assets，SPA 深链回退由 `wrangler.jsonc` 的 `not_found_handling` 负责），Next / Nuxt / 本站 → Vercel，NestJS → Render。绑定域名后本页会同步更新在线地址。
+平台分工：React / Vue → Cloudflare Workers（Static Assets，SPA 深链回退由 `not_found_handling` 负责），Next / Nuxt → Vercel（postgres.js TCP 直连不支持 Workers 运行时），本站 → Cloudflare Workers（静态导出），NestJS → Render。部署与冒烟全记录见仓库 [`docs/launch-runbook.md`](https://github.com/baiwumm/better-admin/blob/main/docs/launch-runbook.md)。

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+import { Accordion, Accordions } from "@/components/docs/accordion";
 import { SITE } from "@/lib/site";
 
 const QUESTIONS = [
