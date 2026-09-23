@@ -1,6 +1,6 @@
 name: Release
 
-# 发布流水线（tag 触发，v0.2.0 起）：推送 vX.Y.Z 自动创建/更新 GitHub Release。
+# 发布流水线（tag 触发，v1.0.0 起）：推送 vX.Y.Z 自动创建/更新 GitHub Release。
 #
 # 骨架取自 theme-switch-animation 仓 .github/workflows/release.yml，按本仓库形态裁剪：
 #   · 本仓库是同一产品的六端实现、**不发 npm 包**——去掉 changesets、Trusted

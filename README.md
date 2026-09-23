@@ -17,7 +17,7 @@
 <p align="center">
   <a href="https://better-admin.baiwumm.com"><img src="https://img.shields.io/badge/%E6%96%87%E6%A1%A3%E7%AB%99-%E5%9C%A8%E7%BA%BF-0A0A0A?style=flat-square" alt="官方文档站在线" /></a>
   <a href="https://github.com/baiwumm/better-admin/actions/workflows/ci.yml"><img src="https://github.com/baiwumm/better-admin/actions/workflows/ci.yml/badge.svg?branch=main&style=flat-square" alt="CI" /></a>
-  <img src="https://img.shields.io/badge/%E7%89%88%E6%9C%AC-0.2.0-0A0A0A?style=flat-square" alt="版本 0.2.0" />
+  <img src="https://img.shields.io/badge/%E7%89%88%E6%9C%AC-1.0.0-0A0A0A?style=flat-square" alt="版本 1.0.0" />
   <img src="https://img.shields.io/badge/%E5%85%AD%E7%AB%AF%E5%B7%B2%E4%B8%8A%E7%BA%BF-2026--09--23-2ea44f?style=flat-square" alt="六端已于 2026-09-23 上线" />
   <a href="docs/feature-matrix.md"><img src="https://img.shields.io/badge/%E5%8A%9F%E8%83%BD%E5%AF%B9%E9%BD%90-29%2F29-2ea44f?style=flat-square" alt="四端功能对齐 29/29" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-0A0A0A?style=flat-square" alt="MIT License" /></a>

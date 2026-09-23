@@ -12,6 +12,14 @@
 - **website 文档站同步修正（用户批准）**：`content/progress/roadmap.mdx` 上线收官表里「NestJS 保活 ping / 冷启动消除」一行改写为准确表述——探活必须是 HTTP(S) 类型、当日曾误配 PING 空转 6 小时已改判并复验、冷启动**自此**消除，并补注契约相对路径与实际路径的关系。该改动需随 website 下次重新部署 CF Workers 才在线上生效。
 - **顺带更正本轮一处初判（防复发）**：我曾把文档站与契约里的 `GET /health` 当成「路径口径错误」，经核实**是误判**——`openapi.yaml:210` 的 `servers.url` 即 `https://nest.baiwumm.com/api`（本地 `http://localhost:3000/api`），全站端点在契约与文档站一律写相对路径（`/users` / `/menus` / `/health`），拼上前缀才是实机路径。故 `architecture/api.mdx` 与 `feature-matrix.mdx` 各处**保持原样不动**。教训：判「路径写错」之前必须先读契约的 `servers` 段。
 
+### v1.0.0 发布：版本计划由 0.2.0 改判 1.0.0 + website 收口（2026-09-23）
+
+- **改判 1.0.0（用户拍板）**：① 契约轨早已 v1.14.0，产品停在 0.2.0 会形成永久双轨叙事；② 1.0 的实质条件已满足——四端功能 29/29（100%）、六端全部上线并冒烟通过、CI 六端 17 步矩阵绿、线上 contract-diff 31 步一致、MIT 与门面文档补齐、无里程碑级待办；③ 全仓 `private: true`、不发 npm、**没有下游消费者依赖版本号做 semver 判断**，1.0 的兼容承诺不产生实际负债。已知代价：将来破坏性重构需跳 2.0；Release 正文区间 `v0.1.0..v1.0.0` 共 **561 条提交**（2026-08-28 起），按 Conventional Commits 分组后是一份全量发布记录。
+- **落地**：根 `package.json` → 1.0.0，`pnpm sync-versions` 分发六端（脚本按 `apps/` 动态枚举，website 一并到位）；三处前瞻表述同步——根 README 版本徽章、`release.yml` 头注「v1.0.0 起」、AGENTS §19 待办 ①② 改为**已清零**。历史条目里的 0.2.0（本文件旧条目 / feature-matrix / launch-audit / `sync-versions.mjs` 注释）按 §13「历史不回改」保留。
+- **发布前置校验（实测）**：七个 `package.json` 版本全部 1.0.0；`release.yml` 两道校验要求 tag 等于根 version 且 tag 提交落在 `origin/main` → 顺序必须是「bump 提交 → push → CI 绿 → 打 tag → 推 tag」。
+- **同轮 website 收口**：首页 beUI 二轮改造已部署 CF Workers 并**线上核验**（beUI 徽章类与按钮类命中、旧 `.pill-badge` / `.btn-solid` 归零、五卡「已上线」、`/docs` 侧栏四端演示外链与 `target="_blank"` 在、api 页 PATCH/POST 修正与 nuxt·repo 口径修正生效），用户 GUI 走查通过；GitHub 已识别到 MIT（`gh api repos/…/license` → `MIT | LICENSE`）。
+- **仓库卫生**：删除 `.tmp-shots/`（4 张走查截图，未跟踪、无文档引用）；扫已跟踪文件确认无其他临时产物——命中的 `apps/nest/drizzle/meta/*_snapshot.json`、Next `src/app/icon.png` / `apple-icon.png`（App Router 文件约定图标）、`.agents/skills/**/reference*` 均为合法资产，不得删除。
+
 ### website 首页 beUI 真组件化 + /docs 侧栏演示入口 + 仓库门面补全（2026-09-23）
 
 - **首页按钮 / 徽章由「beUI 风格自绘」换成 beUI registry 上游源码组件（用户拍板三项：加依赖 / 进度条保留自绘 / 范围只按钮+徽章）**：`curl https://beui.dev/r/{slug}` 取 item JSON 的 `files[].content` 逐字落盘 `components/motion/button/base.tsx`（`button-base`）与 `components/motion/animated-badge.tsx`，连带条目自带的 `lib/{utils,ease}.ts`、`lib/hooks/use-hover-capable.ts`；**零样式覆写**（只保留 `mx-auto` / `gap` / `ms-1` 一类布局类）。替换面：hero 两键 + 公告胶囊、navbar（ghost 文字键 / primary 胶囊 / 移动端 `Button size="icon"` / 抽屉项）、CTA 两键、页脚两键、三处眉标与五张卡状态徽章（`AnimatedBadge`）。globals.css 删掉随之失效的 `.btn-solid` / `.btn-outline` / `.pill-badge`（含 `.dark` 变体，净减 110 行）；`--card` 亮色档纯白 → `oklch(0.97 0 0)`（beUI 实色表面需要与 background 有分离度，取 beui.dev 同值，影响面仅首页容器层，`/docs` 走 `--color-fd-*` 不受影响）。新增依赖 `clsx 2.1.1` + `tailwind-merge 3.6.0`（精确锁版，registry 自身声明的依赖，供应链校验通过）。机制结论与能力边界（registry **无进度条、无通用 Card**，故那根 29/29 进度条与卡片表面按用户拍板继续自绘）见 `mechanisms.md` §40。

@@ -70,5 +70,5 @@
     "vue-tsc": "^3.3.11"
   },
   "packageManager": "pnpm@12.3.4",
-  "version": "0.2.0"
+  "version": "1.0.0"
 }
