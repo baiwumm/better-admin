@@ -29,5 +29,6 @@
     "prettier": "^3.9.6",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3"
-  }
+  },
+  "packageManager": "pnpm@11.24.0"
 }
