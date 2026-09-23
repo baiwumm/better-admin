@@ -2,6 +2,19 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 六端统一上线完成（2026-09-23）
+
+- **前夜全量测试（01:01–01:15，无人值守定时任务）**：判定 ✅ 可上线——六端 lint/typecheck/test/build 17/17 绿（与 CI 矩阵同口径）+ react/next/nuxt `check-locales` 全一致 + 契约冒烟 31 步一致（30 OK + 1 KNOWN：`/permissions` label 中英文既有差异）+ 工作区零残留。报告与手册两份交付物入库于 `30e783e`。
+- **六端部署与上线冒烟全绿（HTTP 层由 Agent 逐端验证，浏览器 GUI 走查由用户完成）**：
+  - **Nest**（Render）：CF 灰云直连（判据=DNS 解析链穿透到 `*.onrender.com`，Render 自带 `cf-ray` 头不代表本 zone 橙云）；`/api/health`、真实登录、demo-login（body 必填 `kind`）、CORS 预检（react/vue 两域）、演示只读 403 全过；UptimeRobot 5min PING 保活实锤（uptime 40min+ 无休眠）。
+  - **React / Vue**（CF Workers Static Assets）：SPA 深链回退、图标 manifest、跨域回显全过；产物核验=递归爬取线上全部 JS chunk，api-client/env chunk 确认指向 `https://nest.baiwumm.com`、`localhost` 零残留。
+  - **Next / Nuxt**（Vercel，Root Directory=apps/<端>）：SSR / SPA 壳、深链、真实登录、`stats/overview` + 列表接口共库数据、demo-login、只读 403 全过。**线上 DATABASE_URL 统一 6543**（Next 曾配 5432，改回后复测通过；口径=本地 5432、线上 6543，代码层已无条件禁用 prepare）。
+  - **website**（CF Workers **静态导出**，2026-09-23 由 Vercel 改判）：照 react-okr-tree 仓同款链路改造 `7cc2470`——`next.config.mjs` 加 `output:'export'`+`trailingSlash`+`images.unoptimized`；`/api/search` 改 `force-static`+`staticGET`（构建期固化 763KB 静态索引，前端 RootProvider `type:'static'` 浏览器本地搜）；**`opengraph-image` / `robots.ts` / `sitemap.ts` 显式 `export const dynamic='force-static'` 后 build 期预渲染成功**（og 保住真 PNG，Next 16.2.6 缺该标记即报「dynamic/revalidate not configured on route」）；新增 `apps/website/wrangler.jsonc`（`assets.directory=./out`、`not_found_handling=404-page`）。冒烟：首页/文档页/索引/robots/sitemap/og/404 回退全绿。
+- **关键拍板**：① 线上即演示环境——Nest/Next/Nuxt `DEMO_MODE=true`（Nest 另 `LOG_API_SKIP_GET=true`）；② website 托管 CF Workers（改判原 Vercel 口径）；③ CF Worker 命名：react=`better-admin-react`、vue=`better-admin-vue`、website=`better-admin`（wrangler `name` 必须与 Dashboard 项目同名，否则 deploy 报 name mismatch）。
+- **过程中修复（均为上线阻塞或 CI 闭环）**：CF Workers Builds 默认 pnpm 10.11.1 误判纯配置 `pnpm-workspace.yaml` 报 `packages field missing or empty`→react/vue/website 钉 `packageManager: pnpm@11.24.0`（`95a8ceb`、`b86bff5`）；next 的 `pnpm-lock.yaml` 曾被端内 `.gitignore` 忽略致 CI 缓存路径失败→入库（`8ef93b9`）；vue 两处回调隐式 any（CI TS7006）显式标注 + CI 构建期占位 `DATABASE_URL`（`733cc6f`）；react/website wrangler name 两次对齐（`70712e8`、`e16d126`）。**CI 六端矩阵 17/17 首次全绿**。
+- **收官**：线上 contract-diff 全量（`nuxt.baiwumm.com/api` vs `nest.baiwumm.com/api`）退出码 0、31 步一致——台账「双端契约冒烟随上线后全量跑」闭环；用户完成全部浏览器 GUI 走查；runbook `docs/launch-runbook.md` 各端勾选表全勾。
+- **已知限制 / 后续**：① `git tag v0.2.0` 暂不打（用户还有后续事项，做完再打）；② 文档站为手写 MDX（AGENTS §19），「六端已上线」口径需人工回写 `apps/website/content/**`；③ 全站均为 Supabase 单库演示环境（只读守卫），`SEED_ADMIN_PASSWORD` 对已上线库无效。
+
 ### 审计裁决落地：上线前置五项 + 第二批 9 项（2026-09-22 同日续）
 
 - **上线前置五项（用户批准）**：#3 React/Vue 改按 **Workers Static Assets** 部署（各端 `wrangler.jsonc` + `not_found_handling=single-page-application`，删 `apps/react/vercel.json`；查官方文档确认 Pages 的 `_redirects` / 根 `404.html` 在 Workers 不生效，故未加也不该加）；#4 用户已改密，实测 `admin/admin123` 返回 401 `INVALID_CREDENTIALS`，并核实 `SEED_ADMIN_PASSWORD` 仅对全新库首次 seed 生效（重跑 seed 因 `onConflictDoNothing` 不覆盖既有密码）；#5 Vue/Nuxt 补 7 项 PNG + `site.webmanifest` + 两端 head 五条 link；#9 幂等回填 super_admin 4 条授权；#45 新增 `.github/workflows/ci.yml` 六端 17 步矩阵。
