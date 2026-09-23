@@ -1,0 +1,127 @@
+name: Release
+
+# 发布流水线（tag 触发，v0.2.0 起）：推送 vX.Y.Z 自动创建/更新 GitHub Release。
+#
+# 骨架取自 theme-switch-animation 仓 .github/workflows/release.yml，按本仓库形态裁剪：
+#   · 本仓库是同一产品的六端实现、**不发 npm 包**——去掉 changesets、Trusted
+#     Publishing、npm 人工审批（environment: npm）整条链路；
+#   · 保留两道校验：tag 必须与根 package.json 的 version 一致（AGENTS §15 版本真源），
+#     且 tag 提交必须落在 origin/main 上（避免把没进主干的代码发布出去）；
+#   · Release 正文：本仓不维护 CHANGELOG.md，改为从 git log（上一 tag → 本 tag）
+#     按 Conventional Commits 类型分组生成（AGENTS §10 规范，中文描述原样保留）；
+#     重复提交主题去重。tag 已有 Release 时更新正文而不是报错（重推 tag 场景）。
+#
+# ⚠️ 本文件必须先合进 main 再打 tag——workflow 取自 tag 指向的那个 commit，
+#    在旧提交上打 v* tag 不会触发任何东西（且没有报错）。
+#
+# 日常发布（全部本地，之后交给 CI）：
+#   1. 改根 package.json 的 version → pnpm sync-versions（scripts/sync-versions.mjs）
+#   2. 提交 `chore: release vX.Y.Z` 并合入 main
+#   3. git tag vX.Y.Z && git push origin vX.Y.Z —— tag 一推即触发
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write # 创建 / 更新 GitHub Release
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Verify & Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 下面要判 tag 是否落在 main 上，需要 origin/main 可达
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Verify tag matches version and sits on main
+        run: |
+          node -e "const p=require('./package.json');const t=process.env.GITHUB_REF_NAME.slice(1);if(p.version!==t){console.error('根 package.json version '+p.version+' != tag '+t+'（AGENTS §15：版本真源在根 package.json，记得先跑 pnpm sync-versions）');process.exit(1)}"
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+            || { echo "tag 不在 origin/main 上，拒绝发布（避免把没进主干的代码发布出去）"; exit 1; }
+
+      # 正文从 git log 生成：上一 tag → 本 tag，按 Conventional Commits 分组、
+      # 组内同主题去重；没有上一 tag（首个版本 tag）时退化为整段历史。
+      - name: Build release notes from git log
+        run: |
+          node <<'NODE'
+          const { execSync } = require("node:child_process");
+          const fs = require("node:fs");
+          const repo = "baiwumm/better-admin";
+          const tag = process.env.GITHUB_REF_NAME;
+          const sh = (cmd) => execSync(cmd, { encoding: "utf8" }).trim();
+
+          let prev = "";
+          try {
+            prev = sh(`git describe --tags --abbrev=0 "${tag}^"`);
+          } catch {
+            prev = ""; // 首个 v* tag：无上一版本可比
+          }
+          const range = prev ? `${prev}..${tag}` : tag;
+          const total = parseInt(sh(`git rev-list --count ${range}`), 10);
+          const subjects = sh(`git log --format=%s ${range}`).split(/\r?\n/).filter(Boolean);
+
+          const GROUPS = [
+            ["feat", "✨ 新增功能"],
+            ["fix", "🐛 修复"],
+            ["perf", "⚡ 性能"],
+            ["refactor", "♻️ 重构"],
+            ["docs", "📝 文档"],
+            ["test", "✅ 测试"],
+            ["style", "💄 格式"],
+            ["chore", "🔧 工程"], // chore / build / ci 同组
+          ];
+          const buckets = new Map(GROUPS.map(([k]) => [k, new Map()]));
+          const others = new Map();
+          const pattern = /^(feat|fix|docs|style|refactor|perf|test|chore|build|ci|revert)(\([^)]*\))?(!)?:\s*(.+)$/;
+          for (const s of subjects) {
+            const m = s.match(pattern);
+            const text = m ? m[4].trim() : s;
+            const key = m ? (["build", "ci", "revert"].includes(m[1]) ? "chore" : m[1]) : "other";
+            const bucket = key === "other" ? others : buckets.get(key);
+            if (!bucket.has(text)) bucket.set(text, s); // 同主题去重，保留原文
+          }
+
+          const date = new Date().toISOString().slice(0, 10);
+          const lines = [`## ${tag}（${date}）`, ""];
+          lines.push(
+            prev
+              ? `共 ${total} 个提交（[${prev}...${tag}](https://github.com/${repo}/compare/${prev}...${tag})）。`
+              : `首个版本 tag，共 ${total} 个提交（[完整历史](https://github.com/${repo}/commits/${tag})）。`
+          );
+          for (const [key, title] of GROUPS) {
+            const items = [...buckets.get(key).values()];
+            if (!items.length) continue;
+            lines.push("", `### ${title}`, "");
+            for (const s of items) lines.push(`- ${s}`);
+          }
+          if (others.size) {
+            lines.push("", "### 📦 其他（未按规范命名）", "");
+            for (const s of others.values()) lines.push(`- ${s}`);
+          }
+          fs.writeFileSync("/tmp/release-notes.md", lines.join("\n") + "\n");
+          console.log(`Release 正文已生成：${lines.length} 行，覆盖 ${total} 个提交`);
+          NODE
+
+      - name: Create or update GitHub Release
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release 已存在，更新正文"
+            gh release edit "$GITHUB_REF_NAME" --notes-file /tmp/release-notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --notes-file /tmp/release-notes.md
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
