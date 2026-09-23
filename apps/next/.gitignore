@@ -39,7 +39,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-pnpm-lock.yaml
+# pnpm-lock.yaml 不忽略：须随仓库提交（其余五端同口径）——CI 缓存与 --frozen-lockfile 依赖它
 yarn.lock
 package-lock.json
 bun.lockb
