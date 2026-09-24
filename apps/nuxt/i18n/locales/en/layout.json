@@ -86,6 +86,7 @@
   "layout.search.label": "Search",
   "layout.search.placeholder": "Search…",
   "layout.sidebar.blog": "Blog",
+  "layout.sidebar.docs": "Docs",
   "layout.sidebar.github": "Github",
   "layout.sidebar.submenu": "Submenu",
   "layout.sidebar.techStack": "Tech Stack",
