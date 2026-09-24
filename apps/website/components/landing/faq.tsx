@@ -48,8 +48,7 @@ const QUESTIONS = [
   {
     value: "open-source",
     title: "免费开源吗？代码在哪里？",
-    content:
-      "是，代码开源于 GitHub（baiwumm/better-admin），可以自由学习、参考与贡献，欢迎提交 Issue 与 Pull Request。",
+    content: `是，代码开源于 GitHub（${SITE.repoFullName}），可以自由学习、参考与贡献，欢迎提交 Issue 与 Pull Request。`,
   },
   {
     value: "docs-source",

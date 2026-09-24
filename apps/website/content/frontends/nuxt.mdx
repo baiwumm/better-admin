@@ -105,7 +105,11 @@ SUPABASE_AVATAR_BUCKET=          # 头像 Storage bucket 名
 NUXT_PUBLIC_APP_NAME=
 NUXT_PUBLIC_APP_DESC=
 NUXT_PUBLIC_API_BASE_URL=
+NUXT_PUBLIC_DOCS_URL=     # 官方文档站（侧栏快捷链接）
+NUXT_PUBLIC_BLOG_URL=     # 作者博客
 ```
+
+GitHub 仓库与作者主页**不经 `runtimeConfig`**：`app/lib/env.ts` 直接在本端 `package.json` 的 `repository.url` 上编译期解析（换仓库只改 package.json 并重新构建）。
 
 <Callout title="版本锁定">
 

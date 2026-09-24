@@ -3,6 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "description": "Better Admin 文档站（独立应用，静态导出部署 Cloudflare Workers better-admin.baiwumm.com）",
+  "author": "baiwumm",
+  "homepage": "https://better-admin.baiwumm.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baiwumm/better-admin.git",
+    "directory": "apps/website"
+  },
+  "bugs": {
+    "url": "https://github.com/baiwumm/better-admin/issues"
+  },
   "scripts": {
     "dev": "node scripts/with-memory-cap.mjs dev",
     "build": "node scripts/with-memory-cap.mjs build",

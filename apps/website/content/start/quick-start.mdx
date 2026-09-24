@@ -122,10 +122,12 @@ NestJS 默认放行 `5173 / 5174 / 4173 / 3000 / 3001 / 3100` 以及线上域名
 <Tab value="React / Vue（纯前端）">
 
 ```dotenv
-# 仅这三项，全部是浏览器可见变量
+# 全部是浏览器可见变量，后两项不填即走线上默认值
 VITE_APP_NAME=
 VITE_APP_DESC=
 VITE_API_BASE_URL=   # 本地 NestJS 形如 http://localhost:3000/api
+VITE_DOCS_URL=       # 官方文档站（侧栏快捷链接），缺省 https://better-admin.baiwumm.com
+VITE_BLOG_URL=       # 作者博客，缺省 https://www.baiwumm.com
 ```
 
 纯前端应用**没有任何服务端密钥** —— 它们只能通过 NestJS API 取数，拿不到数据库连接串。
@@ -151,9 +153,13 @@ LOG_RETENTION_DAYS=
 # 浏览器可见（带公开前缀）
 NEXT_PUBLIC_APP_NAME=         # Nuxt 端为 NUXT_PUBLIC_APP_NAME
 NEXT_PUBLIC_APP_DESC=         # Nuxt 端为 NUXT_PUBLIC_APP_DESC
+NEXT_PUBLIC_DOCS_URL=         # Nuxt 端为 NUXT_PUBLIC_DOCS_URL（官方文档站）
+NEXT_PUBLIC_BLOG_URL=         # Nuxt 端为 NUXT_PUBLIC_BLOG_URL（作者博客）
 ```
 
 Nuxt 端额外多两项：`SUPABASE_AVATAR_BUCKET` 与 `NUXT_PUBLIC_API_BASE_URL`。
+
+GitHub 仓库与作者主页**不在环境变量清单里**：四端与文档站一律从各自 `package.json` 的 `repository.url` 编译期解析出链接，换仓库归属只改 `package.json`。
 
 </Tab>
 

@@ -103,7 +103,9 @@ pnpm test        # Vitest
 pnpm check-locales
 ```
 
-环境变量只有三个，全部带 `VITE_` 前缀：`VITE_APP_NAME`、`VITE_APP_DESC`、`VITE_API_BASE_URL`。**纯前端应用没有任何服务端密钥。**
+环境变量五个，全部带 `VITE_` 前缀：`VITE_APP_NAME`、`VITE_APP_DESC`、`VITE_API_BASE_URL`、`VITE_DOCS_URL`（官方文档站）、`VITE_BLOG_URL`（作者博客）；后两项缺省即线上地址，不配也能跑。**纯前端应用没有任何服务端密钥。**
+
+GitHub 仓库与作者主页**不走环境变量**——真源是本端 `package.json` 的 `repository.url`，由 `src/lib/env.ts` 编译期解析出 `repoUrl` / `ownerUrl` / `ownerName` 与 `githubUrl(slug)`，改仓库归属只需改 `package.json`。
 
 <Callout title="关于 pnpm 的 allowBuilds">
 

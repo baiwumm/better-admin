@@ -80,10 +80,10 @@ export function Footer() {
             <div className="flex items-center gap-1.5">
               <span>Built by</span>
               <a
-                href={SITE.github}
+                href={SITE.ownerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="baiwumm 的 GitHub"
+                aria-label={`${SITE.owner} 的 GitHub`}
                 className="flex items-center font-medium text-foreground underline underline-offset-4 transition-colors hover:opacity-80"
               >
                 <TextScramble
@@ -92,7 +92,7 @@ export function Footer() {
                   trigger={isTrigger}
                   onScrambleComplete={() => setIsTrigger(false)}
                 >
-                  baiwumm
+                  {SITE.owner}
                 </TextScramble>
               </a>
             </div>

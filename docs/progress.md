@@ -2,6 +2,16 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### GitHub 仓库/作者链接去硬编码（真源改 package.json）+ 侧栏新增文档站入口（2026-09-24）
+
+- **背景与决策（用户提出、四项拍板照推荐方案执行）**：仓库地址 `github.com/baiwumm/better-admin` 与作者地址 `github.com/baiwumm` 此前散在四端源码 12 + 8 处（含 website 的 `SITE.github`）。**没有采用「抽成环境变量」的原设想**做 owner/repo：`VITE_*` / `NEXT_PUBLIC_*` 是构建期内联、`NUXT_PUBLIC_*` 也要重启服务端，改成变量并不带来「改一次全站生效」的收益，反而要在 Vercel×2 + CF Workers×3 + Render 六处平台各配一遍、漏配即静默回退。最终分层：**owner 与仓库名由本端 `package.json` 的 `repository.url` 编译期解析**（六端同值、改一处随 git 生效）；**只有 `DOCS_URL` / `BLOG_URL` 走公开变量**（默认值即线上地址，写在 `lib/env.ts` 一处）。
+- **落地（四个提交）**：① 四端 `lib/env.ts` 新增 `repoUrl` / `ownerUrl` / `ownerName` / `docsUrl` / `blogUrl` 与 `githubUrl(slug)`（Nuxt 走 `runtimeConfig.public` + `app/lib/env.ts` 默认值，repo/owner 仍是编译期常量）；② 四端侧栏快捷链接、登录页版权署名、`playground/constants.ts` 的 `REPO_URL`、`meta.ts` 与演示仓库榜的作者名下仓库全部改引 ENV，**前端源码内已无 `baiwumm` 字面量**（grep 零命中）；③ 侧栏与命令面板快捷链接新增**文档站**条目并排在 GitHub 之上（图标 lucide `book-open`），语言包补 `layout.sidebar.docs`（文档 / Docs），Vue / Nuxt 经 `sync-locales` 跟随 React 真源；④ website 的 `SITE` 改用同一解析，并补 `author` / `homepage` / `repository` / `bugs` 元数据。
+- **⚠️ 一处计划前提被实测推翻**：方案里写「五个 package.json 的 `repository.url` + `author` 已写着同一个值」——**`apps/nuxt/package.json` 其实两者皆无**（还是模板默认的 `name: "nuxt"`，`version` 被 `sync-versions` 追加在文件末尾），Nuxt 端 `import { repository }` 直接 TS2305 报错。已按 website 同口径补齐 nuxt 元数据（`repository.directory` 写实际路径 `apps/nuxt`，与既有四端手写的 `react` / `vue` 等不一致——那几处按 npm 规范应为 `apps/<端>`，未回改）。遗留：`name: "nuxt"` 未改（改名影响面不清，且正是「不能用 `pkg.name` 推仓库名」的活例）。
+- **顺带收口的两处**：Vue / Nuxt 端命令面板与侧边栏**各写一份**链接列表（React 端早已共用 `SIDEBAR_LINKS`），改为共用同一常量，新增条目从此只改一处；website 页脚「Built by baiwumm」原 href 指向**仓库**、与 `aria-label`「baiwumm 的 GitHub」语义不符，改指 `SITE.ownerUrl`（产物核验：`out/index.html` 中作者主页 1 条 + 仓库 5 条，改前是 0 条 + 6 条）。
+- **验证**：四端 lint（0 error，仅既有 no-console 警告）+ type-check + build + test 全绿（React 93 / Vue 101 / Nuxt 99 用例），`check-locales` react 与 nuxt 双端 14 文件一致，Next `next build` 与 website 静态导出 `pnpm build` 通过；Nuxt 图标产物 `.nuxt/nuxt-icon-client-bundle.mjs` 已含 `book-open`（本地 `@iconify-json/lucide` 集合，Vue / Nuxt 两端均已有该依赖）。**GUI 走查待用户**：四端侧栏三条链接与折叠态三图标、命令面板快捷链接组三条、登录页版权链接。
+- **不在本轮范围（明确留档）**：website 的 `SITE.url` 与 `DEMOS` 四端演示域名、`opengraph-image` 站内域名文本（属部署域名而非仓库/作者链接）；Nest `main.ts` 的 CORS 白名单与 seed 邮箱（另一套服务端变量体系）；根 README 徽章 URL（markdown 字面量）；`docs/feature-matrix.md` 无「布局/侧边栏」行，本轮为链接条目而非功能模块，未登记。
+- **线上生效条件**：website 改动需 push 后走 CF Builds 重新构建（仓库无 deploy workflow）；四端各自重新部署才会带上新的 `DOCS_URL` 默认值与文档站条目。
+
 ### Nest 保活监控类型纠偏：PING（ICMP）→ HTTP(S)，外部保活自此才真正生效（2026-09-23）
 
 - **背景（用户报障）**：UptimeRobot 面板 `nest.baiwumm.com/api/health` 持续 Down 6h51m、`No response time data`。实测服务端完全健康（`curl` 同一 URL **200 / 0.76s**），根因是**监控类型选成了 PING（ICMP）**：它只探测主机、不发 HTTP 请求（URL 路径对它毫无意义），而 Render 入口挂在 Cloudflare for SaaS 后、边缘不响应 ICMP ⇒ 必然永远 Down。也就是说 AGENTS §17 ① 与 launch-runbook §1.3 第 6 项记录的「保活已配置 ✅」**实际从未生效**：Render 免费层 15 分钟休眠未被挡住，进程内日志 / refresh_token 清理 cron（03:00 / 03:30 北京时间）随之失去常驻前提。

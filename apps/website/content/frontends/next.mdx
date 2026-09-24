@@ -104,7 +104,11 @@ LOG_RETENTION_DAYS=
 ```dotenv
 NEXT_PUBLIC_APP_NAME=
 NEXT_PUBLIC_APP_DESC=
+NEXT_PUBLIC_DOCS_URL=     # 官方文档站（侧栏快捷链接），缺省 https://better-admin.baiwumm.com
+NEXT_PUBLIC_BLOG_URL=     # 作者博客，缺省 https://www.baiwumm.com
 ```
+
+GitHub 仓库与作者主页与其余端同源：由 `package.json` 的 `repository.url` 在 `src/lib/env.ts` 编译期解析，不占变量位。
 
 <Callout title="Supabase 密钥只在服务端出现">
 
