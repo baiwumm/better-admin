@@ -1,7 +1,19 @@
 {
   "name": "nuxt",
   "private": true,
+  "version": "1.0.0",
   "type": "module",
+  "description": "Better Admin — Nuxt 全栈实现（Nitro server routes 自带后端，不依赖 NestJS）",
+  "author": "baiwumm",
+  "homepage": "https://nuxt.baiwumm.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/baiwumm/better-admin.git",
+    "directory": "apps/nuxt"
+  },
+  "bugs": {
+    "url": "https://github.com/baiwumm/better-admin/issues"
+  },
   "scripts": {
     "dev": "nuxt dev --port 3001",
     "predev": "node scripts/sync-locales.mjs",
@@ -69,6 +81,5 @@
     "vitest": "^4.1.11",
     "vue-tsc": "^3.3.11"
   },
-  "packageManager": "pnpm@12.3.4",
-  "version": "1.0.0"
+  "packageManager": "pnpm@12.3.4"
 }

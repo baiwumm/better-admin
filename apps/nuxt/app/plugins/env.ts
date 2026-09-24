@@ -10,6 +10,8 @@ export default defineNuxtPlugin(() => {
   initEnv({
     appName: env.appName,
     appDesc: env.appDesc,
-    apiBaseUrl: env.apiBaseUrl
+    apiBaseUrl: env.apiBaseUrl,
+    docsUrl: env.docsUrl,
+    blogUrl: env.blogUrl
   })
 })

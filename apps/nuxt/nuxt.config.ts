@@ -114,7 +114,9 @@ export default defineNuxtConfig({
     public: {
       appName: 'Better Admin',
       appDesc: '一个探索多技术栈全栈开发的 Admin 项目。',
-      apiBaseUrl: '/api'
+      apiBaseUrl: '/api',
+      docsUrl: 'https://better-admin.baiwumm.com',
+      blogUrl: 'https://www.baiwumm.com'
     }
   },
 
