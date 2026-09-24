@@ -2,6 +2,19 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### AGENTS.md §19 精简：历史细节归还 progress.md（2026-09-24，用户拍板）
+
+- **精简量**：§19「当前阶段 / 当前待办」两巨段及三个「各端已完成模块」列表、Playground 状态快照巨段删除，净减约 7,500 字符（8,605 删 / 1,063 增）——历史叙事的承接处：各端实现历程与模块明细 = progress.md 对应条目；功能对齐状态 = feature-matrix.md（唯一追踪源，§18-5）；Playground 实施明细 = progress.md 2026-09-14 ~ 09-21 条目。
+- **保留项（「勿遗忘」的现行约束，非历史）**：website 手写 MDX 须人工回写警告、品牌标识真源与 Next metadata 图标警告、TanStack Skills 暂缓安装安排、super_admin 保护设计依据、Playground 第三方渲染器 BEM 撞名警告（mechanisms §27 指针）。
+- **精简前核实**：① v1.0.0 已发布（tag 已推送远端、根与六端 version 一致）——原待办段「① 版本发布」确已完结，整体过时；② 全仓对 §19 的外部引用均为章节级进度指针（requirements.md:833 / react.md:151 / routing.md:252）或指向保留的 super_admin 段（openapi-design.md:455），无悬空死链；progress.md / launch-audit.md 内的 §19 引用均属历史条目，按「历史不回改」不动。
+- **手法备注**：被替换的两段为数千字单行文本，用一次性 node 脚本按行号替换（带 7 处行首断言防错位），执行后脚本即删。
+
+### 根目录清理：删除上线前夜一次性测试报告 + 文档体系小修（2026-09-24）
+
+- **删除根目录 `nightly-fulltest-report.md`**（2026-09-23 上线前夜一次性全量测试报告，正文自述「看完可删」）：结论 ✅ 可上线已兑现，有效信息均有承接——六端静态检查口径 ≈ 已挂接的 CI 17 步矩阵（`.github/workflows/ci.yml`）、契约冒烟 31 步结论在 launch-runbook §7、上线执行全程在 launch-runbook；git 历史 `30e783e` 可随时找回。配套：launch-runbook 头部引用改为删除注记（防死链）。
+- **文档体系小修两处（上轮 docs 处置的遗漏）**：① launch-runbook 尾部「上线收官总勾选表」第⑥项「线上 contract-diff」漏勾——实际已于 2026-09-23 通过（同文件上方 §7 有正式记录），属「当前状态」漏更新，已补 ☑；② AGENTS.md §13 文档体系表漏登记 `docs/launch-runbook.md`（被 §17 / §19 多处引用却不在表内），已补行。
+- **docs/ 目录盘点结论（不删不改）**：2026-09-23 处置轮已删 4 份完结计划文档，剩余 12 个均为 §13 体系内文档，职责无重叠、命名全部符合 kebab-case（§14），无内容可删或可合并；launch-audit / launch-runbook 虽属已完结事项，但前者头部已有「已归档只读」标头、后者作为操作手册在后续版本更新部署时复用且被 §17 引用，均保持原位。progress.md 体量（167 条 / 约 500KB）为「只增不减」台账设计使然，暂不切分归档（切分存在大量「见 progress.md ××条目」交叉引用失效风险，留待下次里程碑再议）。
+
 ### GitHub 仓库/作者链接去硬编码（真源改 package.json）+ 侧栏新增文档站入口（2026-09-24）
 
 - **背景与决策（用户提出、四项拍板照推荐方案执行）**：仓库地址 `github.com/baiwumm/better-admin` 与作者地址 `github.com/baiwumm` 此前散在四端源码 12 + 8 处（含 website 的 `SITE.github`）。**没有采用「抽成环境变量」的原设想**做 owner/repo：`VITE_*` / `NEXT_PUBLIC_*` 是构建期内联、`NUXT_PUBLIC_*` 也要重启服务端，改成变量并不带来「改一次全站生效」的收益，反而要在 Vercel×2 + CF Workers×3 + Render 六处平台各配一遍、漏配即静默回退。最终分层：**owner 与仓库名由本端 `package.json` 的 `repository.url` 编译期解析**（六端同值、改一处随 git 生效）；**只有 `DOCS_URL` / `BLOG_URL` 走公开变量**（默认值即线上地址，写在 `lib/env.ts` 一处）。

@@ -1,6 +1,6 @@
 # Better Admin 上线操作手册
 
-> **上线执行日：2026-09-23**。待办与取证见 [`docs/launch-audit.md`](./launch-audit.md)；上线前夜全量测试结论（✅ 可上线）见仓库根 `nightly-fulltest-report.md`。
+> **上线执行日：2026-09-23**。待办与取证见 [`docs/launch-audit.md`](./launch-audit.md)；上线前夜全量测试结论（✅ 可上线）原记于仓库根 `nightly-fulltest-report.md`（一次性时点报告，2026-09-24 已删除，git 历史 `30e783e` 可查；六端检查结论已由 CI 17 步矩阵与本文件 §7 收官表承接）。
 > **用户已拍板（2026-09-22）：线上即演示环境**——Nest / Next / Nuxt 三端 `DEMO_MODE=true`。
 > **✅ 2026-09-23 收官**：六端全部完成部署与上线冒烟（HTTP 层 + 用户浏览器 GUI 走查），收官线上 contract-diff 31 步一致（见 §7 总勾选表）。
 > **使用方式**：按「全局节」顺序逐端部署，每完成一端的部署与冒烟，把结果记入该端的冒烟勾选表。
@@ -288,6 +288,6 @@ CONTRACT_USER=admin CONTRACT_PASSWORD="$(grep -m1 '^CONTRACT_PASSWORD=' ../nest/
 | ④ | next | ☑ 2026-09-23 | ☑ 2026-09-23 HTTP 层全绿 | ☑ |
 | ④ | nuxt | ☑ 2026-09-23 | ☑ 2026-09-23 HTTP 层全绿 | ☑ |
 | ⑤ | website | ☑ 2026-09-23 | ☑ 2026-09-23 HTTP 层全绿 | ☑ |
-| ⑥ | 线上 contract-diff | — | ☐ | — |
+| ⑥ | 线上 contract-diff | — | ☑ 2026-09-23（退出码 0，见上方 §7 记录） | — |
 
 > 引用：硬性规则见 [`AGENTS.md`](../AGENTS.md)（§9 环境变量、§17 部署规范）；业务真源见 [`docs/requirements.md`](./requirements.md)；UI 规范见 [`docs/ui-spec.md`](./ui-spec.md)。
