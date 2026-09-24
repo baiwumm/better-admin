@@ -11,6 +11,7 @@ import type { MenuNode } from '@/lib/api-types'
 import { useAuthSync } from '@/composables/use-auth-sync'
 import { MENUS_QUERY_KEY, useMenus } from '@/composables/use-menus'
 import { CONSOLE_MENU_NODE } from '@/lib/menu-fetch'
+import { ENV } from '@/lib/env'
 import { filterHiddenMenus } from '@/lib/permission'
 import { findActivePath } from '@/lib/menu-utils'
 import { resolveRouteTitleKey } from '@/lib/route-access'
@@ -80,22 +81,31 @@ const sidebarItems = computed<NavLeaf[]>(() => {
   return filterHiddenMenus(source).map(toNavLeaf)
 })
 
-/** 菜单区底部快捷链接（对齐 React 端 SIDEBAR_LINKS，新窗口跳转）。 */
+/**
+ * 底部快捷链接数据源（对齐 React 端 SIDEBAR_LINKS）：侧边栏与命令面板共用一份，
+ * 新增条目只改这里；地址全部来自 lib/env（仓库地址真源在 package.json）。
+ */
+const SIDEBAR_LINKS = [
+  {
+    href: ENV.repoUrl,
+    icon: 'i-lucide-github',
+    labelKey: 'layout.sidebar.github'
+  },
+  {
+    href: ENV.blogUrl,
+    icon: 'i-lucide-house',
+    labelKey: 'layout.sidebar.blog'
+  }
+]
+
+/** 菜单区底部快捷链接（新窗口跳转）。 */
 const quickLinks = computed<NavigationMenuItem[][]>(() => [
-  [
-    {
-      label: t('layout.sidebar.github'),
-      icon: 'i-lucide-github',
-      to: 'https://github.com/baiwumm/better-admin',
-      target: '_blank'
-    },
-    {
-      label: t('layout.sidebar.blog'),
-      icon: 'i-lucide-house',
-      to: 'https://www.baiwumm.com',
-      target: '_blank'
-    }
-  ]
+  SIDEBAR_LINKS.map(link => ({
+    icon: link.icon,
+    label: t(link.labelKey),
+    target: '_blank',
+    to: link.href
+  }))
 ])
 
 /**
@@ -208,22 +218,13 @@ const searchGroups = computed<CommandPaletteGroup[]>(() => {
   groups.push({
     id: 'quickLinks',
     label: t('layout.command.quickLinks'),
-    items: [
-      {
-        label: t('layout.sidebar.github'),
-        icon: 'i-lucide-github',
-        to: 'https://github.com/baiwumm/better-admin',
-        target: '_blank',
-        searchText: t('layout.sidebar.github')
-      },
-      {
-        label: t('layout.sidebar.blog'),
-        icon: 'i-lucide-house',
-        to: 'https://www.baiwumm.com',
-        target: '_blank',
-        searchText: t('layout.sidebar.blog')
-      }
-    ]
+    items: SIDEBAR_LINKS.map(link => ({
+      icon: link.icon,
+      label: t(link.labelKey),
+      searchText: t(link.labelKey),
+      target: '_blank',
+      to: link.href
+    }))
   })
 
   groups.push({

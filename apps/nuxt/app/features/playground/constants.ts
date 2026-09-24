@@ -1,7 +1,9 @@
 import pkg from '../../../package.json'
 
+import { ENV } from '@/lib/env'
+
 /** 仓库地址与分支：`PlaygroundIntro` 的源码链接由 `meta.source` 相对路径拼接。 */
-export const REPO_URL = 'https://github.com/baiwumm/better-admin'
+export const REPO_URL = ENV.repoUrl
 export const REPO_BRANCH = 'main'
 
 /** 仓库内文件的 GitHub 浏览链接。 */

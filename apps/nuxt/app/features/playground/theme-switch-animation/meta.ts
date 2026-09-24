@@ -2,6 +2,8 @@ import type { DemoMeta } from '../types'
 
 import { packageVersion } from '../constants'
 
+import { githubUrl } from '@/lib/env'
+
 export const themeSwitchAnimationMeta: DemoMeta = {
   titleKey: 'menu.playground.themeSwitchAnimation',
   descriptionKey: 'features.playground.themeSwitchAnimation.description',
@@ -10,7 +12,7 @@ export const themeSwitchAnimationMeta: DemoMeta = {
     {
       name: 'theme-switch-animation',
       version: packageVersion('theme-switch-animation'),
-      github: 'https://github.com/baiwumm/theme-switch-animation',
+      github: githubUrl('theme-switch-animation'),
       docs: 'https://theme-switch-animation.baiwumm.com'
     }
   ],

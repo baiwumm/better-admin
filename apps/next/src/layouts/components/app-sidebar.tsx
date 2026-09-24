@@ -64,12 +64,12 @@ const TECH_STACKS: {
 const SIDEBAR_LINKS = [
   {
     labelKey: "layout.sidebar.github",
-    href: "https://github.com/baiwumm/better-admin",
+    href: ENV.repoUrl,
     kind: "github",
   },
   {
     labelKey: "layout.sidebar.blog",
-    href: "https://www.baiwumm.com",
+    href: ENV.blogUrl,
     kind: "blog",
   },
 ] as const;

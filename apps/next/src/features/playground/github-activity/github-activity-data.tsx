@@ -9,6 +9,8 @@ import Image from "next/image";
 
 import { REPO_URL } from "../constants";
 
+import { githubUrl } from "@/lib/env";
+
 /** 确定性伪随机（mulberry32）：同 seed 产出完全一致的热力图，四端对比稳定。 */
 function mulberry32(seed: number) {
   let a = seed >>> 0;
@@ -108,7 +110,7 @@ export const DEMO_REPOS: RepoContribution[] = [
   {
     name: "theme-switch-animation",
     count: 132,
-    href: "https://github.com/baiwumm/theme-switch-animation",
+    href: githubUrl("theme-switch-animation"),
     logo: (
       <Image
         alt=""
@@ -121,7 +123,7 @@ export const DEMO_REPOS: RepoContribution[] = [
   {
     name: "next-daily-hot",
     count: 57,
-    href: "https://github.com/baiwumm/next-daily-hot",
+    href: githubUrl("next-daily-hot"),
     logo: (
       <Image
         alt=""

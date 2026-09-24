@@ -38,11 +38,11 @@ export default async function AuthLayout({
           © {new Date().getFullYear()} by{" "}
           <a
             className="underline-offset-2 transition-colors hover:text-foreground hover:underline"
-            href="https://github.com/baiwumm"
+            href={ENV.ownerUrl}
             rel="noreferrer"
             target="_blank"
           >
-            baiwumm
+            {ENV.ownerName}
           </a>
           . All rights reserved.
         </>

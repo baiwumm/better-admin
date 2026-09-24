@@ -139,11 +139,11 @@ const BRAND_CHIPS = [
           © {{ new Date().getFullYear() }} by
           <a
             class="hover:text-default underline-offset-2 transition-colors hover:underline"
-            href="https://github.com/baiwumm"
+            :href="ENV.ownerUrl"
             rel="noreferrer"
             target="_blank"
           >
-            baiwumm
+            {{ ENV.ownerName }}
           </a>
           . All rights reserved.
         </p>
@@ -155,10 +155,10 @@ const BRAND_CHIPS = [
       © {{ new Date().getFullYear() }}
       <a
         class="underline-offset-2 transition-colors hover:underline"
-        href="https://github.com/baiwumm"
+        :href="ENV.ownerUrl"
         target="_blank"
       >
-        baiwumm
+        {{ ENV.ownerName }}
       </a>
       . All rights reserved.
     </footer>
