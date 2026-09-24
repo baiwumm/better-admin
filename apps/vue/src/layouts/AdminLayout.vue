@@ -34,7 +34,7 @@ import { useTabsStore } from "@/stores/tabs-store";
 /**
  * Admin 双栏布局（Nuxt UI Dashboard 套件，结构对齐 React 端 admin-layout）：
  * - 侧边栏：品牌下拉（技术栈入口）+ 导航菜单（骨架屏 / 失败重试 / 折叠 tooltip
- *   + 悬浮子菜单）+ 底部快捷链接（GitHub / 博客）+ 用户菜单
+ *   + 悬浮子菜单）+ 底部快捷链接（文档 / GitHub / 博客）+ 用户菜单
  * - 顶栏：折叠按钮（leading，移动端为打开抽屉）+ 面包屑 + 右侧
  *   搜索 / 通知 / 全屏 / 语言 / 偏好抽屉；顶栏下方为多标签页栏（偏好可隐藏）
  * - 主体：KeepAliveOutlet（标签页联动的 KeepAlive 保活 + 刷新）；全宽页面
@@ -93,6 +93,11 @@ const sidebarItems = computed<NavLeaf[]>(() => {
  * 新增条目只改这里；地址全部来自 lib/env（仓库地址真源在 package.json）。
  */
 const SIDEBAR_LINKS = [
+  {
+    href: ENV.docsUrl,
+    icon: "i-lucide-book-open",
+    labelKey: "layout.sidebar.docs",
+  },
   {
     href: ENV.repoUrl,
     icon: "i-lucide-github",

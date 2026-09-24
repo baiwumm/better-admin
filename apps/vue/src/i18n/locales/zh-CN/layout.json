@@ -86,6 +86,7 @@
   "layout.search.label": "搜索",
   "layout.search.placeholder": "搜索…",
   "layout.sidebar.blog": "博客",
+  "layout.sidebar.docs": "文档",
   "layout.sidebar.github": "Github",
   "layout.sidebar.submenu": "子菜单",
   "layout.sidebar.techStack": "技术栈",

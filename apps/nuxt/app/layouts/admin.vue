@@ -28,7 +28,7 @@ import UserMenu from '@/components/layout/UserMenu.vue'
  * AdminLayout.vue 并按 nuxt-plan.md M0 范围精简，结构对齐 React 端
  * admin-layout）：
  * - 侧边栏：品牌下拉（技术栈入口）+ 导航菜单（骨架屏 / 失败重试 / 折叠
- *   tooltip + 悬浮子菜单）+ 底部快捷链接（GitHub / 博客）+ 用户菜单
+ *   tooltip + 悬浮子菜单）+ 底部快捷链接（文档 / GitHub / 博客）+ 用户菜单
  * - 顶栏：折叠按钮（leading，移动端为打开抽屉）+ 面包屑 + 右侧
  *   站内信铃铛 / 全屏 / 语言 / 偏好抽屉（ConfigDrawer，主题切换收在其中，
  *   对齐 Vue 端 AdminLayout）
@@ -86,6 +86,11 @@ const sidebarItems = computed<NavLeaf[]>(() => {
  * 新增条目只改这里；地址全部来自 lib/env（仓库地址真源在 package.json）。
  */
 const SIDEBAR_LINKS = [
+  {
+    href: ENV.docsUrl,
+    icon: 'i-lucide-book-open',
+    labelKey: 'layout.sidebar.docs'
+  },
   {
     href: ENV.repoUrl,
     icon: 'i-lucide-github',

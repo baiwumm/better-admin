@@ -14,7 +14,7 @@ import {
   Separator,
   Typography,
 } from "@heroui/react";
-import { ArrowUpRight, ChevronsUpDown, House } from "lucide-react";
+import { ArrowUpRight, BookOpen, ChevronsUpDown, House } from "lucide-react";
 
 import { CollapsedMenu } from "./collapsed-menu";
 import { SidebarMenu } from "./sidebar-menu";
@@ -63,6 +63,11 @@ const TECH_STACKS: {
 /** 底部快捷链接（菜单区与用户区之间）：新窗口跳转。 */
 const SIDEBAR_LINKS = [
   {
+    labelKey: "layout.sidebar.docs",
+    href: ENV.docsUrl,
+    kind: "docs",
+  },
+  {
     labelKey: "layout.sidebar.github",
     href: ENV.repoUrl,
     kind: "github",
@@ -89,9 +94,13 @@ function GithubIcon({ className }: { className?: string }) {
 }
 
 /** 链接图标映射（Github 用内联 SVG，其余走 lucide）。 */
-function SidebarLinkIcon({ kind }: { kind: "github" | "blog" }) {
+function SidebarLinkIcon({ kind }: { kind: "docs" | "github" | "blog" }) {
   if (kind === "github") {
     return <GithubIcon className="size-4 shrink-0" />;
+  }
+
+  if (kind === "docs") {
+    return <BookOpen className="size-4 shrink-0" />;
   }
 
   return <House className="size-4 shrink-0" />;
@@ -174,7 +183,7 @@ function SidebarBrand({ collapsed }: { collapsed?: boolean }) {
 }
 
 /**
- * 菜单区底部快捷链接：Github / 博客，新窗口跳转。
+ * 菜单区底部快捷链接：文档 / Github / 博客，新窗口跳转。
  * 展开态为「图标 + 文字」，折叠态仅图标（Tooltip 提示名称）。
  */
 function SidebarLinks({ collapsed }: { collapsed?: boolean }) {
