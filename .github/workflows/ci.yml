@@ -15,8 +15,9 @@
 #   · 执行的是各端 package.json 里既有的 script，不另造命令。注意 react / vue / next /
 #     nest 的 `lint` 自带 --fix：CI 里它会改工作区文件但不回推，只用于取退出码。
 #   · website 仅有 dev/build/start，故只跑 build（Next 会顺带做类型检查）。
-#   · 无 `test` 脚本的端（next / nest / website）跳过 test，不为此新增依赖或框架
-#     ——那属台账 #46 的架构级待拍板项。
+#   · 无 `test` 脚本的端（next / website）跳过 test。nest 的 e2e 需要真实 PostgreSQL
+#     （统一矩阵模板给不了），由下方独立的 nest-e2e job 承接（2026-09-25 台账 #46 落地），
+#     secret TEST_DATABASE_URL = Supabase 5432 直连串，测试在库内自建/自删 e2e schema。
 #
 # 若 nuxt 在 pnpm 12 下因供应链策略（allowBuilds / minimumReleaseAge）报红，
 # 处理顺序见 docs/mechanisms.md §35，不要直接放宽策略。
@@ -95,7 +96,7 @@ jobs:
           - app: nuxt
             pnpm: 12.3.4
             step: build
-          # ---- NestJS（无 test 脚本，见台账 #46）----
+          # ---- NestJS（lint / build 入矩阵；e2e 见独立 job）----
           - app: nest
             pnpm: 11
             step: lint
@@ -128,3 +129,35 @@ jobs:
       - name: ${{ matrix.step }} (${{ matrix.app }})
         working-directory: apps/${{ matrix.app }}
         run: pnpm run ${{ matrix.step }}
+
+  # Nest e2e（2026-09-25，台账 #46 落地）：需真实 PostgreSQL，无法进统一矩阵模板，
+  # 独立 job 承接。测试自行在目标库内重建/清理 e2e schema（与业务数据隔离），
+  # 机制见 apps/nest/test/setup/global-setup.ts 与 docs/mechanisms.md §40。
+  nest-e2e:
+    name: nest · e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Supabase 5432 直连串（仓库 Settings > Secrets > Actions 配置）；
+      # 缺失时该 job 因测试启动校验失败而红，属预期配置提醒
+      DATABASE_TEST_URL: ${{ secrets.TEST_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/nest/pnpm-lock.yaml
+
+      - name: Install (nest)
+        working-directory: apps/nest
+        run: pnpm install --frozen-lockfile
+
+      - name: test (nest e2e)
+        working-directory: apps/nest
+        run: pnpm test
