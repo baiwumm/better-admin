@@ -6,7 +6,10 @@ import type { ThemeAnimationDirection } from "theme-switch-animation/vue";
 import { DEMO_ACCENTS } from "../demo-palette";
 
 import type { DemoAnimationType } from "./animation-types";
-import { useDemoThemeAnimation } from "./use-demo-theme-animation";
+import {
+  useDemoThemeAnimation,
+  type ReverseMode,
+} from "./use-demo-theme-animation";
 
 /**
  * 单张动画类型卡：左侧形状示意图标 + 中间类型名与提示 + 右侧圆形触发按钮。
@@ -27,6 +30,12 @@ const props = defineProps<{
   direction: ThemeAnimationDirection;
   /** 百叶窗叶片宽度 px，仅 BLINDS 消费 */
   slatWidth: number;
+  /** 涟漪波长 px，仅 RIPPLE 消费 */
+  waveWidth: number;
+  /** 扇叶数，仅 FAN 消费 */
+  bladeCount: number;
+  /** 反向揭开三档，仅 CIRCLE / FAN / RIPPLE / CLOCK_SWEEP / CURTAIN 消费 */
+  reverse: ReverseMode;
 }>();
 
 const { t } = useI18n();
@@ -35,10 +44,13 @@ const { isAnimating, isDark, triggerRef, toggle } =
   useDemoThemeAnimation<HTMLDivElement>(() => ({
     animationType: props.type,
     blurAmount: props.blurAmount,
+    bladeCount: props.bladeCount,
     direction: props.direction,
     duration: props.duration,
     easing: props.easing,
+    reverse: props.reverse,
     slatWidth: props.slatWidth,
+    waveWidth: props.waveWidth,
   }));
 
 // 强调色按数组下标循环取演示色板：色板是演示参数值（见 demo-palette.ts 注释），

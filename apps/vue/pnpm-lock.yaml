@@ -102,8 +102,8 @@ importers:
         specifier: 3.7.0
         version: 3.7.0
       theme-switch-animation:
-        specifier: 0.2.0
-        version: 0.2.0(@nuxt/kit@4.5.2(magic-string@1.2.3)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.27.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0))))(vue@3.5.42(typescript@5.9.3))
+        specifier: 0.4.0
+        version: 0.4.0(@nuxt/kit@4.5.2(magic-string@1.2.3)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.27.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0))))(vue@3.5.42(typescript@5.9.3))
       vue:
         specifier: ^3.5.42
         version: 3.5.42(typescript@5.9.3)
@@ -3269,8 +3269,8 @@ packages:
     resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
     engines: {node: '>=6'}
 
-  theme-switch-animation@0.2.0:
-    resolution: {integrity: sha512-GK6pHtSLHWZ+JbtLEigp3d6zYBaAXLxyUKYyCkPATve7PdVkxp94KNzM9OrxmWZJ6xgSByP+BjlNSy7lCYkJPQ==}
+  theme-switch-animation@0.4.0:
+    resolution: {integrity: sha512-vtaBtDz1FdUIffAcqjEtrg8NN044u1fW44eK9esZjJeeti5zzVCJKUCv+N3whKBlTrgVvx2A9qdCXAecBmfS2w==}
     engines: {node: '>=18', pnpm: '>=9'}
     peerDependencies:
       '@nuxt/kit': '>=3'
@@ -7124,7 +7124,7 @@ snapshots:
 
   tapable@2.3.3: {}
 
-  theme-switch-animation@0.2.0(@nuxt/kit@4.5.2(magic-string@1.2.3)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.27.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0))))(vue@3.5.42(typescript@5.9.3)):
+  theme-switch-animation@0.4.0(@nuxt/kit@4.5.2(magic-string@1.2.3)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.27.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0))))(vue@3.5.42(typescript@5.9.3)):
     optionalDependencies:
       '@nuxt/kit': 4.5.2(magic-string@1.2.3)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.27.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0)))
       vue: 3.5.42(typescript@5.9.3)

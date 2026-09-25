@@ -5,7 +5,10 @@ import type { ThemeAnimationDirection } from "theme-switch-animation/vue";
 import { cn } from "@/lib/cn";
 
 import type { DemoAnimationType } from "./animation-types";
-import { useDemoThemeAnimation } from "./use-demo-theme-animation";
+import {
+  useDemoThemeAnimation,
+  type ReverseMode,
+} from "./use-demo-theme-animation";
 
 /**
  * 区块三的一个触发点：同一动画类型、水平位置不同，验证「扩散圆心跟随触发元素中心」。
@@ -24,6 +27,12 @@ const props = defineProps<{
   direction: ThemeAnimationDirection;
   /** 百叶窗叶片宽度 px，仅 BLINDS 消费 */
   slatWidth: number;
+  /** 涟漪波长 px，仅 RIPPLE 消费 */
+  waveWidth: number;
+  /** 扇叶数，仅 FAN 消费 */
+  bladeCount: number;
+  /** 反向揭开三档，仅 CIRCLE / FAN / RIPPLE / CLOCK_SWEEP / CURTAIN 消费 */
+  reverse: ReverseMode;
 }>();
 
 const { t } = useI18n();
@@ -32,10 +41,13 @@ const { isAnimating, triggerRef, toggle } =
   useDemoThemeAnimation<HTMLDivElement>(() => ({
     animationType: props.animationType,
     blurAmount: props.blurAmount,
+    bladeCount: props.bladeCount,
     direction: props.direction,
     duration: props.duration,
     easing: props.easing,
+    reverse: props.reverse,
     slatWidth: props.slatWidth,
+    waveWidth: props.waveWidth,
   }));
 </script>
 
