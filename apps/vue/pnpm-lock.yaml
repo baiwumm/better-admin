@@ -117,8 +117,8 @@ importers:
         specifier: ^5.3.1
         version: 5.3.1(@vue/compiler-sfc@3.5.42)(esbuild@0.27.7)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.7)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.27.7)(jiti@2.7.0))(vue@3.5.42(typescript@5.9.3))
       vue3-okr-tree:
-        specifier: 1.13.0
-        version: 1.13.0(vue@3.5.42(typescript@5.9.3))
+        specifier: 1.14.2
+        version: 1.14.2(vue@3.5.42(typescript@5.9.3))
       write-excel-file:
         specifier: 4.1.1
         version: 4.1.1
@@ -3719,8 +3719,8 @@ packages:
     peerDependencies:
       typescript: '>=5.0.0'
 
-  vue3-okr-tree@1.13.0:
-    resolution: {integrity: sha512-+2X9VUNSX7O65OKNjRdrP+W3uvPT27zO7SghZc8n+RgQcq3s7aJvwLzLWCtN7hzr2AtFJKSEewIGvwyC9X+QKw==}
+  vue3-okr-tree@1.14.2:
+    resolution: {integrity: sha512-oNOju54o44s4fa2yuI+nsUc2B7eLIgx3SoaZh/ndEQqS0windrD3w3c+uP6YwpPjfCwzAdlDT+cwiEXW0um95Q==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       html-to-image: ^1.11.0
@@ -7486,7 +7486,7 @@ snapshots:
       '@vue/language-core': 3.3.11
       typescript: 5.9.3
 
-  vue3-okr-tree@1.13.0(vue@3.5.42(typescript@5.9.3)):
+  vue3-okr-tree@1.14.2(vue@3.5.42(typescript@5.9.3)):
     dependencies:
       vue: 3.5.42(typescript@5.9.3)
 
