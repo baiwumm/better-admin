@@ -2,6 +2,17 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 主题切换动画 0.4.0 升级：reverse 反向揭开 + 15 种动画类型（2026-09-25，四端 + website）
+
+- **升级内容**：`theme-switch-animation@0.2.0 → 0.4.0`（横跨 0.3.0 / 0.4.0 两个 minor）：0.3.0 新增 RIPPLE（水滴涟漪，`waveWidth` 波长 8–60 默认 18）/ CLOCK_SWEEP（时钟扇形）/ FAN（扇叶，`bladeCount` 4–16 整数默认 8）/ CURTAIN（双开门）四类型；0.4.0 新增 `reverse` 反向揭开选项（三态 `boolean | 'auto'`：`'auto'` 切暗正向 / 切亮收起，即原 CIRCLE_REVERT 语义；对 CIRCLE / FAN / RIPPLE / CLOCK_SWEEP / CURTAIN 五类生效，其余类型静默忽略——形状族反向必须动 `mask-size` 会重新引入像素对齐抖动），breaking 移除 `CIRCLE_REVERT` 类型，由 `CIRCLE + reverse: 'auto'` 承接；动画类型 12 → 15 种。以库 dist 实际实现核对 reverse 生效面（其 `.d.ts` 注释写「当前 CIRCLE 与 FAN 生效」滞后于实现，README 与实现一致为五类）。
+- **四端顺序**：React 先行（`7ca8a86`，用户 GUI 验证通过）→ Vue（`6d862b8`，用户 GUI 验证通过）→ Next → Nuxt。
+- **website 同批升级（零代码改动）**：顶栏主题切换按钮用的是 `CIRCLE_BLUR`（0.4.0 未变动），只升包 0.2.0 → 0.4.0 + 白名单条目合并，`next build` 静态导出通过。
+- **演示页适配（四端一致）**：类型卡 12 → 15 张（顺序对齐库枚举；新图标 RIPPLE=Waves / CLOCK_SWEEP=Clock / FAN=Fan / CURTAIN=UnfoldHorizontal，Vue / Nuxt 用同款 iconify 名）；参数区新增「反向揭开」三档分段控件（总是正向 / 总是反向 / 跟随方向，仅五类显示）+ RIPPLE 波长滑块 + FAN 扇叶数滑块；`reverse` 演示页全局默认取 `'auto'`（非库默认 `false`）——保留原 CIRCLE_REVERT 卡「切暗扩散、切亮收拢」的标志性观感。
+- **端间差异**：Next 与 React 升级前逐字一致（仅 `"use client"`），两个文件直接复刻；Nuxt 端自适配（无分号单引号风格 + `theme-switch-animation/nuxt` 模块自动导入不变）；`ReverseMode` 类型与 `toLibraryReverse` 映射在 Vue / Nuxt 端落 `use-demo-theme-animation.ts`（React 端落页面文件——两端 `AnimationParams` 的消费面不同）。
+- **语言包**：React 真源 52 词条（删 `type.circleRevert`、增 4 类型 hint + `reverse` 三档 + `waveWidth` / `bladeCount` + 数量与描述口径 12 → 15）；Next 经 check-locales 强制同步、Nuxt 经 sync-locales 自动同步（均整文件从 React 复制）、Vue 端经 diff 验证与 React 升级前逐字一致后直接复制；四端 `themeSwitchAnimation` 词条 52 条完全一致。
+- **supply-chain 白名单（§35）**：五处（四端 + website）`pnpm-workspace.yaml` 的 `theme-switch-animation@0.2.0` 条目均由 pnpm install 自动合并为 `@0.2.0 || 0.4.0`，注释人工更新到 0.4.0 语境（0.4.0 发布当日安装）。
+- **验证**：React eslint / tsc / vitest（93 用例）/ build / check-locales、Vue vue-tsc / eslint / vitest（101）/ build、Next check-locales / eslint / next build、Nuxt sync-locales / check-locales / typecheck / eslint / vitest（99）/ build 全绿；Next / Nuxt GUI 走查待用户。
+
 ### AGENTS.md §19 精简：历史细节归还 progress.md（2026-09-24，用户拍板）
 
 - **精简量**：§19「当前阶段 / 当前待办」两巨段及三个「各端已完成模块」列表、Playground 状态快照巨段删除，净减约 7,500 字符（8,605 删 / 1,063 增）——历史叙事的承接处：各端实现历程与模块明细 = progress.md 对应条目；功能对齐状态 = feature-matrix.md（唯一追踪源，§18-5）；Playground 实施明细 = progress.md 2026-09-14 ~ 09-21 条目。
