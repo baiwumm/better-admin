@@ -4,6 +4,7 @@ allowBuilds:
   sharp: true
 
 minimumReleaseAgeExclude:
-  # theme-switch-animation 0.2.0：作者自有包（与 react / next / vue / nuxt 四端同批升级），
-  # 发布当日接入；pnpm 默认 minimumReleaseAge 会拦新发布版本，按四端同款白名单放行
-  - 'theme-switch-animation@0.2.0'
+  # theme-switch-animation：作者自有包（theme-switch-animation.baiwumm.com），
+  # 0.2.0 / 0.4.0 均为发布当日接入或升级（与四端同款白名单）；pnpm 默认
+  # minimumReleaseAge 会拦新发布版本，按同款白名单放行
+  - theme-switch-animation@0.2.0 || 0.4.0
