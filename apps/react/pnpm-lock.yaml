@@ -93,8 +93,8 @@ importers:
         specifier: ^17.0.12
         version: 17.0.12(i18next@26.4.0(typescript@5.6.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.6.3)
       react-okr-tree:
-        specifier: 1.13.0
-        version: 1.13.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 1.14.2
+        version: 1.14.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       recharts:
         specifier: 3.10.1
         version: 3.10.1(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-is@16.13.1)(react@19.2.8)(redux@5.0.1)
@@ -2879,8 +2879,8 @@ packages:
   react-is@16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
 
-  react-okr-tree@1.13.0:
-    resolution: {integrity: sha512-zsnCTB1embQaKaLQR6UozBoI/I6zGr8KcoIxEus7oNFtCWQF5434aj/0/x5qlv9dTLLjl9SNM5DkuBfDwZIcmg==}
+  react-okr-tree@1.14.2:
+    resolution: {integrity: sha512-Esn5vyR2mg1/SQOG+jmkMk9Eapb2XYxvp35z+EQDy3rWI32DRDQrMM6TcWbrJox7Gv+L7yNcB+38F28Ci19a8g==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       html-to-image: ^1.11.0
@@ -6170,7 +6170,7 @@ snapshots:
 
   react-is@16.13.1: {}
 
-  react-okr-tree@1.13.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+  react-okr-tree@1.14.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
