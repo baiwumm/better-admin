@@ -154,6 +154,8 @@ jobs:
           openssl req -new -x509 -days 1 -nodes -subj "/CN=postgres" \
             -keyout certs/server.key -out certs/server.crt
           chmod 600 certs/server.key
+          # key 属主必须为数据库用户：alpine 版 postgres uid=70，entrypoint 不修复自定义路径
+          docker run --rm -v "$PWD/certs:/certs" alpine chown 70:70 /certs/server.key
           docker run -d --name e2e-pg -p 5432:5432 \
             -e POSTGRES_PASSWORD=postgres \
             -v "$PWD/certs:/certs" \
