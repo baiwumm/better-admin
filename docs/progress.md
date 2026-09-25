@@ -2,6 +2,12 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### nuxt 端 package.json name 统一：`nuxt` → `better-admin-nuxt`（2026-09-25，用户拍板）
+
+- **销项**：2026-09-24「仓库/作者链接去硬编码」条目登记的遗留项——`apps/nuxt/package.json` 补元数据时 `name` 仍是模板默认的 `"nuxt"`，现改为 `better-admin-nuxt`，与五端命名规则（`better-admin-<端名>`）统一；原条目按「历史不回改」保留。
+- **影响面核实**：nuxt 端源码无任何消费 `pkg.name` 的地方（`app/lib/env.ts` 只读 `repository`、playground 只读依赖版本），`pnpm-lock.yaml` 不记录包名——`pnpm install --lockfile-only` 后 lockfile 零变化、supply-chain 白名单校验通过，vitest 99 用例全绿。
+- 原「不能用 `pkg.name` 推仓库名」的论据不受影响：该教训仍成立于历史时点（当时 name 就不是 `better-admin-nuxt`），且各端 name 与仓库名（`better-admin`）本就不同值。
+
 ### 文档站首页调整：导航精简、对齐卡入口收敛、技术栈卡片站点入口（2026-09-25，用户逐项拍板）
 
 - **导航（navbar.tsx）**：顶部只保留 GitHub 与主题切换，"文档 / 开始阅读 / 汉堡折叠层"移除——文档入口由 Hero「阅读文档」主按钮与页脚承担，移动端不再需要折叠层；GitHub 按钮形态对齐 theme-switch-animation 文档站参考实现（`size="icon"` 图标按钮 + `size-[18px]` + `aria-label`），全视口通用、无双形态。
