@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { ensureViewerRole, TEST_PASSWORD } from './setup/fixtures';
+import { ensureUserWithRoles, ensureViewerRole, TEST_PASSWORD } from './setup/fixtures';
 import { api, closeTestApp, createTestApp, login, type TestApp } from './setup/test-app';
 import { Permissions, SUPER_ADMIN_BITS_POSITIVE } from '@/db/schema/permissions.enum';
 
@@ -15,7 +15,9 @@ describe('rbac e2e', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
+    // 用户必须在本文件内自建（单跑本文件时无其他 spec 的造数兜底）
     viewerRoleId = await ensureViewerRole();
+    await ensureUserWithRoles('e2e_viewer', [viewerRoleId]);
     viewerToken = (await login(app, 'e2e_viewer', TEST_PASSWORD)).accessToken;
     adminToken = (await login(app, 'admin', 'admin123')).accessToken;
   });

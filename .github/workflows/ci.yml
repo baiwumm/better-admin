@@ -16,8 +16,9 @@
 #     nest 的 `lint` 自带 --fix：CI 里它会改工作区文件但不回推，只用于取退出码。
 #   · website 仅有 dev/build/start，故只跑 build（Next 会顺带做类型检查）。
 #   · 无 `test` 脚本的端（next / website）跳过 test。nest 的 e2e 需要真实 PostgreSQL
-#     （统一矩阵模板给不了），由下方独立的 nest-e2e job 承接（2026-09-25 台账 #46 落地），
-#     secret TEST_DATABASE_URL = Supabase 5432 直连串，测试在库内自建/自删 e2e schema。
+#     （统一矩阵模板给不了），由下方独立的 nest-e2e job 承接（2026-09-25 台账 #46 落地）：
+#     CI 起自托管 TLS postgres 容器（应用内 db/client.ts 硬编码 SSL），测试在库内
+#     自建/自删 e2e schema。不连 Supabase——免费层直连域名仅 IPv6，runner 无 IPv6 出站。
 #
 # 若 nuxt 在 pnpm 12 下因供应链策略（allowBuilds / minimumReleaseAge）报红，
 # 处理顺序见 docs/mechanisms.md §35，不要直接放宽策略。
@@ -131,18 +132,41 @@ jobs:
         run: pnpm run ${{ matrix.step }}
 
   # Nest e2e（2026-09-25，台账 #46 落地）：需真实 PostgreSQL，无法进统一矩阵模板，
-  # 独立 job 承接。测试自行在目标库内重建/清理 e2e schema（与业务数据隔离），
-  # 机制见 apps/nest/test/setup/global-setup.ts 与 docs/mechanisms.md §40。
+  # 独立 job 承接。不连 Supabase（免费层直连域名仅 IPv6、runner 无 IPv6 出站；
+  # Supavisor pooler 对 options 启动参数支持不稳定）——起本地 TLS postgres 容器，
+  # 行为与 Supabase 直连一致（原生支持 search_path 启动参数）。测试自行在库内
+  # 重建/清理 e2e schema，机制见 apps/nest/test/setup/global-setup.ts 与
+  # docs/mechanisms.md §42。
   nest-e2e:
     name: nest · e2e
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      # Supabase 5432 直连串（仓库 Settings > Secrets > Actions 配置）；
-      # 缺失时该 job 因测试启动校验失败而红，属预期配置提醒
-      DATABASE_TEST_URL: ${{ secrets.TEST_DATABASE_URL }}
+      DATABASE_TEST_URL: postgresql://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v4
+
+      # 应用内 db/client.ts 统一配置 ssl: { rejectUnauthorized: false }（对齐 Supabase），
+      # 容器必须启用 TLS；证书读写挂载以让 entrypoint 修复 key 属主权限
+      - name: Start PostgreSQL 16 (TLS)
+        run: |
+          mkdir certs
+          openssl req -new -x509 -days 1 -nodes -subj "/CN=postgres" \
+            -keyout certs/server.key -out certs/server.crt
+          chmod 600 certs/server.key
+          docker run -d --name e2e-pg -p 5432:5432 \
+            -e POSTGRES_PASSWORD=postgres \
+            -v "$PWD/certs:/certs" \
+            postgres:16-alpine \
+            postgres -c ssl=on -c ssl_cert_file=/certs/server.crt -c ssl_key_file=/certs/server.key
+          for i in $(seq 1 30); do
+            PGPASSWORD=postgres psql "host=localhost user=postgres dbname=postgres sslmode=require" \
+              -c 'select 1' >/dev/null 2>&1 && exit 0
+            sleep 1
+          done
+          echo "::error::postgres 30s 内未就绪"
+          docker logs --tail 50 e2e-pg
+          exit 1
 
       - uses: pnpm/action-setup@v4
         with:
