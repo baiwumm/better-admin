@@ -7,9 +7,10 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - '@heroui/react@3.2.5'
   - '@heroui/styles@3.2.5'
-  # react-okr-tree 1.13.0：作者自有包（npm publish --provenance），发布当日即接入
-  # 演示场第 10 页（Next 端对齐 React 基准）；与 react 端同款白名单
-  - 'react-okr-tree@1.13.0'
+  # react-okr-tree：作者自有包（npm publish --provenance）。1.13.0 发布当日接入
+  # 演示场第 10 页（Next 端对齐 React 基准）；1.14.2 发布当日升级（锁步修复批，
+  # 对外 API 零变化）；与 react 端同款白名单
+  - react-okr-tree@1.13.0 || 1.14.2
   # theme-switch-animation：同作者自有包（theme-switch-animation.baiwumm.com），
   # 0.2.0 / 0.4.0 均为发布当日升级（0.4.0 新增 reverse 反向揭开选项并移除
   # CIRCLE_REVERT——由 CIRCLE + reverse: 'auto' 承接）；与 react 端同款白名单
