@@ -20,6 +20,7 @@
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "ts-node scripts/migrate.ts",
     "db:seed": "ts-node src/db/seed.ts",
@@ -54,6 +55,7 @@
     "@faker-js/faker": "10.6.0",
     "@nestjs/cli": "11.0.24",
     "@nestjs/schematics": "11.0.8",
+    "@nestjs/testing": "11.2.1",
     "@types/bcrypt": "6.0.0",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.2.0",
@@ -62,10 +64,12 @@
     "@types/pg": "8.23.1",
     "drizzle-kit": "0.31.10",
     "eslint": "9.18.0",
+    "express": "^5.2.1",
     "pinyin-pro": "3.29.4",
     "ts-node": "10.9.2",
     "tsconfig-paths": "4.2.0",
     "typescript": "5.8.3",
-    "typescript-eslint": "^8.67.0"
+    "typescript-eslint": "^8.67.0",
+    "vitest": "4.1.11"
   }
 }

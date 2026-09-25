@@ -179,10 +179,12 @@ async function seed() {
     );
 
   // 系统管理（用户 / 角色 / 权限 / 菜单 / 字典 / 日志）
+  // 一级目录无路由：必须用 null 而非空串——menus_to_unique 唯一索引仅豁免 NULL，
+  // 两个 to:'' 会撞唯一冲突（生产库一级菜单实际形态即为 NULL）
   const mSystem = await resolveMenu('menu.system', {
     label: '系统管理',
     icon: 'settings-2',
-    to: '',
+    to: null,
     parentId: null,
     sort: 1,
     enabled: true,
@@ -246,7 +248,7 @@ async function seed() {
   const mOrg = await resolveMenu('menu.org', {
     label: '组织中心',
     icon: 'building-2',
-    to: '',
+    to: null,
     parentId: null,
     sort: 2,
     enabled: true,
