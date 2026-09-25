@@ -45,6 +45,12 @@ const BLUR_RANGE = { min: 1, max: 10, step: 0.5 };
 /** BLINDS 叶片宽度合法域（库约定 16–200px，越界静默回落默认 72） */
 const SLAT_WIDTH_RANGE = { min: 16, max: 200, step: 2 };
 const SLAT_WIDTH_DEFAULT = 72;
+/** RIPPLE 涟漪波长合法域（库约定 8–60px，越界静默回落默认 18） */
+const WAVE_WIDTH_RANGE = { min: 8, max: 60, step: 1 };
+const WAVE_WIDTH_DEFAULT = 18;
+/** FAN 扇叶数合法域（库约定 4–16 的整数，越界静默回落默认 8；非整数会让末帧扇叶接缝错位） */
+const BLADE_COUNT_RANGE = { min: 4, max: 16, step: 1 };
+const BLADE_COUNT_DEFAULT = 8;
 
 /** 消费 `direction` 选项的三种属性驱动类型（其余类型传入无效果） */
 const DIRECTION_CONSUMING_TYPES: readonly DemoAnimationType[] = [
@@ -52,6 +58,38 @@ const DIRECTION_CONSUMING_TYPES: readonly DemoAnimationType[] = [
   ThemeAnimationType.SCAN,
   ThemeAnimationType.QR_GRID,
 ];
+
+/**
+ * 消费 `reverse` 选项的五种类型（0.4.0；`CIRCLE_REVERT` 已并入 `CIRCLE + reverse`）。
+ * 形状族与 BLINDS / SCAN / QR_GRID 有意不接入：反向必须动 `mask-size`，
+ * 会重新引入已修完的蒙版设备像素对齐抖动。
+ */
+const REVERSE_CONSUMING_TYPES: readonly DemoAnimationType[] = [
+  ThemeAnimationType.CIRCLE,
+  ThemeAnimationType.FAN,
+  ThemeAnimationType.RIPPLE,
+  ThemeAnimationType.CLOCK_SWEEP,
+  ThemeAnimationType.CURTAIN,
+];
+
+/**
+ * 「反向揭开」三档的控件取值（DemoSegmented 要求字符串 id）。
+ * `auto` 即 0.2/0.3 时代 `CIRCLE_REVERT` 的语义——切暗正向、切亮收起，
+ * 跟随本次切换方向；库默认 `false`（总是正向），演示页取 `auto` 以保留原
+ * CIRCLE_REVERT 卡的标志性观感。
+ */
+type ReverseMode = "off" | "on" | "auto";
+
+const REVERSE_MODES: readonly { id: ReverseMode }[] = [
+  { id: "off" },
+  { id: "on" },
+  { id: "auto" },
+];
+
+/** ReverseMode → 库选项 `reverse` 的取值（off→false / on→true / auto→'auto'） */
+function toLibraryReverse(mode: ReverseMode): boolean | "auto" {
+  return mode === "off" ? false : mode === "on" ? true : "auto";
+}
 
 const DIRECTION_PRESETS = [
   ThemeAnimationDirection.LTR,
@@ -80,6 +118,12 @@ interface AnimationParams {
   direction: ThemeAnimationDirection;
   /** 百叶窗叶片宽度 px，仅 BLINDS 生效 */
   slatWidth: number;
+  /** 涟漪波长 px，仅 RIPPLE 生效 */
+  waveWidth: number;
+  /** 扇叶数，仅 FAN 生效 */
+  bladeCount: number;
+  /** 反向揭开三档，仅 CIRCLE / FAN / RIPPLE / CLOCK_SWEEP / CURTAIN 生效（0.4.0 起） */
+  reverse: ReverseMode;
 }
 
 /**
@@ -122,11 +166,14 @@ function useDemoThemeAnimation(params: AnimationParams) {
   const timerRef = useRef<number | undefined>(undefined);
   const { ref, toggleTheme } = useThemeAnimation<HTMLDivElement>({
     animationType: params.animationType,
+    bladeCount: params.bladeCount,
     blurAmount: params.blurAmount,
     direction: params.direction,
     duration: params.duration,
     easing: params.easing,
+    reverse: toLibraryReverse(params.reverse),
     slatWidth: params.slatWidth,
+    waveWidth: params.waveWidth,
     isDark,
     onChange: (next) => applyThemeModeInstant(next ? "dark" : "light"),
   });
@@ -233,7 +280,7 @@ function AnimationTypeCard({
   );
 }
 
-/** 区块一：12 种动画类型，逐类型点击体验（圆心取圆钮中心，网格不同位置即不同起点）。 */
+/** 区块一：15 种动画类型，逐类型点击体验（圆心取圆钮中心，网格不同位置即不同起点）。 */
 function TypeGridSection({ params }: { params: AnimationParams }) {
   const { t } = useTranslation();
 
@@ -260,7 +307,7 @@ function TypeGridSection({ params }: { params: AnimationParams }) {
   );
 }
 
-/** 区块二：选中一种动画并调节时长 / 缓动 / 模糊强度 / 方向 / 叶宽，再以该参数触发一次切换。 */
+/** 区块二：选中一种动画并调节时长 / 缓动 / 模糊强度 / 方向 / 叶宽等，再以该参数触发一次切换。 */
 function ParamsSection({
   animationType,
   blurAmount,
@@ -268,12 +315,18 @@ function ParamsSection({
   duration,
   easing,
   slatWidth,
+  waveWidth,
+  bladeCount,
+  reverse,
   onAnimationTypeChange,
   onBlurAmountChange,
   onDirectionChange,
   onDurationChange,
   onEasingChange,
   onSlatWidthChange,
+  onWaveWidthChange,
+  onBladeCountChange,
+  onReverseChange,
 }: {
   animationType: DemoAnimationType;
   blurAmount: number;
@@ -281,12 +334,18 @@ function ParamsSection({
   duration: number;
   easing: EasingId;
   slatWidth: number;
+  waveWidth: number;
+  bladeCount: number;
+  reverse: ReverseMode;
   onAnimationTypeChange: (type: DemoAnimationType) => void;
   onBlurAmountChange: (value: number) => void;
   onDirectionChange: (value: ThemeAnimationDirection) => void;
   onDurationChange: (value: number) => void;
   onEasingChange: (value: EasingId) => void;
   onSlatWidthChange: (value: number) => void;
+  onWaveWidthChange: (value: number) => void;
+  onBladeCountChange: (value: number) => void;
+  onReverseChange: (value: ReverseMode) => void;
 }) {
   const { t } = useTranslation();
   const { isAnimating, ref, toggle } = useDemoThemeAnimation({
@@ -296,6 +355,9 @@ function ParamsSection({
     duration,
     easing,
     slatWidth,
+    waveWidth,
+    bladeCount,
+    reverse,
   });
 
   return (
@@ -369,6 +431,51 @@ function ParamsSection({
                 step={SLAT_WIDTH_RANGE.step}
                 value={slatWidth}
                 onChange={onSlatWidthChange}
+              />
+            </DemoControl>
+          ) : null}
+          {animationType === ThemeAnimationType.RIPPLE ? (
+            <DemoControl
+              label={t("features.playground.themeSwitchAnimation.waveWidth")}
+            >
+              <DemoSlider
+                label={t("features.playground.themeSwitchAnimation.waveWidth")}
+                maxValue={WAVE_WIDTH_RANGE.max}
+                minValue={WAVE_WIDTH_RANGE.min}
+                step={WAVE_WIDTH_RANGE.step}
+                value={waveWidth}
+                onChange={onWaveWidthChange}
+              />
+            </DemoControl>
+          ) : null}
+          {animationType === ThemeAnimationType.FAN ? (
+            <DemoControl
+              label={t("features.playground.themeSwitchAnimation.bladeCount")}
+            >
+              <DemoSlider
+                label={t("features.playground.themeSwitchAnimation.bladeCount")}
+                maxValue={BLADE_COUNT_RANGE.max}
+                minValue={BLADE_COUNT_RANGE.min}
+                step={BLADE_COUNT_RANGE.step}
+                value={bladeCount}
+                onChange={onBladeCountChange}
+              />
+            </DemoControl>
+          ) : null}
+          {REVERSE_CONSUMING_TYPES.includes(animationType) ? (
+            <DemoControl
+              label={t("features.playground.themeSwitchAnimation.reverse")}
+            >
+              <DemoSegmented<ReverseMode>
+                label={t("features.playground.themeSwitchAnimation.reverse")}
+                options={REVERSE_MODES.map((mode) => ({
+                  id: mode.id,
+                  label: t(
+                    `features.playground.themeSwitchAnimation.reverse.${mode.id}`,
+                  ),
+                }))}
+                value={reverse}
+                onChange={onReverseChange}
               />
             </DemoControl>
           ) : null}
@@ -547,7 +654,7 @@ function EnvironmentSection() {
  * 演示场 › 主题切换动画：`theme-switch-animation`（View Transitions API 蒙版揭示）。
  *
  * 与项目既有主题切换（`stores/design-theme-store` 的 clip-path 四向揭示）**并存**：
- * 本页只演示库的 12 种蒙版动画，受控模式接入同一主题 store，不替换业务的主题动画实现。
+ * 本页只演示库的 15 种蒙版动画，受控模式接入同一主题 store，不替换业务的主题动画实现。
  */
 export function ThemeSwitchAnimationPage() {
   const [animationType, setAnimationType] = useState<DemoAnimationType>(
@@ -560,6 +667,11 @@ export function ThemeSwitchAnimationPage() {
     ThemeAnimationDirection.LTR,
   );
   const [slatWidth, setSlatWidth] = useState(SLAT_WIDTH_DEFAULT);
+  const [waveWidth, setWaveWidth] = useState(WAVE_WIDTH_DEFAULT);
+  const [bladeCount, setBladeCount] = useState(BLADE_COUNT_DEFAULT);
+  // reverse 默认取 'auto'（切暗扩散、切亮收拢）：保留 0.3.x CIRCLE_REVERT 卡
+  // 被移除前的标志性观感；库默认是 false（总是正向）
+  const [reverse, setReverse] = useState<ReverseMode>("auto");
 
   // 离开页面时兜底摘除摘名属性（正常路径由模块级计时器摘除），
   // 避免遗留属性让路由过渡动画失去 main-content 独立快照组。
@@ -573,10 +685,13 @@ export function ThemeSwitchAnimationPage() {
   const params: AnimationParams = {
     animationType,
     blurAmount,
+    bladeCount,
     direction,
     duration,
     easing,
+    reverse,
     slatWidth,
+    waveWidth,
   };
 
   return (
@@ -584,17 +699,23 @@ export function ThemeSwitchAnimationPage() {
       <TypeGridSection params={params} />
       <ParamsSection
         animationType={animationType}
+        bladeCount={bladeCount}
         blurAmount={blurAmount}
         direction={direction}
         duration={duration}
         easing={easing}
+        reverse={reverse}
         slatWidth={slatWidth}
+        waveWidth={waveWidth}
         onAnimationTypeChange={setAnimationType}
+        onBladeCountChange={setBladeCount}
         onBlurAmountChange={setBlurAmount}
         onDirectionChange={setDirection}
         onDurationChange={setDuration}
         onEasingChange={setEasing}
+        onReverseChange={setReverse}
         onSlatWidthChange={setSlatWidth}
+        onWaveWidthChange={setWaveWidth}
       />
       <TriggerPointSection params={params} />
       <EnvironmentSection />

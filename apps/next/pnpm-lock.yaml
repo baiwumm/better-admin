@@ -125,8 +125,8 @@ importers:
         specifier: 3.10.1
         version: 3.10.1(@types/react@19.2.14)(react-dom@19.2.6(react@19.2.6))(react-is@16.13.1)(react@19.2.6)(redux@5.0.1)
       theme-switch-animation:
-        specifier: 0.2.0
-        version: 0.2.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        specifier: 0.4.0
+        version: 0.4.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       write-excel-file:
         specifier: ^4.1.1
         version: 4.1.1
@@ -3454,8 +3454,8 @@ packages:
     resolution: {integrity: sha512-MFO/QzvtAOmJbkhOaCTvbGcFN9L9b+JunIsDwaKljSOdcLMea3NJ1k9Usz/rjdfSXTq4dfzfeS7W4p4YOAAHeA==}
     engines: {node: '>=18'}
 
-  theme-switch-animation@0.2.0:
-    resolution: {integrity: sha512-GK6pHtSLHWZ+JbtLEigp3d6zYBaAXLxyUKYyCkPATve7PdVkxp94KNzM9OrxmWZJ6xgSByP+BjlNSy7lCYkJPQ==}
+  theme-switch-animation@0.4.0:
+    resolution: {integrity: sha512-vtaBtDz1FdUIffAcqjEtrg8NN044u1fW44eK9esZjJeeti5zzVCJKUCv+N3whKBlTrgVvx2A9qdCXAecBmfS2w==}
     engines: {node: '>=18', pnpm: '>=9'}
     peerDependencies:
       '@nuxt/kit': '>=3'
@@ -6771,7 +6771,7 @@ snapshots:
       minizlib: 3.1.0
       yallist: 5.0.0
 
-  theme-switch-animation@0.2.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
+  theme-switch-animation@0.4.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
     optionalDependencies:
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
