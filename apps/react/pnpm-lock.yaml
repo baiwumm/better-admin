@@ -99,8 +99,8 @@ importers:
         specifier: 3.10.1
         version: 3.10.1(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react-is@16.13.1)(react@19.2.8)(redux@5.0.1)
       theme-switch-animation:
-        specifier: 0.2.0
-        version: 0.2.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.4.0
+        version: 0.4.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       write-excel-file:
         specifier: ^4.1.1
         version: 4.1.1
@@ -3129,8 +3129,8 @@ packages:
     resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
     engines: {node: '>=6'}
 
-  theme-switch-animation@0.2.0:
-    resolution: {integrity: sha512-GK6pHtSLHWZ+JbtLEigp3d6zYBaAXLxyUKYyCkPATve7PdVkxp94KNzM9OrxmWZJ6xgSByP+BjlNSy7lCYkJPQ==}
+  theme-switch-animation@0.4.0:
+    resolution: {integrity: sha512-vtaBtDz1FdUIffAcqjEtrg8NN044u1fW44eK9esZjJeeti5zzVCJKUCv+N3whKBlTrgVvx2A9qdCXAecBmfS2w==}
     engines: {node: '>=18', pnpm: '>=9'}
     peerDependencies:
       '@nuxt/kit': '>=3'
@@ -6485,7 +6485,7 @@ snapshots:
 
   tapable@2.3.3: {}
 
-  theme-switch-animation@0.2.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
+  theme-switch-animation@0.4.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     optionalDependencies:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
