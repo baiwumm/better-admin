@@ -32,13 +32,7 @@
 ## 【暂缓 / 备案】
 - **`phone` 空串语义：Nest 返回 400 vs Next / Nuxt 归一为「清空」**（2026-09-22 复核后**备案不修**，审计台账 #27）：`apps/nest/src/account/dto/account.dto.ts:31-36` 对 `phone` 只有 `@IsOptional` + `@Matches(/^1[3-9]\d{9}$/)`，空串既非 undefined 也非 null、正则不放行 ⇒ **400**；而 Next `app/api/account/profile/route.ts:43-49` 与 Nuxt `server/api/account/profile.put.ts:24-29` 都把「非空字符串以外」归一为 `null`（即**清空**）。**为何不算缺陷**：① 分歧只存在于「Nest vs 两个独立全栈端」，Next 与 Nuxt 之间写法一致，不是某端漏改；② 四端前端提交前均已把空串转 `null`（`react profile-form-card.tsx:75`、`next :77`、`vue ProfileFormCard.vue:50/77`、`nuxt :48/75`），界面永远发不出 `""`，只有非 UI 客户端会撞到；③ 要对齐只能改 Nest（契约级行为变更，牵动 React / Vue 的错误提示与 i18n 文案），代价大于收益。**将来若真要修，方向是 Nest 接受「空串=清空」，而不是让两端去学 400。**
 
-- **Nest 端 e2e / 单测基建缺失**（2026-09-17 Phase 0 任务 A 发现）：`apps/nest` 无任何 spec 文件、
-  jest 配置、`test` 脚本或 `@nestjs/testing` 依赖，计划 §3.6 Step 3「e2e 测试补齐」的前提不成立。
-  从零引入测试框架（jest / vitest 选型 + supertest + `@nestjs/testing`，约 4~5 个 devDependency）
-  与测试库策略（本地与线上共用同一 Supabase 库，写测试需隔离方案，`AGENTS.md` §16）属架构级决策，
-  定时任务未自行拍板。演示模式改造已由 curl 全链路（拦截 / 白名单 / 链路 / 日志降噪 / 关闭态回归）
-  与真实数据端到端验证覆盖。待用户拍板框架后单独立项，首批用例可直接复用
-  `progress.md` 2026-09-17 条目中的 curl 矩阵。
+- **Nest 端 e2e / 单测基建缺失**（2026-09-17 Phase 0 任务 A 发现）——**✅ e2e 已落地（2026-09-25，用户拍板 vitest + Supabase 同库 e2e schema 隔离）**：`apps/nest` 补齐 vitest + @nestjs/testing 与 `pnpm test`（31 用例：认证链路 / RBAC 聚合 / super_admin 双重保护 / 演示只读守卫 / 密码策略 / 基线冒烟），测试自行在共享库内建删 e2e schema 隔离（机制与四个坑见 `mechanisms.md` §42），CI 由 `ci.yml` 独立 `nest-e2e` job 承接（secret `TEST_DATABASE_URL`）。落地详情见 `progress.md` 2026-09-25 条目。**遗留**：service 层单测（@nestjs/testing mock 依赖形态）仍未建，待有真实需要再立项。
 - **#3 自绘树 role=tree/treeitem 语义**（react / next）：**暂缓**——完整可用需配套 roving tabindex
   与方向键漫游（APG tree 模式），自绘树改动量大；只加属性不加键导会让读屏器产生错误预期。
   Vue 端 UTree（reka）已自带 tree 语义与键盘导航，天然合规。待 a11y 需求出现或组件库提供

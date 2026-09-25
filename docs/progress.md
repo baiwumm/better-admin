@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Nest e2e 测试基建落地：vitest + 共享库 e2e schema 隔离，31 用例全绿（2026-09-25，用户拍板）
+
+- **范围与选型（用户两问拍板）**：只针对 `apps/nest`（此前 0 测试）；框架 **vitest**（与全仓四端同大版本 4.1.11，`@nestjs/testing` 11.2.1 精确锁；不加 supertest，用 `app.listen(0)` + 原生 fetch 薄助手）；隔离方案 **Supabase 同库 e2e schema**（连接串 `options=-c search_path=e2e` 注入，应用内 db client 零侵入整体落进隔离 schema；必须 5432 直连——6543 PgBouncer 不支持 startup parameters）。
+- **测试内容（31 用例 / 6 文件，test/ 目录，串行 `fileParallelism: false`）**：健康端点与 `{data}` 包络 / `{code,message}` 错误结构基线；认证链路（登录、错密 401、refresh 轮换与旧令牌重放拒绝、logout 撤销）；RBAC（受限角色 SEARCH 位放行 / ADD 位 403、角色停用权限即时回收、超管归一化全量位）；super_admin 双重保护（改授权/删除/停用角色 403 `SUPER_ADMIN_ROLE_PROTECTED`、最后活跃超管摘绑 403 `SUPER_ADMIN_LAST_PROTECTED`、存在第二超管时摘绑放行且权限即时归零）；演示模式（关闭态 404、只读守卫先于鉴权拦写、kind=admin/random 两级随机且超管永不进池、白名单放行）；密码策略（弱密码 4 形态 400、含用户名、同旧密、合法改密后 tokenVersion 使存量令牌 401）。global-setup 一次性重建 e2e schema → 建表 → seed，teardown 删除（`E2E_KEEP_SCHEMA=1` 保留），跑完库内无残留（实测核验）。
+- **共享库隔离踩坑四个（全记录于 `mechanisms.md` §42）**：① drizzle migrator 迁移记录表硬编码库级 `drizzle.__drizzle_migrations`，共享库上 e2e migrate 会静默全量跳过——绕法为直执行 `drizzle/*.sql`；② 迁移 SQL 外键显式 `"public".` 限定，会把 e2e 外键挂到生产表——执行前重写为 `"e2e".`；③ **seed 存量缺陷修复**：一级菜单 `to: ''` 撞 `menus_to_unique`（部分索引只豁免 NULL），全新库 seed 必炸、生产因幂等查回从未暴露——seed.ts 两处改 `to: null`（与生产行实际形态一致，重跑零影响）；④ **发现认证层真缺陷（待拍板）**：refresh token JWT 无 `jti` 且 `iat` 秒级精度，同一用户同秒二次登录签发完全相同令牌串，撞 `refresh_tokens.token_hash` 全局唯一 → 500——demo-login 连续快速登录稳定复现，测试侧以轮间 >1s 规避，根治方向（payload 加 jti 或唯一索引放宽为 `(user_id, token_hash)`）待用户拍板。
+- **工程配套**：`pnpm test` 脚本、`vitest.config.mts`、`DATABASE_TEST_URL` 入 `.env.example`（本地 .env 已由 pooler 串推导补 5432 直连串）；devDeps 新增 vitest / @nestjs/testing / express（`import 'express'` 在 pnpm 严格布局下解析不到 platform-express 的私有传递依赖）；tsconfig include 纳入 test（build 仍排除）。
+- **CI**：`ci.yml` 新增独立 `nest-e2e` job（真实 PostgreSQL 需求进不了统一矩阵模板；secret `TEST_DATABASE_URL` 待用户在 GitHub Settings 配置，缺失时该 job 红——属预期配置提醒）；矩阵头注释同步（台账 #46 e2e 部分落地）。**本地验证**：31 用例全绿 × 2 次（42.7s）、lint 0 error、`nest build` 通过、supply-chain 白名单无需变动（新依赖均发布超 24h）。
+
 ### 遗留 GUI 走查全部收官 + website 线上核验（2026-09-25，用户确认）
 
 - **四批清单全部通过**：① 组织架构树 1.14.2（四端 okr-tree 页：画布拖拽平移、OKR 左树过滤、节点拖拽事件）；② 主题切换动画 0.4.0（Next / Nuxt 演示页：15 种类型卡、反向揭开三档、RIPPLE 波长 / FAN 扇叶数滑块）；③ GitHub 仓库/作者链接去硬编码（四端侧栏三条链接与折叠态图标、命令面板快捷链接组、登录页版权链接）；④ 角色管理 v1.13.0 关联用户列（Next / Vue / Nuxt 三端列 + +N 分页名单抽屉）。连同更早账面的 Dashboard 像素级观感走查（React / Next / Vue）一并通过——**至此全部「GUI 走查待用户」清零**。
