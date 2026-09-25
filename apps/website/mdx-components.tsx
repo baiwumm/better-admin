@@ -15,9 +15,9 @@ import {
   RbacChainDiagram,
   RepoStructureDiagram,
   RoadmapDiagram,
-  TableGroupsDiagram,
   TokenSwatchDiagram,
 } from "@/components/docs/diagrams";
+import { TableGroupsDiagram } from "@/components/docs/table-groups";
 import { StackTabs } from "@/components/docs/stack-tabs";
 import type { MDXComponents } from "mdx/types";
 

@@ -2,6 +2,20 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 文档站数据库设计页：表分域总览由 SVG 图改为卡片网格（2026-09-25）
+
+- **背景（用户两轮反馈）**：`/docs/architecture/database` 开篇的五域分域图原为 `diagrams.tsx` 里固定 viewBox 的 SVG——五列 136px 等宽等高灰卡在宽屏内容区只占一半宽、2 张表的域卡片下方大片留白、表名一行一个信息密度低。第一轮先在 SVG 内部做高度自适应收紧（viewBox 高 322 → 228）；用户认为展现形式本身不佳，第二轮整体重做为真 DOM 卡片网格。
+- **落地**：新建 `components/docs/table-groups.tsx`（HTML 卡片网格：宽度撑满内容区、表名 chip 流式排列、域标题右侧表数徽章、总表数由数据派生防漂移；响应式默认 1 / sm 2 / lg 3 / 2xl 5 列——5 列断点放 2xl 是因为更窄视口下卡内约 130px 容不下最长的 `notice_read_records` chip；`items-start` 不做同行等高拉伸，等高会让短域卡内重新出现空白）；`diagrams.tsx` 移除 SVG 版、回归纯 SVG 图集职责；`mdx-components.tsx` 仅改 import 来源，注册名不变、MDX 内容零改动。
+- **实现要点**：表名用 `<span class="font-mono">` 而非 `<code>`——prose 对行内代码有默认底色与边框，会叠在 chip 样式上；根节点 `not-prose` 并全部用 div/span，彻底绕开 prose 的元素级样式；颜色全走 globals.css `@theme inline` 的语义 token（bg-card / bg-muted / border），亮暗主题自动适配。
+- **验证**：浏览器实测 1600 / 1024 两档视口 × 亮暗两套主题（5 列 / 3 列降列正确），`next build` 静态导出通过；形式经用户确认。
+
+### 组织架构树 1.14.2 升级：锁步修复批，四端零代码改动（2026-09-25）
+
+- **升级内容**：`react-okr-tree` / `vue3-okr-tree` `1.13.0 → 1.14.2`（横跨三个版本，两包锁步同号发布）：1.14.0 纯门禁补强（对外 API 无变化）；1.14.1 八条缺陷修复 + 三项性能收敛（组对齐宽度被首量钉死、`contains` 未递归 OKR 左子树、换绑 `data` 把后代摘出注册表、左树顶层结构性增删脱钩、挂载期白建左树、运行中改 `animate` 撑高已折叠容器、平移后吞点击堆监听、三种产物格式保住 html-to-image 的 ignore 注释——压缩器 Oxc 换 Terser，ESM gzip 18.65 → 16.91 kB）；1.14.2 四条修复（`node-drag-end` 成功放置后不再报 null 载荷且跨父级移动不再丢失事件、过滤词只命中 OKR 左子树时整棵树不再从 DOM 消失、`defaultCheckedKeys` 运行时改按内容比较不再按引用重放回滚用户勾选、画布平移甩出边界松手不再卡 `is-panning`）。**对外 API 形状全程零变化**；唯一可观察行为变化是 `defaultCheckedKeys` 的判据（引用 → 内容），四端演示页 grep 核实未使用该 API——纯升包，零代码改动。
+- **对演示页的直接收益**：画布化改造的平移手势（1.14.2 修复卡死）、OKR 左树过滤（1.14.2 修复整树消失）、拖拽事件载荷（1.14.2 修复 null 载荷 / 跨父级丢失）。
+- **supply-chain 白名单（§35）**：四端 `pnpm-workspace.yaml` 条目由 pnpm install 自动合并为 `@1.13.0 || 1.14.2`（1.14.2 发布当日安装），注释人工更新。
+- **验证**：React tsc / build / vitest（93）/ eslint（演示页）、Vue build / vitest（101）/ eslint（演示页）、Next check-locales / eslint / next build、Nuxt typecheck / vitest（99）/ build 全绿；GUI 走查待用户（重点：okr-tree 页画布拖拽平移与 OKR 左树过滤）。
+
 ### 主题切换动画 0.4.0 升级：reverse 反向揭开 + 15 种动画类型（2026-09-25，四端 + website）
 
 - **升级内容**：`theme-switch-animation@0.2.0 → 0.4.0`（横跨 0.3.0 / 0.4.0 两个 minor）：0.3.0 新增 RIPPLE（水滴涟漪，`waveWidth` 波长 8–60 默认 18）/ CLOCK_SWEEP（时钟扇形）/ FAN（扇叶，`bladeCount` 4–16 整数默认 8）/ CURTAIN（双开门）四类型；0.4.0 新增 `reverse` 反向揭开选项（三态 `boolean | 'auto'`：`'auto'` 切暗正向 / 切亮收起，即原 CIRCLE_REVERT 语义；对 CIRCLE / FAN / RIPPLE / CLOCK_SWEEP / CURTAIN 五类生效，其余类型静默忽略——形状族反向必须动 `mask-size` 会重新引入像素对齐抖动），breaking 移除 `CIRCLE_REVERT` 类型，由 `CIRCLE + reverse: 'auto'` 承接；动画类型 12 → 15 种。以库 dist 实际实现核对 reverse 生效面（其 `.d.ts` 注释写「当前 CIRCLE 与 FAN 生效」滞后于实现，README 与实现一致为五类）。

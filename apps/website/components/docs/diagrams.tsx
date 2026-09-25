@@ -268,69 +268,6 @@ export function RepoStructureDiagram() {
   );
 }
 
-/* ======================== 3. 数据表分组图 ======================== */
-
-const TABLE_GROUPS: { title: string; tables: string[] }[] = [
-  {
-    title: "身份与权限",
-    tables: [
-      "users",
-      "refresh_tokens",
-      "roles",
-      "menus",
-      "user_roles",
-      "role_menus",
-    ],
-  },
-  { title: "组织中心", tables: ["depts", "posts", "user_posts"] },
-  {
-    title: "公告中心",
-    tables: ["notices", "notice_scopes", "notice_read_records", "notice_remind_logs"],
-  },
-  { title: "数据字典", tables: ["dict_types", "dict_items"] },
-  { title: "审计与通知", tables: ["logs", "notifications"] },
-];
-
-export function TableGroupsDiagram() {
-  return (
-    <Frame
-      title="Better Admin 数据模型：17 张表按领域分为五组"
-      viewBox="0 0 720 322"
-    >
-      {TABLE_GROUPS.map((group, index) => {
-        const x = 4 + index * 144;
-        return (
-          <g key={group.title}>
-            <Box x={x} y={22} w={136} h={34} rx={8} muted />
-            <T
-              x={x + 68}
-              y={44}
-              anchor="middle"
-              className="fill-foreground text-[11.5px] font-semibold"
-            >
-              {group.title}
-            </T>
-            <Box x={x} y={56} w={136} h={252} rx={8} />
-            {group.tables.map((table, i) => (
-              <T
-                key={table}
-                x={x + 12}
-                y={84 + i * 21}
-                className="fill-muted-foreground font-mono text-[10px]"
-              >
-                {table}
-              </T>
-            ))}
-          </g>
-        );
-      })}
-      <T x={4} y={318} className="fill-muted-foreground text-[10.5px]">
-        共 17 张表 · 全部由 Drizzle ORM 定义，四端共用
-      </T>
-    </Frame>
-  );
-}
-
 /* ======================== 4. RBAC 授权链图 ======================== */
 
 const RBAC_STEPS = [
