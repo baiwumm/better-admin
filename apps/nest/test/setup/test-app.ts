@@ -69,23 +69,12 @@ export interface LoginSession {
   user: { id: string; username: string; permissions: string };
 }
 
-/** 同用户上次登录时间戳（进程内）：已知缺陷规避，见 login。 */
-const lastLoginAt = new Map<string, number>();
-
 /** 登录并拆包 { data }；非 200 直接抛错（前置步骤失败不应表现为下游断言失败）。 */
 export async function login(
   app: TestApp,
   username: string,
   password: string,
 ): Promise<LoginSession> {
-  // 已知缺陷规避（mechanisms §42 坑 4，根治待拍板）：refresh token JWT 无 jti 且
-  // iat 秒级精度，同一用户同秒二次登录签发完全相同令牌串，撞
-  // refresh_tokens.token_hash 唯一索引 → 500。对同用户登录强制 >1s 间隔。
-  const prev = lastLoginAt.get(username) ?? 0;
-  const wait = prev + 1_100 - Date.now();
-  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
-  lastLoginAt.set(username, Date.now());
-
   const res = await api(app, 'POST', '/auth/login', { body: { username, password } });
   if (res.status !== 200) {
     throw new Error(`[e2e] 登录失败 ${username}: ${res.status} ${JSON.stringify(res.body)}`);

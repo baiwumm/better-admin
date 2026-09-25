@@ -2,13 +2,20 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### refresh token 同秒重复缺陷根治：payload 加 jti（2026-09-25，用户拍板推荐方案）
+
+- **缺陷与修法**：refresh token JWT 此前 payload 无 `jti` 且 `iat` 秒级精度，同一用户同秒二次登录签发出完全相同的令牌串，撞 `refresh_tokens.token_hash` 全局唯一索引 → 500 INTERNAL_ERROR（2026-09-25 e2e 基建落地时发现，CI 容器上 auth spec 稳定复现）。按推荐方案在两处签发点（`signTokens` 与 `refresh()` 轮换）的 refresh payload 加 `jti: nanoid()`——服务端不消费该值，仅保证每次签发的令牌串必然不同；access token 不入库不受影响、不加；存量无 jti 的旧令牌到过期自然淘汰，**向后兼容零迁移**。
+- **规避措施随之移除**：test-app.ts login 助手的同用户 >1.1s 节流、demo spec random 用例的轮间 sleep——demo 的无间隔连续登录保留为回归哨兵（断言注释已更新）。
+- **验证**：移除全部规避后本地 31 用例全绿（62.7s，含无间隔连续登录）；lint 0 error、`nest build` 通过；CI 以推送后重跑为准。
+- **文档**：mechanisms §42 坑 4 状态更新为已根治；AGENTS §19 待办清零。
+
 ### Nest e2e 测试基建落地：vitest + 共享库 e2e schema 隔离，31 用例全绿（2026-09-25，用户拍板）
 
 - **范围与选型（用户两问拍板）**：只针对 `apps/nest`（此前 0 测试）；框架 **vitest**（与全仓四端同大版本 4.1.11，`@nestjs/testing` 11.2.1 精确锁；不加 supertest，用 `app.listen(0)` + 原生 fetch 薄助手）；隔离方案 **Supabase 同库 e2e schema**（连接串 `options=-c search_path=e2e` 注入，应用内 db client 零侵入整体落进隔离 schema；必须 5432 直连——6543 PgBouncer 不支持 startup parameters）。
 - **测试内容（31 用例 / 6 文件，test/ 目录，串行 `fileParallelism: false`）**：健康端点与 `{data}` 包络 / `{code,message}` 错误结构基线；认证链路（登录、错密 401、refresh 轮换与旧令牌重放拒绝、logout 撤销）；RBAC（受限角色 SEARCH 位放行 / ADD 位 403、角色停用权限即时回收、超管归一化全量位）；super_admin 双重保护（改授权/删除/停用角色 403 `SUPER_ADMIN_ROLE_PROTECTED`、最后活跃超管摘绑 403 `SUPER_ADMIN_LAST_PROTECTED`、存在第二超管时摘绑放行且权限即时归零）；演示模式（关闭态 404、只读守卫先于鉴权拦写、kind=admin/random 两级随机且超管永不进池、白名单放行）；密码策略（弱密码 4 形态 400、含用户名、同旧密、合法改密后 tokenVersion 使存量令牌 401）。global-setup 一次性重建 e2e schema → 建表 → seed，teardown 删除（`E2E_KEEP_SCHEMA=1` 保留），跑完库内无残留（实测核验）。
 - **共享库隔离踩坑四个（全记录于 `mechanisms.md` §42）**：① drizzle migrator 迁移记录表硬编码库级 `drizzle.__drizzle_migrations`，共享库上 e2e migrate 会静默全量跳过——绕法为直执行 `drizzle/*.sql`；② 迁移 SQL 外键显式 `"public".` 限定，会把 e2e 外键挂到生产表——执行前重写为 `"e2e".`；③ **seed 存量缺陷修复**：一级菜单 `to: ''` 撞 `menus_to_unique`（部分索引只豁免 NULL），全新库 seed 必炸、生产因幂等查回从未暴露——seed.ts 两处改 `to: null`（与生产行实际形态一致，重跑零影响）；④ **发现认证层真缺陷（待拍板）**：refresh token JWT 无 `jti` 且 `iat` 秒级精度，同一用户同秒二次登录签发完全相同令牌串，撞 `refresh_tokens.token_hash` 全局唯一 → 500——demo-login 连续快速登录稳定复现，测试侧以轮间 >1s 规避，根治方向（payload 加 jti 或唯一索引放宽为 `(user_id, token_hash)`）待用户拍板。
 - **工程配套**：`pnpm test` 脚本、`vitest.config.mts`、`DATABASE_TEST_URL` 入 `.env.example`（本地 .env 已由 pooler 串推导补 5432 直连串）；devDeps 新增 vitest / @nestjs/testing / express（`import 'express'` 在 pnpm 严格布局下解析不到 platform-express 的私有传递依赖）；tsconfig include 纳入 test（build 仍排除）。
-- **CI**：`ci.yml` 新增独立 `nest-e2e` job（真实 PostgreSQL 需求进不了统一矩阵模板）。**首跑踩掉两层后改判为自托管容器方案**：① Supabase 免费层直连域名仅解析 IPv6，runner 无 IPv6 出站 → `ENETUNREACH`；② session pooler（Supavisor 5432）对 `options` 启动参数支持不稳定（连接偶发 reset、search_path 时有时无）→ 放弃。终版：job 内起 **TLS postgres:16 容器**（自签证书读写挂载；应用 `db/client.ts` 硬编码 SSL），原生支持 startup parameters，`DATABASE_TEST_URL` 固定指向 localhost——**不连 Supabase、不再需要 `TEST_DATABASE_URL` secret**（已配置的 secret 可删）。配套加固：global-setup 关键连接点统一 `withConnRetry`（Supavisor 时期引入，保留用于抗瞬断）；rbac spec 补用户自建（此前依赖 demo spec 先行的造数兜底，单跑必挂）。**本地验证**：31 用例全绿（直连串）、单跑 rbac 5/5、lint 0 error、`nest build` 通过；线上 CI 以重跑结果为准。
+- **CI**：`ci.yml` 新增独立 `nest-e2e` job（真实 PostgreSQL 需求进不了统一矩阵模板）。**首跑踩掉两层后改判为自托管容器方案**：① Supabase 免费层直连域名仅解析 IPv6，runner 无 IPv6 出站 → `ENETUNREACH`；② session pooler（Supavisor 5432）对 `options` 启动参数支持不稳定（连接偶发 reset、search_path 时有时无）→ 放弃。终版：job 内起 **TLS postgres:16 容器**（自签证书读写挂载；应用 `db/client.ts` 硬编码 SSL），原生支持 startup parameters，`DATABASE_TEST_URL` 固定指向 localhost——**不连 Supabase、不再需要 `TEST_DATABASE_URL` secret**（已配置的 secret 可删）。配套加固：global-setup 关键连接点统一 `withConnRetry`（Supavisor 时期引入，保留用于抗瞬断）；rbac spec 补用户自建（此前依赖 demo spec 先行的造数兜底，单跑必挂）。**本地验证**：31 用例全绿（直连串）、单跑 rbac 5/5、lint 0 error、`nest build` 通过；**CI 已实证全绿**（18 job = 17 步矩阵 + nest-e2e，2026-09-25 run 36166545088；容器内 31 用例 29 绿 + auth 2 例因同秒重复缺陷被 login 节流规避后全绿）。
 
 ### 遗留 GUI 走查全部收官 + website 线上核验（2026-09-25，用户确认）
 

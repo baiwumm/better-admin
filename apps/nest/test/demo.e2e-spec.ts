@@ -81,10 +81,8 @@ describe('demo mode e2e', () => {
   it('kind=random 两级随机命中池内用户，且永不命中超管 admin', async () => {
     const pool = new Set(['e2e_viewer', 'e2e_pool_admin']);
     for (let i = 0; i < 5; i++) {
-      // 轮间 >1s：refresh token JWT 无 jti、iat 秒级精度，同一用户同秒二次登录会
-      // 签发完全相同的令牌串，撞 refresh_tokens.token_hash 唯一索引 500（已知缺陷，
-      // 待拍板修法，见 progress 登记）。测试侧规避以保证套件确定性。
-      await new Promise((resolve) => setTimeout(resolve, 1_100));
+      // 无轮间间隔的连续快速登录：refresh token 已带 jti，同秒重复签发不再撞
+      // refresh_tokens.token_hash 唯一索引（2026-09-25 缺陷根治的回归哨兵）
       const res = await api(demoApp, 'POST', '/auth/demo-login', { body: { kind: 'random' } });
       expect(res.status).toBe(200);
       const username = (res.body as { data: { user: { username: string } } }).data.user.username;

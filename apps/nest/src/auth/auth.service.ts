@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createHash } from 'node:crypto';
+import { nanoid } from 'nanoid';
 import { and, eq, inArray, isNull, notInArray } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { users, userRoles, roleMenus, roles, logs, refreshTokens } from '@/db/schema';
@@ -50,6 +51,13 @@ interface AuthJwtPayload {
   type?: 'access' | 'refresh';
   /** 签发时的用户 tokenVersion，与 users.token_version 比对实现全端撤销 */
   ver?: number;
+  /**
+   * 令牌唯一标识（仅 refresh 携带）：无它时 payload 只差 iat（秒级精度），同一用户
+   * 同一秒内两次登录会签发出完全相同的令牌串，撞 refresh_tokens.token_hash 全局
+   * 唯一索引 500（e2e 首轮发现的缺陷，2026-09-25 根治）。服务端不消费该值，
+   * 仅保证每次签发的令牌串必然不同；存量无 jti 的令牌到过期自然淘汰。
+   */
+  jti?: string;
 }
 
 @Injectable()
@@ -162,7 +170,7 @@ export class AuthService {
       { expiresIn: getJwtExpiresIn() as never },
     );
     const refreshToken = this.jwtService.sign(
-      { ...commonClaims, type: 'refresh' as const },
+      { ...commonClaims, type: 'refresh' as const, jti: nanoid() },
       {
         secret: getRefreshSecret(),
         expiresIn: getRefreshExpiresIn(rememberMe) as never,
@@ -378,7 +386,7 @@ export class AuthService {
         { expiresIn: getJwtExpiresIn() as never },
       );
       const newRefreshToken = this.jwtService.sign(
-        { ...baseClaims, type: 'refresh' as const },
+        { ...baseClaims, type: 'refresh' as const, jti: nanoid() },
         {
           secret: getRefreshSecret(),
           expiresIn: remainingSeconds,
