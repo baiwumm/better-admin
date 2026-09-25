@@ -21,19 +21,48 @@ import {
   type DemoAnimationType
 } from './animation-types'
 import { themeSwitchAnimationMeta } from './meta'
-import { useDemoThemeAnimation } from './use-demo-theme-animation'
+import {
+  useDemoThemeAnimation,
+  type ReverseMode
+} from './use-demo-theme-animation'
 
 const DURATION_RANGE = { min: 200, max: 1500, step: 50 }
 const BLUR_RANGE = { min: 1, max: 10, step: 0.5 }
 /** BLINDS 叶片宽度合法域（库约定 16–200px，越界静默回落默认 72） */
 const SLAT_WIDTH_RANGE = { min: 16, max: 200, step: 2 }
 const SLAT_WIDTH_DEFAULT = 72
+/** RIPPLE 涟漪波长合法域（库约定 8–60px，越界静默回落默认 18） */
+const WAVE_WIDTH_RANGE = { min: 8, max: 60, step: 1 }
+const WAVE_WIDTH_DEFAULT = 18
+/** FAN 扇叶数合法域（库约定 4–16 的整数，越界静默回落默认 8；非整数会让末帧扇叶接缝错位） */
+const BLADE_COUNT_RANGE = { min: 4, max: 16, step: 1 }
+const BLADE_COUNT_DEFAULT = 8
 
 /** 消费 `direction` 选项的三种属性驱动类型（其余类型传入无效果） */
 const DIRECTION_CONSUMING_TYPES: readonly DemoAnimationType[] = [
   ThemeAnimationType.BLINDS,
   ThemeAnimationType.SCAN,
   ThemeAnimationType.QR_GRID
+]
+
+/**
+ * 消费 `reverse` 选项的五种类型（0.4.0；`CIRCLE_REVERT` 已并入 `CIRCLE + reverse`）。
+ * 形状族与 BLINDS / SCAN / QR_GRID 有意不接入：反向必须动 `mask-size`，
+ * 会重新引入已修完的蒙版设备像素对齐抖动。
+ */
+const REVERSE_CONSUMING_TYPES: readonly DemoAnimationType[] = [
+  ThemeAnimationType.CIRCLE,
+  ThemeAnimationType.FAN,
+  ThemeAnimationType.RIPPLE,
+  ThemeAnimationType.CLOCK_SWEEP,
+  ThemeAnimationType.CURTAIN
+]
+
+/** 「反向揭开」三档的控件取值（映射为库取值见 `toLibraryReverse`）。 */
+const REVERSE_MODES: readonly { id: ReverseMode }[] = [
+  { id: 'off' },
+  { id: 'on' },
+  { id: 'auto' }
 ]
 
 const DIRECTION_PRESETS = [
@@ -67,7 +96,7 @@ const TRIGGER_ALIGNS = [
  * 演示场 › 主题切换动画：`theme-switch-animation`（View Transitions API 蒙版揭示）。
  *
  * 与项目既有主题切换（`stores/design-theme-store` 的 clip-path 四向揭示）**并存**：
- * 本页只演示库的 12 种蒙版动画，受控模式接入同一主题 store，不替换业务的主题动画实现。
+ * 本页只演示库的 15 种蒙版动画，受控模式接入同一主题 store，不替换业务的主题动画实现。
  * `ThemeAnimationType` / `ThemeAnimationDirection` / `useThemeAnimation` 由
  * `theme-switch-animation/nuxt` 模块自动导入。
  */
@@ -80,12 +109,25 @@ const easing = ref<EasingId>('ease-in-out')
 const blurAmount = ref(2)
 const direction = ref<ThemeAnimationDirection>(ThemeAnimationDirection.LTR)
 const slatWidth = ref(SLAT_WIDTH_DEFAULT)
+const waveWidth = ref(WAVE_WIDTH_DEFAULT)
+const bladeCount = ref(BLADE_COUNT_DEFAULT)
+// reverse 默认取 'auto'（切暗扩散、切亮收拢）：保留 0.3.x CIRCLE_REVERT 卡
+// 被移除前的标志性观感；库默认是 false（总是正向）
+const reverse = ref<ReverseMode>('auto')
 
 /** `DemoSegmented` 收 `{ id, label }[]`（可变数组），方向文案走 i18n 动态映射。 */
 const DIRECTION_OPTIONS = computed(() =>
   DIRECTION_PRESETS.map(preset => ({
     id: preset,
     label: t(`features.playground.themeSwitchAnimation.direction.${preset}`)
+  }))
+)
+
+/** 反向揭开三档文案走 i18n 动态映射。 */
+const REVERSE_OPTIONS = computed(() =>
+  REVERSE_MODES.map(mode => ({
+    id: mode.id,
+    label: t(`features.playground.themeSwitchAnimation.reverse.${mode.id}`)
   }))
 )
 
@@ -97,10 +139,13 @@ const {
 } = useDemoThemeAnimation<HTMLDivElement>(() => ({
   animationType: animationType.value,
   blurAmount: blurAmount.value,
+  bladeCount: bladeCount.value,
   direction: direction.value,
   duration: duration.value,
   easing: easing.value,
-  slatWidth: slatWidth.value
+  reverse: reverse.value,
+  slatWidth: slatWidth.value,
+  waveWidth: waveWidth.value
 }))
 
 /** 与页头主题选择器、Logo 深浅色同一状态源，演示页切换后全站同步。 */
@@ -123,7 +168,7 @@ onMounted(() => {
 
 <template>
   <PlaygroundPage :meta="themeSwitchAnimationMeta">
-    <!-- 区块一：12 种动画类型，逐类型点击体验（圆钮即扩散圆心，网格不同位置即不同起点） -->
+    <!-- 区块一：15 种动画类型，逐类型点击体验（圆钮即扩散圆心，网格不同位置即不同起点） -->
     <DemoSection
       :description="
         t('features.playground.themeSwitchAnimation.gridDescription')
@@ -135,19 +180,22 @@ onMounted(() => {
           v-for="(item, index) in DEMO_ANIMATION_TYPES"
           :key="item.type"
           :blur-amount="blurAmount"
+          :blade-count="bladeCount"
           :direction="direction"
           :duration="duration"
           :easing="easing"
           :hint-key="item.hintKey"
           :icon="item.icon"
           :index="index"
+          :reverse="reverse"
           :slat-width="slatWidth"
           :type="item.type"
+          :wave-width="waveWidth"
         />
       </div>
     </DemoSection>
 
-    <!-- 区块二：选中一种动画并调节时长 / 缓动 / 模糊强度 / 方向 / 叶宽，再以该参数触发一次切换 -->
+    <!-- 区块二：选中一种动画并调节时长 / 缓动 / 模糊强度 / 方向 / 叶宽等，再以该参数触发一次切换 -->
     <DemoSection
       :description="
         t('features.playground.themeSwitchAnimation.paramsDescription')
@@ -209,6 +257,40 @@ onMounted(() => {
             :step="SLAT_WIDTH_RANGE.step"
           />
         </DemoControl>
+        <DemoControl
+          v-if="animationType === ThemeAnimationType.RIPPLE"
+          :label="t('features.playground.themeSwitchAnimation.waveWidth')"
+        >
+          <DemoSlider
+            v-model="waveWidth"
+            :label="t('features.playground.themeSwitchAnimation.waveWidth')"
+            :max="WAVE_WIDTH_RANGE.max"
+            :min="WAVE_WIDTH_RANGE.min"
+            :step="WAVE_WIDTH_RANGE.step"
+          />
+        </DemoControl>
+        <DemoControl
+          v-if="animationType === ThemeAnimationType.FAN"
+          :label="t('features.playground.themeSwitchAnimation.bladeCount')"
+        >
+          <DemoSlider
+            v-model="bladeCount"
+            :label="t('features.playground.themeSwitchAnimation.bladeCount')"
+            :max="BLADE_COUNT_RANGE.max"
+            :min="BLADE_COUNT_RANGE.min"
+            :step="BLADE_COUNT_RANGE.step"
+          />
+        </DemoControl>
+        <DemoControl
+          v-if="REVERSE_CONSUMING_TYPES.includes(animationType)"
+          :label="t('features.playground.themeSwitchAnimation.reverse')"
+        >
+          <DemoSegmented
+            v-model="reverse"
+            :label="t('features.playground.themeSwitchAnimation.reverse')"
+            :options="REVERSE_OPTIONS"
+          />
+        </DemoControl>
       </template>
 
       <div class="flex flex-col gap-4">
@@ -261,11 +343,14 @@ onMounted(() => {
           :align="align"
           :animation-type="animationType"
           :blur-amount="blurAmount"
+          :blade-count="bladeCount"
           :direction="direction"
           :duration="duration"
           :easing="easing"
           :index="position + 1"
+          :reverse="reverse"
           :slat-width="slatWidth"
+          :wave-width="waveWidth"
         />
       </DemoStage>
     </DemoSection>

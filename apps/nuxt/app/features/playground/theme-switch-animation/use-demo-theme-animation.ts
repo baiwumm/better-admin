@@ -9,6 +9,19 @@ const DEMO_VT_ATTR = 'data-theme-demo-vt'
 /** 摘名属性 / 禁用态比动画时长多保留一段，避免在计时边界上提前释放。 */
 const SETTLE_BUFFER_MS = 150
 
+/**
+ * 「反向揭开」三档的控件取值（DemoSegmented 要求字符串 id；对齐 React / Vue 端同名类型）。
+ * `auto` 即 0.2/0.3 时代 `CIRCLE_REVERT` 的语义——切暗正向、切亮收起，
+ * 跟随本次切换方向；库默认 `false`（总是正向），演示页取 `auto` 以保留原
+ * CIRCLE_REVERT 卡的标志性观感。
+ */
+export type ReverseMode = 'off' | 'on' | 'auto'
+
+/** ReverseMode → 库选项 `reverse` 的取值（off→false / on→true / auto→'auto'） */
+export function toLibraryReverse(mode: ReverseMode): boolean | 'auto' {
+  return mode === 'off' ? false : mode === 'on' ? true : 'auto'
+}
+
 export interface AnimationParams {
   animationType: DemoAnimationType
   /** 动画时长 ms */
@@ -21,6 +34,12 @@ export interface AnimationParams {
   direction: ThemeAnimationDirection
   /** 百叶窗叶片宽度 px，仅 BLINDS 生效 */
   slatWidth: number
+  /** 涟漪波长 px，仅 RIPPLE 生效 */
+  waveWidth: number
+  /** 扇叶数，仅 FAN 生效 */
+  bladeCount: number
+  /** 反向揭开三档，仅 CIRCLE / FAN / RIPPLE / CLOCK_SWEEP / CURTAIN 生效（0.4.0 起） */
+  reverse: ReverseMode
 }
 
 /**
@@ -69,6 +88,9 @@ export function useDemoThemeAnimation<T extends HTMLElement = HTMLButtonElement>
     get animationType() {
       return getParams().animationType
     },
+    get bladeCount() {
+      return getParams().bladeCount
+    },
     get blurAmount() {
       return getParams().blurAmount
     },
@@ -81,8 +103,14 @@ export function useDemoThemeAnimation<T extends HTMLElement = HTMLButtonElement>
     get easing() {
       return getParams().easing
     },
+    get reverse() {
+      return toLibraryReverse(getParams().reverse)
+    },
     get slatWidth() {
       return getParams().slatWidth
+    },
+    get waveWidth() {
+      return getParams().waveWidth
     },
     get isDark() {
       return store.isDark
