@@ -1,23 +1,21 @@
 "use client";
 
-import { Menu } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 import { Logo } from "@/components/logo";
-import { Button, ButtonLink } from "@/components/motion/button/base";
+import { ButtonLink } from "@/components/motion/button/base";
+import { GithubIcon } from "@/components/ui/brand-icons";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SITE } from "@/lib/site";
 
+/**
+ * 顶部导航只保留 GitHub 与主题切换两个入口（用户拍板）：GitHub 用图标按钮、
+ * 全视口通用（窄屏也放得下，不需要文字/图标双形态与汉堡折叠层）；
+ * 文档入口由 Hero 的「阅读文档」主按钮与页脚承担。
+ */
 export function Navbar() {
-  const [open, setOpen] = useState(false);
-
   return (
     <header className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
-      <nav
-        className={`navbar-premium w-full max-w-2xl px-5 py-2 ${
-          open ? "rounded-3xl" : "rounded-full"
-        }`}
-      >
+      <nav className="navbar-premium w-full max-w-2xl rounded-full px-5 py-2">
         <div className="flex items-center justify-between">
           <Link
             href="/"
@@ -27,61 +25,20 @@ export function Navbar() {
             Better Admin
           </Link>
 
-          <div className="hidden items-center gap-1 sm:flex">
-            <ButtonLink href="/docs" variant="ghost" size="sm">
-              文档
-            </ButtonLink>
+          <div className="flex items-center gap-1">
             <ButtonLink
               href={SITE.github}
               target="_blank"
               rel="noreferrer"
-              variant="ghost"
-              size="sm"
-            >
-              GitHub
-            </ButtonLink>
-            <ThemeToggle />
-            <ButtonLink href="/docs" size="sm" className="ms-1">
-              开始阅读
-            </ButtonLink>
-          </div>
-
-          <div className="flex items-center gap-1 sm:hidden">
-            <ThemeToggle />
-            <Button
+              aria-label="Better Admin on GitHub"
               variant="ghost"
               size="icon"
-              aria-label="展开导航"
-              onClick={() => setOpen(!open)}
             >
-              <Menu size={16} />
-            </Button>
+              <GithubIcon className="size-[18px]" />
+            </ButtonLink>
+            <ThemeToggle />
           </div>
         </div>
-
-        {open ? (
-          <div className="mt-2 flex flex-col gap-1 border-t border-dashed pt-2 sm:hidden">
-            <ButtonLink
-              href="/docs"
-              onClick={() => setOpen(false)}
-              variant="ghost"
-              size="sm"
-              className="justify-start"
-            >
-              文档
-            </ButtonLink>
-            <ButtonLink
-              href={SITE.github}
-              target="_blank"
-              rel="noreferrer"
-              variant="ghost"
-              size="sm"
-              className="justify-start"
-            >
-              GitHub
-            </ButtonLink>
-          </div>
-        ) : null}
       </nav>
     </header>
   );

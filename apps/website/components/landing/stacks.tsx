@@ -1,44 +1,59 @@
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { AnimatedBadge } from "@/components/motion/animated-badge";
+import { ButtonLink } from "@/components/motion/button/base";
 import { type StackKey, StackGlyph } from "@/components/icons/stack-icons";
 
-/** 六端已于 2026-09-23 统一上线（AGENTS.md §17），五个应用状态一致 */
+/** 六端已于 2026-09-23 统一上线（AGENTS.md §17），五个应用状态一致；url / actionLabel 即各端卡片按钮 */
 const STACKS: {
   name: string;
   /** 卡片头部的技术栈图标 */
   icon: StackKey;
   role: string;
   status: string;
+  url: string;
+  actionLabel: string;
 }[] = [
   {
     name: "React 19",
     icon: "react",
     role: "UI Source of Truth，Hero UI 模板实现",
     status: "已上线",
+    url: "https://react.baiwumm.com",
+    actionLabel: "在线演示",
   },
   {
     name: "Next.js 16",
     icon: "nextjs",
     role: "独立全栈实现，不依赖 NestJS",
     status: "已上线",
+    url: "https://next.baiwumm.com",
+    actionLabel: "在线演示",
   },
   {
     name: "NestJS + Drizzle",
     icon: "nestjs",
     role: "REST API，PostgreSQL 统一数据库",
     status: "已上线",
+    // 接口文档（Scalar UI）：main.ts 的 SwaggerModule.setup('docs')，无全局 api 前缀
+    url: "https://nest.baiwumm.com/docs",
+    actionLabel: "接口文档",
   },
   {
     name: "Vue 3 + Nuxt UI",
     icon: "vue",
     role: "复刻 React 版本的页面与交互",
     status: "已上线",
+    url: "https://vue.baiwumm.com",
+    actionLabel: "在线演示",
   },
   {
     name: "Nuxt",
     icon: "nuxt",
     role: "独立全栈实现，不依赖 NestJS",
     status: "已上线",
+    url: "https://nuxt.baiwumm.com",
+    actionLabel: "在线演示",
   },
 ];
 
@@ -79,6 +94,18 @@ export function Stacks() {
                   {stack.role}
                 </p>
               </div>
+              {/* 各端线上站点入口（用户拍板：链接从页脚移到卡片内）；NestJS 卡指向接口文档 */}
+              <ButtonLink
+                href={stack.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="ghost"
+                size="sm"
+                className="mt-4 self-start"
+              >
+                <ArrowUpRight size={14} />
+                {stack.actionLabel}
+              </ButtonLink>
             </div>
           ))}
 
@@ -98,15 +125,19 @@ export function Stacks() {
                 style={{ width: "100%" }}
               />
             </div>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              四端功能已全部对齐
-            </p>
-            <Link
-              href="/docs/progress/feature-matrix"
-              className="mt-auto pt-3 text-sm font-semibold text-foreground underline underline-offset-4 transition-opacity hover:opacity-70"
-            >
-              查看功能矩阵 →
-            </Link>
+            <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                四端功能已全部对齐
+              </p>
+              {/* 查看入口收敛为一个图标（用户拍板）：完整矩阵见功能矩阵页 */}
+              <Link
+                href="/docs/progress/feature-matrix"
+                aria-label="查看功能矩阵"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ArrowUpRight size={16} />
+              </Link>
+            </div>
           </div>
         </div>
       </div>

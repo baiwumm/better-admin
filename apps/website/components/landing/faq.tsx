@@ -67,8 +67,7 @@ export function Faq() {
             Frequently Asked Questions
           </h2>
           <p className="mx-auto max-w-2xl text-pretty text-muted-foreground">
-            关于 Better Admin 的常见问题。如果没有找到想要的答案，欢迎在 GitHub
-            提出你的问题。
+            关于 Better Admin 的常见问题。
           </p>
         </div>
         <BouncyAccordion
