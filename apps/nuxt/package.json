@@ -65,7 +65,7 @@
     "tailwindcss": "^4.3.3",
     "theme-switch-animation": "0.4.0",
     "vue-advanced-cropper": "^2.8.9",
-    "vue3-okr-tree": "1.14.2",
+    "vue3-okr-tree": "1.16.0",
     "write-excel-file": "4.1.1",
     "zod": "^4.6.2"
   },
