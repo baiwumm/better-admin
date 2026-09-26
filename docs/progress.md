@@ -2,6 +2,13 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 组织架构树 1.16.0 升级：锁步新增 virtual，四端零代码改动（2026-09-27）
+
+- **升级内容**：`react-okr-tree` / `vue3-okr-tree` `1.14.2 → 1.16.0`（两包锁步同号发布，横跨两个版本）：1.15.0 为对外 API 零变化的锁步空版（`DEFAULT_PROPS` 导出补齐——react 侧首版即已导出、无代码变更；Vue Devtools 面板 react 侧无对等物）；1.16.0 新增可选 `virtual` 虚拟滚动——同层可见兄弟数 ≥ 50 的行只渲染视口窗口（1 父 + 10000 平铺子节点实测渲染节点 10001 → 13），未渲染兄弟由等尺寸占位块顶位、aria 与 `getVisibleNodes()` 按全量可见列表、`scrollToNode` 与键盘漫游对窗口外目标先揭示再定位；要求数字型 `labelWidth`（horizontal 另要求 `labelHeight`），auto 尺寸退回全量渲染并警告；产物 +2 kB gzip。
+- **零代码改动依据**：`virtual` 为默认关闭的新增 prop，演示页未启用（既有 API 形状全程零变化），四端源码零修改——纯 package.json + lockfile + 白名单升级。
+- **supply-chain 白名单（§35）**：react / next 端 `pnpm install` 自动扩展 OR 链时删除了条目注释（同 theme-switch-animation 0.4.0 批次行为），人工恢复并更新为 `@1.13.0 || 1.14.2 || 1.16.0`；vue / nuxt 端注释在 key 上方未受影响，仅人工更新文字。
+- **验证**：React `tsc && vite build`、Vue `vite build && vue-tsc`、Next `next build`、Nuxt `nuxt build` 全绿；四端 node_modules 实装版本核验 1.16.0。GUI 走查待用户（演示页零改动，重点核验组织架构树页渲染与画布交互如常即可）。
+
 ### refresh token 同秒重复缺陷根治：payload 加 jti（2026-09-25，用户拍板推荐方案）
 
 - **缺陷与修法**：refresh token JWT 此前 payload 无 `jti` 且 `iat` 秒级精度，同一用户同秒二次登录签发出完全相同的令牌串，撞 `refresh_tokens.token_hash` 全局唯一索引 → 500 INTERNAL_ERROR（2026-09-25 e2e 基建落地时发现，CI 容器上 auth spec 稳定复现）。按推荐方案在两处签发点（`signTokens` 与 `refresh()` 轮换）的 refresh payload 加 `jti: nanoid()`——服务端不消费该值，仅保证每次签发的令牌串必然不同；access token 不入库不受影响、不加；存量无 jti 的旧令牌到过期自然淘汰，**向后兼容零迁移**。
