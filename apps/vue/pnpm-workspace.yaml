@@ -6,10 +6,10 @@ allowBuilds:
 
 # 供应链策略兼容：pnpm 11.24 默认 24h minimumReleaseAge，vue3-okr-tree 1.13.0
 # 发布当日即接入演示场第 10 页（作者自有包、npm publish --provenance）；
-# 1.14.2 发布当日升级（锁步修复批，对外 API 零变化）；
+# 1.14.2 / 1.16.0 发布次日升级（1.16.0 新增 virtual 虚拟滚动，本次未接入）；
 # 与 react / next 两端 react-okr-tree 同款白名单（mechanisms.md §35）
 minimumReleaseAgeExclude:
-  - vue3-okr-tree@1.13.0 || 1.14.2
+  - vue3-okr-tree@1.13.0 || 1.14.2 || 1.16.0
   # theme-switch-animation：同作者自有包（theme-switch-animation.baiwumm.com），
   # 0.2.0 / 0.4.0 均为发布当日升级（0.4.0 新增 reverse 反向揭开选项并移除
   # CIRCLE_REVERT——由 CIRCLE + reverse: 'auto' 承接），与 react 端同款白名单（mechanisms.md §35）
