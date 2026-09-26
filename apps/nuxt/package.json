@@ -1,7 +1,7 @@
 {
   "name": "better-admin-nuxt",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "description": "Better Admin — Nuxt 全栈实现（Nitro server routes 自带后端，不依赖 NestJS）",
   "author": "baiwumm",

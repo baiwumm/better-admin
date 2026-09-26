@@ -1,7 +1,7 @@
 {
   "name": "better-admin-vue",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "description": "Better Admin — Vue + Nuxt UI v4 前端（NestJS API 消费方）",
   "author": "baiwumm",

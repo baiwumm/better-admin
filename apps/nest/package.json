@@ -1,6 +1,6 @@
 {
   "name": "better-admin-nest",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Better Admin Phase 2 — NestJS + PostgreSQL (Drizzle ORM) API",
   "private": true,
   "type": "commonjs",
