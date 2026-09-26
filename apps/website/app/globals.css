@@ -180,20 +180,53 @@
     background-color: var(--background);
     color: var(--foreground);
   }
+}
 
-  /* ogimg 风格极简方角滚动条 */
-  ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
+/*
+ * 滚动条：10px 轨道内用「透明描边 + content-box 裁切」各留 2px 呼吸，实际滑块 6px 圆角。
+ * 颜色跟随 --muted-foreground，亮/暗两态自动适配；hover 加深一档。
+ *
+ * 刻意放在 @layer base 之外（无层规则优先级高于任何层）：fumadocs 在
+ * `@layer utilities` 里给 `.fd-scroll-container` 自带了 5px 滚动条，若写进 base 层会被它盖掉。
+ */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
 
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
 
-  ::-webkit-scrollbar-thumb {
-    background-color: oklch(0.556 0 0);
-    border-radius: 0;
+::-webkit-scrollbar-thumb {
+  background-color: oklch(0.556 0 0 / 0.4);
+  /* 旧引擎不吃 color-mix 时回落到上一行 oklch，属刻意兜底 */
+  background-color: color-mix(
+    in oklab,
+    var(--muted-foreground) 40%,
+    transparent
+  );
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(0.556 0 0 / 0.7);
+  background-color: color-mix(
+    in oklab,
+    var(--muted-foreground) 70%,
+    transparent
+  );
+}
+
+/* Chrome 121+ 一旦设了非 auto 的 scrollbar-color，就会忽略上面整套 ::-webkit-scrollbar 自绘；
+   所以标准属性只给不支持 webkit 伪元素的引擎（Firefox）用。 */
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted-foreground) transparent;
   }
 }
 
