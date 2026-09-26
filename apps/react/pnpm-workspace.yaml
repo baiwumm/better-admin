@@ -4,9 +4,10 @@ minimumReleaseAgeExclude:
   - '@heroui/react@3.2.5'
   - '@heroui/styles@3.2.5'
   # react-okr-tree：作者自有包（npm publish --provenance）。1.13.0 发布当日接入
-  # 演示场第 10 页；1.14.2 发布当日升级（锁步修复批，对外 API 零变化）；
-  # pnpm 11.24 默认 24h minimumReleaseAge，按 heroui 3.2.5 同款白名单放行
-  - react-okr-tree@1.13.0 || 1.14.2
+  # 演示场第 10 页；1.14.2 / 1.16.0 发布次日升级（1.15.0 零 API 锁步空版 +
+  # 1.16.0 新增 virtual 虚拟滚动，本次未接入）；pnpm 11.24 默认 24h
+  # minimumReleaseAge，按 heroui 3.2.5 同款白名单放行
+  - react-okr-tree@1.13.0 || 1.14.2 || 1.16.0
   # theme-switch-animation：同作者自有包（theme-switch-animation.baiwumm.com），
   # 0.2.0 / 0.4.0 均为发布当日升级（0.4.0 新增 reverse 反向揭开选项并移除
   # CIRCLE_REVERT——由 CIRCLE + reverse: 'auto' 承接），按 heroui 3.2.5 同款白名单放行
