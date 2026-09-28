@@ -267,7 +267,8 @@
  * 首页「高级感」容器层（卡片 / 面板 / 图标底 / 导航 / 主视觉窗口）
  *
  * 设计约束：本层保持 ogimg 式纯黑白极简基调，**自身不引入任何彩色**。
- * 质感全部来自光影层次——多层阴影、顶部内高光、渐变描边、hover 微抬升。
+ * 质感全部来自光影层次——多层阴影、顶部内高光、渐变描边；
+ * hover 反馈统一由外层 TiltCard 提供（倾斜 + 光斑），本层不再自带 hover 样式。
  * 全部用 var(--foreground / --card / --muted / --border) 推导，
  * 因此亮暗两档自动适配，不维护第二套变量。
  *
@@ -276,7 +277,8 @@
  * 默认风格、不做贴合覆写」的既定口径保留，需要新组件时优先走 beUI 而不是回到自绘。
  * ========================================================================== */
 @layer components {
-  /* 高级感卡片：细描边 + 纵向渐变面 + 顶高光 + hover 抬升（圆角对齐 beUI 卡片 1.5rem 档） */
+  /* 高级感卡片：细描边 + 纵向渐变面 + 顶高光（圆角对齐 beUI 卡片 1.5rem 档），
+     hover 反馈由外层 TiltCard 提供 */
   .card-premium {
     position: relative;
     border-radius: 1.5rem;
@@ -289,10 +291,6 @@
     box-shadow:
       0 1px 2px color-mix(in oklab, black 4%, transparent),
       0 10px 26px -16px color-mix(in oklab, black 20%, transparent);
-    transition:
-      transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-      box-shadow 0.24s ease,
-      border-color 0.24s ease;
   }
 
   .card-premium::before {
@@ -312,14 +310,6 @@
     pointer-events: none;
   }
 
-  .card-premium:hover {
-    transform: translateY(-3px);
-    border-color: color-mix(in oklab, var(--foreground) 22%, transparent);
-    box-shadow:
-      0 2px 4px color-mix(in oklab, black 5%, transparent),
-      0 24px 48px -22px color-mix(in oklab, black 30%, transparent);
-  }
-
   .dark .card-premium::before {
     background-image: linear-gradient(
       90deg,
@@ -333,12 +323,6 @@
     box-shadow:
       0 1px 2px color-mix(in oklab, black 35%, transparent),
       0 10px 26px -16px color-mix(in oklab, black 65%, transparent);
-  }
-
-  .dark .card-premium:hover {
-    box-shadow:
-      0 2px 6px color-mix(in oklab, black 40%, transparent),
-      0 24px 48px -22px color-mix(in oklab, black 80%, transparent);
   }
 
   /* 图标容器：让图标有「嵌进去」的立体感
@@ -358,9 +342,6 @@
     box-shadow:
       inset 0 1px 0 color-mix(in oklab, white 70%, transparent),
       0 1px 2px color-mix(in oklab, black 7%, transparent);
-    transition:
-      transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
-      box-shadow 0.24s ease;
   }
 
   .icon-tile {
@@ -373,14 +354,6 @@
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 0.75rem;
-  }
-
-  .card-premium:hover .icon-tile,
-  .card-premium:hover .icon-tile-sm {
-    transform: translateY(-2px) scale(1.04);
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 80%, transparent),
-      0 6px 14px -6px color-mix(in oklab, black 26%, transparent);
   }
 
   .dark .icon-tile,
