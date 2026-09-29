@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { RootProvider } from "fumadocs-ui/provider/next";
+import { ScrollTop } from "@/components/motion/scroll-top";
 import { UI_TRANSLATIONS } from "@/lib/i18n";
 import { SITE } from "@/lib/site";
 import "./globals.css";
@@ -66,6 +67,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         >
           {children}
+          {/* 全站浮钮：滚动进度环 + 百分比，点击平滑回顶（文档页与首页都有） */}
+          <ScrollTop />
         </RootProvider>
       </body>
     </html>
