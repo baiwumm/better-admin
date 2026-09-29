@@ -2,6 +2,16 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 产品宣传片落地：文档站主视觉改用真实渲染视频，新增回到顶部进度钮（2026-09-29）
+
+- **成片**：54 秒横版 1920×1080@30，含原创配乐、23 个动作音效与 5 句中文口播（edge-tts `zh-CN-XiaoxiaoNeural`）。画面**全部由 apps/react 的真实组件渲染**——整个 App（路由/侧边栏/标签栏/权限过滤/Toast）在独立工程里只挂载一次，镜头靠摄像机取景与真实点击换页驱动（真实点侧边栏、点行操作菜单开授权抽屉、点色板换肤、往命令面板逐字输入过滤），不是截图拼贴也不是复刻。
+- **工程位置（重要）**：视频工程在仓库外 `E:/personal-project/.video-work/better-admin-film`（skill 克隆在同级 `skill-tmp/`），`plan.json` 是唯一时间真源；成片与封面交付件在 `.video-work/delivery/`。**不进仓库**，因此仓库内看不到渲染脚本、也无法在 CI 复现——重跑需在原机器按工程内 `make_music.py → mix_audio.py → render.mjs` 顺序执行。
+- **许可边界**：所用 skill 为 GNU AGPL-3.0（其 `assets/fallback/` 默认样式另受 BSL 约束，本片风格为 repo、未使用默认样式）；内置音效 11 个原创 WAV 随包提供；配乐为本片代码原创（固定种子可复现）；口播合成会把 5 句自撰文案发给微软在线接口（非官方 API）。竖版 9:16 做到 8/10 镜可用即停（换肤抽屉与命令面板的 body 级 portal 顶部被遮板切掉），**未交付**，画幅开关保留在工程内。
+- **文档站改动**：① `components/landing/promo-video.tsx` 替换原纯 CSS `AdminMockup`（该组件注释里"刻意不用真实截图"的理由已被本片推翻——真实渲染的宣传片本身就是产品自己的界面，不再有"截谁都不公平"的问题），进视野才挂 `src`、静音循环自动播、`prefers-reduced-motion` 降级为封面，播控用浏览器原生 controls；② `components/motion/scroll-top.tsx` 回到顶部浮钮，外圈进度环 + 圆心百分比、悬停换箭头、点击平滑回顶，挂在 `app/layout.tsx` 全站生效；**未引入 beui/smooth-scroll 的 lenis**（会接管全站滚轮成惯性滚动，与 fumadocs sticky 导航有冲突面），进度与平滑滚动用站点已有的 motion `useScroll` 实现，零新依赖。
+- **README**：badge 下方链接行加「🎬 产品宣传片」，并插入可点击的居中封面（`assets/video/better-admin-promo-cover-16x9.png`，320KB / 1760×990）；外链指向抖音分享短链 `https://v.douyin.com/rv2bIcmeLww/`（重定向到 `douyin.com/video/7690807258980076800`）。**成片 17.8MB 只进文档站 `public/video/`，README 不放视频文件**。
+- **验证**：`apps/website` `pnpm build`（tsc + 静态导出 20 页）通过；静态导出实测——hero 视频 `playing:true / 1920×1080 / controls:true`、底栏按用户要求已移除；回顶钮在顶部不出现、滚到半页时 `aria-label` 与进度环 `strokeDashoffset` 同为 69%、点击后 `scrollY` 平滑回 0 并自动隐藏、无页面报错。文档站 `pnpm lint` 脚本不存在（该应用无此脚本），未跑。
+- **未验证**：抖音短链的外链可达性由用户在浏览器侧确认（服务端抓取只会命中抖音反爬 JS，无法验证）；真实 CF Workers 部署后的视频 range 请求表现未测（本地临时静态服务器不支持 Range）。
+
 ### 组织架构树 1.16.0 升级：锁步新增 virtual，四端零代码改动（2026-09-27）
 
 - **升级内容**：`react-okr-tree` / `vue3-okr-tree` `1.14.2 → 1.16.0`（两包锁步同号发布，横跨两个版本）：1.15.0 为对外 API 零变化的锁步空版（`DEFAULT_PROPS` 导出补齐——react 侧首版即已导出、无代码变更；Vue Devtools 面板 react 侧无对等物）；1.16.0 新增可选 `virtual` 虚拟滚动——同层可见兄弟数 ≥ 50 的行只渲染视口窗口（1 父 + 10000 平铺子节点实测渲染节点 10001 → 13），未渲染兄弟由等尺寸占位块顶位、aria 与 `getVisibleNodes()` 按全量可见列表、`scrollToNode` 与键盘漫游对窗口外目标先揭示再定位；要求数字型 `labelWidth`（horizontal 另要求 `labelHeight`），auto 尺寸退回全量渲染并警告；产物 +2 kB gzip。
