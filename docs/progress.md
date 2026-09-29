@@ -2,6 +2,13 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Next / Nuxt 接入 @vercel/analytics 站点分析（2026-09-29）
+
+- **做了什么**：`apps/next` 与 `apps/nuxt` 各装 `@vercel/analytics` **2.0.1**（精确锁版，两端独立 lockfile）。接入点各一处、零业务代码改动：Next 用 `@vercel/analytics/next` 的 `<Analytics />`，挂在 `src/app/layout.tsx` 根布局 `<body>` 内 `Providers` 之后；Nuxt 用官方模块 `@vercel/analytics/nuxt`，加进 `nuxt.config.ts` 的 `modules` 数组即可——该模块内部经 `addTemplate` 注册一份 client-only 插件调 `injectAnalytics()`，**不需要手写 plugin**。
+- **为何只有两端**：`@vercel/analytics` 的事件上报只在 **Vercel 部署**上生效（非 Vercel 宿主下组件为 no-op）。按 §17 部署矩阵，只有 Next / Nuxt 在 Vercel，React / Vue 在 Cloudflare Workers、website 也已迁 CF Workers，故这四者不接入——**四前端不会拥有统一的分析渠道**，这是平台分布带来的既有结果，不是漏配；若要全站统一指标需换自建方案（另行评审）。
+- **依赖审查**：包**零运行时依赖**（`dependencies: {}`）、无 install 钩子，两端 lockfile 各自只新增这一个包（`resolution:` 行各 +1）；peer 全部可选（next / nuxt / react / vue 等 8 项，只挑当前栈）。2.0.1 发布于 2026-03-12，远超 supply-chain 最短发布年龄，**`pnpm-workspace.yaml` 无需加白名单**（两端 lockfile 政策校验均 `✓ passes`）。Nuxt 端 lockfile 里 `@nuxt/ui` 的 peer 组合哈希键随本次重算（版本仍 4.11.0，不是升级）；两端 `pnpm add` 时 node_modules 顺带落上了 okr-tree / theme-switch-animation 的新版实装（1.13.0 → 1.16.0、0.2.0 → 0.4.0），**package.json 与 lockfile 未因此改动**，属上次升级遗留的落盘滞后。
+- **验证**：`next build`、`nuxt build` 全绿（exit 0）；`nuxt typecheck` 通过；两端改动文件 eslint 0 error；产物实测含 `va.vercel-scripts.com` 端点字符串（Nuxt `.output/public/_nuxt/*.js`、Next `.next/static/chunks/*.js`），证明两边注入链路真的通到了客户端；生产产物运行时冒烟——Next `next start -p 3100` 首页 `/`→307→`/sign-in` 200 无错误边界（根布局带 `<Analytics />` 正常渲染），Nuxt `node .output/server/index.mjs`（3101）200，两端口已回收。**线上仪表盘需用户在 Vercel 项目的 Analytics 设置里启用后自行观察**（本地与自建 preview 下组件按设计为 no-op，不产生正式事件，故本地看不到上报）。
+
 ### 产品宣传片落地：文档站主视觉改用真实渲染视频，新增回到顶部进度钮（2026-09-29）
 
 - **成片**：54 秒横版 1920×1080@30，含原创配乐、23 个动作音效与 5 句中文口播（edge-tts `zh-CN-XiaoxiaoNeural`）。画面**全部由 apps/react 的真实组件渲染**——整个 App（路由/侧边栏/标签栏/权限过滤/Toast）在独立工程里只挂载一次，镜头靠摄像机取景与真实点击换页驱动（真实点侧边栏、点行操作菜单开授权抽屉、点色板换肤、往命令面板逐字输入过滤），不是截图拼贴也不是复刻。

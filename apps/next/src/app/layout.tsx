@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 
+import { Analytics } from "@vercel/analytics/next";
 import { cookies } from "next/headers";
 import clsx from "clsx";
 
@@ -86,6 +87,7 @@ export default async function RootLayout({
           </defs>
         </svg>
         <Providers initialLanguage={initialLanguage}>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );

@@ -56,6 +56,9 @@ export default defineNuxtConfig({
     // 全局 ThemeAnimationType 类型声明；未注册时页面需手写
     // `import ... from 'theme-switch-animation/vue'`（Vue 端即此写法）。
     'theme-switch-animation/nuxt',
+    // Vercel 官方站点分析：模块内部注册 client-only 插件调用 injectAnalytics()，
+    // 无需手写 plugin；非 Vercel 生产环境下按设计为 no-op（React/Vue 在 CF 上不接）
+    '@vercel/analytics/nuxt',
     // Dashboard 图表（契约 v1.12.0）：AreaChart / DonutChart 组件自动导入，
     // 内置 theme.css 以 --ui-* / .dark 对接 Nuxt UI Design Tokens（用户拍板引入，
     // 评审记录见 docs/progress.md 2026-09-19 条目；锁精确版本 3.0.0）。

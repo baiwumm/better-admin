@@ -130,7 +130,7 @@ importers:
         version: 0.5.2(vue@3.5.42(typescript@5.9.3))
       '@nuxt/ui':
         specifier: ^4.11.0
-        version: 4.11.0(4f2456210e59408b59a531da1868eb18)
+        version: 4.11.0(4e806380eeb44eefebebb3d1094503c8)
       '@nuxtjs/i18n':
         specifier: ^10.6.0
         version: 10.6.0(@vue/compiler-dom@3.5.40)(db0@0.3.4(drizzle-orm@0.45.2(postgres@3.4.9)))(esbuild@0.28.0)(eslint@10.10.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.10.1(supports-color@10.2.2))(magicast@0.5.4)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.1)(rollup@4.60.4)(supports-color@10.2.2)(typescript@5.9.3)(vite@8.2.1(@types/node@22.20.2)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.47.1)(yaml@2.9.0))(vue@3.5.42(typescript@5.9.3))
@@ -146,6 +146,9 @@ importers:
       '@tanstack/vue-table':
         specifier: ^8.21.3
         version: 8.21.3(vue@3.5.42(typescript@5.9.3))
+      '@vercel/analytics':
+        specifier: 2.0.1
+        version: 2.0.1(nuxt@4.5.2(b94168e351ed12b231fae552843c3068))(vue@3.5.42(typescript@5.9.3))
       '@vue-flow/background':
         specifier: ^1.3.2
         version: 1.3.2(@vue-flow/core@1.48.2(vue@3.5.42(typescript@5.9.3)))(vue@3.5.42(typescript@5.9.3))
@@ -2988,6 +2991,35 @@ packages:
     resolution: {integrity: sha512-3qkmU6KXWh8GIThEAW3kuRHPQBMjWkKy+Ppz3WkUucx53DTpOa6siMn4xDGSOhlVyMrDaJTCTMLYPZVAIk1P0A==}
     peerDependencies:
       valibot: ^1.4.0
+
+  '@vercel/analytics@2.0.1':
+    resolution: {integrity: sha512-MTQG6V9qQrt1tsDeF+2Uoo5aPjqbVPys1xvnIftXSJYG2SrwXRHnqEvVoYID7BTruDz4lCd2Z7rM1BdkUehk2g==}
+    peerDependencies:
+      '@remix-run/react': ^2
+      '@sveltejs/kit': ^1 || ^2
+      next: '>= 13'
+      nuxt: '>= 3'
+      react: ^18 || ^19 || ^19.0.0-rc
+      svelte: '>= 4'
+      vue: 3.5.42
+      vue-router: ^4
+    peerDependenciesMeta:
+      '@remix-run/react':
+        optional: true
+      '@sveltejs/kit':
+        optional: true
+      next:
+        optional: true
+      nuxt:
+        optional: true
+      react:
+        optional: true
+      svelte:
+        optional: true
+      vue:
+        optional: true
+      vue-router:
+        optional: true
 
   '@vercel/nft@1.5.0':
     resolution: {integrity: sha512-IWTDeIoWhQ7ZtRO/JRKH+jhmeQvZYhtGPmzw/QGDY+wDCQqfm25P9yIdoAFagu4fWsK4IwZXDFIjrmp5rRm/sA==}
@@ -8329,7 +8361,7 @@ snapshots:
       - vite
       - webpack
 
-  '@nuxt/ui@4.11.0(4f2456210e59408b59a531da1868eb18)':
+  '@nuxt/ui@4.11.0(4e806380eeb44eefebebb3d1094503c8)':
     dependencies:
       '@floating-ui/dom': 1.8.0
       '@iconify/vue': 5.0.1(vue@3.5.42(typescript@5.9.3))
@@ -8399,7 +8431,6 @@ snapshots:
       '@internationalized/date': 3.12.4
       '@internationalized/number': 3.6.6
       valibot: 1.4.2(typescript@5.9.3)
-      vue-router: 5.2.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.0)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.1)(rollup@4.60.4)(vite@8.2.1(@types/node@22.20.2)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.47.1)(yaml@2.9.0))(vue@3.5.42(typescript@5.9.3))
       zod: 4.6.2
     transitivePeerDependencies:
       - '@azure/app-configuration'
@@ -9707,6 +9738,11 @@ snapshots:
     dependencies:
       valibot: 1.4.2(typescript@5.9.3)
     optional: true
+
+  '@vercel/analytics@2.0.1(nuxt@4.5.2(b94168e351ed12b231fae552843c3068))(vue@3.5.42(typescript@5.9.3))':
+    optionalDependencies:
+      nuxt: 4.5.2(b94168e351ed12b231fae552843c3068)
+      vue: 3.5.42(typescript@5.9.3)
 
   '@vercel/nft@1.5.0(rollup@4.60.4)(supports-color@10.2.2)':
     dependencies:
