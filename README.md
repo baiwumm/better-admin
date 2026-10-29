@@ -1,4 +1,8 @@
 <p align="center">
+  <strong>简体中文</strong> · <a href="./README.en.md">English</a>
+</p>
+
+<p align="center">
   <!-- 品牌资产真源 assets/logo/（命名按「图形自身外观」，与 apps/*/public/ 语义相反，规则见 docs/ui-spec.md §19.3）：
        亮色档用黑底白块的 logo-dark.svg，暗色档换白底黑块的 logo-light.svg -->
   <picture>
@@ -21,6 +25,7 @@
   <img src="https://img.shields.io/badge/%E5%85%AD%E7%AB%AF%E5%B7%B2%E4%B8%8A%E7%BA%BF-2026--09--23-2ea44f?style=flat-square" alt="六端已于 2026-09-23 上线" />
   <a href="docs/feature-matrix.md"><img src="https://img.shields.io/badge/%E5%8A%9F%E8%83%BD%E5%AF%B9%E9%BD%90-29%2F29-2ea44f?style=flat-square" alt="四端功能对齐 29/29" /></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-0A0A0A?style=flat-square" alt="MIT License" /></a>
+  <a href="https://hub.xerj.org/contributors/baiwumm"><img src="https://hub.xerj.org/contributors/baiwumm/badge.svg" alt="XERJ Corpus Hub contributor" /></a>
 </p>
 
 <p align="center">
@@ -64,6 +69,10 @@
 - API 文档（Swagger）：<https://nest.baiwumm.com/docs>
 - API Contract 唯一真源：[`apps/nest/openapi/openapi.yaml`](apps/nest/openapi/openapi.yaml)
 - 数据库：统一 PostgreSQL（Supabase 托管，仅作数据库 + 头像 Storage）+ Drizzle ORM
+
+## 🤖 用 AI 查阅代码
+
+本仓库已被 [XERJ Corpus Hub](https://hub.xerj.org/contributors/baiwumm) 收录为面向 AI Agent 的可检索语料库。把仓库交给 AI 编程助手后，可以直接问「某个功能在哪实现、怎么实现」，回答会带文件与行号引用，而不是靠模型记忆猜测。
 
 ## 🧱 技术栈
 
