@@ -2,6 +2,16 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### React / Vue 的 Vercel 迁移线上复验通过（2026-11-02）
+
+- **部署**：`07b30b0` 推送 `main` 后 Vercel 两端各自重建（React 比 Vue 晚约 1 分钟上线，轮询 `/settings/users` 与 `/_vercel/insights/script.js` 判定）。
+- **刷新 404 已消除**：两端 `/`、`/sign-in`、`/settings/users`、`/org/depts`、`/playground/okr-tree`、`/org/notices/12` 直开全部 200 `text/html`，响应头无 `X-Vercel-Error: NOT_FOUND`；未命中路径（`/no-such-page-xyz`）回落 `index.html` 200，由客户端路由出 404 页。
+- **rewrites 未误伤真实文件**：`/assets/index-*.js` 200 `application/javascript`，`favicon.svg` / `favicon.ico` / `apple-touch-icon.png` / `site.webmanifest` 全 200 且 MIME 正确。
+- **CORS 未受影响**：带各自 `Origin` 打 `GET https://nest.baiwumm.com/api/health` 两端均 200 + 正确回显，Nest 侧零改动。
+- **Web Analytics 已生效**：`/_vercel/insights/script.js` 两端由迁移前基线 404 变为 200（4522B `application/javascript`），线上主包内含该 script 的加载逻辑与 `va.vercel-scripts.com` 端点字符串——`@vercel/analytics` 由 JS 运行期注入，HTML 无静态标签属正常。
+- **待用户侧收尾**：Dashboard → Analytics 面板见真实 PV（需真实浏览器访问，入库有延迟）；快捷登录与刷新手感 GUI 走查。两项留在 runbook §2.4 未勾。
+- **复核结论**：`07b30b0` 之前的两个 11-02 条目「已知限制」中的「§2.4 尚未逐项勾选」与 analytics 条目「上线侧待办（用户操作）」中「启用 Web Analytics」部分，工程侧已全部闭环；runbook §2.4 已回填实测结果。
+
 ### React / Vue 接入 @vercel/analytics 站点分析（2026-11-02）
 
 - **前提**：上一条把 React / Vue 迁入 Vercel 后，2026-09-29 条目「仅 Next / Nuxt 可接、其余为 no-op」的平台前提不再成立，四前端分析渠道现已统一（website 仍在 CF Workers，不在本节范围）。

@@ -155,10 +155,12 @@ Render Dashboard → 该服务 → **Redeploy 上一版本**（Deployments 列�
 
 ### 2.4 Vercel 迁移复验（2026-11-02 起，React / Vue 两端通用）
 
-- [ ] 深链直开全部 200 + HTML：`/settings/users`、`/org/depts`、`/playground/okr-tree`、`/sign-in`（判据 `curl -o /dev/null -w "%{http_code}"`，响应头不得出现 `X-Vercel-Error: NOT_FOUND`）
-- [ ] 页面内**刷新**后仍停在原路由（本次报障现象即「首次访问可、刷新 404」）
-- [ ] 真实静态文件未被 rewrites 吃掉：`/assets/*` 任一 chunk、`favicon.svg`、`site.webmanifest` 仍 200 + 正确 MIME
-- [ ] 带 `Origin: https://react.baiwumm.com` 打线上 Nest 的 CORS 回显正常（域名未变，Nest 侧无需改动）
+- [x] 深链直开全部 200 + HTML：`/settings/users`、`/org/depts`、`/playground/okr-tree`、`/sign-in`、`/org/notices/12`（判据 `curl -o /dev/null -w "%{http_code}"`，响应头不得出现 `X-Vercel-Error: NOT_FOUND`）——2026-11-02 `07b30b0` 部署后两端实测全 200 `text/html`，无 `X-Vercel-Error`
+- [x] 页面内**刷新**后仍停在原路由（本次报障现象即「首次访问可、刷新 404」）——浏览器刷新与直开深链同为硬导航 GET，落回同一份 `index.html` 后由客户端路由解析；深链直开全绿即等价通过，GUI 手感见最后一条
+- [x] 真实静态文件未被 rewrites 吃掉：`/assets/index-*.js`（200 `application/javascript`）、`/favicon.svg`、`/favicon.ico`、`/apple-touch-icon.png`、`/site.webmanifest`（MIME 均正确）；未命中路径（如 `/no-such-page-xyz`）回落 `index.html` 200 交由客户端 404 页处理
+- [x] 带 `Origin: https://react.baiwumm.com` 打线上 Nest 的 CORS 回显正常（域名未变，Nest 侧无需改动）——两端 `GET /api/health` 均正确回显各自 Origin
+- [x] **Web Analytics 生效**：`/_vercel/insights/script.js` 两端均 200 `application/javascript`（此前为 404），线上主包内含该 script 的加载逻辑（`va.vercel-scripts.com` 端点字符串各 1 处）——`@vercel/analytics` 由 JS 运行期注入 script，故 HTML 里没有静态标签属正常
+- [ ] Dashboard → Analytics 面板看到真实 PV（curl 不执行 JS，需真实浏览器访问；数据入库有几分钟延迟）
 - [ ] GUI 走查：快捷登录可用 / 深链刷新后状态不丢 / 控制台无报错
 
 ### 2.5 回滚

@@ -148,7 +148,7 @@ better-admin/
 
 > 进度细节一律查 [`docs/progress.md`](docs/progress.md)（倒序）与 feature-matrix；本节只留快照与「勿遗忘」约束。
 
-- **当前阶段**：六端统一上线已完成（2026-09-23）后进入持续迭代，最新版本 **v1.1.0**（tag 见 release.yml 流程）。近期里程碑：Nest e2e 基建 31 用例（2026-09-25，mechanisms §42）、refresh token 同秒重复缺陷 jti 根治（2026-09-25，§42 坑 4）、Nest auth 限流 + trust proxy 三跳（2026-10-14，§43）、Vercel WAF 防刷上线（runbook §0.3）。
+- **当前阶段**：六端统一上线已完成（2026-09-23）后进入持续迭代，最新版本 **v1.1.0**（tag 见 release.yml 流程）。近期里程碑：Nest e2e 基建 31 用例（2026-09-25，mechanisms §42）、refresh token 同秒重复缺陷 jti 根治（2026-09-25，§42 坑 4）、Nest auth 限流 + trust proxy 三跳（2026-10-14，§43）、Vercel WAF 防刷上线（runbook §0.3）、React / Vue 迁 Vercel + 两端接入站点分析并线上复验通过（2026-11-02，runbook §2.4）。
 - **当前待办**：**已清零**；新待办出现时在此登记。
 - 📌 **备忘（非待办）**：CI `nest-e2e` 走自托管 TLS postgres 容器，初版方案的 `TEST_DATABASE_URL` secret 已不再使用、可删；Supabase 直连 / pooler 不可用作 CI 测试库的原因见 mechanisms §42。
 - ⚠️ **website 内容是手写 MDX、不是 `docs/` 的自动同步**（`apps/website/content/**` 独立维护）——`docs/` 每次口径变化必须人工回写文档站（曾因此积压过时数字，launch-audit #11 / #12）。
