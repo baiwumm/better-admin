@@ -12,7 +12,7 @@
 ### 0.1 上线顺序（必须遵守）
 
 ```text
-① Nest（Render）→ ② Nest 外部保活 → ③ React / Vue（CF Workers）→ ④ Next / Nuxt（Vercel）→ ⑤ website（CF Workers 静态导出，2026-09-23 当日由 Vercel 改判）→ ⑥ 收官线上契约冒烟
+① Nest（Render）→ ② Nest 外部保活 → ③ React / Vue（Vercel）→ ④ Next / Nuxt（Vercel）→ ⑤ website（CF Workers 静态导出，2026-09-23 当日由 Vercel 改判）→ ⑥ 收官线上契约冒烟
 ```
 
 Nest 必须最先：React / Vue 的 API 直接指向它；保活必须紧随其后（Render 免费层 15 分钟不活跃即休眠，且 Nest 进程内的日志 / refresh_token 清理 cron 依赖常驻才执行）。
@@ -120,30 +120,31 @@ Render Dashboard → 该服务 → **Redeploy 上一版本**（Deployments 列�
 
 ---
 
-## 2 · React（Cloudflare Workers Static Assets）
+## 2 · React（Vercel，2026-11-02 自 CF Workers 迁入）
 
 | 项 | 值 |
 | --- | --- |
-| 平台 | CF Workers（Static Assets，`not_found_handling=single-page-application`） |
-| 域名 | `https://react.baiwumm.com`（baiwumm.com zone 已在 CF DNS） |
-| 目录 | `apps/react`（本地构建 + `npx wrangler deploy`；wrangler 不进依赖） |
-| 配置 | `apps/react/wrangler.jsonc`：`assets.directory=./dist`（SPA 深链回退由 `not_found_handling` 提供，**不要加 `_redirects`**——Workers 上不生效）。Git 集成构建（Workers Builds）：`name` 须与 Dashboard 项目同名（**`better-admin-react`**，2026-09-23 已对齐）；工具版本走 `packageManager` 字段（已钉 `pnpm@11.24.0`——CF 默认 pnpm 10 会把纯配置的 `pnpm-workspace.yaml` 误判为 workspace 声明而报 `packages field missing or empty`） |
+| 平台 | Vercel（纯静态 SPA 产物） |
+| 域名 | `https://react.baiwumm.com`（baiwumm.com zone 仍在 Cloudflare DNS：CNAME 指向 Vercel + 代理设 **DNS only 灰云**，橙云会干扰 Vercel 域名验证与证书签发） |
+| Root Directory | `apps/react` |
+| 构建 | Vercel 识别 Vite：`pnpm build` → `dist/`；端内 `pnpm-lock.yaml` 决定用 pnpm 安装（端内 `pnpm-workspace.yaml` 仅为 pnpm 设置，非 workspace 声明） |
+| 配置 | `apps/react/vercel.json`：`rewrites: [{ "source": "/(.*)", "destination": "/index.html" }]`——**SPA 深链回退的唯一来源，缺它刷新任意深链即返回 `X-Vercel-Error: NOT_FOUND`**（2026-11-02 迁移当日实测踩坑）。rewrites 在文件系统匹配之后应用，`/assets/*`、图标等真实文件不受影响。原 `wrangler.jsonc`（`not_found_handling=single-page-application`）已删除，Workers/Pages 的 `_redirects` 方案一并作废 |
 
 ### 2.1 环境变量表（⚠️ 构建期注入）
 
 | 变量 | 必填 | 取值说明 |
 | --- | --- | --- |
-| `VITE_API_BASE_URL` | ✅ | `https://nest.baiwumm.com/api`——**构建前必须显式设置**：`.env.example` 默认 `http://localhost:3000/api`，Vite 构建期静态替换，漏设 = 线上调本地 API 全挂。做法：`apps/react/.env.production` 写入该值，或 shell 里 export 后再 build |
+| `VITE_API_BASE_URL` | ✅ | `https://nest.baiwumm.com/api`——**构建前必须显式设置**：`.env.example` 默认 `http://localhost:3000/api`，Vite 构建期静态替换，漏设 = 线上调本地 API 全挂。做法：Vercel Project → Settings → Environment Variables 配该变量（构建期注入），或本地构建前在 shell 里 export |
 | `VITE_APP_NAME` / `VITE_APP_DESC` | 可省 | 默认 Better Admin 品牌名与描述 |
 
 ### 2.2 部署步骤
 
-1. `cd apps/react`，设置 `VITE_API_BASE_URL=https://nest.baiwumm.com/api`（.env.production 或 shell）。
-2. `pnpm build`，然后**核验产物**：`grep -r "localhost:3000" dist/` 应无结果。
-3. `npx wrangler deploy`（读 `wrangler.jsonc` 上传 `dist/`）。
-4. CF Dashboard 绑定自定义域 `react.baiwumm.com`。
+1. Vercel 新建项目：导入仓库、**Root Directory = `apps/react`**，构建命令与输出目录用默认（`pnpm build` / `dist`）；SPA 回退由 `vercel.json` 提供，不需要在 Dashboard 的 Rewrites 面板另配。
+2. Environment Variables 配 `VITE_API_BASE_URL=https://nest.baiwumm.com/api`（作用域 Production）。
+3. 推送 `main` 触发构建；产物核验：本地 `pnpm build` 后 `grep -r "localhost:3000" dist/` 应无结果。
+4. Settings → Domains 添加 `react.baiwumm.com`；按 Vercel 提示把 Cloudflare DNS 里该记录改为指向 Vercel 的 CNAME，并将代理状态设为 **DNS only（灰云）**。
 
-### 2.3 上线后冒烟清单（✅ 2026-09-23 实测全绿，浏览器 GUI 走查由用户执行）
+### 2.3 上线后冒烟清单（✅ 2026-09-23 于 CF Workers 实测全绿，历史记录保留；迁 Vercel 后的复验见 §2.4）
 
 - [x] 首页 `https://react.baiwumm.com` 200（text/html）
 - [x] **SPA 深链回退**：`/settings/users`、`/org/depts`、`/playground/okr-tree`、`/sign-in` 直开全部 200 + HTML，不 404
@@ -152,20 +153,28 @@ Render Dashboard → 该服务 → **Redeploy 上一版本**（Deployments 列�
 - [x] 跨域实际请求：带 `Origin: https://react.baiwumm.com` 打线上 Nest，`Access-Control-Allow-Origin` 正确回显（未登录 401 为预期）
 - [x] 浏览器走查 ✅（2026-09-23 用户完成）：演示快捷登录可用 / 写操作弹 DEMO_READONLY 提示 / 控制台无 CORS 报错 / 视觉走查
 
-### 2.4 回滚
+### 2.4 Vercel 迁移复验（2026-11-02 起，React / Vue 两端通用）
 
-`npx wrangler versions rollback`（或重新 deploy 上一构建产物）。
+- [ ] 深链直开全部 200 + HTML：`/settings/users`、`/org/depts`、`/playground/okr-tree`、`/sign-in`（判据 `curl -o /dev/null -w "%{http_code}"`，响应头不得出现 `X-Vercel-Error: NOT_FOUND`）
+- [ ] 页面内**刷新**后仍停在原路由（本次报障现象即「首次访问可、刷新 404」）
+- [ ] 真实静态文件未被 rewrites 吃掉：`/assets/*` 任一 chunk、`favicon.svg`、`site.webmanifest` 仍 200 + 正确 MIME
+- [ ] 带 `Origin: https://react.baiwumm.com` 打线上 Nest 的 CORS 回显正常（域名未变，Nest 侧无需改动）
+- [ ] GUI 走查：快捷登录可用 / 深链刷新后状态不丢 / 控制台无报错
+
+### 2.5 回滚
+
+Vercel Dashboard → Deployments → 上一成功版本 → **Instant Rollback**。若需退回 Cloudflare Workers，先从 git 历史恢复被删的 `wrangler.jsonc`（2026-11-02 之前的版本）再 `npx wrangler deploy`。
 
 ---
 
-## 3 · Vue（Cloudflare Workers Static Assets）
+## 3 · Vue（Vercel，2026-11-02 自 CF Workers 迁入）
 
-同 React **全套口径**：平台 / 域名 `https://vue.baiwumm.com` / `apps/vue/wrangler.jsonc` / 部署与回滚步骤一致。
+同 React **全套口径**：平台 Vercel / Root Directory `apps/vue` / `apps/vue/vercel.json`（同款 `rewrites` SPA 回退）/ 部署与回滚步骤一致；域名 `https://vue.baiwumm.com`，CF DNS 侧同样是 CNAME 指向 Vercel + **DNS only 灰云**。
 
 - `VITE_API_BASE_URL`：`apps/vue/.env.example` 模板已是线上值，构建时仍需确认一遍（同样构建期注入）。
-- 冒烟清单同 React §2.3（域名换 vue.baiwumm.com）。
+- 冒烟清单同 React §2.3（域名换 vue.baiwumm.com），迁移复验同 React §2.4。
 
-### 3.1 上线后冒烟清单（✅ 2026-09-23 实测全绿，浏览器 GUI 走查由用户执行）
+### 3.1 上线后冒烟清单（✅ 2026-09-23 于 CF Workers 实测全绿，历史记录保留；迁 Vercel 后复验见 React §2.4）
 
 - [x] 首页 `https://vue.baiwumm.com` 200（text/html）
 - [x] **SPA 深链回退**：`/settings/users`、`/org/depts`、`/playground/okr-tree`、`/sign-in` 直开全部 200 + HTML，不 404

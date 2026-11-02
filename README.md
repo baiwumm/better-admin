@@ -60,8 +60,8 @@
 | 站点 | 地址 | 部署平台 |
 | --- | --- | --- |
 | 官方文档站 | <https://better-admin.baiwumm.com> | Cloudflare Workers（静态导出） |
-| React（UI 基准） | <https://react.baiwumm.com> | Cloudflare Workers（Static Assets） |
-| Vue | <https://vue.baiwumm.com> | Cloudflare Workers（Static Assets） |
+| React（UI 基准） | <https://react.baiwumm.com> | Vercel |
+| Vue | <https://vue.baiwumm.com> | Vercel |
 | Next.js | <https://next.baiwumm.com> | Vercel |
 | Nuxt | <https://nuxt.baiwumm.com> | Vercel |
 | NestJS API | <https://nest.baiwumm.com> | Render（UptimeRobot 保活） |

@@ -2,7 +2,7 @@
 
 Better Admin 的 **Vue 纯前端 SPA 实现**：以 React 版为 UI / 交互 / 页面结构基准（Source of Truth）复刻，组件实现统一使用 **Nuxt UI v4**（唯一组件库，禁止替代库），通过 NestJS API 访问数据。
 
-- 在线地址：<https://vue.baiwumm.com>（Cloudflare Workers Static Assets）
+- 在线地址：<https://vue.baiwumm.com>（Vercel）
 - 数据来源：全部经 **NestJS API**（本地开发需先启动 `apps/nest`，见 [`.env.example`](./.env.example) 的 `VITE_API_BASE_URL`），不直连数据库
 - 组件与图表：Nuxt UI v4 + 项目级自定义组件；图表用 **Unovis**（`@unovis/vue` + `@unovis/ts`，精确锁版）
 - 核心依赖：Vue 3.5 · Vite 8 · vue-router（unplugin-vue-router 文件式路由）· TanStack vue-query · Pinia · Tailwind CSS 4（Nuxt UI 内置）· TypeScript
@@ -26,4 +26,4 @@ pnpm sync-locales   # 从 React 端同步语言包（predev / prebuild 自动执
 
 ## 部署
 
-Cloudflare Workers（Static Assets）：`wrangler.jsonc` 的 `assets.directory=./dist` + `not_found_handling=single-page-application` 负责 SPA 深链回退。环境变量仅需前端公开前缀 `VITE_*`。
+Vercel：Root Directory = `apps/vue`，构建产物 `dist/`。SPA 深链回退由 [`vercel.json`](./vercel.json) 的 `rewrites: [{ "source": "/(.*)", "destination": "/index.html" }]` 提供——缺它刷新任何深链都会 404（Vercel 的 rewrites 在文件系统匹配之后应用，`/assets/*` 不受影响）。环境变量仅需前端公开前缀 `VITE_*`。

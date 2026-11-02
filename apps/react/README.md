@@ -2,7 +2,7 @@
 
 Better Admin 的 **React 纯前端 SPA 实现**，也是整个产品的 **UI 基准版本**：页面结构、交互、视觉、Design Tokens 以本端为准（Vue / Next / Nuxt 对齐本端）。
 
-- 在线地址：<https://react.baiwumm.com>（Cloudflare Workers Static Assets）
+- 在线地址：<https://react.baiwumm.com>（Vercel）
 - 数据来源：全部经 **NestJS API**（本地开发需先启动 `apps/nest`，见 [`.env.example`](./.env.example) 的 `VITE_API_BASE_URL`），不直连数据库
 - UI 组件：**Hero UI v3 + 项目级自定义组件** 两级（不含 Shadcn / Radix）；样式变量遵循项目级 Design Tokens（Hero UI 设计体系为参考）
 - 核心依赖：React 19 · Vite 8 · TanStack Router（文件式路由）· TanStack Query · Zustand · Tailwind CSS 4 · TypeScript
@@ -24,4 +24,4 @@ pnpm check-locales  # 语言包一致性检查（CI 强制）
 
 ## 部署
 
-Cloudflare Workers（Static Assets）：`wrangler.jsonc` 的 `assets.directory=./dist` + `not_found_handling=single-page-application` 负责 SPA 深链回退。环境变量仅需前端公开前缀 `VITE_*`。
+Vercel：Root Directory = `apps/react`，构建产物 `dist/`。SPA 深链回退由 [`vercel.json`](./vercel.json) 的 `rewrites: [{ "source": "/(.*)", "destination": "/index.html" }]` 提供——缺它刷新任何深链都会 404（Vercel 的 rewrites 在文件系统匹配之后应用，`/assets/*` 不受影响）。环境变量仅需前端公开前缀 `VITE_*`。

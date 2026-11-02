@@ -2,6 +2,28 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### React / Vue 接入 @vercel/analytics 站点分析（2026-11-02）
+
+- **前提**：上一条把 React / Vue 迁入 Vercel 后，2026-09-29 条目「仅 Next / Nuxt 可接、其余为 no-op」的平台前提不再成立，四前端分析渠道现已统一（website 仍在 CF Workers，不在本节范围）。
+- **接入点各一处、零业务代码**：两端各装 `@vercel/analytics` **2.0.1**（与 Next / Nuxt 同值精确锁版）。React 在 `src/routes/__root.tsx` 的 `RootComponent` 挂 `@vercel/analytics/react` 的 `<Analytics />`（与 `<Toast.Provider />` 并列，覆盖登录页与错误页）；Vue 在 `src/App.vue` 的 `UApp` 内挂 `@vercel/analytics/vue` 的 `<Analytics />`。纯 Vite SPA 用不上 `./next` / `./nuxt` 出口，走包 `exports` 里的 `./react` / `./vue`。
+- **两个入口语义不同（读 `dist/*.mjs` 源码取证，不靠文档记忆）**：`react` 版只有在**显式传 `route`** 时才 `disableAutoTrack` 并手动 `pageview`，不传就把 pageview 交给注入脚本 hook `pushState`；`vue` 版内部 `useRoute()`，只要拿到路由**总是**关掉自动跟踪、`watch(route)` 上报 `computeRoute(route.path, route.params)`（动态段自动归一）。React 端按裸挂载处理：全站仅一条动态路由（`org/notices_.$noticeId`），为它专门订阅 `router.state.matches[].routeId` 不值当，代价是该页按真实 URL 分散计数。
+- **peer 不匹配已核实无害**：包声明 peer `vue-router: ^4`，项目实装 **5.3.1**（`pnpm peers check` 报 unmet peer）。jsdom 实测包在 v5 下拿得到 `useRoute` 且上报正确（`/org/notices/12` → 归一 route `/org/notices/[noticeId]`）；该用例留在 `src/__tests__/analytics-pageview.test.ts` 当守卫，将来 vue-router 或包升级改掉语义会先在这里红，而不是等线上静默丢事件。
+- **浏览器侧安全性取证**：`react` 入口读 `process.env.REACT_APP_VERCEL_OBSERVABILITY_BASEPATH` 之前有 `typeof process === "undefined"` 守卫，`vue` 入口的 `import.meta.env.VITE_*` 包在 try/catch 里——纯浏览器 bundle 不会因 `process` 未定义而崩（两端 `vite build` 实测通过）。dev 下 mode 判为 `development`，只加载 `script.debug.js` 在控制台打印事件、不上报生产数据。
+- **不做**：不埋自定义事件（`track`，当前没有需要埋点的转化动作）；不配 `VITE_VERCEL_OBSERVABILITY_*`（那两个变量服务于自建代理 basePath / client config，本项目用默认端点）。
+- **依赖审查**：包零运行时依赖，两端 lockfile 各 +1 包；2.0.1 发布于 2026-03-12，远超 pnpm `minimumReleaseAge` 24h，无需进白名单。
+- **验证**：两端 `tsc --noEmit` / `vue-tsc --noEmit` 0 error、改动文件 eslint 干净；`vite build` 成功且产物 `dist/assets/index-*.js` 实测含 `va.vercel-scripts.com` 端点字符串（与 Next / Nuxt 当初同一核验口径）；`pnpm test` React 93/93、Vue 102/102（含新增守卫）全绿。
+- **上线侧待办（用户操作）**：Vercel 两个项目需在 Dashboard 启用 **Web Analytics**——未启用时生产脚本 `script.onerror` 只打一条控制台提示、不入库；启用后随下次部署生效。线上真实上报无法在本地验证（非 Vercel 宿主按设计为 no-op）。
+
+### React / Vue 改判托管到 Vercel，修复 SPA 刷新 404（2026-11-02）
+
+- **报障与根因**：用户已把 React / Vue 两端迁到 Vercel，现象「首次访问正常、刷新 404」。实测 `curl -I https://react.baiwumm.com/settings/users` 返回 `404` + `X-Vercel-Error: NOT_FOUND`、响应头 `Server: Vercel`（确认流量确已切换）——SPA 深链回退原本由 Cloudflare Workers 的 `wrangler.jsonc` → `assets.not_found_handling=single-page-application` 提供，Vercel 侧没有等价的自动行为，迁移时这条能力没被带过来。
+- **修复**：`apps/react/vercel.json`、`apps/vue/vercel.json` 各新增 `rewrites: [{ "source": "/(.*)", "destination": "/index.html" }]`。Vercel 的 `rewrites` 在文件系统匹配之后才应用，`/assets/*`、图标、`site.webmanifest` 等真实文件不受影响，只有未命中路径回落 `index.html` 由客户端路由接管。**需重新部署生效**（或先在 Dashboard → Project Settings → Rewrites 临时加同一条立即验证）。
+- **配置清理**：两端 `wrangler.jsonc` 删除（git 历史可查，回退 CF 时从历史恢复）。Nest 侧 `CORS_ORIGINS` 与 `main.ts` 白名单**无需改动**——SPA 在浏览器直连 `nest.baiwumm.com/api`，域名没变、与托管平台无关。
+- **DNS 硬性注意**：`baiwumm.com` zone 仍托管 Cloudflare，指向 Vercel 的 CNAME 必须把代理设为 **DNS only（灰云）**，橙云会干扰 Vercel 的域名验证与证书签发。
+- **文档口径同步**：`AGENTS.md` §17（平台分工速览改为四前端 → Vercel + 新增 `vercel.json` 回退真源条目 + CF DNS 灰云注意）；`docs/requirements.md` §12.1 / §12.3 架构图 / §13 域名表与平台分工段（顺带修掉 §12.1 里「官方文档站 → Vercel」的长期漂移，实际在 CF Workers）；`docs/launch-runbook.md` §0.1 顺序、§2 React（平台表 / 环境变量注入方式 / 部署步骤 / 新增 §2.4 迁移复验清单 / §2.5 回滚）、§3 Vue；根 `README.md`、`README.en.md` 与两端 `README.md` 部署段；website 三处手写 MDX（`content/index.mdx`、`content/progress/feature-matrix.mdx` 域名表，`content/progress/roadmap.mdx` 平台分工段）。历史条目（progress.md 旧条目、roadmap「上线收官（2026-09-23）」结果表、runbook 各端 09-23 冒烟勾选）按「现状与历史分离」一律未回改，只在标题或段末注明当时口径。
+- **连带发现（未实施）**：2026-09-29「仅 Next / Nuxt 接入 `@vercel/analytics`」的前提是「React / Vue 不在 Vercel、组件为 no-op」；两端迁入后该前提不再成立，React / Vue 也具备了接入 Vercel 站点分析的能力。是否四前端统一指标需另行评审，本次不动代码。
+- **已知限制**：① §2.4 迁移复验清单尚未逐项勾选（等部署完成后执行）；② website 仍在 Cloudflare Workers 静态导出，未随本次改判。
+
 ### Nest 端 auth 接口限流：@nestjs/throttler 落地（2026-10-14，契约 v1.14.1）
 
 - **做了什么**：`apps/nest` 精确锁版引入 `@nestjs/throttler` **6.7.1**（Nest 11 peer 兼容），新增 `AuthThrottlerGuard` 挂 `AuthController` 类级：`login` / `demo-login` **20 次/60s per IP**、`refresh` 方法级放宽 **60 次/60s**，超限 429 统一信封 `{ code: 'TOO_MANY_REQUESTS' }`。承接同日 Vercel 侧防火墙限流（见上一条目）留下的缺口：React / Vue 的 API 入口此前完全无防刷。

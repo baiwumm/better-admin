@@ -52,8 +52,8 @@ All sites run in read-only demo mode: the login page offers one-click "Admin / R
 | App | URL | Hosting |
 | --- | --- | --- |
 | Docs | <https://better-admin.baiwumm.com> | Cloudflare Workers (static export) |
-| React (UI reference) | <https://react.baiwumm.com> | Cloudflare Workers (Static Assets) |
-| Vue | <https://vue.baiwumm.com> | Cloudflare Workers (Static Assets) |
+| React (UI reference) | <https://react.baiwumm.com> | Vercel |
+| Vue | <https://vue.baiwumm.com> | Vercel |
 | Next.js | <https://next.baiwumm.com> | Vercel |
 | Nuxt | <https://nuxt.baiwumm.com> | Vercel |
 | NestJS API | <https://nest.baiwumm.com> | Render |
