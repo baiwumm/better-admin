@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { Toast } from "@heroui/react";
 import { useProgress } from "@bprogress/react";
+import { Analytics } from "@vercel/analytics/react";
 
 import { GeneralErrorPage } from "@/components/common/error-pages/general-error";
 import { NotFoundErrorPage } from "@/components/common/error-pages/not-found-error";
@@ -35,6 +36,9 @@ function RootComponent() {
       <Outlet />
       {/* 全局 Toast 队列（命令式 toast.success / toast.danger 等） */}
       <Toast.Provider placement="top" />
+      {/* Vercel 站点分析：根路由挂载覆盖登录页与错误页；页面跳转由注入脚本
+          拦截 pushState 上报，非 Vercel 部署下按设计为 no-op */}
+      <Analytics />
     </>
   );
 }

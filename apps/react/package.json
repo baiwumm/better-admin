@@ -39,6 +39,7 @@
     "@tiptap/pm": "^3.30.5",
     "@tiptap/react": "^3.30.5",
     "@tiptap/starter-kit": "^3.30.5",
+    "@vercel/analytics": "2.0.1",
     "@xyflow/react": "^12.11.6",
     "dompurify": "^3.4.14",
     "i18next": "^26.4.0",

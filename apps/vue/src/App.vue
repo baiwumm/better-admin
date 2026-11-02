@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import * as uiLocales from "@nuxt/ui/locale";
+import { Analytics } from "@vercel/analytics/vue";
 
 import { ProgressProvider } from "@/components/common/progress-provider";
 import { useDocumentTitle } from "@/composables/use-document-title";
@@ -34,6 +35,9 @@ const uiLocale = computed(
       :toaster="{ position: 'top-center', duration: 2000 }"
     >
       <AppShell />
+      <!-- Vercel 站点分析：组件内 useRoute() 关掉 pushState 自动跟踪、改为逐页
+           上报，动态段经 computeRoute 归一；非 Vercel 部署下按设计为 no-op -->
+      <Analytics />
     </UApp>
   </ProgressProvider>
 </template>
