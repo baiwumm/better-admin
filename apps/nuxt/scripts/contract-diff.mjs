@@ -8,19 +8,26 @@
  *
  * 用法：node scripts/contract-diff.mjs [nuxtBase] [nestBase]
  *   默认 nuxtBase=http://localhost:3001/api  nestBase=http://localhost:3000/api
- *   凭据走环境变量 CONTRACT_USER / CONTRACT_PASSWORD（缺省 admin / admin123，
- *   仅供本地冒烟；线上或演示库请显式注入，勿把真实口令写进命令行历史）。
+ *   凭据走环境变量 CONTRACT_USER / CONTRACT_PASSWORD（两个须同时设置，
+ *   勿把真实口令写进命令行历史）；未注入时回退演示快捷登录 demo-login
+ *   （kind=admin，免密，仅在 DEMO_MODE=true 的环境开放，关闭时 404，
+ *   此时必须显式注入凭据）。
  * 退出码：0 = 差异为零或全部已记录；1 = 存在未记录差异。
  *
  * 覆盖面：openapi.yaml 的全部只读 GET（31 条步骤，含 v1.11/v1.12 /stats/overview、
  * v1.13 /roles/{id}/users 与详情类端点），仅 /health 按契约设计排除。
  * 前置：Nuxt 与 Nest 两个服务需同时在线（脚本自身不启动它们）。
+ *
+ * demo-login 模式注意：kind=admin 两次登录会抽到演示池内**不同**用户，
+ * 用户级端点（/auth/me、/account/profile、/notices/mine、/notifications*）
+ * 与详情内的 myReadAt 值级差异属预期，脚本自动按已知差异处理；要跑
+ * 严格值级 diff 请用 CONTRACT_USER / CONTRACT_PASSWORD 注入同一账号。
  */
 const NUXT_BASE = process.argv[2] ?? 'http://localhost:3001/api'
 const NEST_BASE = process.argv[3] ?? 'http://localhost:3000/api'
 
-const USERNAME = process.env.CONTRACT_USER ?? 'admin'
-const PASSWORD = process.env.CONTRACT_PASSWORD ?? 'admin123'
+const USERNAME = process.env.CONTRACT_USER
+const PASSWORD = process.env.CONTRACT_PASSWORD
 
 /** 易变字段（值必然不同，仅校验键存在） */
 const VOLATILE_KEYS = new Set([
@@ -35,12 +42,31 @@ const VOLATILE_KEYS = new Set([
 ])
 
 async function login(base) {
-  const res = await fetch(`${base}/auth/login`, {
+  // 显式注入凭据时走账密登录；否则回退演示快捷登录（免密，响应结构与
+  // login 完全一致；DEMO_MODE 关闭时 404，此时必须显式注入凭据）
+  if (USERNAME && PASSWORD) {
+    const res = await fetch(`${base}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: USERNAME, password: PASSWORD })
+    })
+    if (!res.ok) throw new Error(`login ${base} -> ${res.status}`)
+    const body = await res.json()
+    return body.data.accessToken
+  }
+  if (USERNAME || PASSWORD) {
+    throw new Error('CONTRACT_USER 与 CONTRACT_PASSWORD 须同时设置（或都不设走 demo-login）')
+  }
+  const res = await fetch(`${base}/auth/demo-login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: USERNAME, password: PASSWORD })
+    body: JSON.stringify({ kind: 'admin' })
   })
-  if (!res.ok) throw new Error(`login ${base} -> ${res.status}`)
+  if (!res.ok) {
+    throw new Error(
+      `demo-login ${base} -> ${res.status}（DEMO_MODE 未开启？请改用 CONTRACT_USER / CONTRACT_PASSWORD 注入凭据）`
+    )
+  }
   const body = await res.json()
   return body.data.accessToken
 }
@@ -70,6 +96,20 @@ function isKnownDiff(problem) {
   if (/^body\.data\[\d+\]\.tags: 类型不同/.test(problem)) return true
   if (/^body\.data\[9\]\.label: 值不同/.test(problem)) return true
   return false
+}
+
+/** 是否 demo-login 免密模式（未注入账密时启用） */
+const DEMO_LOGIN = !(USERNAME && PASSWORD)
+
+/**
+ * 用户级端点前缀：demo-login 两次登录抽到不同演示用户，值级差异属预期。
+ * 另：公告详情内的 myReadAt 是当前用户维度字段，demo 模式下同理豁免。
+ */
+const USER_SCOPED_PREFIXES = ['/auth/me', '/account/profile', '/notices/mine', '/notifications']
+function isExpectedDemoDiff(path, problem) {
+  if (!DEMO_LOGIN) return false
+  if (problem.includes('myReadAt')) return true
+  return USER_SCOPED_PREFIXES.some(p => path === p || path.startsWith(`${p}?`) || path.startsWith(`${p}/`))
 }
 
 /** 递归 diff：返回差异描述数组（空数组 = 一致）。 */
@@ -195,13 +235,19 @@ async function main() {
       diff(a.body, b.body, 'body', problems)
     }
 
-    const known = problems.filter(isKnownDiff)
-    const unknown = problems.filter(p => !isKnownDiff(p))
+    const isKnown = p => isKnownDiff(p) || isExpectedDemoDiff(path, p)
+    const known = problems.filter(isKnown)
+    const unknown = problems.filter(p => !isKnown(p))
 
     const status = unknown.length === 0 ? (known.length > 0 ? 'KNOWN' : 'OK') : 'DIFF'
     report.push(`[${status}] GET ${path} (${a.status}/${b.status})`)
     for (const p of problems) {
-      report.push(`       ${p}${isKnownDiff(p) ? '  ← 已记录差异（Nest vs Next 既有，Nuxt 对齐 Next）' : ''}`)
+      const note = isExpectedDemoDiff(path, p)
+        ? '  ← demo-login 双用户预期差异（严格比对请注入同一账号凭据）'
+        : isKnownDiff(p)
+          ? '  ← 已记录差异（Nest vs Next 既有，Nuxt 对齐 Next）'
+          : ''
+      report.push(`       ${p}${note}`)
     }
     totalProblems = totalProblems.concat(unknown)
   }
