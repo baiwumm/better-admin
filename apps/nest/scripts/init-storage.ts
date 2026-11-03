@@ -22,7 +22,7 @@ if (!supabaseUrl || !secretKey) {
 const BUCKET_NAME = 'avatars';
 
 async function run() {
-  // eslint-disable-next-line no-console
+   
   console.log(`[storage] 检查 bucket ${BUCKET_NAME} ...`);
   const res = await fetch(`${supabaseUrl}/storage/v1/bucket`, {
     method: 'POST',
@@ -34,7 +34,7 @@ async function run() {
   });
 
   if (res.ok) {
-    // eslint-disable-next-line no-console
+     
     console.log(`[storage] bucket ${BUCKET_NAME} 创建成功（public read）。`);
     return;
   }
@@ -44,7 +44,7 @@ async function run() {
     | null;
   // bucket 已存在视为幂等成功（错误码 "Bucket already exists" / 409）
   if (body?.error === 'Bucket already exists' || body?.statusCode === '409') {
-    // eslint-disable-next-line no-console
+     
     console.log(`[storage] bucket ${BUCKET_NAME} 已存在，跳过。`);
     return;
   }
@@ -52,7 +52,7 @@ async function run() {
 }
 
 run().catch((err) => {
-  // eslint-disable-next-line no-console
+   
   console.error(err.message || err);
   process.exit(1);
 });

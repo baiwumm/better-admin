@@ -100,11 +100,10 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 
 ## 2. 表清单（物理 17 张，无 i18n 表）
 
-> **计数口径（2026-09-22 实测校正，原写「17 张」为口径混用所致失真，见仓库根 `docs/launch-audit.md` #50）**：
-> - `src/db/schema/` 下 `pgTable(` 声明共 **18** 处（`grep -rc pgTable src/db/schema/*.ts` 求和）；
-> - 其中 `settings`（§2.8）为**已停用的遗留声明**：该文件未被 barrel `src/db/schema/index.ts` 导出，而 `drizzle.config.ts` 的 `schema` 入口只读该 barrel，故它不参与迁移生成；
-> - **库中物理表 17 张**——与 drizzle-kit 最新快照 `drizzle/meta/0009_snapshot.json` 的 17 张完全一致（含 `refresh_tokens`，不含已被迁移 `0002_*` DROP 的 `settings`）；
-> - 本节 §2.1–§2.18 共 18 个小节 = **17 张物理表 + 1 条已停用表口径说明**（§2.18 `refresh_tokens` 为本次补录，此前长期无小节）。
+> **计数口径（2026-11-03 更新：settings 死声明文件已删除，声明数与物理表数归一）**：
+> - `src/db/schema/` 下 `pgTable(` 声明共 **17** 处，与库中物理表 **17 张**一一对应——与 drizzle-kit 最新快照 `drizzle/meta/0009_snapshot.json` 的 17 张完全一致（含 `refresh_tokens`，不含已被迁移 `0002_*` DROP 的 `settings`）；
+> - `settings`（§2.8）曾长期残留一份不参与迁移的死声明文件，2026-11-03 已删除（历史口径见 §2.8 与仓库根 `docs/launch-audit.md` #50）；
+> - 本节 §2.1–§2.18 共 18 个小节 = **17 张物理表 + 1 条已停用表口径说明**。
 >
 > 通用约定：
 > - 所有表主键 `id` 为 `text`（与参考模型一致，实现简单、无 uuid 生成依赖）。
@@ -255,13 +254,10 @@ role_menus.permissions  (某角色在该菜单授权了哪些位，子集)
 > **物理表已不存在**——迁移 `drizzle/0002_lively_obadiah_stane.sql` 即
 > `DROP TABLE "settings" CASCADE;`（`0000_initial_schema.sql` 建、`0002` 删，其后无回建）。
 >
-> ⚠️ **口径澄清（2026-09-22 实测，勿再写作「表仍在库中保留」）**：`src/db/schema/settings.schema.ts`
-> 仍保留该表的 drizzle 列声明（§2 计数里的第 18 处 `pgTable`），但该文件**未被 barrel
-> `src/db/schema/index.ts` 导出**、`drizzle.config.ts` 只以该 barrel 为 schema 入口，
-> 且全仓无任何代码 import 该表定义（`grep -rn "settings\.schema" src scripts` 0 命中，
-> 仅 `logs.schema.ts` 注释与 seed 菜单的 `to: '/settings/*'` 路径字面量提到 settings）。
-> 因此它是**不参与迁移、无业务读写的死声明**，不影响库结构，也不构成「表还在」的依据；
-> 若后续被重新导出，drizzle-kit 会生成 `CREATE TABLE settings` 的回潮迁移——删除或复活该文件前须先确认。
+> ⚠️ **源码声明已删除（2026-11-03）**：`src/db/schema/settings.schema.ts` 曾长期保留该表的
+> drizzle 列声明作为死声明（未被 barrel `src/db/schema/index.ts` 导出、不参与迁移、无业务读写），
+> 现已删除。注意反向风险不变：**若将来新建同名声明并被 barrel 导出，drizzle-kit 会生成
+> `CREATE TABLE settings` 的回潮迁移**——复活前先确认。
 >
 > 日志清理若需保留期配置，另行以新配置载体实现，不复用本表（现状：保留期与计划由环境变量驱动，
 > 见 `src/modules/logs/log-cleanup.service.ts` 与 `.env.example` 的 `LOG_RETENTION_DAYS` /

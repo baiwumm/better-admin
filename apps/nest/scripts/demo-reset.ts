@@ -632,7 +632,6 @@ async function main() {
   // ---- 构建数据集 ----
   const deptRows = buildDepts();
   const deptByCode = new Map(deptRows.map((d) => [d.code, d]));
-  const deptById = new Map(deptRows.map((d) => [d.id, d]));
   const postRows = buildPosts(deptByCode);
   const userRows = buildUsers(postRows);
   const usersByRole = (code: RoleCode) => userRows.filter((u) => u.role === code);
