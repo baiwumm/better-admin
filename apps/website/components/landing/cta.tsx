@@ -8,7 +8,7 @@ export function Cta() {
           与下方小卡片的 6 度在视觉摆幅上对齐。
           ⚠️ max-w-5xl / mx-auto 必须挂在 TiltCard 上：glare inset-0 铺的是 wrapper，
           若内层才限宽，光斑会延伸到卡片左右两侧的空白区 */}
-      <TiltCard max={3} className="mx-auto max-w-5xl rounded-[1.5rem]">
+      <TiltCard className="mx-auto max-w-5xl rounded-[1.5rem]" max={3}>
         <div className="panel-premium px-10 py-16 text-center sm:px-16">
           <h2 className="text-balance text-3xl font-bold tracking-tight">
             准备好深入了吗？

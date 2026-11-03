@@ -15,6 +15,7 @@ import {
   useRef,
   useState,
 } from "react";
+
 import { EASE_OUT, SPRING_PRESS } from "@/lib/ease";
 import { useHoverCapable } from "@/lib/hooks/use-hover-capable";
 import { cn } from "@/lib/utils";
@@ -86,6 +87,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           const rect = event.currentTarget.getBoundingClientRect();
           const size = Math.max(rect.width, rect.height) * 2;
           const id = nextId.current++;
+
           setRipples((prev) => [
             ...prev,
             {
@@ -104,11 +106,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <motion.button
         ref={ref}
-        type="button"
-        whileTap={reduce ? undefined : { scale: pressScale }}
-        whileHover={reduce || !canHover ? undefined : { scale: 1.02 }}
-        transition={SPRING_PRESS}
-        onPointerDown={handlePointerDown}
         className={cn(
           "inline-flex items-center justify-center font-medium select-none",
           "transition-colors",
@@ -118,6 +115,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           SIZE_CLASS[size],
           className,
         )}
+        transition={SPRING_PRESS}
+        type="button"
+        whileHover={reduce || !canHover ? undefined : { scale: 1.02 }}
+        whileTap={reduce ? undefined : { scale: pressScale }}
+        onPointerDown={handlePointerDown}
         {...rest}
       >
         {ripple && !reduce ? (
@@ -126,7 +128,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
               {ripples.map((r) => (
                 <motion.span
                   key={r.id}
+                  animate={{ scale: 1, opacity: 0 }}
                   className="absolute rounded-full bg-current"
+                  exit={{ opacity: 0 }}
+                  initial={{ scale: 0.05, opacity: 0.3 }}
                   style={{
                     left: r.x,
                     top: r.y,
@@ -135,9 +140,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                     x: "-50%",
                     y: "-50%",
                   }}
-                  initial={{ scale: 0.05, opacity: 0.3 }}
-                  animate={{ scale: 1, opacity: 0 }}
-                  exit={{ opacity: 0 }}
                   transition={{ duration: 1.6, ease: EASE_OUT }}
                   onAnimationComplete={() =>
                     setRipples((prev) => prev.filter((x) => x.id !== r.id))
@@ -171,9 +173,6 @@ export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(
     return (
       <motion.a
         ref={ref}
-        whileTap={reduce ? undefined : { scale: pressScale }}
-        whileHover={reduce || !canHover ? undefined : { scale: 1.02 }}
-        transition={SPRING_PRESS}
         className={cn(
           "inline-flex items-center justify-center font-medium select-none",
           "transition-colors",
@@ -181,6 +180,9 @@ export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(
           SIZE_CLASS[size],
           className,
         )}
+        transition={SPRING_PRESS}
+        whileHover={reduce || !canHover ? undefined : { scale: 1.02 }}
+        whileTap={reduce ? undefined : { scale: pressScale }}
         {...rest}
       >
         {children}

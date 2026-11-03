@@ -14,8 +14,10 @@ export function useHoverCapable() {
     if (typeof window === "undefined" || !window.matchMedia) return;
     const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
     const update = () => setCanHover(mq.matches);
+
     update();
     mq.addEventListener?.("change", update);
+
     return () => mq.removeEventListener?.("change", update);
   }, []);
 

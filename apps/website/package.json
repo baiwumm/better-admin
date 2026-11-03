@@ -16,7 +16,12 @@
   "scripts": {
     "dev": "node scripts/with-memory-cap.mjs dev",
     "build": "node scripts/with-memory-cap.mjs build",
-    "start": "node scripts/with-memory-cap.mjs start"
+    "start": "node scripts/with-memory-cap.mjs start",
+    "lint": "eslint --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "postinstall": "fumadocs-mdx"
   },
   "dependencies": {
     "clsx": "2.1.1",
@@ -34,14 +39,31 @@
     "theme-switch-animation": "0.4.0"
   },
   "devDependencies": {
+    "@eslint/compat": "1.2.8",
+    "@eslint/eslintrc": "3.3.1",
+    "@eslint/js": "9.25.1",
+    "@next/eslint-plugin-next": "16.2.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/mdx": "^2.0.14",
     "@types/node": "24.7.2",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
+    "@typescript-eslint/eslint-plugin": "8.34.1",
+    "@typescript-eslint/parser": "8.34.1",
+    "eslint": "9.25.1",
+    "eslint-config-prettier": "10.1.5",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-prettier": "5.5.0",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "eslint-plugin-unused-imports": "4.1.4",
+    "globals": "16.0.0",
     "prettier": "^3.9.6",
     "tailwindcss": "4.3.3",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vite": "8.0.16",
+    "vitest": "4.1.11"
   },
   "packageManager": "pnpm@11.24.0"
 }

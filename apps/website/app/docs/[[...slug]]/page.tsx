@@ -5,6 +5,7 @@ import {
   DocsTitle,
 } from "fumadocs-ui/page";
 import { notFound } from "next/navigation";
+
 import { getMDXComponents } from "@/mdx-components";
 import { source } from "@/lib/source";
 
@@ -13,6 +14,7 @@ export default async function Page(props: {
 }) {
   const { slug } = await props.params;
   const page = source.getPage(slug);
+
   if (!page) notFound();
 
   const MDX = page.data.body;
@@ -37,6 +39,7 @@ export async function generateMetadata(props: {
 }) {
   const { slug } = await props.params;
   const page = source.getPage(slug);
+
   if (!page) return {};
 
   return {

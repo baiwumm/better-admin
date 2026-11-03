@@ -13,7 +13,12 @@ const TABLE_GROUPS: { title: string; tables: string[] }[] = [
   { title: "组织中心", tables: ["depts", "posts", "user_posts"] },
   {
     title: "公告中心",
-    tables: ["notices", "notice_scopes", "notice_read_records", "notice_remind_logs"],
+    tables: [
+      "notices",
+      "notice_scopes",
+      "notice_read_records",
+      "notice_remind_logs",
+    ],
   },
   { title: "数据字典", tables: ["dict_types", "dict_items"] },
   { title: "审计与通知", tables: ["logs", "notifications"] },

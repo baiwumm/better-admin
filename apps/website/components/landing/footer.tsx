@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import { Logo } from "@/components/logo";
 import { ButtonLink } from "@/components/motion/button/base";
 import { TextScramble } from "@/components/text-scramble";
@@ -30,7 +31,7 @@ export function Footer() {
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <div className="flex flex-col items-start gap-4">
               <div className="flex items-center gap-2">
-                <Logo size={32} className="rounded-lg" />
+                <Logo className="rounded-lg" size={32} />
                 <span className="text-xl font-extrabold leading-tight tracking-tight">
                   Better Admin
                 </span>
@@ -47,16 +48,16 @@ export function Footer() {
               aria-label="相关链接"
               className="flex items-center gap-2 md:justify-end md:pt-1"
             >
-              <ButtonLink href="/docs" variant="secondary" size="sm">
+              <ButtonLink href="/docs" size="sm" variant="secondary">
                 阅读文档
               </ButtonLink>
               <ButtonLink
-                href={SITE.github}
-                target="_blank"
-                rel="noopener noreferrer"
                 aria-label="Better Admin on GitHub"
-                variant="secondary"
+                href={SITE.github}
+                rel="noopener noreferrer"
                 size="icon"
+                target="_blank"
+                variant="secondary"
               >
                 <GithubIcon className="size-4" />
               </ButtonLink>
@@ -68,8 +69,8 @@ export function Footer() {
               <span>
                 © {new Date().getFullYear()}{" "}
                 <a
-                  href="/"
                   className="text-foreground underline underline-offset-4 transition-colors hover:opacity-80"
+                  href="/"
                 >
                   Better Admin
                 </a>
@@ -80,11 +81,11 @@ export function Footer() {
             <div className="flex items-center gap-1.5">
               <span>Built by</span>
               <a
-                href={SITE.ownerUrl}
-                target="_blank"
-                rel="noopener noreferrer"
                 aria-label={`${SITE.owner} 的 GitHub`}
                 className="flex items-center font-medium text-foreground underline underline-offset-4 transition-colors hover:opacity-80"
+                href={SITE.ownerUrl}
+                rel="noopener noreferrer"
+                target="_blank"
               >
                 <TextScramble
                   className="inline-block w-[7ch] whitespace-nowrap"

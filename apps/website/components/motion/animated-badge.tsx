@@ -1,6 +1,8 @@
 "use client";
 // beui.dev/components/motion/animated-badge
 
+import type { ReactNode } from "react";
+
 import {
   AlertTriangle,
   Check,
@@ -17,7 +19,7 @@ import {
   type HTMLMotionProps,
   type Variants,
 } from "motion/react";
-import type { ReactNode } from "react";
+
 import { EASE_OUT } from "@/lib/ease";
 import { cn } from "@/lib/utils";
 
@@ -143,7 +145,6 @@ export function AnimatedBadge({
   return (
     <motion.span
       layout
-      transition={{ type: "spring", stiffness: 420, damping: 30, mass: 0.7 }}
       className={cn(
         "relative inline-flex shrink-0 items-center overflow-hidden whitespace-nowrap rounded-full border font-medium tabular-nums",
         "transition-colors duration-300",
@@ -151,34 +152,35 @@ export function AnimatedBadge({
         SIZE_CLASS[size],
         className,
       )}
+      transition={{ type: "spring", stiffness: 420, damping: 30, mass: 0.7 }}
       {...rest}
     >
       {pulse && !reduce ? (
         <motion.span
           aria-hidden
-          className="absolute inset-0 rounded-full bg-current opacity-10"
           animate={{ scale: [0.94, 1.08, 0.94], opacity: [0.08, 0.16, 0.08] }}
+          className="absolute inset-0 rounded-full bg-current opacity-10"
           transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
         />
       ) : null}
       {showIcon ? (
         <span className="relative z-10 inline-flex items-center justify-center overflow-hidden">
-          <AnimatePresence mode="popLayout" initial={false}>
+          <AnimatePresence initial={false} mode="popLayout">
             <motion.span
               key={status}
               aria-hidden
               data-badge-icon
-              variants={ICON_ROLL_VARIANTS}
-              initial={reduce ? false : "initial"}
               animate={reduce ? { opacity: 1 } : "animate"}
-              exit={reduce ? undefined : "exit"}
               className="inline-flex will-change-transform"
+              exit={reduce ? undefined : "exit"}
+              initial={reduce ? false : "initial"}
+              variants={ICON_ROLL_VARIANTS}
             >
               {status === "loading" && !reduce && !icon ? (
                 <motion.span
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   className="inline-flex"
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 >
                   <Icon className={ICON_CLASS[size]} />
                 </motion.span>
@@ -191,15 +193,15 @@ export function AnimatedBadge({
       ) : null}
       {children != null ? (
         <span className="relative z-10 inline-flex overflow-hidden">
-          <AnimatePresence mode="popLayout" initial={false}>
+          <AnimatePresence initial={false} mode="popLayout">
             <motion.span
               key={resolvedContentKey}
               data-badge-label
-              variants={TEXT_ROLL_VARIANTS}
-              initial={reduce ? false : "initial"}
               animate={reduce ? { opacity: 1 } : "animate"}
-              exit={reduce ? undefined : "exit"}
               className="inline-block will-change-transform"
+              exit={reduce ? undefined : "exit"}
+              initial={reduce ? false : "initial"}
+              variants={TEXT_ROLL_VARIANTS}
             >
               {children}
             </motion.span>

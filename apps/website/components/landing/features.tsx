@@ -1,4 +1,5 @@
 import { FileJson, Layers, ShieldCheck } from "lucide-react";
+
 import { AnimatedBadge } from "@/components/motion/animated-badge";
 import { TiltCard } from "@/components/motion/tilt-card";
 
@@ -28,7 +29,7 @@ export function Features() {
     <section className="px-6 py-24">
       <div className="mx-auto max-w-5xl">
         <div className="mb-12 text-center">
-          <AnimatedBadge size="sm" className="mb-5">
+          <AnimatedBadge className="mb-5" size="sm">
             Design First
           </AnimatedBadge>
           <h2 className="text-balance text-3xl font-bold tracking-tight">
@@ -42,12 +43,12 @@ export function Features() {
           {FEATURES.map((feature) => (
             /* TiltCard 做外层倾斜 wrapper：glare 光斑的圆角裁剪
                与卡片圆角对齐都在这层 */
-            <TiltCard key={feature.title} max={6} className="rounded-[1.5rem]">
+            <TiltCard key={feature.title} className="rounded-[1.5rem]" max={6}>
               <div className="card-premium h-full p-6">
                 <span className="icon-tile">
                   <feature.icon
-                    size={20}
                     className="text-foreground"
+                    size={20}
                     strokeWidth={1.75}
                   />
                 </span>

@@ -9,6 +9,7 @@ import {
   useSpring,
 } from "motion/react";
 import { type ReactNode, useRef } from "react";
+
 import { SPRING_MOUSE } from "@/lib/ease";
 import { useHoverCapable } from "@/lib/hooks/use-hover-capable";
 import { cn } from "@/lib/utils";
@@ -41,10 +42,12 @@ export function TiltCard({
 
   const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const el = ref.current;
+
     if (!el || !enabled) return;
     const rect = el.getBoundingClientRect();
     const px = (e.clientX - rect.left) / rect.width;
     const py = (e.clientY - rect.top) / rect.height;
+
     ry.set((px - 0.5) * max);
     rx.set((0.5 - py) * max);
     gx.set(px * 100);
@@ -62,23 +65,23 @@ export function TiltCard({
   return (
     <motion.div
       ref={ref}
-      onMouseMove={onMove}
+      className={cn(
+        "relative overflow-hidden rounded-2xl will-change-transform",
+        className,
+      )}
       onMouseLeave={onLeave}
       // 不设 transformStyle: preserve-3d——它会使 overflow/border-radius 裁剪
       // 失效（CSS Transforms 2 分组规则），glare 光斑会跟着 3D 旋转跑出卡片外；
       // 本项目用法子元素均无 3D 需求，扁平渲染即可。
       style={{ transform }}
-      className={cn(
-        "relative overflow-hidden rounded-2xl will-change-transform",
-        className,
-      )}
+      onMouseMove={onMove}
     >
       {children}
       {glare && enabled ? (
         <motion.div
           aria-hidden
-          style={{ background: glareBg }}
           className="pointer-events-none absolute inset-0 opacity-15"
+          style={{ background: glareBg }}
         />
       ) : null}
     </motion.div>

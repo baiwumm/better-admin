@@ -1,4 +1,5 @@
 import { ArrowRight, BookOpen } from "lucide-react";
+
 import { GithubIcon } from "@/components/ui/brand-icons";
 import { ButtonLink } from "@/components/motion/button/base";
 import { PromoVideo } from "@/components/landing/promo-video";
@@ -14,10 +15,10 @@ export function Hero() {
       />
       <div className="relative">
         <a
-          href={SITE.github}
-          target="_blank"
-          rel="noreferrer"
           className="animate-fade-up group mx-auto mb-6 flex w-fit items-center gap-3 rounded-full border bg-background/80 p-1 ps-4 text-xs font-medium text-muted-foreground shadow-md backdrop-blur transition-colors duration-300 hover:bg-muted hover:text-foreground"
+          href={SITE.github}
+          rel="noreferrer"
+          target="_blank"
         >
           <span>同一套产品 · 五种技术栈实现</span>
           <span className="hidden h-4 w-px bg-border sm:block" />
@@ -43,8 +44,8 @@ export function Hero() {
           </ButtonLink>
           <ButtonLink
             href={SITE.github}
-            target="_blank"
             rel="noreferrer"
+            target="_blank"
             variant="secondary"
           >
             <GithubIcon className="size-4" />

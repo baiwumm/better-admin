@@ -19,6 +19,7 @@ export function PromoVideo() {
 
   useEffect(() => {
     const el = wrapRef.current;
+
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => {
@@ -29,7 +30,9 @@ export function PromoVideo() {
       },
       { rootMargin: "300px" },
     );
+
     io.observe(el);
+
     return () => io.disconnect();
   }, []);
 
@@ -44,23 +47,23 @@ export function PromoVideo() {
           <div className="relative aspect-video bg-black">
             {armed ? (
               <video
-                className="absolute inset-0 size-full"
-                src={SRC}
-                poster={POSTER}
-                muted
-                loop
-                playsInline
                 controls
+                loop
+                muted
+                playsInline
                 autoPlay={!reduceMotion}
-                preload="none"
+                className="absolute inset-0 size-full"
                 controlsList="nodownload noplaybackrate"
+                poster={POSTER}
+                preload="none"
+                src={SRC}
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={POSTER}
                 alt="Better Admin 产品宣传片封面"
                 className="absolute inset-0 size-full object-cover"
+                src={POSTER}
               />
             )}
           </div>

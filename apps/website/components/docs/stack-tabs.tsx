@@ -5,6 +5,7 @@ import {
   TabsTrigger,
 } from "fumadocs-ui/components/tabs";
 import { Children, isValidElement, type ReactNode } from "react";
+
 import { STACK_ICON_ENTRIES, StackGlyph } from "@/components/icons/stack-icons";
 
 /**
@@ -30,6 +31,7 @@ import { STACK_ICON_ENTRIES, StackGlyph } from "@/components/icons/stack-icons";
 /** 从标签文案中识别技术栈；未命中（如「认证与账户」）则不渲染图标 */
 function StackIcons({ value }: { value: string }) {
   const hits = STACK_ICON_ENTRIES.filter(({ label }) => value.includes(label));
+
   if (hits.length === 0) return null;
 
   return (
@@ -49,6 +51,7 @@ function collectTabs(children: ReactNode) {
       value?: unknown;
       children?: ReactNode;
     };
+
     return typeof value === "string" ? [{ value, content }] : [];
   });
 }
@@ -58,7 +61,7 @@ export function StackTabs({ children }: { children: ReactNode }) {
 
   if (tabs.length === 0) {
     throw new Error(
-      "<StackTabs> 需要一个或多个带 value 的 <Tab> 子元素，例如 <Tab value=\"React\">",
+      '<StackTabs> 需要一个或多个带 value 的 <Tab> 子元素，例如 <Tab value="React">',
     );
   }
 

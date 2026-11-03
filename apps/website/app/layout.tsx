@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+
 import { RootProvider } from "fumadocs-ui/provider/next";
+
 import { ScrollTop } from "@/components/motion/scroll-top";
 import { UI_TRANSLATIONS } from "@/lib/i18n";
 import { SITE } from "@/lib/site";
@@ -52,7 +54,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html suppressHydrationWarning lang="zh-CN">
       <body className="flex min-h-screen flex-col font-sans antialiased">
         <RootProvider
           i18n={{ locale: "zh-CN", translations: UI_TRANSLATIONS }}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+
 import { BouncyAccordion } from "@/components/landing/bouncy-accordion";
 import { SITE } from "@/lib/site";
 
@@ -82,8 +83,8 @@ export function Faq() {
           <Link
             className="text-foreground underline underline-offset-4"
             href={SITE.github}
-            target="_blank"
             rel="noreferrer"
+            target="_blank"
           >
             GitHub
           </Link>{" "}

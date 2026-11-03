@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+
 import { AnimatedBadge } from "@/components/motion/animated-badge";
 import { ButtonLink } from "@/components/motion/button/base";
 import { TiltCard } from "@/components/motion/tilt-card";
@@ -63,7 +64,7 @@ export function Stacks() {
     <section className="px-6 py-24">
       <div className="mx-auto max-w-5xl">
         <div className="mb-12 text-center">
-          <AnimatedBadge size="sm" className="mb-5">
+          <AnimatedBadge className="mb-5" size="sm">
             Stacks
           </AnimatedBadge>
           <h2 className="text-balance text-3xl font-bold tracking-tight">
@@ -77,17 +78,17 @@ export function Stacks() {
           {STACKS.map((stack) => (
             /* TiltCard 做外层倾斜 wrapper：glare 光斑的圆角裁剪
                与卡片圆角对齐都在这层 */
-            <TiltCard key={stack.name} max={6} className="rounded-[1.5rem]">
+            <TiltCard key={stack.name} className="rounded-[1.5rem]" max={6}>
               <div className="card-premium flex h-full flex-col justify-between p-6">
                 <div>
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <span className="icon-tile-sm">
-                        <StackGlyph stack={stack.icon} className="size-5" />
+                        <StackGlyph className="size-5" stack={stack.icon} />
                       </span>
                       <h3 className="font-semibold">{stack.name}</h3>
                     </div>
-                    <AnimatedBadge status="success" size="sm">
+                    <AnimatedBadge size="sm" status="success">
                       {stack.status}
                     </AnimatedBadge>
                   </div>
@@ -97,12 +98,12 @@ export function Stacks() {
                 </div>
                 {/* 各端线上站点入口（用户拍板：链接从页脚移到卡片内）；NestJS 卡指向接口文档 */}
                 <ButtonLink
-                  href={stack.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  variant="ghost"
-                  size="sm"
                   className="mt-4 self-start"
+                  href={stack.url}
+                  rel="noopener noreferrer"
+                  size="sm"
+                  target="_blank"
+                  variant="ghost"
                 >
                   <ArrowUpRight size={14} />
                   {stack.actionLabel}
@@ -113,7 +114,7 @@ export function Stacks() {
 
           {/* 功能对齐状态卡：用进度条把「29 / 29」变成可看的东西，
               高度刻意压到与相邻卡片齐平，避免撑出成片空白 */}
-          <TiltCard max={6} className="rounded-[1.5rem]">
+          <TiltCard className="rounded-[1.5rem]" max={6}>
             <div className="card-premium flex h-full flex-col p-6">
               <div className="flex items-baseline justify-between gap-2">
                 <h3 className="font-semibold">功能对齐状态</h3>
@@ -134,9 +135,9 @@ export function Stacks() {
                 </p>
                 {/* 查看入口收敛为一个图标（用户拍板）：完整矩阵见功能矩阵页 */}
                 <Link
-                  href="/docs/progress/feature-matrix"
                   aria-label="查看功能矩阵"
                   className="text-muted-foreground transition-colors hover:text-foreground"
+                  href="/docs/progress/feature-matrix"
                 >
                   <ArrowUpRight size={16} />
                 </Link>

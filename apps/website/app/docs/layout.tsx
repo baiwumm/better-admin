@@ -1,5 +1,7 @@
-import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import type { ReactNode } from "react";
+
+import { DocsLayout } from "fumadocs-ui/layouts/docs";
+
 import { Logo } from "@/components/logo";
 import { StackGlyph } from "@/components/icons/stack-icons";
 import { GithubIcon } from "@/components/ui/brand-icons";
@@ -17,16 +19,6 @@ import { source } from "@/lib/source";
 export default function Layout({ children }: { children: ReactNode }) {
   return (
     <DocsLayout
-      tree={source.pageTree}
-      nav={{
-        title: (
-          <>
-            <Logo size={24} className="rounded-md" />
-            <span className="font-semibold">{SITE.name}</span>
-          </>
-        ),
-        url: "/",
-      }}
       links={[
         {
           type: "icon",
@@ -39,12 +31,22 @@ export default function Layout({ children }: { children: ReactNode }) {
         ...DEMOS.map((demo) => ({
           type: "icon" as const,
           url: demo.url,
-          icon: <StackGlyph stack={demo.icon} className="size-4" />,
+          icon: <StackGlyph className="size-4" stack={demo.icon} />,
           text: `${demo.name} 演示站`,
           label: `${demo.name} 演示站（新窗口打开）`,
           external: true,
         })),
       ]}
+      nav={{
+        title: (
+          <>
+            <Logo className="rounded-md" size={24} />
+            <span className="font-semibold">{SITE.name}</span>
+          </>
+        ),
+        url: "/",
+      }}
+      tree={source.pageTree}
     >
       {children}
     </DocsLayout>

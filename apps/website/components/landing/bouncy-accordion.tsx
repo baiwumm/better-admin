@@ -122,6 +122,7 @@ function BouncyAccordionRow({
 
   useLayoutEffect(() => {
     const node = contentRef.current;
+
     if (!node) return;
 
     const updateHeight = () => {
@@ -131,6 +132,7 @@ function BouncyAccordionRow({
     updateHeight();
 
     const observer = new ResizeObserver(updateHeight);
+
     observer.observe(node);
 
     return () => {
@@ -140,39 +142,39 @@ function BouncyAccordionRow({
 
   return (
     <motion.div
-      layout="position"
       initial={false}
+      layout="position"
       style={{ marginTop: separatedFromPrevious ? 12 : 0 }}
       transition={reduce ? { duration: 0 } : ROW_TRANSITION}
     >
       <motion.div
-        data-state={open ? "open" : "closed"}
-        initial={false}
         animate={{
           borderTopLeftRadius: startsGroup ? 28 : 0,
           borderTopRightRadius: startsGroup ? 28 : 0,
           borderBottomLeftRadius: endsGroup ? 28 : 0,
           borderBottomRightRadius: endsGroup ? 28 : 0,
         }}
-        transition={reduce ? { duration: 0 } : ROW_TRANSITION}
         className={cx(
           "overflow-hidden bg-card text-card-foreground",
           "shadow-[0_1px_2px_rgb(0_0_0/0.04)] dark:shadow-[0_1px_2px_rgb(0_0_0/0.35)]",
           item.disabled && "opacity-50",
         )}
+        data-state={open ? "open" : "closed"}
+        initial={false}
+        transition={reduce ? { duration: 0 } : ROW_TRANSITION}
       >
         <button
-          id={triggerId}
-          type="button"
-          disabled={item.disabled}
-          aria-expanded={open}
           aria-controls={contentId}
-          onClick={onToggle}
+          aria-expanded={open}
           className={cx(
             "flex min-h-[54px] w-full items-center gap-4 px-5 text-left outline-none transition-colors",
             "focus-visible:bg-muted/25",
             "disabled:pointer-events-none",
           )}
+          disabled={item.disabled}
+          id={triggerId}
+          type="button"
+          onClick={onToggle}
         >
           {item.icon ? (
             <span className="grid h-7 w-7 shrink-0 place-items-center text-muted-foreground">
@@ -185,21 +187,22 @@ function BouncyAccordionRow({
           <motion.span
             aria-hidden
             animate={{ rotate: open ? 180 : 0 }}
-            transition={reduce ? { duration: 0 } : CHEVRON_TRANSITION}
             className="grid h-6 w-6 shrink-0 place-items-center text-muted-foreground"
+            transition={reduce ? { duration: 0 } : CHEVRON_TRANSITION}
           >
             <ChevronDown className="h-4 w-4" />
           </motion.span>
         </button>
 
         <motion.div
-          layout="size"
-          id={contentId}
-          role="region"
-          aria-labelledby={triggerId}
           aria-hidden={!open}
+          aria-labelledby={triggerId}
+          className="overflow-hidden"
+          id={contentId}
           inert={!open}
           initial={false}
+          layout="size"
+          role="region"
           style={{ height: open && item.description ? contentHeight : 0 }}
           transition={
             reduce
@@ -208,15 +211,14 @@ function BouncyAccordionRow({
                 ? CONTENT_OPEN_TRANSITION
                 : CONTENT_CLOSE_TRANSITION
           }
-          className="overflow-hidden"
         >
           <motion.div
             ref={contentRef}
             animate={{
               opacity: open ? 1 : 0,
             }}
-            transition={reduce ? { duration: 0 } : DESCRIPTION_TRANSITION}
             className="px-5 pb-5"
+            transition={reduce ? { duration: 0 } : DESCRIPTION_TRANSITION}
           >
             <div className="text-[15px] leading-6 text-muted-foreground">
               {item.description}
@@ -251,6 +253,7 @@ export function BouncyAccordion({
         if (collapsible) {
           setActiveValue(null);
         }
+
         return;
       }
       setActiveValue(id);
@@ -273,14 +276,14 @@ export function BouncyAccordion({
         return (
           <BouncyAccordionRow
             key={item.id}
+            contentId={contentId}
+            endsGroup={endsGroup}
             item={item}
             open={open}
-            startsGroup={startsGroup}
-            endsGroup={endsGroup}
-            separatedFromPrevious={separatedFromPrevious}
-            contentId={contentId}
-            triggerId={triggerId}
             reduce={reduce}
+            separatedFromPrevious={separatedFromPrevious}
+            startsGroup={startsGroup}
+            triggerId={triggerId}
             onToggle={() => toggleItem(item.id)}
           />
         );

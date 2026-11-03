@@ -11,8 +11,8 @@ export default function NotFound() {
         你访问的页面可能已被移动或删除。
       </p>
       <Link
-        href="/"
         className="mt-8 rounded-full bg-foreground px-6 py-2.5 text-sm font-bold text-background transition-opacity hover:opacity-80"
+        href="/"
       >
         返回首页
       </Link>

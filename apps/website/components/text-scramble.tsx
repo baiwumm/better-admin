@@ -71,7 +71,6 @@ export function TextScramble({
     }, speed * 1000);
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trigger]);
 
   return <Component className={className}>{displayText}</Component>;

@@ -33,6 +33,7 @@ const DEFAULT_COLOR = "#ffffff";
 
 const hexToRgb = (hex: string): [number, number, number] => {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+
   return m
     ? [
         parseInt(m[1], 16) / 255,
@@ -48,6 +49,7 @@ const getAnchorAndDir = (
   h: number,
 ): { anchor: [number, number]; dir: [number, number] } => {
   const outside = 0.2;
+
   switch (origin) {
     case "top-left":
       return { anchor: [0, -outside * h], dir: [0, 1] };
@@ -121,6 +123,7 @@ const LightRays: React.FC<LightRaysProps> = ({
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
+
         setIsVisible(entry.isIntersecting);
       },
       { threshold: 0.1 },
@@ -155,9 +158,11 @@ const LightRays: React.FC<LightRaysProps> = ({
         dpr: Math.min(window.devicePixelRatio, 2),
         alpha: true,
       });
+
       rendererRef.current = renderer;
 
       const gl = renderer.gl;
+
       gl.canvas.style.width = "100%";
       gl.canvas.style.height = "100%";
 
@@ -287,6 +292,7 @@ void main() {
         noiseAmount: { value: noiseAmount },
         distortion: { value: distortion },
       };
+
       uniformsRef.current = uniforms;
 
       const geometry = new Triangle(gl);
@@ -296,6 +302,7 @@ void main() {
         uniforms,
       });
       const mesh = new Mesh(gl, { geometry, program });
+
       meshRef.current = mesh;
 
       const updatePlacement = () => {
@@ -304,6 +311,7 @@ void main() {
         renderer.dpr = Math.min(window.devicePixelRatio, 2);
 
         const { clientWidth: wCSS, clientHeight: hCSS } = containerRef.current;
+
         renderer.setSize(wCSS, hCSS);
 
         const dpr = renderer.dpr;
@@ -313,6 +321,7 @@ void main() {
         uniforms.iResolution.value = [w, h];
 
         const { anchor, dir } = getAnchorAndDir(raysOrigin, w, h);
+
         uniforms.rayPos.value = anchor;
         uniforms.rayDir.value = dir;
       };
@@ -345,6 +354,7 @@ void main() {
           animationIdRef.current = requestAnimationFrame(loop);
         } catch (error) {
           console.warn("WebGL rendering error:", error);
+
           return;
         }
       };
@@ -366,6 +376,7 @@ void main() {
             const canvas = renderer.gl.canvas;
             const loseContextExt =
               renderer.gl.getExtension("WEBGL_lose_context");
+
             if (loseContextExt) {
               loseContextExt.loseContext();
             }
@@ -427,6 +438,7 @@ void main() {
     const { clientWidth: wCSS, clientHeight: hCSS } = containerRef.current;
     const dpr = renderer.dpr;
     const { anchor, dir } = getAnchorAndDir(raysOrigin, wCSS * dpr, hCSS * dpr);
+
     u.rayPos.value = anchor;
     u.rayDir.value = dir;
   }, [
@@ -449,11 +461,13 @@ void main() {
       const rect = containerRef.current.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width;
       const y = (e.clientY - rect.top) / rect.height;
+
       mouseRef.current = { x, y };
     };
 
     if (followMouse) {
       window.addEventListener("mousemove", handleMouseMove);
+
       return () => window.removeEventListener("mousemove", handleMouseMove);
     }
   }, [followMouse]);

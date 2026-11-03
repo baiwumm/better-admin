@@ -24,12 +24,12 @@ export function Logo({
 
   return (
     <Image
-      src={src}
-      alt="Better Admin Logo"
-      width={size}
-      height={size}
-      className={className}
       priority
+      alt="Better Admin Logo"
+      className={className}
+      height={size}
+      src={src}
+      width={size}
     />
   );
 }

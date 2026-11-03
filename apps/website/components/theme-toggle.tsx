@@ -41,10 +41,10 @@ export function ThemeToggle() {
   return (
     <button
       ref={ref}
-      type="button"
       aria-label={isDark ? "切换到浅色主题" : "切换到深色主题"}
-      onClick={toggleTheme}
       className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+      type="button"
+      onClick={toggleTheme}
     >
       {/* 图标表示「点下去会切到哪一档」：亮色显示月亮，暗色显示太阳 */}
       {isDark ? <Sun size={16} /> : <Moon size={16} />}

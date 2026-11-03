@@ -18,6 +18,7 @@ import {
   useTransform,
 } from "motion/react";
 import { useState } from "react";
+
 import { cn } from "@/lib/utils";
 
 const RADIUS = 20;
@@ -38,10 +39,12 @@ export function ScrollTop({ className }: { className?: string }) {
   // 只在整数百分比变化时重渲染，滚动过程中不被 setState 拖住
   useMotionValueEvent(scrollYProgress, "change", (p) => {
     const next = Math.round(p * 100);
+
     setPct((prev) => (prev === next ? prev : next));
   });
   useMotionValueEvent(scrollY, "change", (y) => {
     const next = y > SHOW_AFTER;
+
     setVisible((prev) => (prev === next ? prev : next));
   });
 
@@ -52,41 +55,41 @@ export function ScrollTop({ className }: { className?: string }) {
     <AnimatePresence>
       {visible && (
         <motion.button
-          type="button"
-          onClick={toTop}
-          aria-label={`回到顶部（已滚动 ${pct}%）`}
-          initial={{ opacity: 0, scale: 0.86, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.86, y: 12 }}
-          transition={{ duration: reduce ? 0 : 0.22 }}
+          aria-label={`回到顶部（已滚动 ${pct}%）`}
           className={cn(
             "group fixed end-6 bottom-6 z-50 grid size-12 place-items-center rounded-full border bg-background/85 shadow-lg backdrop-blur",
             "text-muted-foreground transition-colors hover:text-foreground",
             className,
           )}
+          exit={{ opacity: 0, scale: 0.86, y: 12 }}
+          initial={{ opacity: 0, scale: 0.86, y: 12 }}
+          transition={{ duration: reduce ? 0 : 0.22 }}
+          type="button"
+          onClick={toTop}
         >
           <svg
-            viewBox="0 0 48 48"
             aria-hidden
             className="absolute inset-0 size-full -rotate-90"
+            viewBox="0 0 48 48"
           >
             <circle
+              className="stroke-border"
               cx="24"
               cy="24"
-              r={RADIUS}
               fill="none"
+              r={RADIUS}
               strokeWidth="2"
-              className="stroke-border"
             />
             <motion.circle
+              className="stroke-primary"
               cx="24"
               cy="24"
-              r={RADIUS}
               fill="none"
-              strokeWidth="2"
-              strokeLinecap="round"
+              r={RADIUS}
               strokeDasharray={CIRCUMFERENCE}
-              className="stroke-primary"
+              strokeLinecap="round"
+              strokeWidth="2"
               style={{ strokeDashoffset: dashOffset }}
             />
           </svg>

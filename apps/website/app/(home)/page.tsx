@@ -18,10 +18,10 @@ export default function HomePage() {
         只留首屏顶部那束光，别再往页面下半部渗。
       */}
       <LightRays
-        className="fixed inset-0 z-0 opacity-65"
-        raysOrigin="top-center"
-        rayLength={1.5}
         followMouse
+        className="fixed inset-0 z-0 opacity-65"
+        rayLength={1.5}
+        raysOrigin="top-center"
       />
       <Navbar />
       <main className="relative z-10">

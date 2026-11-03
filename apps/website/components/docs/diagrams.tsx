@@ -25,7 +25,7 @@ function Frame({
   children: ReactNode;
 }) {
   return (
-    <svg viewBox={viewBox} role="img" className={SVG_BASE}>
+    <svg className={SVG_BASE} role="img" viewBox={viewBox}>
       <title>{title}</title>
       {children}
     </svg>
@@ -52,14 +52,14 @@ function Box({
 }) {
   return (
     <rect
-      x={x}
-      y={y}
-      width={w}
+      className={muted ? "fill-muted stroke-border" : "fill-card stroke-border"}
       height={h}
       rx={rx}
-      className={muted ? "fill-muted stroke-border" : "fill-card stroke-border"}
-      strokeWidth={1}
       strokeDasharray={dashed ? "5 5" : undefined}
+      strokeWidth={1}
+      width={w}
+      x={x}
+      y={y}
     />
   );
 }
@@ -79,7 +79,7 @@ function T({
   anchor?: "start" | "middle" | "end";
 }) {
   return (
-    <text x={x} y={y} textAnchor={anchor} className={className}>
+    <text className={className} textAnchor={anchor} x={x} y={y}>
       {children}
     </text>
   );
@@ -90,16 +90,16 @@ function ArrowDown({ x, y1, y2 }: { x: number; y1: number; y2: number }) {
   return (
     <g>
       <line
-        x1={x}
-        y1={y1}
-        x2={x}
-        y2={y2 - 7}
         className="stroke-muted-foreground"
         strokeWidth={1.25}
+        x1={x}
+        x2={x}
+        y1={y1}
+        y2={y2 - 7}
       />
       <path
-        d={`M ${x - 4.5} ${y2 - 8} L ${x + 4.5} ${y2 - 8} L ${x} ${y2} Z`}
         className="fill-muted-foreground"
+        d={`M ${x - 4.5} ${y2 - 8} L ${x + 4.5} ${y2 - 8} L ${x} ${y2} Z`}
       />
     </g>
   );
@@ -110,16 +110,16 @@ function ArrowRight({ y, x1, x2 }: { y: number; x1: number; x2: number }) {
   return (
     <g>
       <line
-        x1={x1}
-        y1={y}
-        x2={x2 - 7}
-        y2={y}
         className="stroke-muted-foreground"
         strokeWidth={1.25}
+        x1={x1}
+        x2={x2 - 7}
+        y1={y}
+        y2={y}
       />
       <path
-        d={`M ${x2 - 8} ${y - 4.5} L ${x2 - 8} ${y + 4.5} L ${x2} ${y} Z`}
         className="fill-muted-foreground"
+        d={`M ${x2 - 8} ${y - 4.5} L ${x2 - 8} ${y + 4.5} L ${x2} ${y} Z`}
       />
     </g>
   );
@@ -141,41 +141,49 @@ export function ArchitectureDiagram() {
       viewBox="0 0 720 424"
     >
       {/* 浏览器端分组 */}
-      <Box x={6} y={16} w={708} h={112} rx={14} dashed />
-      <T x={18} y={38} className="fill-muted-foreground text-[11px]">
+      <Box dashed h={112} rx={14} w={708} x={6} y={16} />
+      <T className="fill-muted-foreground text-[11px]" x={18} y={38}>
         浏览器端｜四个独立前端应用（各自独立运行 / 构建 / 部署）
       </T>
 
       {FRONTENDS.map((item) => (
         <g key={item.name}>
-          <Box x={item.x} y={52} w={150} h={64} />
-          <T x={item.x + 14} y={78} className="fill-foreground text-[13px] font-semibold">
+          <Box h={64} w={150} x={item.x} y={52} />
+          <T
+            className="fill-foreground text-[13px] font-semibold"
+            x={item.x + 14}
+            y={78}
+          >
             {item.name}
           </T>
-          <T x={item.x + 14} y={98} className="fill-muted-foreground text-[10.5px]">
+          <T
+            className="fill-muted-foreground text-[10.5px]"
+            x={item.x + 14}
+            y={98}
+          >
             {item.sub}
           </T>
         </g>
       ))}
 
       {/* NestJS 层 */}
-      <Box x={15} y={190} w={325} h={62} rx={12} />
-      <T x={32} y={216} className="fill-foreground text-[13px] font-semibold">
+      <Box h={62} rx={12} w={325} x={15} y={190} />
+      <T className="fill-foreground text-[13px] font-semibold" x={32} y={216}>
         NestJS · REST API
       </T>
-      <T x={32} y={236} className="fill-muted-foreground text-[10.5px]">
+      <T className="fill-muted-foreground text-[10.5px]" x={32} y={236}>
         为 React / Vue 提供接口 · Drizzle + pg
       </T>
 
       {/* 数据库 */}
-      <Box x={15} y={316} w={675} h={84} rx={12} />
-      <T x={32} y={344} className="fill-foreground text-[13px] font-semibold">
+      <Box h={84} rx={12} w={675} x={15} y={316} />
+      <T className="fill-foreground text-[13px] font-semibold" x={32} y={344}>
         PostgreSQL · Supabase 托管
       </T>
-      <T x={32} y={364} className="fill-muted-foreground text-[10.5px]">
+      <T className="fill-muted-foreground text-[10.5px]" x={32} y={364}>
         唯一数据库 · 四端共用同一份 Schema 与数据
       </T>
-      <T x={32} y={384} className="fill-muted-foreground text-[10.5px]">
+      <T className="fill-muted-foreground text-[10.5px]" x={32} y={384}>
         端口 6543 · transaction pooler
       </T>
 
@@ -186,10 +194,10 @@ export function ArchitectureDiagram() {
       <ArrowDown x={440} y1={116} y2={316} />
       <ArrowDown x={615} y1={116} y2={316} />
 
-      <T x={452} y={206} className="fill-muted-foreground text-[10.5px]">
+      <T className="fill-muted-foreground text-[10.5px]" x={452} y={206}>
         不经 NestJS
       </T>
-      <T x={452} y={222} className="fill-muted-foreground text-[10.5px]">
+      <T className="fill-muted-foreground text-[10.5px]" x={452} y={222}>
         直连数据库
       </T>
     </Frame>
@@ -215,50 +223,70 @@ export function RepoStructureDiagram() {
       viewBox="0 0 720 384"
     >
       {/* 根 */}
-      <Box x={20} y={162} w={120} h={62} rx={12} />
-      <T x={80} y={188} anchor="middle" className="fill-foreground font-mono text-[12px] font-semibold">
+      <Box h={62} rx={12} w={120} x={20} y={162} />
+      <T
+        anchor="middle"
+        className="fill-foreground font-mono text-[12px] font-semibold"
+        x={80}
+        y={188}
+      >
         better-admin
       </T>
-      <T x={80} y={208} anchor="middle" className="fill-muted-foreground text-[10.5px]">
+      <T
+        anchor="middle"
+        className="fill-muted-foreground text-[10.5px]"
+        x={80}
+        y={208}
+      >
         单仓库
       </T>
 
       {/* 主干与分支 */}
       <line
-        x1={140}
-        y1={193}
-        x2={250}
-        y2={193}
         className="stroke-muted-foreground"
         strokeWidth={1.25}
+        x1={140}
+        x2={250}
+        y1={193}
+        y2={193}
       />
       <line
-        x1={250}
-        y1={32}
-        x2={250}
-        y2={332}
         className="stroke-muted-foreground"
         strokeWidth={1.25}
+        x1={250}
+        x2={250}
+        y1={32}
+        y2={332}
       />
 
       {REPO_ROWS.map(([path, role], index) => {
         const y = 12 + index * 50;
         const cy = y + 20;
+
         return (
           <g key={path}>
             <line
-              x1={250}
-              y1={cy}
-              x2={300}
-              y2={cy}
               className="stroke-muted-foreground"
               strokeWidth={1.25}
+              x1={250}
+              x2={300}
+              y1={cy}
+              y2={cy}
             />
-            <Box x={300} y={y} w={404} h={40} rx={8} />
-            <T x={314} y={cy + 4} className="fill-foreground font-mono text-[11.5px]">
+            <Box h={40} rx={8} w={404} x={300} y={y} />
+            <T
+              className="fill-foreground font-mono text-[11.5px]"
+              x={314}
+              y={cy + 4}
+            >
               {path}
             </T>
-            <T x={690} y={cy + 4} anchor="end" className="fill-muted-foreground text-[10.5px]">
+            <T
+              anchor="end"
+              className="fill-muted-foreground text-[10.5px]"
+              x={690}
+              y={cy + 4}
+            >
               {role}
             </T>
           </g>
@@ -292,40 +320,76 @@ export function RbacChainDiagram() {
     >
       {RBAC_STEPS.map((step, index) => {
         const x = 14 + index * 142;
+
         return (
           <g key={step.title}>
-            <Box x={x} y={48} w={124} h={58} />
-            <T x={x + 62} y={74} anchor="middle" className="fill-foreground font-mono text-[11.5px] font-semibold">
+            <Box h={58} w={124} x={x} y={48} />
+            <T
+              anchor="middle"
+              className="fill-foreground font-mono text-[11.5px] font-semibold"
+              x={x + 62}
+              y={74}
+            >
               {step.title}
             </T>
-            <T x={x + 62} y={93} anchor="middle" className="fill-muted-foreground text-[10.5px]">
+            <T
+              anchor="middle"
+              className="fill-muted-foreground text-[10.5px]"
+              x={x + 62}
+              y={93}
+            >
               {step.sub}
             </T>
           </g>
         );
       })}
 
-      <T x={148} y={38} anchor="middle" className="fill-muted-foreground text-[10.5px]">
+      <T
+        anchor="middle"
+        className="fill-muted-foreground text-[10.5px]"
+        x={148}
+        y={38}
+      >
         1 : N
       </T>
-      <T x={290} y={38} anchor="middle" className="fill-muted-foreground text-[10.5px]">
+      <T
+        anchor="middle"
+        className="fill-muted-foreground text-[10.5px]"
+        x={290}
+        y={38}
+      >
         N : 1
       </T>
-      <T x={432} y={38} anchor="middle" className="fill-muted-foreground text-[10.5px]">
+      <T
+        anchor="middle"
+        className="fill-muted-foreground text-[10.5px]"
+        x={432}
+        y={38}
+      >
         1 : N
       </T>
-      <T x={574} y={38} anchor="middle" className="fill-muted-foreground text-[10.5px]">
+      <T
+        anchor="middle"
+        className="fill-muted-foreground text-[10.5px]"
+        x={574}
+        y={38}
+      >
         N : 1
       </T>
 
-      <ArrowRight y={77} x1={138} x2={156} />
-      <ArrowRight y={77} x1={280} x2={298} />
-      <ArrowRight y={77} x1={422} x2={440} />
-      <ArrowRight y={77} x1={564} x2={582} />
+      <ArrowRight x1={138} x2={156} y={77} />
+      <ArrowRight x1={280} x2={298} y={77} />
+      <ArrowRight x1={422} x2={440} y={77} />
+      <ArrowRight x1={564} x2={582} y={77} />
 
-      <Box x={14} y={136} w={692} h={126} rx={12} dashed />
+      <Box dashed h={126} rx={12} w={692} x={14} y={136} />
       {RBAC_NOTES.map((note, index) => (
-        <T key={note} x={32} y={168 + index * 32} className="fill-muted-foreground text-[11px]">
+        <T
+          key={note}
+          className="fill-muted-foreground text-[11px]"
+          x={32}
+          y={168 + index * 32}
+        >
           {note}
         </T>
       ))}
@@ -354,7 +418,7 @@ export function PermissionBitsDiagram() {
       title="10 个权限点：每个占一个二进制位，十进制值即 2 的幂"
       viewBox="0 0 720 200"
     >
-      <T x={6} y={16} className="fill-muted-foreground text-[10.5px]">
+      <T className="fill-muted-foreground text-[10.5px]" x={6} y={16}>
         bigint 位掩码 · 每位一个权限点，值 = 2 的幂
       </T>
 
@@ -363,16 +427,30 @@ export function PermissionBitsDiagram() {
         const row = Math.floor(index / 5);
         const x = 6 + col * 144;
         const y = 30 + row * 80;
+
         return (
           <g key={bit.name}>
-            <Box x={x} y={y} w={136} h={62} />
-            <T x={x + 12} y={y + 25} className="fill-foreground font-mono text-[10.5px] font-semibold">
+            <Box h={62} w={136} x={x} y={y} />
+            <T
+              className="fill-foreground font-mono text-[10.5px] font-semibold"
+              x={x + 12}
+              y={y + 25}
+            >
               {bit.name}
             </T>
-            <T x={x + 12} y={y + 47} className="fill-muted-foreground text-[10.5px]">
+            <T
+              className="fill-muted-foreground text-[10.5px]"
+              x={x + 12}
+              y={y + 47}
+            >
               {bit.cn}
             </T>
-            <T x={x + 124} y={y + 47} anchor="end" className="fill-foreground font-mono text-[10.5px]">
+            <T
+              anchor="end"
+              className="fill-foreground font-mono text-[10.5px]"
+              x={x + 124}
+              y={y + 47}
+            >
               {bit.value}
             </T>
           </g>
@@ -419,31 +497,56 @@ export function AuthFlowDiagram() {
       viewBox="0 0 720 348"
     >
       <line
-        x1={30}
-        y1={34}
-        x2={30}
-        y2={296}
         className="stroke-border"
         strokeWidth={1.5}
+        x1={30}
+        x2={30}
+        y1={34}
+        y2={296}
       />
 
       {AUTH_STEPS.map((step, index) => {
         const y = 8 + index * 64;
         const cy = y + 28;
+
         return (
           <g key={step.title}>
-            <circle cx={30} cy={cy} r={9} className="fill-card stroke-border" strokeWidth={1.5} />
-            <T x={30} y={cy + 4} anchor="middle" className="fill-foreground text-[10px] font-semibold">
+            <circle
+              className="fill-card stroke-border"
+              cx={30}
+              cy={cy}
+              r={9}
+              strokeWidth={1.5}
+            />
+            <T
+              anchor="middle"
+              className="fill-foreground text-[10px] font-semibold"
+              x={30}
+              y={cy + 4}
+            >
               {index + 1}
             </T>
-            <Box x={70} y={y} w={630} h={56} />
-            <T x={86} y={y + 24} className="fill-foreground text-[12px] font-semibold">
+            <Box h={56} w={630} x={70} y={y} />
+            <T
+              className="fill-foreground text-[12px] font-semibold"
+              x={86}
+              y={y + 24}
+            >
               {step.title}
             </T>
-            <T x={86} y={y + 42} className="fill-muted-foreground text-[10.5px]">
+            <T
+              className="fill-muted-foreground text-[10.5px]"
+              x={86}
+              y={y + 42}
+            >
               {step.desc}
             </T>
-            <T x={684} y={y + 24} anchor="end" className="fill-muted-foreground font-mono text-[10px]">
+            <T
+              anchor="end"
+              className="fill-muted-foreground font-mono text-[10px]"
+              x={684}
+              y={y + 24}
+            >
               {step.api}
             </T>
           </g>
@@ -498,19 +601,28 @@ export function ApiEnvelopeDiagram() {
     >
       {panels.map((panel) => (
         <g key={panel.title}>
-          <Box x={panel.x} y={30} w={220} h={186} rx={12} />
-          <T x={panel.x + 16} y={56} className="fill-foreground text-[12.5px] font-semibold">
+          <Box h={186} rx={12} w={220} x={panel.x} y={30} />
+          <T
+            className="fill-foreground text-[12.5px] font-semibold"
+            x={panel.x + 16}
+            y={56}
+          >
             {panel.title}
           </T>
-          <T x={panel.x + 204} y={56} anchor="end" className="fill-muted-foreground font-mono text-[10px]">
+          <T
+            anchor="end"
+            className="fill-muted-foreground font-mono text-[10px]"
+            x={panel.x + 204}
+            y={56}
+          >
             {panel.status}
           </T>
           {panel.lines.map((line, index) => (
             <T
               key={line}
+              className="fill-muted-foreground font-mono text-[10px]"
               x={panel.x + 16}
               y={82 + index * 18}
-              className="fill-muted-foreground font-mono text-[10px]"
             >
               {line}
             </T>
@@ -552,39 +664,48 @@ export function ComponentPriorityDiagram() {
     >
       {PRIORITY_COLUMNS.map((column) => (
         <g key={column.header}>
-          <Box x={column.x} y={20} w={346} h={38} rx={10} muted />
+          <Box muted h={38} rx={10} w={346} x={column.x} y={20} />
           <T
-            x={column.x + 173}
-            y={44}
             anchor="middle"
             className="fill-foreground text-[12px] font-semibold"
+            x={column.x + 173}
+            y={44}
           >
             {column.header}
           </T>
           {column.rows.map(([rank, name, note], index) => {
             const y = 74 + index * 58;
+
             return (
               <g key={name}>
-                <Box x={column.x} y={y} w={346} h={48} />
+                <Box h={48} w={346} x={column.x} y={y} />
                 <circle
+                  className="fill-muted stroke-border"
                   cx={column.x + 26}
                   cy={y + 24}
                   r={11}
-                  className="fill-muted stroke-border"
                   strokeWidth={1}
                 />
                 <T
-                  x={column.x + 26}
-                  y={y + 28}
                   anchor="middle"
                   className="fill-foreground text-[10.5px] font-semibold"
+                  x={column.x + 26}
+                  y={y + 28}
                 >
                   {rank}
                 </T>
-                <T x={column.x + 50} y={y + 22} className="fill-foreground text-[12px] font-semibold">
+                <T
+                  className="fill-foreground text-[12px] font-semibold"
+                  x={column.x + 50}
+                  y={y + 22}
+                >
                   {name}
                 </T>
-                <T x={column.x + 50} y={y + 38} className="fill-muted-foreground text-[10px]">
+                <T
+                  className="fill-muted-foreground text-[10px]"
+                  x={column.x + 50}
+                  y={y + 38}
+                >
                   {note}
                 </T>
               </g>
@@ -593,8 +714,9 @@ export function ComponentPriorityDiagram() {
         </g>
       ))}
 
-      <T x={10} y={256} className="fill-muted-foreground text-[10.5px]">
-        禁止：同种基础组件跨页混用不同库 · 因熟悉某个库就默认使用 · 一次性大规模迁移
+      <T className="fill-muted-foreground text-[10.5px]" x={10} y={256}>
+        禁止：同种基础组件跨页混用不同库 · 因熟悉某个库就默认使用 ·
+        一次性大规模迁移
       </T>
     </Frame>
   );
@@ -626,22 +748,31 @@ export function TokenSwatchDiagram() {
         const row = Math.floor(index / 5);
         const x = 6 + col * 144;
         const chipY = 20 + row * 118;
+
         return (
           <g key={swatch.token}>
             <rect
-              x={x}
-              y={chipY}
-              width={136}
+              className="stroke-border"
               height={46}
               rx={9}
               strokeWidth={1}
               style={{ fill: `var(${swatch.varName})` }}
-              className="stroke-border"
+              width={136}
+              x={x}
+              y={chipY}
             />
-            <T x={x} y={chipY + 70} className="fill-foreground font-mono text-[10.5px] font-semibold">
+            <T
+              className="fill-foreground font-mono text-[10.5px] font-semibold"
+              x={x}
+              y={chipY + 70}
+            >
               {swatch.token}
             </T>
-            <T x={x} y={chipY + 86} className="fill-muted-foreground text-[10.5px]">
+            <T
+              className="fill-muted-foreground text-[10.5px]"
+              x={x}
+              y={chipY + 86}
+            >
               {swatch.cn}
             </T>
           </g>
@@ -672,37 +803,67 @@ export function FrontendFlow({
       title={`${name} 数据流：${kind === "api" ? "经 NestJS REST API" : "自实现 Server API"}访问 PostgreSQL`}
       viewBox="0 0 720 152"
     >
-      <T x={20} y={22} className="fill-muted-foreground text-[10.5px]">
+      <T className="fill-muted-foreground text-[10.5px]" x={20} y={22}>
         {kind === "api"
           ? "纯前端：不直连数据库，全部数据经 NestJS REST API"
           : "全栈：不依赖 NestJS，自实现 Server API 直连数据库"}
       </T>
 
-      <Box x={20} y={42} w={200} h={68} rx={10} />
-      <T x={120} y={70} anchor="middle" className="fill-foreground text-[12px] font-semibold">
+      <Box h={68} rx={10} w={200} x={20} y={42} />
+      <T
+        anchor="middle"
+        className="fill-foreground text-[12px] font-semibold"
+        x={120}
+        y={70}
+      >
         {name}
       </T>
-      <T x={120} y={90} anchor="middle" className="fill-muted-foreground text-[10px]">
+      <T
+        anchor="middle"
+        className="fill-muted-foreground text-[10px]"
+        x={120}
+        y={90}
+      >
         {stack}
       </T>
 
-      <ArrowRight y={76} x1={220} x2={260} />
+      <ArrowRight x1={220} x2={260} y={76} />
 
-      <Box x={260} y={42} w={200} h={68} rx={10} />
-      <T x={360} y={70} anchor="middle" className="fill-foreground text-[12px] font-semibold">
+      <Box h={68} rx={10} w={200} x={260} y={42} />
+      <T
+        anchor="middle"
+        className="fill-foreground text-[12px] font-semibold"
+        x={360}
+        y={70}
+      >
         {middle.title}
       </T>
-      <T x={360} y={90} anchor="middle" className="fill-muted-foreground text-[10px]">
+      <T
+        anchor="middle"
+        className="fill-muted-foreground text-[10px]"
+        x={360}
+        y={90}
+      >
         {middle.sub}
       </T>
 
-      <ArrowRight y={76} x1={460} x2={500} />
+      <ArrowRight x1={460} x2={500} y={76} />
 
-      <Box x={500} y={42} w={200} h={68} rx={10} />
-      <T x={600} y={70} anchor="middle" className="fill-foreground text-[12px] font-semibold">
+      <Box h={68} rx={10} w={200} x={500} y={42} />
+      <T
+        anchor="middle"
+        className="fill-foreground text-[12px] font-semibold"
+        x={600}
+        y={70}
+      >
         PostgreSQL
       </T>
-      <T x={600} y={90} anchor="middle" className="fill-muted-foreground text-[10px]">
+      <T
+        anchor="middle"
+        className="fill-muted-foreground text-[10px]"
+        x={600}
+        y={90}
+      >
         Supabase 托管 · 端口 6543
       </T>
     </Frame>
@@ -728,44 +889,55 @@ export function FeatureMatrixDiagram() {
     >
       {MATRIX_ROWS.map((name, index) => {
         const y = 20 + index * 40;
+
         return (
           <g key={name}>
-            <T x={16} y={y + 16} className="fill-foreground text-[12px] font-semibold">
+            <T
+              className="fill-foreground text-[12px] font-semibold"
+              x={16}
+              y={y + 16}
+            >
               {name}
             </T>
             <rect
-              x={barX}
-              y={y + 7}
-              width={barW}
+              className="fill-muted"
               height={10}
               rx={5}
-              className="fill-muted"
+              width={barW}
+              x={barX}
+              y={y + 7}
             />
             <rect
-              x={barX}
-              y={y + 7}
-              width={filled}
+              className="fill-foreground"
               height={10}
               rx={5}
-              className="fill-foreground"
+              width={filled}
+              x={barX}
+              y={y + 7}
             />
-            <T x={700} y={y + 16} anchor="end" className="fill-muted-foreground font-mono text-[10.5px]">
+            <T
+              anchor="end"
+              className="fill-muted-foreground font-mono text-[10.5px]"
+              x={700}
+              y={y + 16}
+            >
               {MATRIX_DONE} / {MATRIX_TOTAL}
             </T>
           </g>
         );
       })}
 
-      <Box x={20} y={182} w={680} h={80} rx={12} dashed />
-      <T x={38} y={206} className="fill-foreground text-[12px] font-semibold">
+      <Box dashed h={80} rx={12} w={680} x={20} y={182} />
+      <T className="fill-foreground text-[12px] font-semibold" x={38} y={206}>
         两处有意保留的架构差异（不算功能缺失）
       </T>
       {/* SVG text 不自动换行：长句必须手动拆行，否则溢出 viewBox 被裁断 */}
-      <T x={38} y={224} className="fill-muted-foreground text-[10.5px]">
+      <T className="fill-muted-foreground text-[10.5px]" x={38} y={224}>
         Next.js 无页面保活（App Router 无等价原语）
       </T>
-      <T x={38} y={240} className="fill-muted-foreground text-[10.5px]">
-        认证载体不同（React/Vue 走 Bearer，Next 走 httpOnly Cookie）· 契约完全一致
+      <T className="fill-muted-foreground text-[10.5px]" x={38} y={240}>
+        认证载体不同（React/Vue 走 Bearer，Next 走 httpOnly Cookie）·
+        契约完全一致
       </T>
     </Frame>
   );
@@ -774,10 +946,38 @@ export function FeatureMatrixDiagram() {
 /* =================== 12. 路线图时间线 =================== */
 
 const ROADMAP = [
-  { x: 110, phase: "Phase A", status: "✅ 已完成", note: "09-14", done: true, desc: ["菜单树录入", "+ 四端占位"] },
-  { x: 280, phase: "Phase B", status: "✅ 已完成", note: "09-16", done: true, desc: ["React 基准", "→ 四端对齐（10 页）"] },
-  { x: 450, phase: "Phase 0", status: "✅ 已完成", note: "09-18", done: true, desc: ["只读守卫 / 快捷登录", "契约 v1.10.0"] },
-  { x: 620, phase: "Phase C", status: "✅ 已完成", note: "09-19", done: true, desc: ["KPI + 趋势图", "契约 v1.12.0"] },
+  {
+    x: 110,
+    phase: "Phase A",
+    status: "✅ 已完成",
+    note: "09-14",
+    done: true,
+    desc: ["菜单树录入", "+ 四端占位"],
+  },
+  {
+    x: 280,
+    phase: "Phase B",
+    status: "✅ 已完成",
+    note: "09-16",
+    done: true,
+    desc: ["React 基准", "→ 四端对齐（10 页）"],
+  },
+  {
+    x: 450,
+    phase: "Phase 0",
+    status: "✅ 已完成",
+    note: "09-18",
+    done: true,
+    desc: ["只读守卫 / 快捷登录", "契约 v1.10.0"],
+  },
+  {
+    x: 620,
+    phase: "Phase C",
+    status: "✅ 已完成",
+    note: "09-19",
+    done: true,
+    desc: ["KPI + 趋势图", "契约 v1.12.0"],
+  },
 ];
 
 export function RoadmapDiagram() {
@@ -787,45 +987,57 @@ export function RoadmapDiagram() {
       viewBox="0 0 720 214"
     >
       <line
-        x1={40}
-        y1={100}
-        x2={280}
-        y2={100}
         className="stroke-muted-foreground"
         strokeWidth={1.5}
+        x1={40}
+        x2={280}
+        y1={100}
+        y2={100}
       />
       <line
-        x1={280}
-        y1={100}
-        x2={690}
-        y2={100}
         className="stroke-border"
-        strokeWidth={1.5}
         strokeDasharray="5 5"
+        strokeWidth={1.5}
+        x1={280}
+        x2={690}
+        y1={100}
+        y2={100}
       />
 
       {ROADMAP.map((item) => (
         <g key={item.phase}>
           <circle
+            className={
+              item.done ? "fill-foreground" : "fill-card stroke-border"
+            }
             cx={item.x}
             cy={100}
             r={8}
-            className={item.done ? "fill-foreground" : "fill-card stroke-border"}
             strokeWidth={1.5}
           />
-          <T x={item.x} y={62} anchor="middle" className="fill-foreground text-[12px] font-semibold">
+          <T
+            anchor="middle"
+            className="fill-foreground text-[12px] font-semibold"
+            x={item.x}
+            y={62}
+          >
             {item.phase}
           </T>
-          <T x={item.x} y={132} anchor="middle" className="fill-muted-foreground text-[10.5px]">
+          <T
+            anchor="middle"
+            className="fill-muted-foreground text-[10.5px]"
+            x={item.x}
+            y={132}
+          >
             {item.status}
           </T>
           {item.desc.map((line, index) => (
             <T
               key={line}
-              x={item.x}
-              y={154 + index * 16}
               anchor="middle"
               className="fill-muted-foreground text-[10px]"
+              x={item.x}
+              y={154 + index * 16}
             >
               {line}
             </T>
@@ -834,15 +1046,20 @@ export function RoadmapDiagram() {
       ))}
 
       <line
-        x1={365}
-        y1={84}
-        x2={365}
-        y2={116}
         className="stroke-border"
-        strokeWidth={1}
         strokeDasharray="4 4"
+        strokeWidth={1}
+        x1={365}
+        x2={365}
+        y1={84}
+        y2={116}
       />
-      <T x={365} y={76} anchor="middle" className="fill-muted-foreground text-[9.5px]">
+      <T
+        anchor="middle"
+        className="fill-muted-foreground text-[9.5px]"
+        x={365}
+        y={76}
+      >
         Gate（已过）
       </T>
     </Frame>
@@ -853,8 +1070,16 @@ export function RoadmapDiagram() {
 
 const QUICK_STEPS = [
   { title: "安装依赖", l1: "pnpm install", l2: "进入各应用目录执行" },
-  { title: "配置环境变量", l1: ".env.example → .env.local", l2: "密钥不入仓库" },
-  { title: "初始化数据库", l1: "pnpm db:migrate", l2: "pnpm db:seed（Nest 端）" },
+  {
+    title: "配置环境变量",
+    l1: ".env.example → .env.local",
+    l2: "密钥不入仓库",
+  },
+  {
+    title: "初始化数据库",
+    l1: "pnpm db:migrate",
+    l2: "pnpm db:seed（Nest 端）",
+  },
   { title: "启动", l1: "pnpm dev", l2: "5173 / 5174 / 3000 …" },
 ];
 
@@ -878,24 +1103,48 @@ function QuickStartFlowSvg() {
       {QUICK_STEPS.map((step, index) => {
         const x = 16 + index * 176;
         const y = 44;
+
         return (
           <g key={step.title}>
-            <Box x={x} y={y} w={160} h={84} rx={10} />
-            <circle cx={x + 24} cy={y + 24} r={11} className="fill-muted stroke-border" strokeWidth={1} />
-            <T x={x + 24} y={y + 28} anchor="middle" className="fill-foreground text-[10.5px] font-semibold">
+            <Box h={84} rx={10} w={160} x={x} y={y} />
+            <circle
+              className="fill-muted stroke-border"
+              cx={x + 24}
+              cy={y + 24}
+              r={11}
+              strokeWidth={1}
+            />
+            <T
+              anchor="middle"
+              className="fill-foreground text-[10.5px] font-semibold"
+              x={x + 24}
+              y={y + 28}
+            >
               {index + 1}
             </T>
-            <T x={x + 44} y={y + 28} className="fill-foreground text-[12px] font-semibold">
+            <T
+              className="fill-foreground text-[12px] font-semibold"
+              x={x + 44}
+              y={y + 28}
+            >
               {step.title}
             </T>
-            <T x={x + 14} y={y + 56} className="fill-muted-foreground font-mono text-[9.5px]">
+            <T
+              className="fill-muted-foreground font-mono text-[9.5px]"
+              x={x + 14}
+              y={y + 56}
+            >
               {step.l1}
             </T>
-            <T x={x + 14} y={y + 72} className="fill-muted-foreground text-[10px]">
+            <T
+              className="fill-muted-foreground text-[10px]"
+              x={x + 14}
+              y={y + 72}
+            >
               {step.l2}
             </T>
             {index < QUICK_STEPS.length - 1 ? (
-              <ArrowRight y={y + 42} x1={x + 160} x2={x + 176} />
+              <ArrowRight x1={x + 160} x2={x + 176} y={y + 42} />
             ) : null}
           </g>
         );

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+
 import { Logo } from "@/components/logo";
 import { ButtonLink } from "@/components/motion/button/base";
 import { GithubIcon } from "@/components/ui/brand-icons";
@@ -18,21 +19,21 @@ export function Navbar() {
       <nav className="navbar-premium w-full max-w-2xl rounded-full px-5 py-2">
         <div className="flex items-center justify-between">
           <Link
-            href="/"
             className="flex items-center gap-2 text-sm font-semibold"
+            href="/"
           >
-            <Logo size={24} className="rounded-md" />
+            <Logo className="rounded-md" size={24} />
             Better Admin
           </Link>
 
           <div className="flex items-center gap-1">
             <ButtonLink
-              href={SITE.github}
-              target="_blank"
-              rel="noreferrer"
               aria-label="Better Admin on GitHub"
-              variant="ghost"
+              href={SITE.github}
+              rel="noreferrer"
               size="icon"
+              target="_blank"
+              variant="ghost"
             >
               <GithubIcon className="size-[18px]" />
             </ButtonLink>
