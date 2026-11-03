@@ -160,8 +160,8 @@ Render Dashboard → 该服务 → **Redeploy 上一版本**（Deployments 列�
 - [x] 真实静态文件未被 rewrites 吃掉：`/assets/index-*.js`（200 `application/javascript`）、`/favicon.svg`、`/favicon.ico`、`/apple-touch-icon.png`、`/site.webmanifest`（MIME 均正确）；未命中路径（如 `/no-such-page-xyz`）回落 `index.html` 200 交由客户端 404 页处理
 - [x] 带 `Origin: https://react.baiwumm.com` 打线上 Nest 的 CORS 回显正常（域名未变，Nest 侧无需改动）——两端 `GET /api/health` 均正确回显各自 Origin
 - [x] **Web Analytics 生效**：`/_vercel/insights/script.js` 两端均 200 `application/javascript`（此前为 404），线上主包内含该 script 的加载逻辑（`va.vercel-scripts.com` 端点字符串各 1 处）——`@vercel/analytics` 由 JS 运行期注入 script，故 HTML 里没有静态标签属正常
-- [ ] Dashboard → Analytics 面板看到真实 PV（curl 不执行 JS，需真实浏览器访问；数据入库有几分钟延迟）
-- [ ] GUI 走查：快捷登录可用 / 深链刷新后状态不丢 / 控制台无报错
+- [x] Dashboard → Analytics 面板看到真实 PV（curl 不执行 JS，需真实浏览器访问；数据入库有几分钟延迟）——2026-11-03 用户确认面板已打开且可见真实 PV
+- [x] GUI 走查：快捷登录可用 / 深链刷新后状态不丢 / 控制台无报错——2026-11-03 用户验收通过
 
 ### 2.5 回滚
 

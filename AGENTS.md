@@ -148,9 +148,9 @@ better-admin/
 
 > 进度细节一律查 [`docs/progress.md`](docs/progress.md)（倒序）与 feature-matrix；本节只留快照与「勿遗忘」约束。
 
-- **当前阶段**：六端统一上线已完成（2026-09-23）后进入持续迭代，最新版本 **v1.1.0**（tag 见 release.yml 流程）。近期里程碑：Nest e2e 基建 31 用例（2026-09-25，mechanisms §42）、refresh token 同秒重复缺陷 jti 根治（2026-09-25，§42 坑 4）、Nest auth 限流 + trust proxy 三跳（2026-10-14，§43）、Vercel WAF 防刷上线（runbook §0.3）、React / Vue 迁 Vercel + 两端接入站点分析并线上复验通过（2026-11-02，runbook §2.4）。
+- **当前阶段**：六端统一上线已完成（2026-09-23）后进入持续迭代，最新版本 **v1.1.0**（tag 见 release.yml 流程）。近期里程碑：Nest e2e 基建 31 用例（2026-09-25，mechanisms §42）、refresh token 同秒重复缺陷 jti 根治（2026-09-25，§42 坑 4）、Nest auth 限流 + trust proxy 三跳（2026-10-14，§43）、Vercel WAF 防刷上线（runbook §0.3）、React / Vue 迁 Vercel + 两端接入站点分析并线上复验通过（2026-11-02，runbook §2.4）、Next / Website 接入 Vitest + CI 矩阵扩至 21 job（2026-11-03）。
 - **当前待办**：**已清零**；新待办出现时在此登记。
-- 📌 **备忘（非待办）**：CI `nest-e2e` 走自托管 TLS postgres 容器，初版方案的 `TEST_DATABASE_URL` secret 已不再使用、可删；Supabase 直连 / pooler 不可用作 CI 测试库的原因见 mechanisms §42。
+- 📌 **备忘（非待办）**：CI `nest-e2e` 走自托管 TLS postgres 容器，不连 Supabase（直连 / pooler 均不可用作 CI 测试库，原因见 mechanisms §42）；初版方案曾设计 `TEST_DATABASE_URL` secret，改判容器方案后从未实际创建。
 - ⚠️ **website 内容是手写 MDX、不是 `docs/` 的自动同步**（`apps/website/content/**` 独立维护）——`docs/` 每次口径变化必须人工回写文档站（曾因此积压过时数字，launch-audit #11 / #12）。
 - **品牌标识**：已定稿方案 03「Monogram B」精修版，真源 `assets/logo/`；除 Next 外五端的 `public/` 图标 + Next 端 `src/app/` 文件约定图标均由 `build-assets.py` 统一生成，**新增端或图标路径必须同步扩展脚本**；几何常量与验收口径 ui-spec §19。⚠️ Next 的 file-based metadata 优先于 `metadata.icons`。
 - **super_admin 保护设计（勿推翻）**：超管「全量权限」是 seed 写入 role_menus 的 `-1n` 全量位经登录 / 每请求实时 OR 聚合而来（`auth.service.aggregatePermissions`），**不是代码身份判定**；清空授权 = 全后台立即 403 且无自助恢复，故 `PUT /roles/{id}/menus` 与 `DELETE /roles/{id}` 对 `code === 'super_admin'` 必须返回 403 `SUPER_ADMIN_ROLE_PROTECTED`（背景见 progress.md 当时的契约 v1.4.2 / v1.4.3 条目——契约版本独立于产品版本编号，现行 v1.14.1）。

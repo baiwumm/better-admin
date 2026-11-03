@@ -2,6 +2,30 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Next / Website 接入 Vitest 与 lint，CI 矩阵扩至 21 job（2026-11-03）
+
+- **背景**：launch-audit #46 遗留——`apps/next` 无 `test`、`apps/website` 无 lint / test / typecheck，六端 CI 校验口径不齐。本轮补齐后 #46 的「测试面缺口」部分闭环（Nest service 层单测仍按 backlog 备案不立）。
+- **落地**：两端接入 Vitest 4.1.11（与 react / vue / nest 同框架同大版本，node 环境、未引 jsdom）。Next 5 个纯逻辑测试文件 40 用例（permission 位掩码 / password-validation 对齐契约 v1.8.0 / route-access 白名单 / route-title 兜底 / format-date，均在 `src/lib/__tests__/`）；website 3 个测试文件 20 用例（site 真源派生 / ease 动效 token / robots SEO，分布于 `lib/__tests__/` 与 `app/__tests__/`），并补 `lint` / `typecheck` / `test` 脚本（eslint 配置沿用 next 端规范）。
+- **关键决策**：website 新增 `postinstall: fumadocs-mdx`——`typecheck` 依赖 gitignored 的 `.source/` 生成物，CI 全新 clone 必须在 install 时生成；该 CLI 的 optional peer 是 vite，故 devDependencies 显式声明 vite 8.0.16（与 vitest 同包去重）。
+- **连带**：website 约 30 文件被 `lint --fix` 一次性 Prettier 规范化（纯格式、无行为变化）；首次 lint 暴露 4 条既有 warn 级告警（light-ray.tsx ×2 no-console、footer.tsx `<a>` 跳 `/`、tilt-card.tsx jsx-sort-props），未修、已登记 code-review-backlog。
+- **CI**：矩阵 17 → 21 job（next 新增 `test`，website 新增 lint / typecheck / test / build 四步），website 钉 `packageManager: pnpm@11.24.0`；ci.yml 头注同步修正（website 已钉版本，原注释「website 无此字段」过时）。
+- **验证**：两端 test 全绿（40 / 20 用例）、lint 0 error、typecheck 0 error、build 通过；frozen-lockfile 安装通过；website typecheck 已模拟 CI 干净环境验证。
+- **已知限制**：CI 21 job 的实际运行待推送后观察。
+
+### 待办盘点收尾：契约冒烟修复 + usedIn 回填 + 死声明清理 + logs search 口径明确（2026-11-03）
+
+- **背景**：一轮只读「待办与技术债务」盘点（台账为真源 + 代码核对）后按批准范围执行收尾，本条目为销项记录。
+- **契约冒烟凭据修复**：`apps/nuxt/scripts/contract-diff.mjs` 缺省 `admin/admin123` 已随线上改密失效——改为 `CONTRACT_USER` / `CONTRACT_PASSWORD` 显式注入时走 `/auth/login`（原用法不变），未注入时回退 `POST /auth/demo-login {kind:'admin'}`（免密、响应结构与 login 一致）；因 kind=admin 两次登录会抽到演示池内**不同**用户，`/auth/me`、`/account/profile`、`/notices/mine`、`/notifications*` 及 `myReadAt` 字段的值级差异按「预期差异」豁免（文件头注明严格比对须注入同一账号）。**线上实跑验证通过**（nuxt vs nest 生产域名，31 步全跑完、退出码 0，结构零漂移）——契约冒烟工具链自此恢复可用。
+- **四端 `usedIn` 回填（launch-audit #56 销项）**：React / Next / Vue / Nuxt 的 `features/playground/number-flow/meta.ts` 回填 `usedIn: [{ labelKey: 'menu.pageTitle.console', to: '/' }]`（四端 Dashboard KPI 均真实使用 NumberFlow），四端 `types.ts` 字段注释同步去「待回填」表述；四端 eslint / 类型检查 / build 全绿。
+- **website「v1.5.0」查证闭环（不改文案）**：openapi.yaml changelog 证实 `POST /account/avatar`（Supabase Storage 中转）确随契约 **v1.5.0** 引入，文档站表述准确，2026-09-23 的「存疑待拍板」销项。
+- **Nest settings 死声明删除（launch-audit #50 附带项销项）**：`src/db/schema/settings.schema.ts` 经全仓 grep 确认零 import、barrel 未导出、物理表已被迁移 0002 DROP，删除；`apps/nest/docs/database-design.md` §2 头部计数口径同步为「17 处声明 = 17 张物理表」、§2.8 改写为已删除 + 回潮迁移风险提示。
+- **Nest lint 覆盖盲区修复（launch-audit #46 半项）**：lint glob 扩入 `scripts/`，暴露并处掉 1 error（`demo-reset.ts` 未使用变量 `deptById` 删除）+ 7 warning（`init-storage.ts` / `migrate.ts` 失效的 `eslint-disable no-console` 指令由 `--fix` 移除）；全端 lint 0 error 0 warning。
+- **logs search 口径明确（方案 B，不扩列）**：`GET /logs` 的 `search` 有意只匹配 action 列——openapi.yaml 该参数补 description 注明（**纯说明性补充，契约版本不升**，沿用 #26「契约补注不升版」先例；结构 / 行为零变化，五端零影响）；Nest `logs.service.ts` 补一行同口径注释（Next / Nuxt 的 logs-service 本就有同款注释）。
+- **台账纠正**：`TEST_DATABASE_URL` secret 经用户确认从未在 GitHub 创建，AGENTS §19 备忘由「已不再使用、可删」改写为历史背景陈述；runbook §2.4 的「Analytics 面板见真实 PV」经用户 2026-11-03 确认勾选，AGENTS §19 另一条备忘收窄为仅指 GUI 走查一项。
+- **已知限制**：① Nest e2e 本次未在本地跑通（本机 `.env` 无 `DATABASE_TEST_URL`，推导的 Supabase 5432 直连域名在本环境 DNS 不可解析，与既有 IPv6-only 结论一致），由 CI `nest-e2e` 容器方案把关；② launch-audit #31 的另一半（旧权限位值清理脚本）当日已销项，见下。
+- **launch-audit #31 后半销项：旧权限位值清理脚本判定不需要（2026-11-03）**：唯一旧位值是 v1.3 移除的 `SETTINGS_UPDATE(128)`——且位号 128 当日即复用为 `RESET_PASSWORD`。代码链取证：v1.3 前 seed 菜单声明位上限 127（不含 128）；role_menus 写入侧仅 super_admin 的 `-1n` 全量位；授权 UI 晚于位重定义上线，不可能按旧语义写入 128；`demo-reset` 已级联重建授权数据；写入侧有 `assertValidBits` 闭环拦截越界位。真实库只读审计：role_menus 99 行 / menus 30 行零越界位，含位 128 的 6 行均为 v1.3 后合法语义（RESET_PASSWORD）。结论：**不建清理脚本**，launch-audit.md 为归档只读未回改。
+- **用户侧收尾闭环（同日晚间）**：runbook §2.4 两项未勾均已由用户验收——Analytics 面板可见真实 PV（确认勾选）、快捷登录 / 深链刷新 GUI 走查通过；§2.4 至此全部勾选完成，AGENTS §19 对应备忘随之移除，「当前待办：已清零」与事实一致。
+
 ### React / Vue 的 Vercel 迁移线上复验通过（2026-11-02）
 
 - **部署**：`07b30b0` 推送 `main` 后 Vercel 两端各自重建（React 比 Vue 晚约 1 分钟上线，轮询 `/settings/users` 与 `/_vercel/insights/script.js` 判定）。

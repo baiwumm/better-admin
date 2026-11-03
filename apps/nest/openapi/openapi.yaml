@@ -3804,6 +3804,7 @@ paths:
           schema: { type: string, enum: [operation, login, api, error] }
         - name: search
           in: query
+          description: 关键词搜索，仅匹配 action 列（ILIKE 包含匹配），不匹配 message / detail
           schema: { type: string }
       responses:
         '200':

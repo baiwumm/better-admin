@@ -51,6 +51,7 @@ export class LogsService {
       conditions.push(eq(logs.type, query.type));
     }
     if (query.search) {
+      // 有意只搜 action 列（契约 GET /logs search 参数已注明不匹配 message / detail）
       const pattern = `%${query.search}%`;
       conditions.push(sql`${logs.action} ILIKE ${pattern}`);
     }
