@@ -6,7 +6,8 @@ export const numberFlowMeta: DemoMeta = {
   titleKey: "menu.playground.numberFlow",
   descriptionKey: "features.playground.numberFlow.description",
   scenarioKey: "features.playground.numberFlow.scenario",
-  // Phase C Dashboard KPI 数字滚动落地后回填 usedIn（plan §5.2 关联区）
+  // Dashboard KPI 卡数字滚动（features/dashboard/KpiCard.vue、DashboardPage.vue）
+  usedIn: [{ labelKey: "menu.pageTitle.console", to: "/" }],
   packages: [
     {
       name: "@number-flow/vue",

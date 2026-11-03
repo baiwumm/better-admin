@@ -32,7 +32,7 @@ export type DemoMeta = {
   descriptionKey: string
   /** i18n：主要用于什么业务场景 */
   scenarioKey: string
-  /** 项目内已使用该能力的业务页，可点击跳转（Phase C Dashboard 完成后回填） */
+  /** 项目内已使用该能力的业务页，可点击跳转 */
   usedIn?: DemoUsedIn[]
   /** 新增 npm 依赖；零依赖演示传空数组，信息卡显示「零新依赖」标签 */
   packages: DemoPackage[]
