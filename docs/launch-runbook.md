@@ -12,7 +12,7 @@
 ### 0.1 上线顺序（必须遵守）
 
 ```text
-① Nest（Render）→ ② Nest 外部保活 → ③ React / Vue（Vercel）→ ④ Next / Nuxt（Vercel）→ ⑤ website（CF Workers 静态导出，2026-09-23 当日由 Vercel 改判）→ ⑥ 收官线上契约冒烟
+① Nest（Render）→ ② Nest 外部保活 → ③ React / Vue（Vercel）→ ④ Next / Nuxt（Vercel）→ ⑤ website（腾讯云 EdgeOne Makers 静态导出）→ ⑥ 收官线上契约冒烟
 ```
 
 Nest 必须最先：React / Vue 的 API 直接指向它；保活必须紧随其后（Render 免费层 15 分钟不活跃即休眠，且 Nest 进程内的日志 / refresh_token 清理 cron 依赖常驻才执行）。
@@ -271,17 +271,18 @@ Vercel Instant Rollback。
 
 ---
 
-## 6 · website 文档站（Cloudflare Workers 静态导出，2026-09-23 由 Vercel 改判）
+## 6 · website 文档站（腾讯云 EdgeOne Makers 静态导出）
 
 | 项 | 值 |
 | --- | --- |
-| 平台 | CF Workers（Git 集成 Workers Builds） |
+| 平台 | 腾讯云 EdgeOne Makers（静态托管，Git 集成构建） |
 | 域名 | `https://better-admin.baiwumm.com` |
 | Root Directory | `apps/website` |
 | 构建 | `pnpm run build`（`next.config.mjs` 已配 `output:'export'` 静态导出到 `./out`） |
-| 部署 | `npx wrangler deploy`（读 `apps/website/wrangler.jsonc`：`assets.directory=./out` + `not_found_handling=404-page`） |
-| name 对齐 | wrangler.jsonc 的 `name`（`better-admin-website`）必须与 CF Dashboard 项目同名，不一致改一处即可 |
-| 环境变量 | **无密钥变量**，无需配置 |
+| 部署 | 以 EdgeOne Makers 控制台项目配置为准（Git 集成为构建触发方式），构建产物目录 `out/`；Cloudflare Workers 时期的 `apps/website/wrangler.jsonc` 已于 2026-11-04 删除（可从 git 历史找回） |
+| 环境变量 | **无服务端密钥变量**；域名等站点静态配置在控制台项目内设置 |
+
+> **现状（2026-11-04 线上实测）**：响应头 `Server: edgeone makers` 与 `EO-LOG-UUID`，首页 `Last-Modified` 与最近一次构建时间一致，文档页深链 200；平台迁至腾讯云 EdgeOne Makers 后，原 `wrangler.jsonc` 已于 2026-11-04 删除。
 
 改造说明（2026-09-23，参照 react-okr-tree 站同款链路）：`output:'export'` + `trailingSlash` + `images.unoptimized`；搜索 `/api/search` 改 `force-static` + `staticGET`（构建期固化为 `out/api/search` 静态索引，前端 RootProvider `type:'static'` 浏览器本地搜索）；`opengraph-image` / `robots.txt` / `sitemap.xml` 显式 `force-static` 构建期预渲染；未命中路径回 `out/404.html`。全程无 server 运行时。CI 的 `pnpm version` 注意：website 已钉 `packageManager: pnpm@11.24.0`。
 
@@ -295,7 +296,7 @@ Vercel Instant Rollback。
 - [x] favicon.ico / favicon.svg / apple-touch-icon 全 200（website 端无 site.webmanifest 且 head 未声明，N/A）
 - [x] 浏览器走查 ✅（2026-09-23 用户完成）：站内搜索交互 / 深浅色 / 视觉
 
-回滚：`npx wrangler versions rollback`。
+回滚：EdgeOne Makers 控制台回滚到上一版本（具体入口以控制台为准）。
 
 ---
 

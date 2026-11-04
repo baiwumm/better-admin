@@ -2,6 +2,16 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 线上验收复验 + 文档站托管平台口径修正（2026-11-04）
+
+- **背景**：上一轮 5 批提交推送后进入 CI 与线上验收，本条目记录核对与验收结果，以及据线上实测与用户确认对文档站托管平台口径的修正。
+- **CI**：run #42（id `41618836531`，`head_sha=e6b7446`）`conclusion=success`，22 个 job 全绿（21 条矩阵 + 独立 `nest-e2e`），含新增的 `next · test`、`website · lint / typecheck / test`。操作侧：`gh` token 失效、匿名 API 曾 403 限流，改用 `curl.exe` 直取 jobs API。
+- **部署生效**：4 个 Vercel deployment（react / vue / next / nuxt）success，创建时间（10:24:35Z / 10:25:22Z / 10:27:28Z / 10:28:18Z）均在推送（10:23:16Z）之后；website 首页 `Last-Modified` 与本次构建时间一致；Nest `health` 的 `uptimeSeconds` 起算点约 10:24:07Z（推送后约 51 秒），Render 已用新提交重启。
+- **五项验收全过**：`GET /api/health` 200（三次采样稳定）；`demo-login {kind:'admin'}` → `/auth/me` 200；六端首页与深链 200（React / Vue 深链返回完整 SPA shell，证明 `vercel.json` rewrites 生效；Next 未登录访问受保护路由 307 → `/sign-in` 后 200，属预期守卫行为）；contract-diff 31 步退出码 0（25 OK + 6 KNOWN：5 项 demo-login 双用户预期差异 + 1 项 `/permissions` label 既有差异），零 DIFF；16 个关键接口全 200、无 5xx。
+- **口径修正（用户确认）**：文档站实际托管为**腾讯云 EdgeOne Makers**（线上响应头 `Server: edgeone makers`、`EO-LOG-UUID`），而 AGENTS §17 / runbook §6 / requirements §12.1 与 §13 / 根 README 中英文 / `apps/website/README.md` / website content 仍记 Cloudflare Workers，属此前文档滞后。本轮只改「现状」表述；历史条目、launch-audit 归档与 roadmap 收官表按「现状与历史分离」不回改。runbook §6 的 wrangler 部署 / 回滚命令改为「以 EdgeOne Makers 控制台项目配置为准」，未编造未核实的步骤。
+- **CF 遗留清理（同日晚间）**：删除已不参与部署的 `apps/website/wrangler.jsonc`；`apps/website/package.json` description 与 `next.config.mjs` 顶注改为腾讯云 EdgeOne Makers 口径；`apps/website` 内再无「当前状态」性质的 Cloudflare / wrangler 文案（content 的收官历史表按「现状与历史分离」保留）。
+- **已知限制**：Render 部署的 commit 无法经 API 取证，结论由 uptime 起算点推断。
+
 ### Next / Website 接入 Vitest 与 lint，CI 矩阵扩至 21 job（2026-11-03）
 
 - **背景**：launch-audit #46 遗留——`apps/next` 无 `test`、`apps/website` 无 lint / test / typecheck，六端 CI 校验口径不齐。本轮补齐后 #46 的「测试面缺口」部分闭环（Nest service 层单测仍按 backlog 备案不立）。

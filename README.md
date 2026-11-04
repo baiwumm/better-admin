@@ -59,7 +59,7 @@
 
 | 站点 | 地址 | 部署平台 |
 | --- | --- | --- |
-| 官方文档站 | <https://better-admin.baiwumm.com> | Cloudflare Workers（静态导出） |
+| 官方文档站 | <https://better-admin.baiwumm.com> | 腾讯云 EdgeOne Makers（静态导出） |
 | React（UI 基准） | <https://react.baiwumm.com> | Vercel |
 | Vue | <https://vue.baiwumm.com> | Vercel |
 | Next.js | <https://next.baiwumm.com> | Vercel |

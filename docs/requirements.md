@@ -705,7 +705,7 @@ Auth
 前端按运行形态分两类平台（单一来源见 `AGENTS.md` §17）：
 
 - **React / Vue**（纯静态 SPA）与 **Next.js / Nuxt**（全栈）→ **Vercel**；React / Vue 于 2026-11-02 由 Cloudflare Workers 迁入，SPA 深链回退由各端 `vercel.json` 的 `rewrites: /(.*) → /index.html` 提供；
-- **官方文档站**（静态导出）→ **Cloudflare Workers**（配置见 `apps/website/wrangler.jsonc`）；
+- **官方文档站**（静态导出）→ **腾讯云 EdgeOne Makers**（构建产物 `out/`，部署以控制台项目配置为准；Cloudflare Workers 时期的 `apps/website/wrangler.jsonc` 已于 2026-11-04 删除）；
 - Next.js / Nuxt 不能用 Workers：服务端 `postgres.js` TCP 直连数据层，Workers 运行时不支持。
 
 域名统一见 §13 域名规划（单一来源）。
@@ -748,7 +748,7 @@ Supabase PostgreSQL。
 
 | 项目 | 域名 | 平台 |
 | --- | --- | --- |
-| 官方文档站 | `better-admin.baiwumm.com` | Cloudflare Workers（静态导出） |
+| 官方文档站 | `better-admin.baiwumm.com` | 腾讯云 EdgeOne Makers（静态导出） |
 | Next.js | `next.baiwumm.com` | Vercel |
 | Nuxt | `nuxt.baiwumm.com` | Vercel |
 | React | `react.baiwumm.com` | Vercel（2026-11-02 自 CF Workers 迁入） |
@@ -756,7 +756,7 @@ Supabase PostgreSQL。
 | NestJS API | `nest.baiwumm.com` | Render |
 
 > **上线状态（2026-09-23）**：**六端已全部部署上线，域名全部生效**，线上即演示环境（Nest / Next / Nuxt `DEMO_MODE=true`）。全过程与环境变量见 [`launch-runbook.md`](launch-runbook.md)；上线状态细节以 `AGENTS.md` §17 为准。
-> **平台分工（现状）**：**React / Vue / Next / Nuxt 四端在 Vercel**——React / Vue 为纯静态 SPA，2026-11-02 由 Cloudflare Workers 迁入，SPA 深链回退改由各端 `vercel.json` 的 `rewrites: [{ "source": "/(.*)", "destination": "/index.html" }]` 提供（原 `wrangler.jsonc` + `not_found_handling=single-page-application` 已随之删除；Workers 时期的 `_redirects` 方案一并作废）；Next / Nuxt 全栈一直在 **Vercel**——服务端数据层走 `postgres.js` TCP 直连，Cloudflare Workers 运行时不支持（Hyperdrive 需付费且驱动兼容性存疑，重写数据层违反「行为不变」）。**官方文档站为 Cloudflare Workers 静态导出**（2026-09-23 由 Vercel 改判，`wrangler.jsonc` 指向 `out/`）。**NestJS** 留 **Render**，配合 UptimeRobot 每 5 分钟探活 `GET /api/health` 消除免费层冷启动。DNS（baiwumm.com zone）仍托管于 Cloudflare（实测 NS = `elma / tadeo.ns.cloudflare.com`）；指向 Vercel 的自定义域 CNAME 须把 Cloudflare 侧代理设为 **DNS only（灰云）**，否则橙云会干扰 Vercel 的域名验证与证书签发。SPA 在浏览器直连 `nest.baiwumm.com/api`（跨域 XHR），与托管平台无关——Nest CORS 白名单按域名维持不变。
+> **平台分工（现状）**：**React / Vue / Next / Nuxt 四端在 Vercel**——React / Vue 为纯静态 SPA，2026-11-02 由 Cloudflare Workers 迁入，SPA 深链回退改由各端 `vercel.json` 的 `rewrites: [{ "source": "/(.*)", "destination": "/index.html" }]` 提供（原 `wrangler.jsonc` + `not_found_handling=single-page-application` 已随之删除；Workers 时期的 `_redirects` 方案一并作废）；Next / Nuxt 全栈一直在 **Vercel**——服务端数据层走 `postgres.js` TCP 直连，Cloudflare Workers 运行时不支持（Hyperdrive 需付费且驱动兼容性存疑，重写数据层违反「行为不变」）。**官方文档站现由腾讯云 EdgeOne Makers 静态导出**（2026-09-23 曾由 Vercel 改判至 Cloudflare Workers，后迁入 EdgeOne Makers；托管细节以控制台项目配置为准）。**NestJS** 留 **Render**，配合 UptimeRobot 每 5 分钟探活 `GET /api/health` 消除免费层冷启动。DNS（baiwumm.com zone）仍托管于 Cloudflare（实测 NS = `elma / tadeo.ns.cloudflare.com`）；指向 Vercel 的自定义域 CNAME 须把 Cloudflare 侧代理设为 **DNS only（灰云）**，否则橙云会干扰 Vercel 的域名验证与证书签发。SPA 在浏览器直连 `nest.baiwumm.com/api`（跨域 XHR），与托管平台无关——Nest CORS 白名单按域名维持不变。
 
 ---
 

@@ -51,7 +51,7 @@ All sites run in read-only demo mode: the login page offers one-click "Admin / R
 
 | App | URL | Hosting |
 | --- | --- | --- |
-| Docs | <https://better-admin.baiwumm.com> | Cloudflare Workers (static export) |
+| Docs | <https://better-admin.baiwumm.com> | Tencent Cloud EdgeOne Makers (static export) |
 | React (UI reference) | <https://react.baiwumm.com> | Vercel |
 | Vue | <https://vue.baiwumm.com> | Vercel |
 | Next.js | <https://next.baiwumm.com> | Vercel |

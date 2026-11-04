@@ -122,7 +122,7 @@ better-admin/
 
 ## 17. 部署规范
 
-- **平台分工速览**：React / Vue / Next / Nuxt → Vercel（React / Vue 为纯静态 SPA，2026-11-02 由 CF Workers 改判过来）；website → CF Workers 静态导出；NestJS → Render；数据库 → Supabase PostgreSQL。**各端域名、环境变量、部署顺序与回滚以 [`docs/launch-runbook.md`](docs/launch-runbook.md) 为唯一真源**；六端已于 2026-09-23 上线，线上即演示环境（Nest / Next / Nuxt `DEMO_MODE=true`）。
+- **平台分工速览**：React / Vue / Next / Nuxt → Vercel（React / Vue 为纯静态 SPA，2026-11-02 由 CF Workers 改判过来）；website → 腾讯云 EdgeOne Makers 静态导出；NestJS → Render；数据库 → Supabase PostgreSQL。**各端域名、环境变量、部署顺序与回滚以 [`docs/launch-runbook.md`](docs/launch-runbook.md) 为唯一真源**；六端已于 2026-09-23 上线，线上即演示环境（Nest / Next / Nuxt `DEMO_MODE=true`）。
 - React / Vue 的 SPA 深链回退由各端 `vercel.json` 的 `rewrites: /(.*) → /index.html` 提供（Vercel 在文件系统匹配之后才应用 rewrites，静态资源不受影响；**缺它刷新任意深链即返回 `X-Vercel-Error: NOT_FOUND`**）。原 `wrangler.jsonc` 的 `not_found_handling` 与 Pages `_redirects` 方案一并作废；域名仍在 Cloudflare DNS，CNAME 指向 Vercel 时代理必须设 **DNS only（灰云）**。
 - **Next / Nuxt 必须留 Vercel**：数据层是 postgres.js TCP 直连，Workers 运行时跑不了。
 - ⚠️ **Nest Render 保活（勿动）**：UptimeRobot **HTTP(S) 类型**每 5-10 分钟探活无鉴权 `GET /api/health`（无 DB 访问）；**禁止 PING（ICMP）类型**——它不发 HTTP 请求，只会永远 Down 而服务其实健康（机理与验证口径 mechanisms §39）。
