@@ -353,6 +353,8 @@ void main() {
           renderer.render({ scene: mesh });
           animationIdRef.current = requestAnimationFrame(loop);
         } catch (error) {
+          // WebGL 渲染失败属运行时异常，必须让开发者可见；catch 后不再调度下一帧，只输出一次
+          // eslint-disable-next-line no-console
           console.warn("WebGL rendering error:", error);
 
           return;
@@ -383,6 +385,8 @@ void main() {
 
             canvas?.parentNode?.removeChild(canvas);
           } catch (error) {
+            // 清理阶段的 WebGL 异常不该阻断卸载流程，但需保留可见性（仅卸载时触发一次）
+            // eslint-disable-next-line no-console
             console.warn("Error during WebGL cleanup:", error);
           }
         }

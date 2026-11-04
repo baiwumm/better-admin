@@ -69,11 +69,11 @@ export function TiltCard({
         "relative overflow-hidden rounded-2xl will-change-transform",
         className,
       )}
-      onMouseLeave={onLeave}
       // 不设 transformStyle: preserve-3d——它会使 overflow/border-radius 裁剪
       // 失效（CSS Transforms 2 分组规则），glare 光斑会跟着 3D 旋转跑出卡片外；
       // 本项目用法子元素均无 3D 需求，扁平渲染即可。
       style={{ transform }}
+      onMouseLeave={onLeave}
       onMouseMove={onMove}
     >
       {children}

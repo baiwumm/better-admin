@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Logo } from "@/components/logo";
@@ -68,12 +69,12 @@ export function Footer() {
             <div>
               <span>
                 © {new Date().getFullYear()}{" "}
-                <a
+                <Link
                   className="text-foreground underline underline-offset-4 transition-colors hover:opacity-80"
                   href="/"
                 >
                   Better Admin
-                </a>
+                </Link>
                 . All rights reserved.
               </span>
             </div>
