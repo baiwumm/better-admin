@@ -8,10 +8,19 @@ import { usePathname } from "next/navigation";
 import { ProgressProvider } from "@bprogress/next/app";
 import { useProgress } from "@bprogress/next";
 
-import { createI18nInstance, i18n as sessionI18n, initI18n } from "@/i18n";
+import {
+  createI18nInstance,
+  i18n as sessionI18n,
+  initI18n,
+  useTranslation,
+} from "@/i18n";
 import { initDesignTheme } from "@/stores/design-theme-store";
 import { queryClient } from "@/lib/query-client";
-import { progressRouteBegin, watchProgress } from "@/lib/progress";
+import {
+  progressRouteBegin,
+  useProgressActive,
+  watchProgress,
+} from "@/lib/progress";
 
 export interface ProvidersProps {
   /** 启动语言（根 layout 从语言 Cookie 读出，缺省简体中文） */
@@ -46,6 +55,30 @@ function ProgressBinder() {
   }, [pathname]);
 
   return null;
+}
+
+/**
+ * 进度条的无障碍播报容器。
+ *
+ * @bprogress 自绘的进度条没有 aria 容器，读屏用户无法感知加载状态；
+ * 这里挂一个独立的 role="status" 活区：只在展示态边沿写入文案，
+ * 空闲时保持空内容（首帧无文本 → 不产生噪音，读完即清空也不会重复播报）。
+ * 状态机已合并并发请求 / 路由过渡，活跃期间不会反复翻转。
+ */
+function ProgressAnnouncer() {
+  const active = useProgressActive();
+  const { t } = useTranslation();
+
+  return (
+    <div
+      aria-atomic="true"
+      aria-live="polite"
+      className="sr-only"
+      role="status"
+    >
+      {active ? t("common.loading") : null}
+    </div>
+  );
 }
 
 /**
@@ -84,6 +117,7 @@ export function Providers({ initialLanguage, children }: ProvidersProps) {
           stopDelay={0}
         >
           <ProgressBinder />
+          <ProgressAnnouncer />
           <Toast.Provider placement="top" />
           {children}
         </ProgressProvider>

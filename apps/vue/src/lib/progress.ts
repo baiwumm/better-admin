@@ -1,4 +1,4 @@
-import { ref, watch } from "vue";
+import { readonly, ref, watch } from "vue";
 
 /**
  * 全局进度条状态机（响应式状态驱动）。
@@ -46,6 +46,9 @@ const pendingCount = ref(0);
 const routePending = ref(false);
 /** 进度条展示态（状态机输出，边沿由 watchProgress 订阅）。 */
 const active = ref(false);
+
+/** 进度条展示态只读视图（供 aria 播报等组件读取，禁止外部改写）。 */
+export const progressActive = readonly(active);
 /** 边沿时刻选定的 start delay（同步判定后存入，订阅侧直接读取）。 */
 const activeStartDelay = ref(0);
 

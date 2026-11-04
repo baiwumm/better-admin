@@ -41,6 +41,8 @@ useAuthSync()
 const { t } = useI18n()
 const route = useRoute()
 const queryClient = useQueryClient()
+/** 命令面板开合状态（显式受控：开合归布局层所有，Esc / 快捷键关闭即时可见） */
+const commandOpen = ref(false)
 
 const { data: menus, isLoading, error } = useMenus()
 
@@ -333,10 +335,14 @@ function retryMenus() {
     <!-- 命令面板（Cmd/Ctrl+K）：分组数据见 searchGroups（菜单树保持 children
          结构，钻取交互由组件内置）；fuse 追加 searchText 键使主题英文关键字可被
          搜索；主题组自建（关闭内置 colorMode 组）。
+         Esc 关闭走 Nuxt UI 官方能力：UDashboardSearch → UModal（reka-ui
+         DismissableLayer）在 window 级监听且仅最高层浮层响应，任意焦点位置一次
+         Esc 即关闭、不误关其它浮层；显式 v-model:open 让开合状态归本布局所有。
          title / description 必须显式传入：Nuxt UI 4.11.0 的 locale 包（zh_cn / en）
          该分组只提供 theme 键，组件回退 `t('dashboardSearch.title')` 会把原始键名
          直接渲染到面板顶部（上游缺键，非应用文案问题）。 -->
     <UDashboardSearch
+      v-model:open="commandOpen"
       :color-mode="false"
       :fuse="{ fuseOptions: { keys: ['label', 'suffix', 'searchText'] } }"
       :groups="searchGroups"

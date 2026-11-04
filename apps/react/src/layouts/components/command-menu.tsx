@@ -20,6 +20,7 @@ import {
   SidebarLinkIcon,
 } from "@/layouts/components/app-sidebar";
 import { filterHiddenMenus } from "@/lib/permission";
+import { isOverlayEscapeKey } from "@/lib/overlay-escape";
 import { useMenus } from "@/hooks/use-menus";
 import { useThemeModeTransition } from "@/themes/use-theme-mode-transition";
 
@@ -279,7 +280,19 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <>
+    // Esc 统一在面板主体的捕获阶段关闭：react-aria 的 useSearchField 在输入框
+    // 有内容时会先清空文本并拦截冒泡（只按一次 Esc 不会关面板），焦点在结果
+    // 列表项时也没有应用层监听；捕获阶段先于这些内部处理，任意焦点位置一次
+    // Esc 即关闭。监听只在面板子树内，不会误关其它浮层。
+    <div
+      onKeyDownCapture={(e) => {
+        if (isOverlayEscapeKey(e.key, e.nativeEvent.isComposing)) {
+          e.preventDefault();
+          e.stopPropagation();
+          onClose();
+        }
+      }}
+    >
       <SearchField
         // eslint-disable-next-line jsx-a11y/no-autofocus -- 命令面板打开即聚焦输入框是标准交互（cmdk 同款）；面板随开合卸载，无残留焦点问题
         autoFocus
@@ -303,12 +316,6 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
               } else if (e.key === "ArrowUp") {
                 e.preventDefault();
                 focusEdgeOption("last");
-              } else if (e.key === "Escape" && !e.nativeEvent.isComposing) {
-                // Esc 直接关闭面板：拦在 SearchField 之前（否则它会先清空文本、
-                // 吞掉冒泡，需要按两次 Esc），关闭即卸载，无需手动清空
-                e.preventDefault();
-                e.stopPropagation();
-                onClose();
               }
             }}
           />
@@ -410,6 +417,6 @@ function CommandMenuBody({ onClose }: { onClose: () => void }) {
           </ListBox>
         )}
       </div>
-    </>
+    </div>
   );
 }

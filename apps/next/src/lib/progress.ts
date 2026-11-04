@@ -78,6 +78,14 @@ function sync() {
 }
 
 /**
+ * 订阅进度条展示态（只读；供 aria 播报等组件使用）。
+ * 展示态由状态机合并并发来源，活跃期间不会反复翻转，播报侧不会重复朗读。
+ */
+export function useProgressActive(): boolean {
+  return useProgressStore((state) => state.active);
+}
+
+/**
  * 订阅进度条展示态边沿，驱动 bprogress start/stop / 自动收尾拦截
  * （组件侧调用一次；返回的退订函数交由 effect 清理）。
  */

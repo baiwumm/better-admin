@@ -79,6 +79,14 @@ export function watchProgress(actions: ProgressActions): () => void {
   });
 }
 
+/**
+ * 订阅进度条展示态（只读；供 aria 播报等组件使用）。
+ * 展示态由状态机合并并发来源，活跃期间不会反复翻转，播报侧不会重复朗读。
+ */
+export function useProgressActive(): boolean {
+  return useProgressStore((state) => state.active);
+}
+
 /** 业务请求开始（api-client 调用；引用计数，并发安全）。 */
 export function progressStart() {
   pendingCount++;
