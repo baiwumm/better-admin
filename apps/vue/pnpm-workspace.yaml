@@ -4,6 +4,14 @@ allowBuilds:
   esbuild: true
   vue-demi: true
 
+# @vercel/analytics 2.0.1 的 peer 仍声明 vue-router ^4，而本项目实装 ^5.3.1
+# （apps/vue/src/__tests__/analytics-pageview.test.ts 已在 v5 下守卫挂载与
+# pageview 上报）。npm 上仅 canary 版本把 peer 放宽到 ^4 || ^5，稳定版未跟进，
+# 不为此升 canary（§15 锁版本）；用允许规则抑制误报，随上游 peer 更新移除本条。
+peerDependencyRules:
+  allowedVersions:
+    '@vercel/analytics>vue-router': '^5'
+
 # 供应链策略兼容：pnpm 11.24 默认 24h minimumReleaseAge，vue3-okr-tree 1.13.0
 # 发布当日即接入演示场第 10 页（作者自有包、npm publish --provenance）；
 # 1.14.2 / 1.16.0 发布次日升级（1.16.0 新增 virtual 虚拟滚动，本次未接入）；
