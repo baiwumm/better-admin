@@ -36,6 +36,25 @@
    - `components/landing/footer.tsx:71` 版权行 `© {year} Better Admin` 由原生 `<a href="/">` 改为 `next/link` 的 `Link`，样式与跳转行为不变。
    - `components/motion/tilt-card.tsx:72` 按 `react/jsx-sort-props`（callbacksLast + reservedFirst + 字母序）调整 props 顺序为 `ref` → `className` → `style` → `onMouseLeave` → `onMouseMove`，行为不变。
    - 复跑 `pnpm run lint` 达 **0 error 0 warning**；typecheck / test / build 全通过。
+2. ✅ **#6 command-menu Esc 关闭（四端，2026-11-04 修复）**：根因是 React / Next 只在
+   `SearchField.Input` 的 `onKeyDown` 里处理 Esc——react-aria 的 `useSearchField` 在输入框有内容时
+   会先清空文本并拦截冒泡（表现为按两次 Esc 才关），焦点移到结果列表项后则没有应用层监听。
+   修复：抽出纯函数 `isOverlayEscapeKey`（排除输入法组合中）并在面板主体 `onKeyDownCapture`
+   统一关闭（捕获阶段先于库内处理、仅面板子树内触发，不误关其它浮层），输入框处的 Esc 分支删除；
+   React / Next 各补一条单测。Vue / Nuxt 的 Esc 关闭本就由 Nuxt UI 官方能力提供
+   （`UDashboardSearch` → `UModal` → reka-ui `DismissableLayer` 在 window 级监听且仅最高层浮层响应），
+   本次显式绑定 `v-model:open` 让开合状态归布局层所有、行为可观测，组件行为不变。
+3. ✅ **全局路由进度条无 role/aria（四端，2026-11-04 修复）**：不复用 `@bprogress` 运行时注入的 DOM，
+   改为在其外层挂独立的 `role="status"` + `aria-live="polite"` + `aria-atomic="true"` + `sr-only`
+   播报容器（react / next 在 Progress Provider 内，vue / nuxt 在 progress-provider.vue 内）：
+   只在进度展示态边沿写入 `common.loading` 文案，空闲时为空内容（首帧无文本 → 无噪音；状态机已合并
+   并发请求 / 路由过渡，活跃期间不反复翻转 → 不重复播报）。
+4. ✅ **`@vercel/analytics` 的 `vue-router` peer 不匹配（2026-11-04 解决）**：npm 上仅 canary 版本把
+   peer 放宽到 `^4 || ^5`，稳定版 `2.0.1` 仍为 `^4`（四端精确锁版一致）；不升 canary（§15 锁版本），
+   改在 `apps/vue/pnpm-workspace.yaml` 加 `peerDependencyRules.allowedVersions`
+   （`'@vercel/analytics>vue-router': '^5'`）抑制误报，**随上游 peer 更新移除本条**。取舍理由：
+   四端版本一致、无重复 `vue-router` 实例（实际只有 5.3.1 一份）、`analytics-pageview.test.ts`
+   已在 v5 下守卫上报语义；升级到 pre-release 的风险与收益不成比例。
 
 ## 【暂缓 / 备案】
 - ✅ **website 四条既有 lint 告警（2026-11-04 已修复，见上方「【已修复】2026-11-04」）**（2026-11-03 website 首次接入 lint 时暴露，
@@ -52,9 +71,9 @@
   与方向键漫游（APG tree 模式），自绘树改动量大；只加属性不加键导会让读屏器产生错误预期。
   Vue 端 UTree（reka）已自带 tree 语义与键盘导航，天然合规。待 a11y 需求出现或组件库提供
   Tree 原语后单独立项。
-- **#6 command-menu 输入框拦截 Escape**：维持备案（避免双击 Esc 的既定行为；vue 端
+- ✅ **#6 command-menu 输入框拦截 Escape（2026-11-04 已修复，见上方「【已修复】2026-11-04」第 2 条）**：维持备案（避免双击 Esc 的既定行为；vue 端
   UDashboardSearch 口径不同，接受）。
-- **属性级不可行——全局路由进度条无 role/aria**：三端 DOM 均由 `@bprogress` 库运行时注入
+- ✅ **属性级不可行——全局路由进度条无 role/aria（2026-11-04 已修复，见上方「【已修复】2026-11-04」第 3 条）**：三端 DOM 均由 `@bprogress` 库运行时注入
   （vue 端同为 `@bprogress/vue`，此前「vue 自研 DOM 可先行」的判断有误），项目侧无可挂容器；
   需库支持（如透传 props）或升级库版本后重估。react progress-provider.tsx / next providers.tsx /
   vue progress-bridge.vue。

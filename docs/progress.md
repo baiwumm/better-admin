@@ -12,6 +12,10 @@
 - **CF 遗留清理（同日晚间）**：删除已不参与部署的 `apps/website/wrangler.jsonc`；`apps/website/package.json` description 与 `next.config.mjs` 顶注改为腾讯云 EdgeOne Makers 口径；`apps/website` 内再无「当前状态」性质的 Cloudflare / wrangler 文案（content 的收官历史表按「现状与历史分离」保留）。
 - **已知限制**：Render 部署的 commit 无法经 API 取证，结论由 uptime 起算点推断。
 - **website lint 告警清零（同日晚间）**：修复 4 条既有 warn——`light-ray.tsx` 两处 `no-console` 保留为受控运行时上报（局部禁用 + 原因注释，不静默吞错）、`footer.tsx` 版权行改用 `next/link`、`tilt-card.tsx` 按 `jsx-sort-props` 调整 props 顺序；`pnpm run lint` 达 0 error 0 warning，typecheck / test / build 全通过（提交 `fix(website): 清理既有 lint 告警`），`code-review-backlog.md` 已标记修复。
+- **a11y 收尾（同日晚间，四端）**：① 命令面板 Esc——根因是 React / Next 只在 `SearchField.Input` 的 `onKeyDown` 处理 Esc，react-aria `useSearchField` 有内容时会先清空文本并拦截冒泡（表现为按两次 Esc 才关），焦点移到结果列表项后无应用层监听；修复为抽出 `isOverlayEscapeKey` 纯函数 + 面板主体 `onKeyDownCapture` 统一关闭（仅面板子树触发，不误关其它浮层），React / Next 各补 3 条单测；Vue / Nuxt 的 Esc 本由 `UDashboardSearch → UModal → reka-ui DismissableLayer` 官方能力处理（window 级监听、仅最高层响应），本次显式 `v-model:open` 让开合归布局层所有。② 进度条 aria——四端在 `@bprogress` 外层挂独立 `role="status"` + `aria-live="polite"` + `aria-atomic` + `sr-only` 播报容器，只在展示态边沿写入 `common.loading`，空闲为空内容（无首帧噪音、无重复播报）。
+- **`@vercel/analytics` peer 不匹配解决（同日晚间）**：npm 上仅 canary 版本把 peer 放宽为 `^4 || ^5`，稳定版 `2.0.1` 仍声明 `vue-router ^4`（四端精确锁版一致）；不升 canary（§15 锁版本），改在 `apps/vue/pnpm-workspace.yaml` 用 `peerDependencyRules.allowedVersions`（`'@vercel/analytics>vue-router': '^5'`）抑制误报，**随上游 peer 更新移除**。取舍：无重复 `vue-router` 实例（实装仅 5.3.1 一份）、`analytics-pageview.test.ts` 已守卫 v5 上报语义，升级 pre-release 收益不足。
+- **Next 首页 307 为产品预期（用户确认）**：未登录访问受保护路由 307 → `/sign-in` 是路由守卫的既定行为，**验收时 307 跳转后落到 200 视为通过**，无需改为 200 或豁免；该结论同步记录于 AGENTS §19 备忘。
+- **版本**：本轮不改根 `package.json` version、不打 tag（版本号待用户确认后再走发布流程）。
 
 ### Next / Website 接入 Vitest 与 lint，CI 矩阵扩至 21 job（2026-11-03）
 
