@@ -11,6 +11,7 @@
 - **口径修正（用户确认）**：文档站实际托管为**腾讯云 EdgeOne Makers**（线上响应头 `Server: edgeone makers`、`EO-LOG-UUID`），而 AGENTS §17 / runbook §6 / requirements §12.1 与 §13 / 根 README 中英文 / `apps/website/README.md` / website content 仍记 Cloudflare Workers，属此前文档滞后。本轮只改「现状」表述；历史条目、launch-audit 归档与 roadmap 收官表按「现状与历史分离」不回改。runbook §6 的 wrangler 部署 / 回滚命令改为「以 EdgeOne Makers 控制台项目配置为准」，未编造未核实的步骤。
 - **CF 遗留清理（同日晚间）**：删除已不参与部署的 `apps/website/wrangler.jsonc`；`apps/website/package.json` description 与 `next.config.mjs` 顶注改为腾讯云 EdgeOne Makers 口径；`apps/website` 内再无「当前状态」性质的 Cloudflare / wrangler 文案（content 的收官历史表按「现状与历史分离」保留）。
 - **已知限制**：Render 部署的 commit 无法经 API 取证，结论由 uptime 起算点推断。
+- **website lint 告警清零（同日晚间）**：修复 4 条既有 warn——`light-ray.tsx` 两处 `no-console` 保留为受控运行时上报（局部禁用 + 原因注释，不静默吞错）、`footer.tsx` 版权行改用 `next/link`、`tilt-card.tsx` 按 `jsx-sort-props` 调整 props 顺序；`pnpm run lint` 达 0 error 0 warning，typecheck / test / build 全通过（提交 `fix(website): 清理既有 lint 告警`），`code-review-backlog.md` 已标记修复。
 
 ### Next / Website 接入 Vitest 与 lint，CI 矩阵扩至 21 job（2026-11-03）
 

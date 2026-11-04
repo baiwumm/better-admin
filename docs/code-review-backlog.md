@@ -29,8 +29,16 @@
    载荷只含勾选节点（React / Next `isNodeSelected`、Vue / Nuxt `use-grant-tree` 同口径），未勾选项不产生
    记录。Playground 页面随之回到 0 位（脚本与库已同步），异常页三子页无需改库即修复。
 
+## 【已修复】2026-11-04
+
+1. ✅ **website 四条 lint 告警清零**（2026-11-03 website 首次接入 lint 时暴露；2026-11-04 修复，提交 `fix(website): 清理既有 lint 告警`）：
+   - `components/background/light-ray.tsx` 两处 `no-console`：核实为 WebGL 渲染失败 / 清理异常的运行时上报（**非调试残留**），故保留 `console.warn`，加 `eslint-disable-next-line no-console` 与原因注释——渲染失败后不再调度下一帧、清理异常仅在卸载时触发，均只输出一次，**不静默吞错**。
+   - `components/landing/footer.tsx:71` 版权行 `© {year} Better Admin` 由原生 `<a href="/">` 改为 `next/link` 的 `Link`，样式与跳转行为不变。
+   - `components/motion/tilt-card.tsx:72` 按 `react/jsx-sort-props`（callbacksLast + reservedFirst + 字母序）调整 props 顺序为 `ref` → `className` → `style` → `onMouseLeave` → `onMouseMove`，行为不变。
+   - 复跑 `pnpm run lint` 达 **0 error 0 warning**；typecheck / test / build 全通过。
+
 ## 【暂缓 / 备案】
-- **website 四条既有 lint 告警（warn 级未修）**（2026-11-03 website 首次接入 lint 时暴露，
+- ✅ **website 四条既有 lint 告警（2026-11-04 已修复，见上方「【已修复】2026-11-04」）**（2026-11-03 website 首次接入 lint 时暴露，
   详见 progress.md 当日「Next / Website 接入 Vitest 与 lint」条目）：
   `components/background/light-ray.tsx:356/:386` 两处 `no-console`（调试输出）、
   `components/landing/footer.tsx:71` 用原生 `<a>` 跳 `/`（`@next/next/no-html-link-for-pages`，
