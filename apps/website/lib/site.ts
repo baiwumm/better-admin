@@ -20,9 +20,9 @@ const repo = parseGitHubRepo(repository.url);
 
 export const SITE = {
   name: "Better Admin",
-  title: "Better Admin — 一套 Admin 系统，五种技术栈实现",
+  title: "Better Admin — 五种技术栈的 Admin 系统",
   description:
-    "同一套产品、同一套 UI、同一套业务逻辑、同一套数据库，分别用 React、Vue、Next.js、Nuxt 与 NestJS 实现。Better Admin 官方开发文档。",
+    "同一套产品、同一套 UI、业务逻辑与数据库，分别用 React、Vue、Next.js、Nuxt 与 NestJS 实现；Better Admin 官方文档。",
   url: "https://better-admin.baiwumm.com",
   github: `https://github.com/${repo.owner}/${repo.name}`,
   /** 作者 GitHub 主页（页脚「Built by」指向个人主页，不是仓库） */
