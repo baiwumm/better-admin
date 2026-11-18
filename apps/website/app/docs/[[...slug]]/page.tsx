@@ -8,7 +8,7 @@ import { notFound } from "next/navigation";
 
 import { getMDXComponents } from "@/mdx-components";
 import { JsonLd } from "@/components/seo/json-ld";
-import { SITE } from "@/lib/site";
+import { OG_IMAGE, SITE } from "@/lib/site";
 import { source } from "@/lib/source";
 
 /** next.config 开启了 trailingSlash，canonical 必须与线上实际地址同形 */
@@ -39,7 +39,7 @@ export default async function Page(props: {
     url: new URL(canonical, SITE.url).toString(),
     mainEntityOfPage: new URL(canonical, SITE.url).toString(),
     inLanguage: "zh-CN",
-    image: new URL("/opengraph-image", SITE.url).toString(),
+    image: new URL(OG_IMAGE.url, SITE.url).toString(),
     author: { "@id": `${SITE.url}/#organization` },
     publisher: { "@id": `${SITE.url}/#organization` },
     isPartOf: { "@id": `${SITE.url}/#website` },
@@ -75,11 +75,29 @@ export async function generateMetadata(props: {
 
   if (!page) return {};
 
+  const canonical = new URL(getCanonical(page.url), SITE.url).toString();
+  const updated = page.data.lastModified;
+  const socialTitle = `${page.data.title} — ${SITE.name}`;
+
   return {
     title: page.data.title,
     description: page.data.description,
     alternates: {
-      canonical: getCanonical(page.url),
+      canonical,
+    },
+    openGraph: {
+      type: "article",
+      url: canonical,
+      title: socialTitle,
+      description: page.data.description,
+      images: [OG_IMAGE],
+      ...(updated ? { modifiedTime: updated.toISOString() } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: socialTitle,
+      description: page.data.description,
+      images: [OG_IMAGE],
     },
   };
 }

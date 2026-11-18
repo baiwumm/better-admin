@@ -33,6 +33,14 @@ export const SITE = {
   repoFullName: `${repo.owner}/${repo.name}`,
 } as const;
 
+/** 全站统一 OG 图：静态 PNG，避免静态托管把无扩展名文件识别成 octet-stream */
+export const OG_IMAGE = {
+  url: "/og-image.png",
+  width: 1200,
+  height: 630,
+  alt: "Better Admin — 一套 Admin 系统，五种技术栈实现",
+} as const;
+
 /** 四个前端演示站（线上即演示环境，DEMO_MODE=true 只读演示模式），文档站侧栏图标用 */
 export const DEMOS: { name: string; url: string; icon: StackKey }[] = [
   { name: "React", url: "https://react.baiwumm.com", icon: "react" },

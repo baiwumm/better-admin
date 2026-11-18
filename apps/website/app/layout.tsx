@@ -6,7 +6,7 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 import { ScrollTop } from "@/components/motion/scroll-top";
 import { JsonLd } from "@/components/seo/json-ld";
 import { UI_TRANSLATIONS } from "@/lib/i18n";
-import { SITE } from "@/lib/site";
+import { OG_IMAGE, SITE } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -44,9 +44,11 @@ export const metadata: Metadata = {
     locale: "zh_CN",
     url: SITE.url,
     siteName: SITE.name,
+    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
+    images: [OG_IMAGE],
   },
 };
 

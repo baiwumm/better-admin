@@ -8,7 +8,7 @@ Better Admin 的官方文档站：**Next 16 静态导出 + fumadocs-core（MDX �
 - 内容：`content/**` 手写 MDX，**独立维护、与仓库 `docs/` 不同步**——`docs/` 口径变化时需人工回写本站
 - 搜索：构建期预渲染索引（`app/api/search` force-static + RootProvider `type:'static'`），纯静态可用
 - `/docs` 侧栏底部操作条：GitHub + 四端演示站外链（`DocsLayout` 的 `links` icon 型链接，绝对 URL 由 fumadocs 的 `Link` 自动带 `target="_blank"`；地址收口在 `lib/site.ts` 的 `DEMOS`，图标复用 `components/icons/stack-icons.tsx`）
-- 图标 / OG：stack 图标由 `scripts/gen-stack-icons.mjs` 从 Simple Icons 生成并提交仓库；og 图片为黑白风格构建期生成
+- 图标 / OG：stack 图标由 `scripts/gen-stack-icons.mjs` 从 Simple Icons 生成并提交仓库；OG 图为静态 PNG `public/og-image.png`（保证静态托管返回 `image/png`），品牌变更时需手动重新生成
 
 ## 常用命令
 
