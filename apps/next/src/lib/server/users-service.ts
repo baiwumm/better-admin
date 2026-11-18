@@ -231,11 +231,7 @@ export async function listUsers(params: UserListParams): Promise<{
               ? users.employmentStatus
               : users[
                   sortField as
-                    | "username"
-                    | "email"
-                    | "displayName"
-                    | "status"
-                    | "id"
+                    "username" | "email" | "displayName" | "status" | "id"
                 ];
 
   const conditions = [isNull(users.deletedAt)];

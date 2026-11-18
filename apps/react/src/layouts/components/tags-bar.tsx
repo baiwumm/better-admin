@@ -114,14 +114,7 @@ const DRAG_THRESHOLD = 6;
 
 /** 滚动阴影可见性（含 horizontal 双侧态 leftRight）。 */
 type ScrollState =
-  | "auto"
-  | "both"
-  | "top"
-  | "bottom"
-  | "left"
-  | "right"
-  | "leftRight"
-  | "none";
+  "auto" | "both" | "top" | "bottom" | "left" | "right" | "leftRight" | "none";
 
 /**
  * 在捕获阶段截停指针 / 点击事件并向父级（HeroUI Button）隔离，

@@ -11,9 +11,7 @@ export interface ProfileLinkItem {
   url: string;
   /** 菜单/悬浮提示的 i18n key（layout.user.link*） */
   labelKey:
-    | "layout.user.linkWebsite"
-    | "layout.user.linkGitHub"
-    | "layout.user.linkX";
+    "layout.user.linkWebsite" | "layout.user.linkGitHub" | "layout.user.linkX";
 }
 
 /** 个人链接最小形状（AuthUser / User 均满足） */

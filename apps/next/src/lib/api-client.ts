@@ -168,13 +168,13 @@ export async function fetchApiRaw(
         err.code === "DEMO_READONLY"
           ? getErrorMessage("errors.api.demoReadonly", "演示环境，禁止修改数据")
           : (err.message ??
-            getErrorMessage(
-              "errors.api.requestFailed",
-              "请求失败（{{status}}）",
-              {
-                status: response.status,
-              },
-            )),
+              getErrorMessage(
+                "errors.api.requestFailed",
+                "请求失败（{{status}}）",
+                {
+                  status: response.status,
+                },
+              )),
       );
     }
 

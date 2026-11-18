@@ -169,9 +169,8 @@ export async function exportDirectoryExcel(options: {
 
   // 触发导出时才动态加载 write-excel-file 浏览器版（含 fflate）；
   // 4.x 的 exports 无裸 "." 入口，浏览器端须用 write-excel-file/browser
-  const { default: writeXlsxFile, getSheetData } = await import(
-    "write-excel-file/browser"
-  );
+  const { default: writeXlsxFile, getSheetData } =
+    await import("write-excel-file/browser");
 
   const rows: DirectoryEntry[] = [];
   let total: number | null = null;

@@ -43,8 +43,7 @@ const WARM_CONDITIONS = [
 const COLD_CONDITIONS = ["cloudy", "overcast", "snowy", "windy"] as const;
 
 type WeatherCondition =
-  | (typeof WARM_CONDITIONS)[number]
-  | (typeof COLD_CONDITIONS)[number];
+  (typeof WARM_CONDITIONS)[number] | (typeof COLD_CONDITIONS)[number];
 
 /** 各月基准气温（虚构北温带四季曲线，单位 ℃） */
 const MONTH_BASE_TEMP = [2, 5, 10, 16, 22, 26, 30, 29, 24, 18, 10, 4];

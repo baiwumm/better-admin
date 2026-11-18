@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 安全依赖批次二：Fumadocs / Vite / postcss / Prettier / typescript-eslint（2026-11-18）
+
+- **Fumadocs**：website 的 `fumadocs-core` / `fumadocs-ui` → `16.19.3`，`fumadocs-mdx` → `15.6.3`。
+- **Vite 工具链**：React / Website / Vue `vite` → `8.3.8`；`@vitejs/plugin-react` → `6.3.0`，`@vitejs/plugin-vue` → `6.0.11`，Vue `vue-tsc` → `3.3.14`。
+- **PostCSS / Prettier**：React / Next `postcss` → `8.5.33`；React / Next / Website / Vue `prettier` → `3.10.1`，带来 7 个 React / Next 源文件的纯格式化变更。
+- **TypeScript ESLint**：React / Next / Website `@typescript-eslint` 插件与 parser → `8.73.0`，website 此前 TypeScript 5.9.3 与 8.34.1 的 peer 告警已清除。
+- **验证**：React / Next / Website / Vue 的 lint / build / test 全绿，四端 `pnpm peers check` 均无问题。website 的 Vitest 有一条 Vite `configLoader: 'native'` 提示（非失败，未处理）。
+
 ### 安全依赖批次一：Tailwind / HeroUI / dompurify / zod / TanStack（2026-11-18）
 
 - **Tailwind**：React / Next / Website / Vue / Nuxt 五端统一 `4.3.5`（含 `@tailwindcss/postcss` / `@tailwindcss/vite`）。
