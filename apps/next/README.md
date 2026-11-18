@@ -1,49 +1,49 @@
-# Better Admin — Next.js 全栈版
+# Better Admin — Next.js Full-Stack
 
-- 在线地址：<https://next.baiwumm.com>（Vercel；线上 `DATABASE_URL` 走 Supabase pooler 6543）
+- Live demo: <https://next.baiwumm.com> (Vercel; production `DATABASE_URL` uses the Supabase pooler on port 6543)
 
-同一套 Better Admin 产品（见仓库根 [AGENTS.md](../AGENTS.md)）的 **Next.js 独立全栈实现**：
-App Router + Server Components/Route Handlers + PostgreSQL（Drizzle ORM），不依赖 NestJS。
+The **standalone Next.js full-stack implementation** of the same Better Admin product (see the repo root [AGENTS.md](../../AGENTS.md)):
+App Router + Server Components/Route Handlers + PostgreSQL (Drizzle ORM), with no dependency on NestJS.
 
-- UI 基准：以 `/react`（HeroUI v3）为 Source of Truth，页面结构/交互/视觉对齐
-- API：`src/app/api/**` Route Handlers，形状对齐 `nest/openapi/openapi.yaml`（API Contract 唯一事实来源）
-- 鉴权：JWT 双令牌（httpOnly Cookie）+ `src/proxy.ts` 守卫（验签 + token_version 实时比对 + 菜单路径 403/404 语义）
-- 数据库：与 Nest 端共用同一 Supabase PostgreSQL；**迁移真源在 `nest/drizzle/`**，本端不生成/不执行迁移
+- UI reference: `/react` (Hero UI v3) is the Source of Truth; page structure, interactions, and visuals align with it
+- API: `src/app/api/**` Route Handlers, matching `nest/openapi/openapi.yaml` (the single source of truth for the API contract)
+- Auth: dual JWT tokens (httpOnly cookies) + `src/proxy.ts` guard (signature verification + live `token_version` comparison + 403/404 semantics for menu paths)
+- Database: shares the same Supabase PostgreSQL instance as Nest; **migrations are owned by `nest/drizzle/`**, and this app neither generates nor runs them
 
-## 已实现模块（N0–N7 + 组织中心跟进）
+## Implemented modules (N0–N7 + organization follow-up)
 
-认证（登录/双令牌/静默轮换/强制下线）· Admin 布局（动态菜单/多标签页/命令面板/主题语言切换）·
-用户管理（含组织/岗位关联）· 角色管理（含菜单授权抽屉）· 菜单管理 · 权限说明页 · 字典管理 · 日志管理 ·
-我的账户（Supabase Storage 头像）· 组织管理（组织树/拖拽排序）· 岗位管理 · 人员通讯录 ·
-公告管理（Tiptap 富文本/发布范围/已读统计/催办）· 站内信铃铛 · 错误页 403/404/500
+Authentication (sign-in / dual tokens / silent refresh / forced sign-out) · Admin layout (dynamic menus / multi-tab workspace / command palette / theme and language switching) ·
+User management (including organization and position links) · Role management (including menu-authorization drawer) · Menu management · Permission reference page · Dictionary management · Log management ·
+My account (Supabase Storage avatar) · Organization management (org tree / drag-and-drop ordering) · Position management · People directory ·
+Notice management (Tiptap rich text / publish scope / read stats / reminders) · Inbox bell · Error pages 403/404/500
 
-## 常用命令
+## Commands
 
 ```bash
-pnpm dev            # 开发（默认 3000）
-pnpm build / start  # 生产构建 / 启动
-pnpm lint           # ESLint（--fix）
-pnpm db:pull        # 从数据库内省生成 src/db/schema.ts（Nest 端迁移变更后手动执行）
-pnpm db:clean-logs  # 日志清理（保留 LOG_RETENTION_DAYS 天，默认 30；供 GitHub Actions cron 调用）
-pnpm check-locales  # 语言包与 react/src/i18n/locales 一致性检查（CI 强制）
+pnpm dev            # development (port 3000 by default)
+pnpm build / start  # production build / start
+pnpm lint           # ESLint (--fix)
+pnpm db:pull        # introspect the database into src/db/schema.ts (run manually after Nest-side migration changes)
+pnpm db:clean-logs  # log cleanup (keeps LOG_RETENTION_DAYS days, default 30; used by GitHub Actions cron)
+pnpm check-locales  # locale consistency with react/src/i18n/locales (enforced in CI)
 ```
 
-## 环境变量
+## Environment variables
 
-见 [.env.example](./.env.example)：`DATABASE_URL`、`JWT_*`、`SUPABASE_URL/SUPABASE_SECRET_KEY`、
-`LOG_RETENTION_DAYS`、`NEXT_PUBLIC_*`。密钥仅存在于服务端环境变量，严禁提交。
+See [.env.example](./.env.example): `DATABASE_URL`, `JWT_*`, `SUPABASE_URL` / `SUPABASE_SECRET_KEY`,
+`LOG_RETENTION_DAYS`, `NEXT_PUBLIC_*`. Secrets live only in server-side environment variables and must never be committed.
 
-## 部署（Vercel）
+## Deployment (Vercel)
 
-- Root Directory 指向 `next/`，环境变量在 Vercel 项目配置（同名于 .env.example）
-- 数据库迁移**不**在 Vercel 执行（真源在 Nest 端）；`db:pull` 仅本地开发使用
-- 日志清理：自动路径唯一，由 **Nest 进程内 `@Cron`** 承担（`LOG_CLEANUP_CRON` / `LOG_RETENTION_DAYS`）。
-  本端的 `db:clean-logs` 仅作人工补跑：`.github/workflows/clean-logs.yml` 的定时触发已于 2026-09-22 移除，
-  理由是避免「能删生产库的写凭据每天被自动使用」，保留 `workflow_dispatch` 用于 Nest 侧故障后补跑（见 `docs/launch-audit.md` #45）。
+- Root Directory = `next/`; configure environment variables in the Vercel project (same names as `.env.example`)
+- Database migrations **do not** run on Vercel (the source of truth is Nest); `db:pull` is for local development only
+- Log cleanup: the automatic path is owned by **Nest's in-process `@Cron`** (`LOG_CLEANUP_CRON` / `LOG_RETENTION_DAYS`).
+  This app's `db:clean-logs` is for manual catch-up only: the scheduled trigger in `.github/workflows/clean-logs.yml` was removed on 2026-09-22
+  to avoid automatic daily use of write credentials that can delete production data; `workflow_dispatch` remains for catch-up after a Nest-side failure (see `docs/launch-audit.md` #45).
 
-## 已知差异（相对 React 版，均为已确认决策）
+## Known differences from the React app (all confirmed decisions)
 
-- KeepAlive 放弃（App Router 无等价机制）；标签「刷新」仅对当前激活标签生效
-- 路由过渡动画用 React `<ViewTransition>` 实现（`experimental.viewTransition`，`admin-shell` 的 `<main>` 级 VT 边界 + `styles/route-transitions.css`），非 React 版的手动 `startViewTransition` + displayedPath 双缓冲；方向感知经 `lib/route-direction.ts` 在导航发起点写 `data-rt-direction`（浏览器前进/后退按钮无方向，与 React 版一致）
-- 令牌存储层为 httpOnly Cookie（React 为 localStorage + Bearer）；API 内部仍兼容 Bearer 解析
-- 菜单权限过滤在服务端完成（React 在客户端）；日志清理载体为 GitHub Actions cron（Nest 为进程内 schedule）
+- No KeepAlive (App Router has no equivalent); the tab "refresh" action only affects the active tab
+- Route transitions use React `<ViewTransition>` (`experimental.viewTransition`; a `<main>`-level VT boundary in `admin-shell` + `styles/route-transitions.css`), rather than the React app's manual `startViewTransition` + displayedPath double buffering; direction awareness is written by `lib/route-direction.ts` at the navigation origin via `data-rt-direction` (browser back/forward has no direction, same as the React app)
+- Tokens are stored in httpOnly cookies (the React app uses localStorage + Bearer); the API still accepts Bearer internally
+- Menu permission filtering runs on the server (client-side in the React app); log cleanup uses a GitHub Actions cron (Nest uses an in-process schedule)

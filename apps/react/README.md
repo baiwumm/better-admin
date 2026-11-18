@@ -1,27 +1,27 @@
-# Better Admin — React 版（UI Source of Truth）
+# Better Admin — React (UI Source of Truth)
 
-Better Admin 的 **React 纯前端 SPA 实现**，也是整个产品的 **UI 基准版本**：页面结构、交互、视觉、Design Tokens 以本端为准（Vue / Next / Nuxt 对齐本端）。
+The **React SPA implementation** of Better Admin and the product's **UI reference**: page structure, interactions, visuals, and design tokens are defined here, with Vue / Next.js / Nuxt aligning to this app.
 
-- 在线地址：<https://react.baiwumm.com>（Vercel）
-- 数据来源：全部经 **NestJS API**（本地开发需先启动 `apps/nest`，见 [`.env.example`](./.env.example) 的 `VITE_API_BASE_URL`），不直连数据库
-- UI 组件：**Hero UI v3 + 项目级自定义组件** 两级（不含 Shadcn / Radix）；样式变量遵循项目级 Design Tokens（Hero UI 设计体系为参考）
-- 核心依赖：React 19 · Vite 8 · TanStack Router（文件式路由）· TanStack Query · Zustand · Tailwind CSS 4 · TypeScript
+- Live demo: <https://react.baiwumm.com> (Vercel)
+- Data source: all requests go through the **NestJS API** (start `apps/nest` locally; see `VITE_API_BASE_URL` in [`.env.example`](./.env.example)); no direct database access
+- UI components: **Hero UI v3 + project-level custom components** (no Shadcn / Radix); style variables follow the project design tokens, with Hero UI as the visual reference
+- Core stack: React 19 · Vite 8 · TanStack Router (file-based routing) · TanStack Query · Zustand · Tailwind CSS 4 · TypeScript
 
-## 功能范围
+## Features
 
-认证（登录 / 双令牌 / 静默轮换 / 强制下线）· Dashboard 概览 · 用户 / 角色 / 权限 / 菜单 / 字典 / 日志管理 · 我的账户（Supabase Storage 头像）· 组织中心（组织 / 岗位 / 通讯录 / 公告 / 站内信 / 架构图谱 / 导出）· 偏好设置 · 多标签页（KeepAlive）· 命令面板 · 全站国际化 · 路由过渡动画 · Playground 演示场。对齐状态见 [`docs/feature-matrix.md`](../../docs/feature-matrix.md)。
+Authentication (sign-in / dual tokens / silent refresh / forced sign-out) · Dashboard overview · Users / roles / permissions / menus / dictionaries / logs · My account (Supabase Storage avatar) · Organization center (organizations / positions / directory / notices / inbox / org chart / export) · Preferences · Multi-tab workspace (KeepAlive) · Command palette · Full i18n · Route transitions · Playground demos. See [`docs/feature-matrix.md`](../../docs/feature-matrix.md) for parity status.
 
-## 常用命令
+## Commands
 
 ```bash
-pnpm dev            # 开发
-pnpm build          # 生产构建（含类型检查）
-pnpm preview        # 预览构建产物
+pnpm dev            # development
+pnpm build          # production build (includes type checking)
+pnpm preview        # preview the build output
 pnpm lint           # ESLint
 pnpm test           # Vitest
-pnpm check-locales  # 语言包一致性检查（CI 强制）
+pnpm check-locales  # locale consistency check (enforced in CI)
 ```
 
-## 部署
+## Deployment
 
-Vercel：Root Directory = `apps/react`，构建产物 `dist/`。SPA 深链回退由 [`vercel.json`](./vercel.json) 的 `rewrites: [{ "source": "/(.*)", "destination": "/index.html" }]` 提供——缺它刷新任何深链都会 404（Vercel 的 rewrites 在文件系统匹配之后应用，`/assets/*` 不受影响）。环境变量仅需前端公开前缀 `VITE_*`。
+Vercel: Root Directory = `apps/react`, build output `dist/`. SPA deep-link fallback is provided by [`vercel.json`](./vercel.json)'s `rewrites: [{ "source": "/(.*)", "destination": "/index.html" }]` — without it, refreshing any deep link returns 404 (Vercel applies rewrites after filesystem matches, so `/assets/*` is unaffected). Only public `VITE_*` environment variables are needed.

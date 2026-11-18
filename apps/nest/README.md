@@ -1,32 +1,32 @@
 # Better Admin — NestJS API
 
-Better Admin 的 **NestJS 后端 API**：为 React / Vue 前端提供 REST API，是 **API Contract 与数据库迁移的真源**。
+The **NestJS backend API** for Better Admin: it provides the REST API for React / Vue and is the **source of truth for the API contract and database migrations**.
 
-- 在线地址：<https://nest.baiwumm.com>（Render，`/api/health` 由 UptimeRobot 每 5 分钟探活保活）
-- API 文档（Swagger）：<https://nest.baiwumm.com/docs>（本地启动后 `/docs`）
-- Contract 真源：[`openapi/openapi.yaml`](./openapi/openapi.yaml)（当前 v1.14.0；**先定 Contract 再实现**，四端共用）
-- 数据库：PostgreSQL（Supabase 托管）+ Drizzle ORM 0.45；**迁移真源在 [`drizzle/`](./drizzle)**——Next / Nuxt 端直连同库但不生成 / 不执行迁移
-- 鉴权：JWT 双令牌（Bearer）；权限模型 RBAC（用户 ↔ 角色 ↔ 权限位掩码 + 菜单授权，`super_admin` 全量位实时 OR 聚合）
+- Live URL: <https://nest.baiwumm.com> (Render; `/api/health` is polled by UptimeRobot every 5 minutes to keep the service awake)
+- API docs (Swagger): <https://nest.baiwumm.com/docs> (local: `/docs`)
+- Contract source: [`openapi/openapi.yaml`](./openapi/openapi.yaml) (currently v1.14.0; **define the contract before implementing**, shared by all four frontends)
+- Database: PostgreSQL (Supabase) + Drizzle ORM 0.45; **migrations are owned by [`drizzle/`](./drizzle)** — Next.js / Nuxt connect to the same database but neither generate nor run migrations
+- Auth: dual JWT tokens (Bearer); RBAC permission model (user ↔ role ↔ permission bitmask + menu grants; `super_admin` aggregates all permission bits in real time with OR)
 
-## 常用命令
+## Commands
 
 ```bash
-pnpm start:dev      # 开发（watch）
-pnpm build          # 构建
+pnpm start:dev      # development (watch)
+pnpm build          # build
 pnpm lint           # ESLint
-pnpm db:generate    # drizzle-kit 生成迁移
-pnpm db:migrate     # 执行迁移（scripts/migrate.ts）
-pnpm db:seed        # 初始化数据（菜单 / 角色 / 演示数据；新库引导 = migrate + seed）
-pnpm db:demo-reset  # 演示数据重置（faker，幂等）
-pnpm storage:init   # Supabase Storage avatars bucket 初始化（幂等）
+pnpm db:generate    # generate a migration with drizzle-kit
+pnpm db:migrate     # run migrations (scripts/migrate.ts)
+pnpm db:seed        # seed data (menus / roles / demo data; fresh database bootstrap = migrate + seed)
+pnpm db:demo-reset  # reset demo data (faker, idempotent)
+pnpm storage:init   # initialize the Supabase Storage avatars bucket (idempotent)
 ```
 
-> `scripts/migrate-menus-add-playground*.ts` 四个脚本保留：Playground 菜单树未并入 seed，新库引导需按脚本头注释执行一次。
+> The four `scripts/migrate-menus-add-playground*.ts` scripts are intentionally kept: the Playground menu tree is not part of the seed, so a fresh database needs a one-time run following each script's header comment.
 
-## 环境变量
+## Environment variables
 
-见 [`.env.example`](./.env.example)：`DATABASE_URL`（本地 5432 / Supabase pooler 6543）、`JWT_SECRET` / `JWT_REFRESH_SECRET`（缺失即启动抛错，无兜底）、`SEED_ADMIN_PASSWORD`、`LOG_*`（API 日志与进程内 `@Cron` 日志清理）、`DEMO_MODE=true`（只读演示守卫 + `POST /auth/demo-login` 快捷登录）、`SUPABASE_URL` / `SUPABASE_SECRET_KEY`（服务端持有，仅 `sb_secret_` 密钥走 `apikey` 头）。**严禁提交真实密钥。**
+See [`.env.example`](./.env.example): `DATABASE_URL` (local 5432 / Supabase pooler 6543), `JWT_SECRET` / `JWT_REFRESH_SECRET` (startup fails if missing; no fallback), `SEED_ADMIN_PASSWORD`, `LOG_*` (API logging and in-process `@Cron` log cleanup), `DEMO_MODE=true` (read-only demo guard + `POST /auth/demo-login` quick sign-in), `SUPABASE_URL` / `SUPABASE_SECRET_KEY` (server-side only; only `sb_secret_` keys are sent via the `apikey` header). **Never commit real secrets.**
 
-## 部署
+## Deployment
 
-Render（Root Directory 指向 `nest/`）：`pnpm build` + `node dist/main.js`，CORS 白名单含四端域名。日志 / 刷新令牌清理由进程内 `@Cron` 承担（`LOG_CLEANUP_CRON`）。
+Render (Root Directory = `nest/`): `pnpm build` + `node dist/main.js`; the CORS allowlist includes all four frontend domains. Log and refresh-token cleanup run through in-process `@Cron` (`LOG_CLEANUP_CRON`).

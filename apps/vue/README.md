@@ -1,29 +1,29 @@
-# Better Admin — Vue 版
+# Better Admin — Vue
 
-Better Admin 的 **Vue 纯前端 SPA 实现**：以 React 版为 UI / 交互 / 页面结构基准（Source of Truth）复刻，组件实现统一使用 **Nuxt UI v4**（唯一组件库，禁止替代库），通过 NestJS API 访问数据。
+The **Vue SPA implementation** of Better Admin: it replicates the React app's UI, interactions, and page structure (the Source of Truth) and uses **Nuxt UI v4** exclusively for components (no alternative libraries). Data is accessed through the NestJS API.
 
-- 在线地址：<https://vue.baiwumm.com>（Vercel）
-- 数据来源：全部经 **NestJS API**（本地开发需先启动 `apps/nest`，见 [`.env.example`](./.env.example) 的 `VITE_API_BASE_URL`），不直连数据库
-- 组件与图表：Nuxt UI v4 + 项目级自定义组件；图表用 **Unovis**（`@unovis/vue` + `@unovis/ts`，精确锁版）
-- 核心依赖：Vue 3.5 · Vite 8 · vue-router（unplugin-vue-router 文件式路由）· TanStack vue-query · Pinia · Tailwind CSS 4（Nuxt UI 内置）· TypeScript
+- Live demo: <https://vue.baiwumm.com> (Vercel)
+- Data source: all requests go through the **NestJS API** (start `apps/nest` locally; see `VITE_API_BASE_URL` in [`.env.example`](./.env.example)); no direct database access
+- Components & charts: Nuxt UI v4 + project-level custom components; charts use **Unovis** (`@unovis/vue` + `@unovis/ts`, pinned versions)
+- Core stack: Vue 3.5 · Vite 8 · vue-router (file-based routing via unplugin-vue-router) · TanStack vue-query · Pinia · Tailwind CSS 4 (bundled with Nuxt UI) · TypeScript
 
-## 功能范围
+## Features
 
-与 React 基准功能对齐（对齐状态见 [`docs/feature-matrix.md`](../../docs/feature-matrix.md)）：认证 · Dashboard 概览 · 用户 / 角色 / 权限 / 菜单 / 字典 / 日志管理 · 我的账户 · 组织中心全套 · 偏好设置 · 多标签页（KeepAlive）· 命令面板 · 全站国际化 · 路由过渡动画 · Playground 演示场。
+Feature parity with the React reference (see [`docs/feature-matrix.md`](../../docs/feature-matrix.md)): authentication · Dashboard overview · users / roles / permissions / menus / dictionaries / logs · My account · full organization center · preferences · multi-tab workspace (KeepAlive) · command palette · full i18n · route transitions · Playground demos.
 
-布局硬约束：侧边栏 / 顶部栏 / 命令面板使用官方 Dashboard 套件（`UDashboardGroup` / `UDashboardPanel` 等），细则见 [`docs/nuxt-ui-guide.md`](../../docs/nuxt-ui-guide.md)。
+Layout constraint: the sidebar, top bar, and command palette use the official Dashboard suite (`UDashboardGroup` / `UDashboardPanel`, etc.); see [`docs/nuxt-ui-guide.md`](../../docs/nuxt-ui-guide.md).
 
-## 常用命令
+## Commands
 
 ```bash
-pnpm dev            # 开发
-pnpm build          # 生产构建
-pnpm type-check     # vue-tsc 类型检查
+pnpm dev            # development
+pnpm build          # production build
+pnpm type-check     # vue-tsc type checking
 pnpm lint           # ESLint
 pnpm test           # Vitest
-pnpm sync-locales   # 从 React 端同步语言包（predev / prebuild 自动执行）
+pnpm sync-locales   # sync locales from the React app (runs automatically before dev / build)
 ```
 
-## 部署
+## Deployment
 
-Vercel：Root Directory = `apps/vue`，构建产物 `dist/`。SPA 深链回退由 [`vercel.json`](./vercel.json) 的 `rewrites: [{ "source": "/(.*)", "destination": "/index.html" }]` 提供——缺它刷新任何深链都会 404（Vercel 的 rewrites 在文件系统匹配之后应用，`/assets/*` 不受影响）。环境变量仅需前端公开前缀 `VITE_*`。
+Vercel: Root Directory = `apps/vue`, build output `dist/`. SPA deep-link fallback is provided by [`vercel.json`](./vercel.json)'s `rewrites: [{ "source": "/(.*)", "destination": "/index.html" }]` — without it, refreshing any deep link returns 404 (Vercel applies rewrites after filesystem matches, so `/assets/*` is unaffected). Only public `VITE_*` environment variables are needed.
