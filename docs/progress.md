@@ -2,6 +2,19 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 文档站 SEO 收口：canonical / 结构化数据 / 性能 / 元数据（2026-11-18）
+
+- **背景**：对 `apps/website` 做只读 SEO 审计后，按「URL 规范化 → 机器可读信号 → 移动端性能 → OG 元数据 → 标题描述 → AI SEO」顺序分 7 次提交修复，未推送。
+- **URL 规范化**：全站补自引用 canonical，sitemap 与内链统一尾斜杠；EdgeOne 控制台的 HTTP→HTTPS 301 与 HSTS 不在仓库内，已记入 runbook §6。
+- **结构化数据**：全站 `WebSite + Organization`，文档页 `TechArticle + BreadcrumbList`；用 fumadocs `lastModified` 从 git 读取更新时间，页面展示“最后更新”并写入 sitemap `lastmod`。
+- **性能**：宣传片从自动播放改为点击播放，首屏不再挂 `<video>`（原 17MB）；封面图懒加载。1.7MB 品牌字体按设计取舍保留，未擅自替换。
+- **元数据**：文档页 `og:url` 改为自身地址、`og:type=article` 并补 `modified_time`；OG 图改为 `public/og-image.png` 静态 PNG，避免静态托管返回 `application/octet-stream`。
+- **标题描述**：13 篇文档标题补技术栈与 Admin 关键词，描述扩到 50–70 字；首页标题与描述同步收敛。
+- **AI SEO**：新增 `public/llms.txt`、首页 `FAQPage` JSON-LD；FAQ 标题中文化、默认展开首项且 SSR 首帧 `height:auto`；robots 排除 `/api/`。
+- **验证**：每次提交均跑 website `typecheck` / `lint` / `test`（20 用例）/ `build`，全部通过。
+- **未做（非阻断）**：E-E-A-T 关于/联系页、字体子集化、视频文字稿与 VideoObject、第三方提及；无 GSC / Analytics 数据，未做线上索引与 CWV 复测。
+- **版本**：不改根 `package.json` version、不打 tag、不推送。
+
 ### 线上验收复验 + 文档站托管平台口径修正（2026-11-04）
 
 - **背景**：上一轮 5 批提交推送后进入 CI 与线上验收，本条目记录核对与验收结果，以及据线上实测与用户确认对文档站托管平台口径的修正。
