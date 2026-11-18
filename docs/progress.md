@@ -2,6 +2,12 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### theme-switch-animation 0.6.0 升级与 pnpm 供应链配置清理（2026-11-18）
+
+- **包升级**：React / Next / Vue / Nuxt / Website 五端 `theme-switch-animation` `0.4.0 → 0.6.0`。0.6.0 为 `QR_GRID` 新增 `cellSize`（16–200）与 `cellShape`（square / dot），`reverse` 从 5 种扩展到 9 种（新增 `CIRCLE_BLUR` / `SQUARE` / `RECTANGLE` / `DIAMOND`），`CURTAIN` 的 `direction` 改为控制开合轴（ltr / rtl 水平、ttb / btt 垂直）；主入口移除 `BuildAnimationCSSParams` / `QrGridMaskSpec` 导出（项目未使用）。现有 API 与四端用法兼容，无业务代码改动。
+- **配置清理**：五端 `pnpm-workspace.yaml` 删除已过 24h 释放窗口的 `minimumReleaseAgeExclude` 全量白名单（heroui 3.2.5、okr-tree 与 theme-switch-animation 历史版本均已发布多日）；Next 移除 Tiptap optional 依赖 override（上游 `@tiptap/react@3.34.0` 已精确声明 `3.34.0`）与未安装的 `unrs-resolver` allowBuilds 条目；Vue 删除 `package.json` 中被 pnpm 12 忽略且与 `allowBuilds` 重复的 `pnpm.onlyBuiltDependencies`。
+- **验证**：五端 lint / build / test 全绿（React 96、Vue 102、Next 43、Nuxt 99、Website 20），Nuxt `typecheck` 通过。
+
 ### 安全依赖批次五：编辑器、图标与剩余 minor（2026-11-18）
 
 - **React / Next**：`@tiptap/*` → `3.34.0`、`lucide-react` → `1.73.0`、`react-okr-tree` → `1.17.0`；Next `jose` → `6.2.17`。

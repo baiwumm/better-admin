@@ -54,7 +54,7 @@
     "react-i18next": "^17.0.12",
     "react-okr-tree": "1.17.0",
     "recharts": "3.10.1",
-    "theme-switch-animation": "0.4.0",
+    "theme-switch-animation": "0.6.0",
     "write-excel-file": "^4.1.1",
     "zod": "^4.6.7",
     "zustand": "5.0.12"

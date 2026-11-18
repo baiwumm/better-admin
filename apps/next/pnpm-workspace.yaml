@@ -2,26 +2,8 @@ allowBuilds:
   '@tailwindcss/oxide': true
   esbuild: true
   sharp: true
-  unrs-resolver: true
 
-minimumReleaseAgeExclude:
-  - '@heroui/react@3.2.5'
-  - '@heroui/styles@3.2.5'
-  # react-okr-tree：作者自有包（npm publish --provenance）。1.13.0 发布当日接入
-  # 演示场第 10 页（Next 端对齐 React 基准）；1.14.2 / 1.16.0 / 1.17.0 发布后升级
-  # （1.16.0 新增 virtual 虚拟滚动，本次未接入）；与 react 端同款白名单
-  - react-okr-tree@1.13.0 || 1.14.2 || 1.16.0 || 1.17.0
-  # theme-switch-animation：同作者自有包（theme-switch-animation.baiwumm.com），
-  # 0.2.0 / 0.4.0 均为发布当日升级（0.4.0 新增 reverse 反向揭开选项并移除
-  # CIRCLE_REVERT——由 CIRCLE + reverse: 'auto' 承接）；与 react 端同款白名单
-  - theme-switch-animation@0.2.0 || 0.4.0
-
-# 供应链策略兼容：@tiptap/react 的 optional 依赖会解析到最新版，
-# 刚发布的包可能落在 minimumReleaseAge cutoff 内被锁文件校验拒绝；
-# 与 Tiptap 主包保持一致锁定 3.34.0。
 overrides:
-  '@tiptap/extension-bubble-menu': 3.34.0
-  '@tiptap/extension-floating-menu': 3.34.0
   # 收敛传递依赖与顶层声明的双版本（两份类型声明的 #private 品牌字段使
   # CalendarDate/CalendarDateTime 与 HeroUI DatePicker 的 DateValue 类型不兼容，
   # tsc 报 never）：统一锁 3.12.4——同时满足 react-aria 3.52.x 声明的 ^3.12.4
