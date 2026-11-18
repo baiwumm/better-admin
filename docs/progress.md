@@ -2,6 +2,13 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 安全依赖批次三：Vue / Nuxt 框架与 UI 生态（2026-11-18）
+
+- **Vue**：`@nuxt/ui` → `4.12.2`、`vue` → `3.5.45`、`vue-router` → `5.5.1`、`@unovis/ts` / `@unovis/vue` → `1.8.1`、`pinia` → `4.1.0`、`reka-ui` → `2.11.0`。
+- **Nuxt**：`nuxt` → `4.6.4`（内置 Nitro 2.13.6 / Vite 8.3.8 / Vue 3.5.42）、`@nuxt/ui` → `4.12.2`、`nuxt-charts` → `3.3.0`、`@pinia/nuxt` → `1.0.3`、`pinia` → `4.1.0`、`reka-ui` → `2.11.0`、`@nuxt/test-utils` → `4.4.0`、`vue-tsc` → `3.3.14`。
+- **验证**：Vue lint / build / type-check / test（102）全绿；Nuxt lint / build / test 全绿；Vue `pnpm peers check` 通过，Nuxt 仍有既有 `@emnapi` 传递 peer 告警（非阻断）。
+- **未动**：`@tanstack/vue-table 8 → 9`、`@vueuse/* 14 → 15`、`postgres 3.4 → 4.1`、`vitest 4 → 5` 等 major。
+
 ### 安全依赖批次二：Fumadocs / Vite / postcss / Prettier / typescript-eslint（2026-11-18）
 
 - **Fumadocs**：website 的 `fumadocs-core` / `fumadocs-ui` → `16.19.3`，`fumadocs-mdx` → `15.6.3`。

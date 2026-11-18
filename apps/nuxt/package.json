@@ -36,9 +36,9 @@
     "@iconify-json/lucide": "^1.2.129",
     "@internationalized/date": "^3.12.4",
     "@number-flow/vue": "0.5.2",
-    "@nuxt/ui": "^4.11.0",
+    "@nuxt/ui": "^4.12.2",
     "@nuxtjs/i18n": "^10.6.0",
-    "@pinia/nuxt": "^1.0.2",
+    "@pinia/nuxt": "^1.0.3",
     "@supabase/supabase-js": "^2.116.0",
     "@tanstack/vue-query": "^5.107.1",
     "@tanstack/vue-table": "^8.21.3",
@@ -55,12 +55,12 @@
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.12",
     "nanoid": "^6.0.1",
-    "nuxt": "^4.5.2",
-    "nuxt-charts": "3.0.0",
-    "pinia": "^4.0.3",
+    "nuxt": "^4.6.4",
+    "nuxt-charts": "3.3.0",
+    "pinia": "^4.1.0",
     "postgres": "^3.4.9",
     "prismjs": "1.30.0",
-    "reka-ui": "2.10.3",
+    "reka-ui": "2.11.0",
     "sortablejs": "1.15.7",
     "tailwind-merge": "3.7.0",
     "tailwindcss": "^4.3.5",
@@ -72,7 +72,7 @@
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.17.0",
-    "@nuxt/test-utils": "^4.3.2",
+    "@nuxt/test-utils": "^4.4.0",
     "@types/node": "^22.20.2",
     "@types/prismjs": "1.26.6",
     "@types/sortablejs": "^1.15.9",
@@ -80,7 +80,7 @@
     "jsdom": "^30.0.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.11",
-    "vue-tsc": "^3.3.11"
+    "vue-tsc": "^3.3.14"
   },
   "packageManager": "pnpm@12.3.4"
 }
