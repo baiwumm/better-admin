@@ -1,10 +1,9 @@
 <p align="center">
-  <strong>简体中文</strong> · <a href="./README.en.md">English</a>
+  <a href="./README.md">简体中文</a> · <strong>English</strong>
 </p>
 
 <p align="center">
-  <!-- 品牌资产真源 assets/logo/（命名按「图形自身外观」，与 apps/*/public/ 语义相反，规则见 docs/ui-spec.md §19.3）：
-       亮色档用黑底白块的 logo-dark.svg，暗色档换白底黑块的 logo-light.svg -->
+  <!-- Brand asset source: assets/logo/ (light/dark variants follow the artwork color, see docs/ui-spec.md §19.3) -->
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/logo/logo-light.svg" />
     <img src="assets/logo/logo-dark.svg" width="112" height="112" alt="Better Admin Logo" />
@@ -14,16 +13,14 @@
 <h1 align="center">Better Admin</h1>
 
 <p align="center">
-  同一套产品、同一套 UI、同一套业务逻辑、同一套数据库，<br />
-  分别用 <strong>React、Vue、Next.js、Nuxt、NestJS</strong> 独立实现的开源全栈 Admin 系统（后台管理系统）。
+  One product, one UI, one set of business logic, one database —<br />
+  an open-source full-stack admin system (admin dashboard template) implemented independently with <strong>React, Vue, Next.js, Nuxt, and NestJS</strong>.
 </p>
 
 <p align="center">
-  <a href="https://better-admin.baiwumm.com"><img src="https://img.shields.io/badge/%E6%96%87%E6%A1%A3%E7%AB%99-%E5%9C%A8%E7%BA%BF-0A0A0A?style=flat-square" alt="官方文档站在线" /></a>
+  <a href="https://better-admin.baiwumm.com"><img src="https://img.shields.io/badge/docs-live-0A0A0A?style=flat-square" alt="Docs site" /></a>
   <a href="https://github.com/baiwumm/better-admin/actions/workflows/ci.yml"><img src="https://github.com/baiwumm/better-admin/actions/workflows/ci.yml/badge.svg?branch=main&style=flat-square" alt="CI" /></a>
-  <img src="https://img.shields.io/github/package-json/v/baiwumm/better-admin?style=flat-square&label=%E7%89%88%E6%9C%AC" alt="当前版本" />
-  <img src="https://img.shields.io/badge/%E5%85%AD%E7%AB%AF%E5%B7%B2%E4%B8%8A%E7%BA%BF-2026--09--23-2ea44f?style=flat-square" alt="六端已于 2026-09-23 上线" />
-  <a href="docs/feature-matrix.md"><img src="https://img.shields.io/badge/%E5%8A%9F%E8%83%BD%E5%AF%B9%E9%BD%90-29%2F29-2ea44f?style=flat-square" alt="四端功能对齐 29/29" /></a>
+  <img src="https://img.shields.io/github/package-json/v/baiwumm/better-admin?style=flat-square&label=version" alt="Current version" />
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-0A0A0A?style=flat-square" alt="MIT License" /></a>
   <a href="https://hub.xerj.org/contributors/baiwumm"><img src="https://hub.xerj.org/contributors/baiwumm/badge.svg" alt="XERJ Corpus Hub contributor" /></a>
 </p>
@@ -35,140 +32,137 @@
   <img src="https://img.shields.io/badge/Nuxt-4-111?style=flat-square&logo=nuxt&logoColor=00DC82&labelColor=111" alt="Nuxt 4" />
   <img src="https://img.shields.io/badge/NestJS-11-111?style=flat-square&logo=nestjs&logoColor=DD0031&labelColor=111" alt="NestJS 11" />
   <img src="https://img.shields.io/badge/ORM-Drizzle-111?style=flat-square&logo=drizzle&logoColor=C5F7A6&labelColor=111" alt="Drizzle ORM" />
-  <img src="https://img.shields.io/badge/DB-PostgreSQL-111?style=flat-square&logo=postgresql&logoColor=336791&labelColor=111" alt="PostgreSQL（Supabase 托管）" />
+  <img src="https://img.shields.io/badge/DB-PostgreSQL-111?style=flat-square&logo=postgresql&logoColor=336791&labelColor=111" alt="PostgreSQL (Supabase)" />
 </p>
 
 <p align="center">
-  📚 <a href="https://better-admin.baiwumm.com">在线文档站</a> ·
-  🎬 <a href="https://v.douyin.com/rv2bIcmeLww/">产品宣传片</a> ·
-  🧩 <a href="docs/feature-matrix.md">功能矩阵</a> ·
-  🤖 <a href="AGENTS.md">开发规范</a> ·
-  📈 <a href="docs/progress.md">进度记录</a>
+  📚 <a href="https://better-admin.baiwumm.com">Documentation</a> ·
+  🎬 <a href="https://v.douyin.com/rv2bIcmeLww/">Promo video</a> (Chinese narration) ·
+  🧩 <a href="docs/feature-matrix.md">Feature matrix</a> ·
+  🤖 <a href="AGENTS.md">Dev conventions</a> ·
+  📈 <a href="docs/progress.md">Progress log</a>
 </p>
 
-<p align="center">
-  <a href="https://v.douyin.com/rv2bIcmeLww/">
-    <img src="assets/video/better-admin-promo-cover-16x9.png" width="880"
-         alt="Better Admin 产品宣传片（54 秒，含中文口播）" />
-  </a>
-</p>
+> This is a condensed English summary. The [Chinese README](./README.md) is the source of truth; the in-repo docs are written in Chinese.
 
-## ✨ 核心特性
+## ✨ Highlights
 
-- **五端同构**：同一套产品、UI、业务逻辑与数据库，分别用 React、Vue、Next.js、Nuxt 与 NestJS 独立实现、独立部署。
-- **功能对齐 29/29**：四个前端的功能矩阵完全对齐，只保留两处有意的架构差异（[功能矩阵](docs/feature-matrix.md)）。
-- **认证与权限**：JWT 双 Token 会话 + RBAC 位掩码，服务端强制校验 API 权限（[认证与权限](https://better-admin.baiwumm.com/docs/architecture/auth/)）。
-- **契约优先**：OpenAPI 是 API Contract 唯一真源，五个应用共用同一份契约（[API 契约](https://better-admin.baiwumm.com/docs/architecture/api/)）。
-- **统一数据层**：PostgreSQL + Drizzle ORM，17 张表跨端一致（[数据库设计](https://better-admin.baiwumm.com/docs/architecture/database/)）。
-- **UI 一致性**：React 是 UI Source of Truth，Hero UI 与 Nuxt UI v4 两套组件库视觉与交互对齐（[UI 规范](https://better-admin.baiwumm.com/docs/design/ui/)）。
+- **Five-stack parity**: one product, one UI, one set of business logic, one database — implemented independently with React, Vue, Next.js, Nuxt, and NestJS.
+- **29/29 feature parity**: all four frontends stay aligned, with only two intentional architecture differences ([feature matrix](docs/feature-matrix.md)).
+- **Auth & RBAC**: dual-token JWT sessions and permission bitmasks, enforced on the server ([auth docs](https://better-admin.baiwumm.com/docs/architecture/auth/)).
+- **Contract-first API**: OpenAPI is the single source of truth for every app ([API contract](https://better-admin.baiwumm.com/docs/architecture/api/)).
+- **One data layer**: PostgreSQL + Drizzle ORM with the same 17 tables across stacks ([database design](https://better-admin.baiwumm.com/docs/architecture/database/)).
+- **UI consistency**: React is the UI source of truth; Hero UI and Nuxt UI v4 are aligned visually and behaviorally ([UI spec](https://better-admin.baiwumm.com/docs/design/ui/)).
 
-## 🌐 在线体验
+## 🌐 Live Demo
 
-线上即演示环境（只读演示模式）：登录页可一键「管理员 / 随机用户」快捷登录，写操作由只读守卫拦截并提示。
+All sites run in read-only demo mode: the login page offers one-click "Admin / Random user" sign-in, and write operations are blocked by a read-only guard.
 
-| 站点 | 地址 | 部署平台 |
+| App | URL | Hosting |
 | --- | --- | --- |
-| 官方文档站 | <https://better-admin.baiwumm.com> | 腾讯云 EdgeOne Makers（静态导出） |
-| React（UI 基准） | <https://react.baiwumm.com> | Vercel |
+| Docs | <https://better-admin.baiwumm.com> | Tencent Cloud EdgeOne Makers (static export) |
+| React (UI reference) | <https://react.baiwumm.com> | Vercel |
 | Vue | <https://vue.baiwumm.com> | Vercel |
 | Next.js | <https://next.baiwumm.com> | Vercel |
 | Nuxt | <https://nuxt.baiwumm.com> | Vercel |
-| NestJS API | <https://nest.baiwumm.com> | Render（UptimeRobot 保活） |
+| NestJS API | <https://nest.baiwumm.com> | Render |
 
-- API 文档（Swagger）：<https://nest.baiwumm.com/docs>
-- API Contract 唯一真源：[`apps/nest/openapi/openapi.yaml`](apps/nest/openapi/openapi.yaml)
-- 数据库：统一 PostgreSQL（Supabase 托管，仅作数据库 + 头像 Storage）+ Drizzle ORM
+- Swagger: <https://nest.baiwumm.com/docs>
+- API contract (single source of truth): [`apps/nest/openapi/openapi.yaml`](apps/nest/openapi/openapi.yaml)
+- Database: one PostgreSQL instance (Supabase) shared by every app, accessed through Drizzle ORM
 
-## 📖 在线文档
+## 📖 Documentation Site
 
-| 文档 | 内容 |
+| Page | Contents |
 | --- | --- |
-| [项目概览](https://better-admin.baiwumm.com/docs/) | 五个应用的分工、数据流与架构约定 |
-| [快速开始](https://better-admin.baiwumm.com/docs/start/quick-start/) | 五端本地启动：依赖、环境变量、数据库初始化 |
-| [API 契约](https://better-admin.baiwumm.com/docs/architecture/api/) | 统一响应信封、分页参数与错误码规范 |
-| [认证与权限](https://better-admin.baiwumm.com/docs/architecture/auth/) | JWT 双 Token 与 RBAC 位掩码校验链路 |
-| [数据库设计](https://better-admin.baiwumm.com/docs/architecture/database/) | 17 张表分域、关键字段与权限位存储 |
-| [UI 规范](https://better-admin.baiwumm.com/docs/design/ui/) | Design Tokens、组件优先级与视觉一致规则 |
-| [React 实现](https://better-admin.baiwumm.com/docs/frontends/react/) | UI 基准版本的技术栈、目录结构与数据流 |
-| [Vue 实现](https://better-admin.baiwumm.com/docs/frontends/vue/) | 用 Nuxt UI v4 复刻 React 基准 |
-| [Next.js 实现](https://better-admin.baiwumm.com/docs/frontends/next/) | App Router 独立全栈实现 |
-| [Nuxt 实现](https://better-admin.baiwumm.com/docs/frontends/nuxt/) | Nitro 独立全栈实现 |
+| [Overview](https://better-admin.baiwumm.com/docs/) | App responsibilities, data flow, and architecture rules |
+| [Quick start](https://better-admin.baiwumm.com/docs/start/quick-start/) | Run all five apps locally |
+| [API contract](https://better-admin.baiwumm.com/docs/architecture/api/) | Response envelope, pagination, and error codes |
+| [Auth & RBAC](https://better-admin.baiwumm.com/docs/architecture/auth/) | Dual-token JWT and permission bitmasks |
+| [Database design](https://better-admin.baiwumm.com/docs/architecture/database/) | 17 tables and permission-bit storage |
+| [UI spec](https://better-admin.baiwumm.com/docs/design/ui/) | Design tokens and component priority |
+| [React implementation](https://better-admin.baiwumm.com/docs/frontends/react/) | UI reference, structure, and data flow |
+| [Vue implementation](https://better-admin.baiwumm.com/docs/frontends/vue/) | React parity with Nuxt UI v4 |
+| [Next.js implementation](https://better-admin.baiwumm.com/docs/frontends/next/) | Full-stack App Router implementation |
+| [Nuxt implementation](https://better-admin.baiwumm.com/docs/frontends/nuxt/) | Full-stack Nitro implementation |
 
-## 🤖 用 AI 查阅代码
+## 🧱 Tech Stack
 
-本仓库已被 [XERJ Corpus Hub](https://hub.xerj.org/contributors/baiwumm) 收录为面向 AI Agent 的可检索语料库。把仓库交给 AI 编程助手后，可以直接问「某个功能在哪实现、怎么实现」，回答会带文件与行号引用，而不是靠模型记忆猜测。
-
-- 文档站 AI 入口：[`llms.txt`](https://better-admin.baiwumm.com/llms.txt)
-
-## 🧱 技术栈
-
-| 端 | 目录 | 技术栈 | 组件库 |
+| App | Directory | Stack | UI library |
 | --- | --- | --- | --- |
 | React | [`apps/react`](apps/react) | React 19 + Vite 8 + TanStack Router/Query + Zustand | Hero UI v3 |
-| Vue | [`apps/vue`](apps/vue) | Vue 3.5 + Vite 8 + Pinia + vue-query | Nuxt UI v4（唯一） |
-| Next.js | [`apps/next`](apps/next) | Next 16 App Router（独立全栈，不依赖 NestJS） | Hero UI v3 |
-| Nuxt | [`apps/nuxt`](apps/nuxt) | Nuxt 4 + Nitro（独立全栈，不依赖 NestJS） | Nuxt UI v4（唯一） |
+| Vue | [`apps/vue`](apps/vue) | Vue 3.5 + Vite 8 + Pinia + vue-query | Nuxt UI v4 |
+| Next.js | [`apps/next`](apps/next) | Next 16 App Router (full-stack, no NestJS dependency) | Hero UI v3 |
+| Nuxt | [`apps/nuxt`](apps/nuxt) | Nuxt 4 + Nitro (full-stack, no NestJS dependency) | Nuxt UI v4 |
 | NestJS | [`apps/nest`](apps/nest) | Nest 11 + Drizzle ORM + PostgreSQL | — |
-| 文档站 | [`apps/website`](apps/website) | Next 16 静态导出；`/` 首页为 beUI 风格自绘组件，`/docs` 用 fumadocs | fumadocs-ui（/docs）+ 自绘首页组件 |
+| Docs site | [`apps/website`](apps/website) | Next 16 static export; fumadocs for `/docs` | fumadocs-ui |
 
-React 是 **UI Source of Truth**；四个前端页面结构、交互、视觉与 Design Tokens 保持一致（细则见 [`docs/ui-spec.md`](docs/ui-spec.md)）。
+React is the **UI source of truth**: the four frontends share page structure, interactions, visuals, and design tokens (see [`docs/ui-spec.md`](docs/ui-spec.md)).
 
-## 📁 项目结构
+## 📁 Project Structure
 
 ```text
 better-admin/
-├── apps/          # 全部可独立运行 / 构建 / 部署的应用（见上表）
-├── docs/          # 项目文档（需求真源 / UI 规范 / 进度 / 机制沉淀）
-├── assets/logo/   # 跨端共享的品牌资产真源
-├── scripts/       # 仓库级脚本（sync-versions 版本同步）
-├── package.json   # 产品版本唯一真源（发布流程见 AGENTS.md §15）
-└── AGENTS.md      # 开发规范（含 AI Agent 硬性规则）
+├── apps/          # Independently runnable / buildable / deployable apps
+├── docs/          # Requirements, UI spec, progress, mechanisms (Chinese)
+├── assets/logo/   # Shared brand assets
+├── scripts/       # Repo-level scripts (version sync)
+├── package.json   # Single source of truth for the product version
+└── AGENTS.md      # Development conventions
 ```
 
-每个子应用相互独立：**不引入 pnpm workspace**，各自独立 lockfile / install / build / deploy。
+Each app is self-contained: no pnpm workspace, separate lockfile / install / build / deploy.
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
 ```bash
-# 后端 API（React / Vue 的数据源；需在 .env 配好 DATABASE_URL 等服务端变量）
+# Backend API (data source for React / Vue; needs DATABASE_URL and friends in .env)
 cd apps/nest && pnpm install
 pnpm db:migrate && pnpm db:seed
-pnpm start:dev            # http://localhost:3000/api（Swagger 在 /docs）
+pnpm start:dev            # http://localhost:3000/api (Swagger at /docs)
 
-# 前端任选其一
-cd apps/react && pnpm install && pnpm dev    # 或 apps/vue
-cd apps/next && pnpm install && pnpm dev     # 或 apps/nuxt（独立全栈，直连数据库）
+# Any frontend
+cd apps/react && pnpm install && pnpm dev    # or apps/vue
+cd apps/next && pnpm install && pnpm dev     # or apps/nuxt (full-stack, connects to the DB directly)
 ```
 
-前置要求：Node.js ≥ 20、pnpm（版本按各端 `packageManager` 字段）、PostgreSQL 连接信息（服务端环境变量，见各子项目 `.env.example`；**密钥严禁提交仓库**）。
+Requirements: Node.js ≥ 20, pnpm (version pinned per app), and a PostgreSQL connection string in server-side env vars (see each app's `.env.example`).
 
-## 📚 仓库文档
+## 🤖 Ask an AI About the Code
 
-| 文档 | 内容 |
+This repository is indexed by [XERJ Corpus Hub](https://hub.xerj.org/contributors/baiwumm) as an agent-readable corpus. Point an AI coding agent at the repo and ask where a feature lives or how it works — answers cite files and lines instead of relying on model memory.
+
+- AI entry point for the docs site: [`llms.txt`](https://better-admin.baiwumm.com/llms.txt)
+
+## 📚 Repository Docs
+
+The docs are written in Chinese (the project's primary language):
+
+| Document | Contents |
 | --- | --- |
-| [`AGENTS.md`](AGENTS.md) | 开发规范与 AI Agent 硬性规则（**全部文档索引见其 §13**） |
-| [`docs/requirements.md`](docs/requirements.md) | 业务需求真源 |
-| [`docs/feature-matrix.md`](docs/feature-matrix.md) | 四端功能对齐状态 |
-| [`docs/launch-runbook.md`](docs/launch-runbook.md) | 部署 / 冒烟 / 回滚运维手册 |
+| [`AGENTS.md`](AGENTS.md) | Development conventions and agent rules |
+| [`docs/requirements.md`](docs/requirements.md) | Product requirements |
+| [`docs/feature-matrix.md`](docs/feature-matrix.md) | Feature parity across the four frontends |
+| [`docs/launch-runbook.md`](docs/launch-runbook.md) | Deployment, smoke tests, rollback |
 
-## ❓ 常见问题
+## ❓ FAQ
 
-**Better Admin 是什么？**
-一套开源的全栈 Admin 系统（后台管理系统）：同一套产品、UI、业务逻辑与数据库，分别用 React、Vue、Next.js、Nuxt 与 NestJS 实现。
+**What is Better Admin?**
+An open-source full-stack admin system (admin dashboard template): one product, UI, business logic, and database, implemented independently with React, Vue, Next.js, Nuxt, and NestJS.
 
-**为什么要用五种技术栈重复实现？**
-为了横向对照同一产品在不同技术栈下的完整落地路径，沉淀可参考的实现范例；各应用独立运行、构建与部署，不产生技术栈耦合。
+**Why implement the same product five times?**
+To compare how one product lands across different stacks and provide a reference implementation; every app runs, builds, and deploys independently.
 
-**五个版本共用数据库吗？**
-是。统一使用 PostgreSQL + Drizzle ORM，Schema、数据模型、业务规则、数据类型与 API Contract 五项跨栈一致。
+**Do all versions share the same database?**
+Yes. One PostgreSQL database with Drizzle ORM; schema, data model, business rules, data types, and API contract stay aligned.
 
-**可以商用或二次开发吗？**
-可以，项目采用 MIT License；保留版权声明即可，欢迎通过 Issue / PR 参与。
+**Can I use it commercially?**
+Yes. The project is MIT licensed; keep the copyright notice. Issues and pull requests are welcome.
 
-## 🤝 参与贡献
+## 🤝 Contributing
 
-欢迎提交 Issue 与 Pull Request。开发前请先阅读 [`AGENTS.md`](AGENTS.md) 的硬性规则；新增功能或改变功能状态时，同步更新 [`docs/feature-matrix.md`](docs/feature-matrix.md)。
+Issues and pull requests are welcome. Read [`AGENTS.md`](AGENTS.md) before making changes; when adding a feature or changing feature status, update [`docs/feature-matrix.md`](docs/feature-matrix.md) too.
 
 ## ⚖️ License
 
-[MIT](./LICENSE) —— 版权见 `LICENSE`（Copyright © 2026 baiwumm）。
+[MIT](./LICENSE) — see `LICENSE` for copyright (© 2026 baiwumm).
