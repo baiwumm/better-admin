@@ -1,4 +1,4 @@
-import { Typography } from "@heroui/react";
+import { Meter, Typography } from "@heroui/react";
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
@@ -141,9 +141,18 @@ export function Stacks() {
               <ArrowUpRight size={14} />
             </Link>
           </div>
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-default">
-            <div className="h-full w-full rounded-full bg-accent" />
-          </div>
+          {/* 对齐进度：HeroUI Meter（react-aria Meter → role="meter" + aria-valuenow） */}
+          <Meter
+            aria-label="四端功能对齐进度"
+            className="mt-3"
+            color="accent"
+            size="sm"
+            value={100}
+          >
+            <Meter.Track>
+              <Meter.Fill />
+            </Meter.Track>
+          </Meter>
         </div>
       </div>
     </section>

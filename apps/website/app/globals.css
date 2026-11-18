@@ -29,28 +29,17 @@
  * Tailwind 语义层（2026-11-18 HeroUI 接入）
  *
  * 组件一律用 HeroUI 的 token class（bg-background / bg-surface / bg-default /
- * text-muted / text-accent / border-border…）。下面只补两类别名：
- * 1) 本站既有代码与 fumadocs 仍在用的旧词汇（card / popover / primary / muted-foreground）；
- * 2) 品牌色 brand 直接指向 HeroUI accent，避免出现第二套品牌变量。
+ * text-muted / text-accent / border-border…）。下面只补仍被引用的旧词汇：
+ * card（表格分域卡片）/ primary（回到顶部的进度环）/ muted-foreground（文档区），
+ * 其余别名在 2026-11-18 清理时已无引用，不再保留第二套词汇。
  */
 @theme inline {
   --font-sans: var(--font-sans-stack);
   --font-mono: var(--font-mono-stack);
 
   --color-card: var(--surface);
-  --color-card-foreground: var(--surface-foreground);
-  --color-popover: var(--overlay);
-  --color-popover-foreground: var(--overlay-foreground);
   --color-primary: var(--accent);
-  --color-primary-foreground: var(--accent-foreground);
-  --color-secondary: var(--surface-secondary);
-  --color-secondary-foreground: var(--surface-secondary-foreground);
   --color-muted-foreground: var(--muted);
-  --color-destructive: var(--danger);
-  --color-input: var(--border);
-  --color-ring: var(--focus);
-  --color-brand: var(--accent);
-  --color-brand-foreground: var(--accent-foreground);
 
   --radius-sm: calc(var(--radius) - 3px);
   --radius-md: calc(var(--radius) - 1px);
@@ -221,11 +210,7 @@
 ::-webkit-scrollbar-thumb {
   background-color: oklch(0.556 0 0 / 0.4);
   /* 旧引擎不吃 color-mix 时回落到上一行 oklch，属刻意兜底 */
-  background-color: color-mix(
-    in oklab,
-    var(--muted) 40%,
-    transparent
-  );
+  background-color: color-mix(in oklab, var(--muted) 40%, transparent);
   background-clip: content-box;
   border: 2px solid transparent;
   border-radius: 999px;
@@ -277,8 +262,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.7rem 1rem;
-    border-top: 1px solid
-      color-mix(in oklab, var(--foreground) 8%, transparent);
+    border-top: 1px solid color-mix(in oklab, var(--foreground) 8%, transparent);
   }
 
   .spec-row:first-child {
