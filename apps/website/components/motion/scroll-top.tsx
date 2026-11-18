@@ -1,14 +1,27 @@
 "use client";
 
 /**
- * 回到顶部：外圈是滚动进度环，圆心显示百分比，悬停换成向上箭头，点击平滑回到顶部。
+ * 回到顶部（2026-11-18 重做）
  *
- * 取的是 motion 的 `useScroll`（站点已依赖 motion，且文档页滚动的是 window，实测无内层滚动容器）。
- * 没有引入 beui/smooth-scroll：它带 lenis，会把全站滚轮接管成惯性感滚动，
- * 那是整站手感的改动，也和 fumadocs 的 sticky 导航/侧边栏有冲突面，需要单独评估。
+ * 旧版在一个 48px 圆里同时放「进度环 + 百分比」，且百分比常驻、悬停才换成箭头：
+ * 触屏没有 hover，永远只看到一个百分数，看不出这是个按钮；百分比每 1% 重渲染
+ * 还会让数字跳动，进度环本身也没有过渡（滚动时是跳格的）。
+ *
+ * 现在的分工：
+ * 1. 箭头常驻 —— 一眼能读出「点了会回到顶部」，这是按钮的主信息；
+ * 2. 进度环退到边缘做次要信息 —— HeroUI `ProgressCircle` 画 2px 环，其
+ *    `stroke-dashoffset` 自带 300ms 过渡（且内置 motion-reduce 处理），
+ *    滚动时环是连续滑动而不是跳变；百分比只留在 aria-label 里给读屏；
+ * 3. 入场 / 离场用弹簧（stiffness 420 / damping 30）：浮钮从下往上轻微
+ *    「弹」出来，比线性 tween 更像实体按钮；`prefers-reduced-motion` 时
+ *    直接取消动画并禁用按压缩放。
+ *
+ * 取的是 motion 的 `useScroll`（站点已依赖 motion，文档页滚动的是 window，
+ * 实测无内层滚动容器）。没有引入 beui/smooth-scroll：它带 lenis，会把全站
+ * 滚轮接管成惯性感滚动，也会和 fumadocs 的 sticky 导航/侧边栏产生冲突面。
  */
 
-import { cn } from "@heroui/react";
+import { cn, ProgressCircle } from "@heroui/react";
 import { ArrowUp } from "lucide-react";
 import {
   AnimatePresence,
@@ -16,12 +29,9 @@ import {
   useMotionValueEvent,
   useReducedMotion,
   useScroll,
-  useTransform,
 } from "motion/react";
 import { useState } from "react";
 
-const RADIUS = 20;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 /** 滚动超过这个像素才出现，避免刚进页面就被一个浮钮占住右下角 */
 const SHOW_AFTER = 480;
 
@@ -30,10 +40,6 @@ export function ScrollTop({ className }: { className?: string }) {
   const { scrollY, scrollYProgress } = useScroll();
   const [pct, setPct] = useState(0);
   const [visible, setVisible] = useState(false);
-  const dashOffset = useTransform(
-    scrollYProgress,
-    (p) => CIRCUMFERENCE * (1 - p),
-  );
 
   // 只在整数百分比变化时重渲染，滚动过程中不被 setState 拖住
   useMotionValueEvent(scrollYProgress, "change", (p) => {
@@ -55,50 +61,43 @@ export function ScrollTop({ className }: { className?: string }) {
       {visible && (
         <motion.button
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          aria-label={`回到顶部（已滚动 ${pct}%）`}
+          aria-label="回到顶部"
           className={cn(
-            "group fixed end-6 bottom-6 z-50 grid size-12 place-items-center rounded-full border bg-background/85 shadow-lg backdrop-blur",
-            "text-muted-foreground transition-colors hover:text-foreground",
+            "group fixed end-6 bottom-6 z-50 grid size-11 place-items-center rounded-full",
+            "border border-border bg-background/80 text-muted backdrop-blur-md",
+            "shadow-lg shadow-black/5 transition-colors",
+            "hover:border-accent/40 hover:text-accent",
             className,
           )}
-          exit={{ opacity: 0, scale: 0.86, y: 12 }}
-          initial={{ opacity: 0, scale: 0.86, y: 12 }}
-          transition={{ duration: reduce ? 0 : 0.22 }}
+          exit={{ opacity: 0, scale: 0.94, y: 8 }}
+          initial={{ opacity: 0, scale: 0.94, y: 8 }}
+          transition={
+            reduce
+              ? { duration: 0 }
+              : { damping: 30, mass: 0.8, stiffness: 420, type: "spring" }
+          }
           type="button"
+          whileTap={reduce ? undefined : { scale: 0.94 }}
           onClick={toTop}
         >
-          <svg
-            aria-hidden
-            className="absolute inset-0 size-full -rotate-90"
-            viewBox="0 0 48 48"
+          {/* 进度环：内缩 3px 贴在按钮内侧，不压 border；value 变化由组件自带的
+              stroke-dashoffset 过渡平滑，百分比通过 aria 暴露 */}
+          <ProgressCircle
+            aria-label={`阅读进度 ${pct}%`}
+            className="pointer-events-none absolute inset-[3px]"
+            color="accent"
+            value={pct}
           >
-            <circle
-              className="stroke-border"
-              cx="24"
-              cy="24"
-              fill="none"
-              r={RADIUS}
-              strokeWidth="2"
-            />
-            <motion.circle
-              className="stroke-primary"
-              cx="24"
-              cy="24"
-              fill="none"
-              r={RADIUS}
-              strokeDasharray={CIRCUMFERENCE}
-              strokeLinecap="round"
-              strokeWidth="2"
-              style={{ strokeDashoffset: dashOffset }}
-            />
-          </svg>
-          <span className="relative grid place-items-center">
-            {/* 平时看进度，悬停换成箭头：一个圆里放两个信息会挤 */}
-            <span className="text-[11px] leading-none font-medium tabular-nums transition-opacity group-hover:opacity-0">
-              {pct}%
-            </span>
-            <ArrowUp className="absolute size-4 opacity-0 transition-opacity group-hover:opacity-100" />
-          </span>
+            <ProgressCircle.Track className="size-full">
+              <ProgressCircle.TrackCircle strokeWidth={2} />
+              <ProgressCircle.FillCircle strokeWidth={2} />
+            </ProgressCircle.Track>
+          </ProgressCircle>
+
+          <ArrowUp
+            aria-hidden
+            className="relative size-4 transition-transform duration-200 ease-out group-hover:-translate-y-0.5"
+          />
         </motion.button>
       )}
     </AnimatePresence>
