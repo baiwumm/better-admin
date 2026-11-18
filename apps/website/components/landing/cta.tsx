@@ -18,10 +18,10 @@ export function Cta() {
             的架构约定、数据库设计与多技术栈实现细节。
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <ButtonLink href="/docs/start/quick-start">
+            <ButtonLink href="/docs/start/quick-start/">
               从快速开始读起
             </ButtonLink>
-            <ButtonLink href="/docs/architecture/database" variant="secondary">
+            <ButtonLink href="/docs/architecture/database/" variant="secondary">
               看数据库设计
             </ButtonLink>
           </div>

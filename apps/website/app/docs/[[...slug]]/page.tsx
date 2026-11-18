@@ -42,8 +42,14 @@ export async function generateMetadata(props: {
 
   if (!page) return {};
 
+  // next.config 开启了 trailingSlash，canonical 必须与线上实际地址同形
+  const canonical = page.url.endsWith("/") ? page.url : `${page.url}/`;
+
   return {
     title: page.data.title,
     description: page.data.description,
+    alternates: {
+      canonical,
+    },
   };
 }

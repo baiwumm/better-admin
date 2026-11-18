@@ -137,7 +137,7 @@ export function Stacks() {
                 <Link
                   aria-label="查看功能矩阵"
                   className="text-muted-foreground transition-colors hover:text-foreground"
-                  href="/docs/progress/feature-matrix"
+                  href="/docs/progress/feature-matrix/"
                 >
                   <ArrowUpRight size={16} />
                 </Link>

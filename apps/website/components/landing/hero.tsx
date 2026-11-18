@@ -38,7 +38,7 @@ export function Hero() {
           React、Vue、Next.js、Nuxt 与 NestJS 独立实现。
         </p>
         <div className="animate-fade-up-delay-3 mt-8 flex flex-wrap items-center justify-center gap-3">
-          <ButtonLink href="/docs">
+          <ButtonLink href="/docs/">
             <BookOpen size={16} />
             阅读文档
           </ButtonLink>

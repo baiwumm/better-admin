@@ -7,7 +7,10 @@ import { source } from "@/lib/source";
 export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const url = (path: string) => new URL(path, SITE.url).toString();
+  // 与 next.config 的 trailingSlash 保持一致，避免 sitemap 指向非规范入口
+  const url = (path: string) =>
+    new URL(path === "/" || path.endsWith("/") ? path : `${path}/`, SITE.url)
+      .toString();
 
   return [
     { url: url("/"), changeFrequency: "weekly", priority: 1 },

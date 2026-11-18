@@ -282,6 +282,8 @@ Vercel Instant Rollback。
 | 部署 | 以 EdgeOne Makers 控制台项目配置为准（Git 集成为构建触发方式），构建产物目录 `out/`；Cloudflare Workers 时期的 `apps/website/wrangler.jsonc` 已于 2026-11-04 删除（可从 git 历史找回） |
 | 环境变量 | **无服务端密钥变量**；域名等站点静态配置在控制台项目内设置 |
 
+> **URL 规范（2026-11-18）**：仓库内已补全站 canonical、统一内链尾斜杠、sitemap 尾斜杠；**HTTP → HTTPS 301 与 HSTS 属于 EdgeOne Makers 控制台能力，不在仓库内**，需在项目域名/规则配置中开启（当前线上 `http://` 仍返回 200）。
+
 > **现状（2026-11-04 线上实测）**：响应头 `Server: edgeone makers` 与 `EO-LOG-UUID`，首页 `Last-Modified` 与最近一次构建时间一致，文档页深链 200；平台迁至腾讯云 EdgeOne Makers 后，原 `wrangler.jsonc` 已于 2026-11-04 删除。
 
 改造说明（2026-09-23，参照 react-okr-tree 站同款链路）：`output:'export'` + `trailingSlash` + `images.unoptimized`；搜索 `/api/search` 改 `force-static` + `staticGET`（构建期固化为 `out/api/search` 静态索引，前端 RootProvider `type:'static'` 浏览器本地搜索）；`opengraph-image` / `robots.txt` / `sitemap.xml` 显式 `force-static` 构建期预渲染；未命中路径回 `out/404.html`。全程无 server 运行时。CI 的 `pnpm version` 注意：website 已钉 `packageManager: pnpm@11.24.0`。

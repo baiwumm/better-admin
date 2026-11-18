@@ -15,6 +15,10 @@ export const metadata: Metadata = {
     template: `%s — ${SITE.name}`,
   },
   description: SITE.description,
+  // 静态导出下每页都必须自报规范地址，避免 http/https、尾斜杠等入口被拆成重复页面
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },

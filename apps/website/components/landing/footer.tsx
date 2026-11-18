@@ -49,7 +49,7 @@ export function Footer() {
               aria-label="相关链接"
               className="flex items-center gap-2 md:justify-end md:pt-1"
             >
-              <ButtonLink href="/docs" size="sm" variant="secondary">
+              <ButtonLink href="/docs/" size="sm" variant="secondary">
                 阅读文档
               </ButtonLink>
               <ButtonLink
