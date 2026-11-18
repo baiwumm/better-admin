@@ -2,6 +2,13 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Next.js 16.4.6 与 React 19.3.1 升级（2026-11-18）
+
+- **升级**：`apps/next` 与 `apps/website` 的 `next` 16.2.6 → 16.4.6、`react` / `react-dom` 19.2.6 → 19.3.1、`@types/react` / `@types/react-dom` → 19.3.0、`@next/eslint-plugin-next` 16.2.0 → 16.4.6；`apps/next` 的 `@types/node` 20.9.0 → 20.19.43（满足 Vite peer）。`apps/react` 同步 React 19.3.1 / 类型 19.3.0。
+- **Next 16.3 配置变更**：`experimental.viewTransition` 已移除，删除 `apps/next/next.config.mjs` 中该项；View Transitions 在 App Router 无配置生效。同步更新 `apps/next/README.md` 与 `docs/feature-matrix.md`。
+- **验证**：Next build / test（43）/ lint 通过；website build / test（20）/ lint 通过；React build / test / lint 通过；`apps/next` 的 `pnpm peers check` 通过。
+- **遗留**：website 的 `pnpm peers check` 仍有既有 `@typescript-eslint 8.34.1` 与 TypeScript 5.9.3 的 peer 告警，本次未处理；其余 patch / minor 依赖仅盘点，未批量升级。
+
 ### README 内嵌宣传片与英文文案收口（2026-11-18）
 
 - **背景**：根 README 原为「封面图 + 抖音外链」，用户要求改为 README 内嵌播放器，且英文文档不要刻意标注中文说明。

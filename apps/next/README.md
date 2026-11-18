@@ -44,6 +44,6 @@ See [.env.example](./.env.example): `DATABASE_URL`, `JWT_*`, `SUPABASE_URL` / `S
 ## Known differences from the React app (all confirmed decisions)
 
 - No KeepAlive (App Router has no equivalent); the tab "refresh" action only affects the active tab
-- Route transitions use React `<ViewTransition>` (`experimental.viewTransition`; a `<main>`-level VT boundary in `admin-shell` + `styles/route-transitions.css`), rather than the React app's manual `startViewTransition` + displayedPath double buffering; direction awareness is written by `lib/route-direction.ts` at the navigation origin via `data-rt-direction` (browser back/forward has no direction, same as the React app)
+- Route transitions use React `<ViewTransition>` (no config flag needed since Next 16.3; a `<main>`-level VT boundary in `admin-shell` + `styles/route-transitions.css`), rather than the React app's manual `startViewTransition` + displayedPath double buffering; direction awareness is written by `lib/route-direction.ts` at the navigation origin via `data-rt-direction` (browser back/forward has no direction, same as the React app)
 - Tokens are stored in httpOnly cookies (the React app uses localStorage + Bearer); the API still accepts Bearer internally
 - Menu permission filtering runs on the server (client-side in the React app); log cleanup uses a GitHub Actions cron (Nest uses an in-process schedule)
