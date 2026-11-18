@@ -6,6 +6,10 @@ import {
 } from "fumadocs-ui/page";
 import { notFound } from "next/navigation";
 
+import {
+  DocsBreadcrumb,
+  type DocsBreadcrumbItem,
+} from "@/components/docs/breadcrumb";
 import { getMDXComponents } from "@/mdx-components";
 import { JsonLd } from "@/components/seo/json-ld";
 import { OG_IMAGE, SITE } from "@/lib/site";
@@ -46,9 +50,31 @@ export default async function Page(props: {
     ...(updated ? { dateModified: updated.toISOString() } : {}),
   };
 
+  const breadcrumbItems: DocsBreadcrumbItem[] =
+    page.url === "/docs"
+      ? [{ name: "首页", url: "/" }, { name: "文档" }]
+      : [
+          { name: "首页", url: "/" },
+          { name: "文档", url: "/docs/" },
+          { name: page.data.title },
+        ];
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbItems.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      ...(item.url ? { item: new URL(item.url, SITE.url).toString() } : {}),
+    })),
+  };
+
   return (
-    <DocsPage toc={page.data.toc}>
+    <DocsPage breadcrumb={{ enabled: false }} toc={page.data.toc}>
       <JsonLd data={articleJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
+      <DocsBreadcrumb items={breadcrumbItems} />
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       {updatedLabel ? (
