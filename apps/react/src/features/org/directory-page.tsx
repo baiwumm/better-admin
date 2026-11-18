@@ -411,7 +411,7 @@ export function DirectoryPage({
           <DataTable
             aria-label={t("menu.pageTitle.directory")}
             className="w-full"
-            contentClassName="min-w-[900px]"
+            contentClassName="min-w-225"
             isError={isError}
             isLoading={isLoading || isFetching}
             table={table}

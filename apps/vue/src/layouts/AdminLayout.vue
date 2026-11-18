@@ -384,7 +384,7 @@ function retryMenus() {
         </UDashboardNavbar>
 
         <!-- 多标签页栏：置于 UDashboardToolbar 内，边框由 toolbar 提供；覆盖其
-             默认 min-h-[49px] / px-4 让高度与内边距由 TagsBar 自身决定（h-10 +
+             默认 min-h-12.25 / px-4 让高度与内边距由 TagsBar 自身决定（h-10 +
              px-2，对齐 React 端 40px 栏高）。偏好设置可隐藏（关闭仅隐藏 UI，
              不清空已打开标签）。 -->
         <UDashboardToolbar

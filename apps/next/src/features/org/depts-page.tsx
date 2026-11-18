@@ -452,7 +452,7 @@ export function DeptsPage() {
             <DataTable
               aria-label={t("menu.pageTitle.depts")}
               className="w-full"
-              contentClassName="min-w-[640px]"
+              contentClassName="min-w-160"
               isLoading={treeQuery.isLoading}
               table={table}
             />

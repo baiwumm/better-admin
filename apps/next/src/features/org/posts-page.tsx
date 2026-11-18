@@ -438,7 +438,7 @@ export function PostsPage() {
       <DataTable
         aria-label={t("menu.pageTitle.posts")}
         className="w-full"
-        contentClassName="min-w-[860px]"
+        contentClassName="min-w-215"
         isError={isError}
         isLoading={isLoading || isFetching}
         table={table}

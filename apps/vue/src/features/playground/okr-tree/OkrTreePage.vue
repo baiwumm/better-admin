@@ -236,7 +236,7 @@ function onOrgNodeClick(data: TreeNodeData) {
         <OkrTreeViewport
           v-model:offset="offset"
           v-model:zoom="zoom"
-          class="h-[480px]"
+          class="h-120"
           :max-zoom="2"
           :min-zoom="MIN_ZOOM"
         >

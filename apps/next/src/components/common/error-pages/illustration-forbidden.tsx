@@ -5,7 +5,7 @@
  */
 
 type IllustrationProps = {
-  /** 样式透传（外层用于响应式缩放，如 w-[250px] max-w-full） */
+  /** 样式透传（外层用于响应式缩放，如 w-62.5 max-w-full） */
   className?: string;
 };
 

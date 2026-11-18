@@ -390,7 +390,7 @@ export function LogsPage() {
       <DataTable
         aria-label={t("menu.pageTitle.logs")}
         className="w-full"
-        contentClassName="min-w-[820px]"
+        contentClassName="min-w-205"
         isError={isError}
         isLoading={isLoading || isFetching}
         table={table}

@@ -167,7 +167,7 @@ function BouncyAccordionRow({
           aria-controls={contentId}
           aria-expanded={open}
           className={cx(
-            "flex min-h-[54px] w-full items-center gap-4 px-5 text-left outline-none transition-colors",
+            "flex min-h-13.5 w-full items-center gap-4 px-5 text-left outline-none transition-colors",
             "focus-visible:bg-muted/25",
             "disabled:pointer-events-none",
           )}

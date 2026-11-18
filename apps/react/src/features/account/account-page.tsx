@@ -227,7 +227,7 @@ function CardSkeleton(props: {
   footerDescription: boolean;
 }) {
   return (
-    <Surface className="flex min-w-[320px] flex-col gap-3 rounded-3xl p-6">
+    <Surface className="flex min-w-80 flex-col gap-3 rounded-3xl p-6">
       <Skeleton className={cn("mb-4 h-5", props.titleClassName)} />
       {props.content}
       <div className="mt-4 border-t border-separator pt-4">

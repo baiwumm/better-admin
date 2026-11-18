@@ -184,7 +184,7 @@ export default { name: 'NoticeDetailPage' }
 
         <!-- 正文：限高滚动容器防超长内容撑爆页面；content 缺失回退标题文本 -->
         <div
-          class="bg-elevated/50 max-h-[480px] overflow-y-auto rounded-xl p-5"
+          class="bg-elevated/50 max-h-120 overflow-y-auto rounded-xl p-5"
         >
           <!-- 内容来自 Tiptap 编辑并经 DOMPurify 消毒（sanitizeNoticeHtml） -->
           <!-- eslint-disable vue/no-v-html -->

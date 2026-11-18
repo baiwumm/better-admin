@@ -540,7 +540,7 @@ export function RolesPage() {
       <DataTable
         aria-label={t("menu.pageTitle.roles")}
         className="w-full"
-        contentClassName="min-w-[760px]"
+        contentClassName="min-w-190"
         isError={isError}
         isLoading={isLoading || isFetching}
         table={table}

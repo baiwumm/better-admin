@@ -169,7 +169,7 @@ export function PermissionsPage() {
       <DataTable
         aria-label={t("menu.pageTitle.permissions")}
         className="w-full"
-        contentClassName="min-w-[560px]"
+        contentClassName="min-w-140"
         isLoading={isLoading}
         table={table}
       />

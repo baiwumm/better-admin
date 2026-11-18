@@ -410,7 +410,7 @@ function OrgTreeSection() {
          * 超出时缩放到 MIN_ZOOM 可读下限为止，剩余部分交拖拽平移。
          */}
         <OkrTreeViewport
-          className="h-[480px]"
+          className="h-120"
           maxZoom={2}
           minZoom={MIN_ZOOM}
           offset={offset}

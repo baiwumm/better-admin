@@ -11,7 +11,7 @@ export function Hero() {
       {/* 极淡点阵材质，只在主视觉背后可见 */}
       <div
         aria-hidden
-        className="dot-grid pointer-events-none absolute inset-x-0 top-0 h-[560px] opacity-60"
+        className="dot-grid pointer-events-none absolute inset-x-0 top-0 h-140 opacity-60"
       />
       <div className="relative">
         <a

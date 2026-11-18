@@ -658,7 +658,7 @@ export function UsersPage() {
       <DataTable
         aria-label={t("menu.pageTitle.users")}
         className="w-full"
-        contentClassName="min-w-[860px]"
+        contentClassName="min-w-215"
         isError={isError}
         isLoading={isLoading || isFetching}
         table={table}

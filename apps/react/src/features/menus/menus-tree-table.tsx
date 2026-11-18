@@ -56,7 +56,7 @@ export function MenusTreeTable({
     <DataTable
       aria-label={t("menu.pageTitle.menus")}
       className="w-full"
-      contentClassName="min-w-[860px]"
+      contentClassName="min-w-215"
       isLoading={isLoading}
       table={table}
     />

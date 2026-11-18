@@ -150,7 +150,7 @@ const stacked = computed(() => props.repos.slice(0, STACK_LIMIT));
     :class="
       cn(
         'relative max-w-full overflow-hidden rounded-[28px] bg-default p-4',
-        repos.length > 0 && 'pb-[76px]',
+        repos.length > 0 && 'pb-19',
         props.class,
       )
     "

@@ -564,7 +564,7 @@ export function DictsPage() {
           <DataTable
             aria-label={t("menu.pageTitle.dicts")}
             className="w-full"
-            contentClassName="min-w-[640px]"
+            contentClassName="min-w-160"
             emptyState={
               activeType ? undefined : (
                 // 与 EmptyContent 同构的居中空态

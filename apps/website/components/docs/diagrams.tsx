@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
 
 /* ------------------------------- 基础原语 ------------------------------- */
 
-const SVG_BASE = "mx-auto block h-auto w-full max-w-[720px]";
+const SVG_BASE = "mx-auto block h-auto w-full max-w-180";
 
 function Frame({
   title,
@@ -1087,7 +1087,7 @@ export function QuickStartFlow() {
   return (
     <div className="overflow-x-auto">
       {/* 小屏下保持可读字号，横向滑动查看；桌面端不受影响（≤720px 全宽显示） */}
-      <div className="min-w-[560px]">
+      <div className="min-w-140">
         <QuickStartFlowSvg />
       </div>
     </div>

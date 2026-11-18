@@ -35,7 +35,7 @@ export function Navbar() {
               target="_blank"
               variant="ghost"
             >
-              <GithubIcon className="size-[18px]" />
+              <GithubIcon className="size-4.5" />
             </ButtonLink>
             <ThemeToggle />
           </div>
