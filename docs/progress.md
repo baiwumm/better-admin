@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 安全依赖批次五：编辑器、图标与剩余 minor（2026-11-18）
+
+- **React / Next**：`@tiptap/*` → `3.34.0`、`lucide-react` → `1.73.0`、`react-okr-tree` → `1.17.0`；Next `jose` → `6.2.17`。
+- **Next 配置**：`pnpm-workspace.yaml` 的 Tiptap optional 依赖 override 同步到 `3.34.0`，消除与主包版本不一致的 peer 告警。
+- **Vue / Nuxt**：`vue3-okr-tree` → `1.17.0`；Vue 的 Iconify 包、`@iconify/vue`、`@internationalized/number`、`@unhead/vue`、`hookable`、`vue-i18n`、`eslint-plugin-prettier` 升级；Nuxt `jose` → `6.2.17`。
+- **Nuxt 配置**：`pnpm-workspace.yaml` 的 `vue` override `3.5.42 → 3.5.45`，与 Vue 端对齐；四端 `okr-tree` 供应链白名单补 `1.17.0`。
+- **验证**：React / Next / Vue / Nuxt 的 lint / build / test 全绿；React / Next / Vue `pnpm peers check` 通过，Nuxt 仍有既有 `@emnapi` 传递 peer 告警。
+
 ### 安全依赖批次四：Nest 与数据层依赖（2026-11-18）
 
 - **Nest**：`@nestjs/schedule` `12.0.4`、`@nestjs/throttler` `6.8.0`、`@scalar/nestjs-api-reference` `1.2.38`、`drizzle-orm` `0.45.4`、`@supabase/supabase-js` `2.119.0`、`pg` `8.23.1`、`nanoid` `6.0.2`、`express` `5.3.0`、`@types/multer` `2.3.0`、`pinyin-pro` `3.29.5`、`typescript-eslint` `8.73.0`。
