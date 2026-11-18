@@ -125,7 +125,7 @@ export function Stacks() {
               <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted shadow-[inset_0_1px_2px_rgb(0_0_0/0.06)] dark:shadow-[inset_0_1px_2px_rgb(0_0_0/0.4)]">
                 {/* beUI registry（124 项）无通用进度条，此处保留自绘：填充用纵向渐变 + 顶高光 + 底内描边 */}
                 <div
-                  className="h-full rounded-full bg-gradient-to-b from-foreground/90 to-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.28),inset_0_-1px_0_rgb(0_0_0/0.12)] transition-[width] duration-700 ease-out"
+                  className="h-full rounded-full bg-linear-to-b from-foreground/90 to-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.28),inset_0_-1px_0_rgb(0_0_0/0.12)] transition-[width] duration-700 ease-out"
                   style={{ width: "100%" }}
                 />
               </div>
