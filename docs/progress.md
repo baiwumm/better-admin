@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 安全依赖批次一：Tailwind / HeroUI / dompurify / zod / TanStack（2026-11-18）
+
+- **Tailwind**：React / Next / Website / Vue / Nuxt 五端统一 `4.3.5`（含 `@tailwindcss/postcss` / `@tailwindcss/vite`）。
+- **HeroUI**：React / Next `@heroui/react` / `@heroui/styles` `3.2.7`，并补 `react-aria-components` `1.22.1` 满足 peer。
+- **通用库**：`dompurify` `3.4.18`（React / Next / Vue / Nuxt）、`zod` `4.6.7`（四端）。
+- **TanStack**：React / Next 的 query / table / router / router-plugin，Vue / Nuxt 的 vue-query / vue-virtual 升级到当前 patch/minor；`@tanstack/vue-table 8 → 9` 属 major，本次未动。
+- **验证**：五端 `build` / `test` / `lint` 全绿（React、Next 的 peers check 通过；website 既有 TypeScript / typescript-eslint peer 与 Nuxt 传递 peer 告警保留）。React 的 `routeTree.gen.ts` 随 router 升级重新生成并纳入提交。
+
 ### Next.js 16.4.6 与 React 19.3.1 升级（2026-11-18）
 
 - **升级**：`apps/next` 与 `apps/website` 的 `next` 16.2.6 → 16.4.6、`react` / `react-dom` 19.2.6 → 19.3.1、`@types/react` / `@types/react-dom` → 19.3.0、`@next/eslint-plugin-next` 16.2.0 → 16.4.6；`apps/next` 的 `@types/node` 20.9.0 → 20.19.43（满足 Vite peer）。`apps/react` 同步 React 19.3.1 / 类型 19.3.0。

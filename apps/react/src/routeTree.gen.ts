@@ -9,49 +9,43 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as R500RouteImport } from './routes/500'
-import { Route as R404RouteImport } from './routes/404'
-import { Route as R403RouteImport } from './routes/403'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as authRouteRouteImport } from './routes/(auth)/route'
-import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as AuthenticatedMyNoticesRouteImport } from './routes/_authenticated/my-notices'
-import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
+import { Route as R403RouteImport } from './routes/403'
+import { Route as R404RouteImport } from './routes/404'
+import { Route as R500RouteImport } from './routes/500'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as authSignInRouteImport } from './routes/(auth)/sign-in'
-import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings/users'
-import { Route as AuthenticatedSettingsRolesRouteImport } from './routes/_authenticated/settings/roles'
-import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_authenticated/settings/permissions'
-import { Route as AuthenticatedSettingsMenusRouteImport } from './routes/_authenticated/settings/menus'
-import { Route as AuthenticatedSettingsLogsRouteImport } from './routes/_authenticated/settings/logs'
-import { Route as AuthenticatedSettingsDictsRouteImport } from './routes/_authenticated/settings/dicts'
-import { Route as AuthenticatedPlaygroundThemeSwitchAnimationRouteImport } from './routes/_authenticated/playground/theme-switch-animation'
-import { Route as AuthenticatedPlaygroundOkrTreeRouteImport } from './routes/_authenticated/playground/okr-tree'
-import { Route as AuthenticatedPlaygroundLoadersRouteImport } from './routes/_authenticated/playground/loaders'
-import { Route as AuthenticatedPlaygroundGithubActivityRouteImport } from './routes/_authenticated/playground/github-activity'
-import { Route as AuthenticatedPlaygroundCodeBlockRouteImport } from './routes/_authenticated/playground/code-block'
-import { Route as AuthenticatedOrgPostsRouteImport } from './routes/_authenticated/org/posts'
-import { Route as AuthenticatedOrgNoticesRouteImport } from './routes/_authenticated/org/notices'
-import { Route as AuthenticatedOrgDirectoryRouteImport } from './routes/_authenticated/org/directory'
-import { Route as AuthenticatedOrgDeptsRouteImport } from './routes/_authenticated/org/depts'
-import { Route as AuthenticatedOrgChartRouteImport } from './routes/_authenticated/org/chart'
-import { Route as AuthenticatedException500RouteImport } from './routes/_authenticated/exception/500'
-import { Route as AuthenticatedException404RouteImport } from './routes/_authenticated/exception/404'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
+import { Route as AuthenticatedMyNoticesRouteImport } from './routes/_authenticated/my-notices'
 import { Route as AuthenticatedException403RouteImport } from './routes/_authenticated/exception/403'
-import { Route as AuthenticatedPlaygroundCountToNumberFlowRouteImport } from './routes/_authenticated/playground/count-to/number-flow'
-import { Route as AuthenticatedPlaygroundCountToAnimatedCounterRouteImport } from './routes/_authenticated/playground/count-to/animated-counter'
-import { Route as AuthenticatedPlaygroundAiKitMatrixOrbRouteImport } from './routes/_authenticated/playground/ai-kit/matrix-orb'
-import { Route as AuthenticatedPlaygroundAiKitGridRevealRouteImport } from './routes/_authenticated/playground/ai-kit/grid-reveal'
-import { Route as AuthenticatedPlaygroundAiKitFluidOrbRouteImport } from './routes/_authenticated/playground/ai-kit/fluid-orb'
+import { Route as AuthenticatedException404RouteImport } from './routes/_authenticated/exception/404'
+import { Route as AuthenticatedException500RouteImport } from './routes/_authenticated/exception/500'
+import { Route as AuthenticatedOrgChartRouteImport } from './routes/_authenticated/org/chart'
+import { Route as AuthenticatedOrgDeptsRouteImport } from './routes/_authenticated/org/depts'
+import { Route as AuthenticatedOrgDirectoryRouteImport } from './routes/_authenticated/org/directory'
+import { Route as AuthenticatedOrgNoticesRouteImport } from './routes/_authenticated/org/notices'
+import { Route as AuthenticatedOrgPostsRouteImport } from './routes/_authenticated/org/posts'
+import { Route as AuthenticatedPlaygroundCodeBlockRouteImport } from './routes/_authenticated/playground/code-block'
+import { Route as AuthenticatedPlaygroundGithubActivityRouteImport } from './routes/_authenticated/playground/github-activity'
+import { Route as AuthenticatedPlaygroundLoadersRouteImport } from './routes/_authenticated/playground/loaders'
+import { Route as AuthenticatedPlaygroundOkrTreeRouteImport } from './routes/_authenticated/playground/okr-tree'
+import { Route as AuthenticatedPlaygroundThemeSwitchAnimationRouteImport } from './routes/_authenticated/playground/theme-switch-animation'
+import { Route as AuthenticatedSettingsDictsRouteImport } from './routes/_authenticated/settings/dicts'
+import { Route as AuthenticatedSettingsLogsRouteImport } from './routes/_authenticated/settings/logs'
+import { Route as AuthenticatedSettingsMenusRouteImport } from './routes/_authenticated/settings/menus'
+import { Route as AuthenticatedSettingsPermissionsRouteImport } from './routes/_authenticated/settings/permissions'
+import { Route as AuthenticatedSettingsRolesRouteImport } from './routes/_authenticated/settings/roles'
+import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings/users'
 import { Route as AuthenticatedOrgNoticesNoticeIdRouteImport } from './routes/_authenticated/org/notices_.$noticeId'
+import { Route as AuthenticatedPlaygroundAiKitFluidOrbRouteImport } from './routes/_authenticated/playground/ai-kit/fluid-orb'
+import { Route as AuthenticatedPlaygroundAiKitGridRevealRouteImport } from './routes/_authenticated/playground/ai-kit/grid-reveal'
+import { Route as AuthenticatedPlaygroundAiKitMatrixOrbRouteImport } from './routes/_authenticated/playground/ai-kit/matrix-orb'
+import { Route as AuthenticatedPlaygroundCountToAnimatedCounterRouteImport } from './routes/_authenticated/playground/count-to/animated-counter'
+import { Route as AuthenticatedPlaygroundCountToNumberFlowRouteImport } from './routes/_authenticated/playground/count-to/number-flow'
 
-const R500Route = R500RouteImport.update({
-  id: '/500',
-  path: '/500',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const R404Route = R404RouteImport.update({
-  id: '/404',
-  path: '/404',
+const authRouteRoute = authRouteRouteImport.update({
+  id: '/(auth)',
   getParentRoute: () => rootRouteImport,
 } as any)
 const R403Route = R403RouteImport.update({
@@ -59,22 +53,28 @@ const R403Route = R403RouteImport.update({
   path: '/403',
   getParentRoute: () => rootRouteImport,
 } as any)
+const R404Route = R404RouteImport.update({
+  id: '/404',
+  path: '/404',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const R500Route = R500RouteImport.update({
+  id: '/500',
+  path: '/500',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const authRouteRoute = authRouteRouteImport.update({
-  id: '/(auth)',
-  getParentRoute: () => rootRouteImport,
+const authSignInRoute = authSignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => authRouteRoute,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedMyNoticesRoute = AuthenticatedMyNoticesRouteImport.update({
-  id: '/my-notices',
-  path: '/my-notices',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
@@ -82,107 +82,15 @@ const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const authSignInRoute = authSignInRouteImport.update({
-  id: '/sign-in',
-  path: '/sign-in',
-  getParentRoute: () => authRouteRoute,
-} as any)
-const AuthenticatedSettingsUsersRoute =
-  AuthenticatedSettingsUsersRouteImport.update({
-    id: '/settings/users',
-    path: '/settings/users',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedSettingsRolesRoute =
-  AuthenticatedSettingsRolesRouteImport.update({
-    id: '/settings/roles',
-    path: '/settings/roles',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedSettingsPermissionsRoute =
-  AuthenticatedSettingsPermissionsRouteImport.update({
-    id: '/settings/permissions',
-    path: '/settings/permissions',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedSettingsMenusRoute =
-  AuthenticatedSettingsMenusRouteImport.update({
-    id: '/settings/menus',
-    path: '/settings/menus',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedSettingsLogsRoute =
-  AuthenticatedSettingsLogsRouteImport.update({
-    id: '/settings/logs',
-    path: '/settings/logs',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedSettingsDictsRoute =
-  AuthenticatedSettingsDictsRouteImport.update({
-    id: '/settings/dicts',
-    path: '/settings/dicts',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPlaygroundThemeSwitchAnimationRoute =
-  AuthenticatedPlaygroundThemeSwitchAnimationRouteImport.update({
-    id: '/playground/theme-switch-animation',
-    path: '/playground/theme-switch-animation',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPlaygroundOkrTreeRoute =
-  AuthenticatedPlaygroundOkrTreeRouteImport.update({
-    id: '/playground/okr-tree',
-    path: '/playground/okr-tree',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPlaygroundLoadersRoute =
-  AuthenticatedPlaygroundLoadersRouteImport.update({
-    id: '/playground/loaders',
-    path: '/playground/loaders',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPlaygroundGithubActivityRoute =
-  AuthenticatedPlaygroundGithubActivityRouteImport.update({
-    id: '/playground/github-activity',
-    path: '/playground/github-activity',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPlaygroundCodeBlockRoute =
-  AuthenticatedPlaygroundCodeBlockRouteImport.update({
-    id: '/playground/code-block',
-    path: '/playground/code-block',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedOrgPostsRoute = AuthenticatedOrgPostsRouteImport.update({
-  id: '/org/posts',
-  path: '/org/posts',
+const AuthenticatedMyNoticesRoute = AuthenticatedMyNoticesRouteImport.update({
+  id: '/my-notices',
+  path: '/my-notices',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedOrgNoticesRoute = AuthenticatedOrgNoticesRouteImport.update({
-  id: '/org/notices',
-  path: '/org/notices',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedOrgDirectoryRoute =
-  AuthenticatedOrgDirectoryRouteImport.update({
-    id: '/org/directory',
-    path: '/org/directory',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedOrgDeptsRoute = AuthenticatedOrgDeptsRouteImport.update({
-  id: '/org/depts',
-  path: '/org/depts',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedOrgChartRoute = AuthenticatedOrgChartRouteImport.update({
-  id: '/org/chart',
-  path: '/org/chart',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedException500Route =
-  AuthenticatedException500RouteImport.update({
-    id: '/exception/500',
-    path: '/exception/500',
+const AuthenticatedException403Route =
+  AuthenticatedException403RouteImport.update({
+    id: '/exception/403',
+    path: '/exception/403',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedException404Route =
@@ -191,34 +99,108 @@ const AuthenticatedException404Route =
     path: '/exception/404',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedException403Route =
-  AuthenticatedException403RouteImport.update({
-    id: '/exception/403',
-    path: '/exception/403',
+const AuthenticatedException500Route =
+  AuthenticatedException500RouteImport.update({
+    id: '/exception/500',
+    path: '/exception/500',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedPlaygroundCountToNumberFlowRoute =
-  AuthenticatedPlaygroundCountToNumberFlowRouteImport.update({
-    id: '/playground/count-to/number-flow',
-    path: '/playground/count-to/number-flow',
+const AuthenticatedOrgChartRoute = AuthenticatedOrgChartRouteImport.update({
+  id: '/org/chart',
+  path: '/org/chart',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOrgDeptsRoute = AuthenticatedOrgDeptsRouteImport.update({
+  id: '/org/depts',
+  path: '/org/depts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOrgDirectoryRoute =
+  AuthenticatedOrgDirectoryRouteImport.update({
+    id: '/org/directory',
+    path: '/org/directory',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedPlaygroundCountToAnimatedCounterRoute =
-  AuthenticatedPlaygroundCountToAnimatedCounterRouteImport.update({
-    id: '/playground/count-to/animated-counter',
-    path: '/playground/count-to/animated-counter',
+const AuthenticatedOrgNoticesRoute = AuthenticatedOrgNoticesRouteImport.update({
+  id: '/org/notices',
+  path: '/org/notices',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedOrgPostsRoute = AuthenticatedOrgPostsRouteImport.update({
+  id: '/org/posts',
+  path: '/org/posts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPlaygroundCodeBlockRoute =
+  AuthenticatedPlaygroundCodeBlockRouteImport.update({
+    id: '/playground/code-block',
+    path: '/playground/code-block',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedPlaygroundAiKitMatrixOrbRoute =
-  AuthenticatedPlaygroundAiKitMatrixOrbRouteImport.update({
-    id: '/playground/ai-kit/matrix-orb',
-    path: '/playground/ai-kit/matrix-orb',
+const AuthenticatedPlaygroundGithubActivityRoute =
+  AuthenticatedPlaygroundGithubActivityRouteImport.update({
+    id: '/playground/github-activity',
+    path: '/playground/github-activity',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedPlaygroundAiKitGridRevealRoute =
-  AuthenticatedPlaygroundAiKitGridRevealRouteImport.update({
-    id: '/playground/ai-kit/grid-reveal',
-    path: '/playground/ai-kit/grid-reveal',
+const AuthenticatedPlaygroundLoadersRoute =
+  AuthenticatedPlaygroundLoadersRouteImport.update({
+    id: '/playground/loaders',
+    path: '/playground/loaders',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundOkrTreeRoute =
+  AuthenticatedPlaygroundOkrTreeRouteImport.update({
+    id: '/playground/okr-tree',
+    path: '/playground/okr-tree',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundThemeSwitchAnimationRoute =
+  AuthenticatedPlaygroundThemeSwitchAnimationRouteImport.update({
+    id: '/playground/theme-switch-animation',
+    path: '/playground/theme-switch-animation',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSettingsDictsRoute =
+  AuthenticatedSettingsDictsRouteImport.update({
+    id: '/settings/dicts',
+    path: '/settings/dicts',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSettingsLogsRoute =
+  AuthenticatedSettingsLogsRouteImport.update({
+    id: '/settings/logs',
+    path: '/settings/logs',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSettingsMenusRoute =
+  AuthenticatedSettingsMenusRouteImport.update({
+    id: '/settings/menus',
+    path: '/settings/menus',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSettingsPermissionsRoute =
+  AuthenticatedSettingsPermissionsRouteImport.update({
+    id: '/settings/permissions',
+    path: '/settings/permissions',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSettingsRolesRoute =
+  AuthenticatedSettingsRolesRouteImport.update({
+    id: '/settings/roles',
+    path: '/settings/roles',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedSettingsUsersRoute =
+  AuthenticatedSettingsUsersRouteImport.update({
+    id: '/settings/users',
+    path: '/settings/users',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedOrgNoticesNoticeIdRoute =
+  AuthenticatedOrgNoticesNoticeIdRouteImport.update({
+    id: '/org/notices_/$noticeId',
+    path: '/org/notices/$noticeId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPlaygroundAiKitFluidOrbRoute =
@@ -227,10 +209,28 @@ const AuthenticatedPlaygroundAiKitFluidOrbRoute =
     path: '/playground/ai-kit/fluid-orb',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedOrgNoticesNoticeIdRoute =
-  AuthenticatedOrgNoticesNoticeIdRouteImport.update({
-    id: '/org/notices_/$noticeId',
-    path: '/org/notices/$noticeId',
+const AuthenticatedPlaygroundAiKitGridRevealRoute =
+  AuthenticatedPlaygroundAiKitGridRevealRouteImport.update({
+    id: '/playground/ai-kit/grid-reveal',
+    path: '/playground/ai-kit/grid-reveal',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundAiKitMatrixOrbRoute =
+  AuthenticatedPlaygroundAiKitMatrixOrbRouteImport.update({
+    id: '/playground/ai-kit/matrix-orb',
+    path: '/playground/ai-kit/matrix-orb',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundCountToAnimatedCounterRoute =
+  AuthenticatedPlaygroundCountToAnimatedCounterRouteImport.update({
+    id: '/playground/count-to/animated-counter',
+    path: '/playground/count-to/animated-counter',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPlaygroundCountToNumberFlowRoute =
+  AuthenticatedPlaygroundCountToNumberFlowRouteImport.update({
+    id: '/playground/count-to/number-flow',
+    path: '/playground/count-to/number-flow',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -269,13 +269,13 @@ export interface FileRoutesByFullPath {
   '/playground/count-to/number-flow': typeof AuthenticatedPlaygroundCountToNumberFlowRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof AuthenticatedIndexRoute
   '/403': typeof R403Route
   '/404': typeof R404Route
   '/500': typeof R500Route
   '/sign-in': typeof authSignInRoute
   '/account': typeof AuthenticatedAccountRoute
   '/my-notices': typeof AuthenticatedMyNoticesRoute
-  '/': typeof AuthenticatedIndexRoute
   '/exception/403': typeof AuthenticatedException403Route
   '/exception/404': typeof AuthenticatedException404Route
   '/exception/500': typeof AuthenticatedException500Route
@@ -376,13 +376,13 @@ export interface FileRouteTypes {
     | '/playground/count-to/number-flow'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/403'
     | '/404'
     | '/500'
     | '/sign-in'
     | '/account'
     | '/my-notices'
-    | '/'
     | '/exception/403'
     | '/exception/404'
     | '/exception/500'
@@ -456,18 +456,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/500': {
-      id: '/500'
-      path: '/500'
-      fullPath: '/500'
-      preLoaderRoute: typeof R500RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/404': {
-      id: '/404'
-      path: '/404'
-      fullPath: '/404'
-      preLoaderRoute: typeof R404RouteImport
+    '/(auth)': {
+      id: '/(auth)'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof authRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/403': {
@@ -477,6 +470,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof R403RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/404': {
+      id: '/404'
+      path: '/404'
+      fullPath: '/404'
+      preLoaderRoute: typeof R404RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/500': {
+      id: '/500'
+      path: '/500'
+      fullPath: '/500'
+      preLoaderRoute: typeof R500RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
@@ -484,25 +491,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/(auth)': {
-      id: '/(auth)'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof authRouteRouteImport
-      parentRoute: typeof rootRouteImport
+    '/(auth)/sign-in': {
+      id: '/(auth)/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof authSignInRouteImport
+      parentRoute: typeof authRouteRoute
     }
     '/_authenticated/': {
       id: '/_authenticated/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/my-notices': {
-      id: '/_authenticated/my-notices'
-      path: '/my-notices'
-      fullPath: '/my-notices'
-      preLoaderRoute: typeof AuthenticatedMyNoticesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/account': {
@@ -512,137 +512,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/(auth)/sign-in': {
-      id: '/(auth)/sign-in'
-      path: '/sign-in'
-      fullPath: '/sign-in'
-      preLoaderRoute: typeof authSignInRouteImport
-      parentRoute: typeof authRouteRoute
-    }
-    '/_authenticated/settings/users': {
-      id: '/_authenticated/settings/users'
-      path: '/settings/users'
-      fullPath: '/settings/users'
-      preLoaderRoute: typeof AuthenticatedSettingsUsersRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/settings/roles': {
-      id: '/_authenticated/settings/roles'
-      path: '/settings/roles'
-      fullPath: '/settings/roles'
-      preLoaderRoute: typeof AuthenticatedSettingsRolesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/settings/permissions': {
-      id: '/_authenticated/settings/permissions'
-      path: '/settings/permissions'
-      fullPath: '/settings/permissions'
-      preLoaderRoute: typeof AuthenticatedSettingsPermissionsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/settings/menus': {
-      id: '/_authenticated/settings/menus'
-      path: '/settings/menus'
-      fullPath: '/settings/menus'
-      preLoaderRoute: typeof AuthenticatedSettingsMenusRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/settings/logs': {
-      id: '/_authenticated/settings/logs'
-      path: '/settings/logs'
-      fullPath: '/settings/logs'
-      preLoaderRoute: typeof AuthenticatedSettingsLogsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/settings/dicts': {
-      id: '/_authenticated/settings/dicts'
-      path: '/settings/dicts'
-      fullPath: '/settings/dicts'
-      preLoaderRoute: typeof AuthenticatedSettingsDictsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/playground/theme-switch-animation': {
-      id: '/_authenticated/playground/theme-switch-animation'
-      path: '/playground/theme-switch-animation'
-      fullPath: '/playground/theme-switch-animation'
-      preLoaderRoute: typeof AuthenticatedPlaygroundThemeSwitchAnimationRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/playground/okr-tree': {
-      id: '/_authenticated/playground/okr-tree'
-      path: '/playground/okr-tree'
-      fullPath: '/playground/okr-tree'
-      preLoaderRoute: typeof AuthenticatedPlaygroundOkrTreeRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/playground/loaders': {
-      id: '/_authenticated/playground/loaders'
-      path: '/playground/loaders'
-      fullPath: '/playground/loaders'
-      preLoaderRoute: typeof AuthenticatedPlaygroundLoadersRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/playground/github-activity': {
-      id: '/_authenticated/playground/github-activity'
-      path: '/playground/github-activity'
-      fullPath: '/playground/github-activity'
-      preLoaderRoute: typeof AuthenticatedPlaygroundGithubActivityRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/playground/code-block': {
-      id: '/_authenticated/playground/code-block'
-      path: '/playground/code-block'
-      fullPath: '/playground/code-block'
-      preLoaderRoute: typeof AuthenticatedPlaygroundCodeBlockRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/org/posts': {
-      id: '/_authenticated/org/posts'
-      path: '/org/posts'
-      fullPath: '/org/posts'
-      preLoaderRoute: typeof AuthenticatedOrgPostsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/org/notices': {
-      id: '/_authenticated/org/notices'
-      path: '/org/notices'
-      fullPath: '/org/notices'
-      preLoaderRoute: typeof AuthenticatedOrgNoticesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/org/directory': {
-      id: '/_authenticated/org/directory'
-      path: '/org/directory'
-      fullPath: '/org/directory'
-      preLoaderRoute: typeof AuthenticatedOrgDirectoryRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/org/depts': {
-      id: '/_authenticated/org/depts'
-      path: '/org/depts'
-      fullPath: '/org/depts'
-      preLoaderRoute: typeof AuthenticatedOrgDeptsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/org/chart': {
-      id: '/_authenticated/org/chart'
-      path: '/org/chart'
-      fullPath: '/org/chart'
-      preLoaderRoute: typeof AuthenticatedOrgChartRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/exception/500': {
-      id: '/_authenticated/exception/500'
-      path: '/exception/500'
-      fullPath: '/exception/500'
-      preLoaderRoute: typeof AuthenticatedException500RouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/exception/404': {
-      id: '/_authenticated/exception/404'
-      path: '/exception/404'
-      fullPath: '/exception/404'
-      preLoaderRoute: typeof AuthenticatedException404RouteImport
+    '/_authenticated/my-notices': {
+      id: '/_authenticated/my-notices'
+      path: '/my-notices'
+      fullPath: '/my-notices'
+      preLoaderRoute: typeof AuthenticatedMyNoticesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/exception/403': {
@@ -652,32 +526,137 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedException403RouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/playground/count-to/number-flow': {
-      id: '/_authenticated/playground/count-to/number-flow'
-      path: '/playground/count-to/number-flow'
-      fullPath: '/playground/count-to/number-flow'
-      preLoaderRoute: typeof AuthenticatedPlaygroundCountToNumberFlowRouteImport
+    '/_authenticated/exception/404': {
+      id: '/_authenticated/exception/404'
+      path: '/exception/404'
+      fullPath: '/exception/404'
+      preLoaderRoute: typeof AuthenticatedException404RouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/playground/count-to/animated-counter': {
-      id: '/_authenticated/playground/count-to/animated-counter'
-      path: '/playground/count-to/animated-counter'
-      fullPath: '/playground/count-to/animated-counter'
-      preLoaderRoute: typeof AuthenticatedPlaygroundCountToAnimatedCounterRouteImport
+    '/_authenticated/exception/500': {
+      id: '/_authenticated/exception/500'
+      path: '/exception/500'
+      fullPath: '/exception/500'
+      preLoaderRoute: typeof AuthenticatedException500RouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/playground/ai-kit/matrix-orb': {
-      id: '/_authenticated/playground/ai-kit/matrix-orb'
-      path: '/playground/ai-kit/matrix-orb'
-      fullPath: '/playground/ai-kit/matrix-orb'
-      preLoaderRoute: typeof AuthenticatedPlaygroundAiKitMatrixOrbRouteImport
+    '/_authenticated/org/chart': {
+      id: '/_authenticated/org/chart'
+      path: '/org/chart'
+      fullPath: '/org/chart'
+      preLoaderRoute: typeof AuthenticatedOrgChartRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/playground/ai-kit/grid-reveal': {
-      id: '/_authenticated/playground/ai-kit/grid-reveal'
-      path: '/playground/ai-kit/grid-reveal'
-      fullPath: '/playground/ai-kit/grid-reveal'
-      preLoaderRoute: typeof AuthenticatedPlaygroundAiKitGridRevealRouteImport
+    '/_authenticated/org/depts': {
+      id: '/_authenticated/org/depts'
+      path: '/org/depts'
+      fullPath: '/org/depts'
+      preLoaderRoute: typeof AuthenticatedOrgDeptsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/org/directory': {
+      id: '/_authenticated/org/directory'
+      path: '/org/directory'
+      fullPath: '/org/directory'
+      preLoaderRoute: typeof AuthenticatedOrgDirectoryRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/org/notices': {
+      id: '/_authenticated/org/notices'
+      path: '/org/notices'
+      fullPath: '/org/notices'
+      preLoaderRoute: typeof AuthenticatedOrgNoticesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/org/posts': {
+      id: '/_authenticated/org/posts'
+      path: '/org/posts'
+      fullPath: '/org/posts'
+      preLoaderRoute: typeof AuthenticatedOrgPostsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/code-block': {
+      id: '/_authenticated/playground/code-block'
+      path: '/playground/code-block'
+      fullPath: '/playground/code-block'
+      preLoaderRoute: typeof AuthenticatedPlaygroundCodeBlockRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/github-activity': {
+      id: '/_authenticated/playground/github-activity'
+      path: '/playground/github-activity'
+      fullPath: '/playground/github-activity'
+      preLoaderRoute: typeof AuthenticatedPlaygroundGithubActivityRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/loaders': {
+      id: '/_authenticated/playground/loaders'
+      path: '/playground/loaders'
+      fullPath: '/playground/loaders'
+      preLoaderRoute: typeof AuthenticatedPlaygroundLoadersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/okr-tree': {
+      id: '/_authenticated/playground/okr-tree'
+      path: '/playground/okr-tree'
+      fullPath: '/playground/okr-tree'
+      preLoaderRoute: typeof AuthenticatedPlaygroundOkrTreeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/theme-switch-animation': {
+      id: '/_authenticated/playground/theme-switch-animation'
+      path: '/playground/theme-switch-animation'
+      fullPath: '/playground/theme-switch-animation'
+      preLoaderRoute: typeof AuthenticatedPlaygroundThemeSwitchAnimationRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/dicts': {
+      id: '/_authenticated/settings/dicts'
+      path: '/settings/dicts'
+      fullPath: '/settings/dicts'
+      preLoaderRoute: typeof AuthenticatedSettingsDictsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/logs': {
+      id: '/_authenticated/settings/logs'
+      path: '/settings/logs'
+      fullPath: '/settings/logs'
+      preLoaderRoute: typeof AuthenticatedSettingsLogsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/menus': {
+      id: '/_authenticated/settings/menus'
+      path: '/settings/menus'
+      fullPath: '/settings/menus'
+      preLoaderRoute: typeof AuthenticatedSettingsMenusRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/permissions': {
+      id: '/_authenticated/settings/permissions'
+      path: '/settings/permissions'
+      fullPath: '/settings/permissions'
+      preLoaderRoute: typeof AuthenticatedSettingsPermissionsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/roles': {
+      id: '/_authenticated/settings/roles'
+      path: '/settings/roles'
+      fullPath: '/settings/roles'
+      preLoaderRoute: typeof AuthenticatedSettingsRolesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/users': {
+      id: '/_authenticated/settings/users'
+      path: '/settings/users'
+      fullPath: '/settings/users'
+      preLoaderRoute: typeof AuthenticatedSettingsUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/org/notices_/$noticeId': {
+      id: '/_authenticated/org/notices_/$noticeId'
+      path: '/org/notices/$noticeId'
+      fullPath: '/org/notices/$noticeId'
+      preLoaderRoute: typeof AuthenticatedOrgNoticesNoticeIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/playground/ai-kit/fluid-orb': {
@@ -687,11 +666,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaygroundAiKitFluidOrbRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/org/notices_/$noticeId': {
-      id: '/_authenticated/org/notices_/$noticeId'
-      path: '/org/notices/$noticeId'
-      fullPath: '/org/notices/$noticeId'
-      preLoaderRoute: typeof AuthenticatedOrgNoticesNoticeIdRouteImport
+    '/_authenticated/playground/ai-kit/grid-reveal': {
+      id: '/_authenticated/playground/ai-kit/grid-reveal'
+      path: '/playground/ai-kit/grid-reveal'
+      fullPath: '/playground/ai-kit/grid-reveal'
+      preLoaderRoute: typeof AuthenticatedPlaygroundAiKitGridRevealRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/ai-kit/matrix-orb': {
+      id: '/_authenticated/playground/ai-kit/matrix-orb'
+      path: '/playground/ai-kit/matrix-orb'
+      fullPath: '/playground/ai-kit/matrix-orb'
+      preLoaderRoute: typeof AuthenticatedPlaygroundAiKitMatrixOrbRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/count-to/animated-counter': {
+      id: '/_authenticated/playground/count-to/animated-counter'
+      path: '/playground/count-to/animated-counter'
+      fullPath: '/playground/count-to/animated-counter'
+      preLoaderRoute: typeof AuthenticatedPlaygroundCountToAnimatedCounterRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/playground/count-to/number-flow': {
+      id: '/_authenticated/playground/count-to/number-flow'
+      path: '/playground/count-to/number-flow'
+      fullPath: '/playground/count-to/number-flow'
+      preLoaderRoute: typeof AuthenticatedPlaygroundCountToNumberFlowRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
