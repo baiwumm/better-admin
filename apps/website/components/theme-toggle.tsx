@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@heroui/react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -11,6 +12,9 @@ import {
 /**
  * 顶部主题切换
  *
+ * 外观与顶栏其它图标按钮（文档 / 演示 / GitHub）一致：HeroUI `Button isIconOnly`
+ * + `variant="outline"` + `size="sm"`，由按钮自身的 base 样式统一尺寸与描边。
+ *
  * 切换动作走 `theme-switch-animation` 的 view transition 动画：
  * 以这颗按钮为圆心做「圆形模糊扩散」，新主题从按钮位置晕开覆盖整屏；
  * 浏览器不支持 View Transitions、或用户开了 `prefers-reduced-motion` 时，
@@ -21,6 +25,9 @@ import {
  * 因此主题的单一事实源仍然是 next-themes（RootProvider 里配置）。
  * 注意 `disableTransitionOnChange: true` 必须保留——它保证截图前后 DOM 颜色不处于
  * 过渡中间态，否则动画末帧可能露出半透明的旧配色。
+ *
+ * ref 必须是真实 DOM 节点：库要拿它的 `getBoundingClientRect()` 算圆形扩散圆心，
+ * HeroUI 的 Button 会把 ref 透传到内部 `<button>`，所以直接挂上去即可。
  */
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -39,15 +46,16 @@ export function ThemeToggle() {
   });
 
   return (
-    <button
+    <Button
       ref={ref}
+      isIconOnly
       aria-label={isDark ? "切换到浅色主题" : "切换到深色主题"}
-      className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-      type="button"
-      onClick={toggleTheme}
+      size="sm"
+      variant="outline"
+      onPress={toggleTheme}
     >
       {/* 图标表示「点下去会切到哪一档」：亮色显示月亮，暗色显示太阳 */}
-      {isDark ? <Sun size={16} /> : <Moon size={16} />}
-    </button>
+      {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+    </Button>
   );
 }

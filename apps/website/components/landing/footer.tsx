@@ -1,104 +1,105 @@
-"use client";
-
+import { Typography } from "@heroui/react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 import { Logo } from "@/components/logo";
-import { ButtonLink } from "@/components/motion/button/base";
-import { TextScramble } from "@/components/text-scramble";
 import { GithubIcon } from "@/components/ui/brand-icons";
 import { SITE } from "@/lib/site";
 
-/** ogimg 风格页脚：品牌+简介居左、社交图标居右，底行版权 + 乱码渐显署名 */
+const DOC_LINKS = [
+  { label: "项目概览", href: "/docs/" },
+  { label: "快速开始", href: "/docs/start/quick-start/" },
+  { label: "仓库结构", href: "/docs/start/repo/" },
+  { label: "API 架构", href: "/docs/architecture/api/" },
+  { label: "数据库设计", href: "/docs/architecture/database/" },
+  { label: "认证与权限", href: "/docs/architecture/auth/" },
+];
+
+const DEMO_LINKS = [
+  { label: "React 版", href: "https://react.baiwumm.com" },
+  { label: "Vue 版", href: "https://vue.baiwumm.com" },
+  { label: "Next.js 版", href: "https://next.baiwumm.com" },
+  { label: "Nuxt 版", href: "https://nuxt.baiwumm.com" },
+];
+
 export function Footer() {
-  const [isTrigger, setIsTrigger] = useState(false);
-
-  useEffect(() => {
-    const start = () => setIsTrigger(true);
-
-    const initial = setTimeout(start, 300);
-    const interval = setInterval(start, 3500);
-
-    return () => {
-      clearTimeout(initial);
-      clearInterval(interval);
-    };
-  }, []);
-
   return (
-    <footer className="relative z-10 w-full border-t border-dashed border-black/20 dark:border-white/10">
-      <div className="mx-auto px-4 pb-6 pt-12 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-5xl flex-col gap-6">
-          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-            <div className="flex flex-col items-start gap-4">
-              <div className="flex items-center gap-2">
-                <Logo className="rounded-lg" size={32} />
-                <span className="text-xl font-extrabold leading-tight tracking-tight">
-                  Better Admin
-                </span>
-              </div>
-
-              <p className="max-w-md text-base leading-relaxed text-muted-foreground">
-                同一套 Admin
-                产品的多技术栈全栈实现，本站是它的官方开发文档；React 是本项目的
-                UI Source of Truth。
-              </p>
+    <footer className="border-t border-border">
+      <div className="mx-auto w-full max-w-6xl px-6 py-14">
+        <div className="grid gap-10 md:grid-cols-[1.6fr_1fr_1fr]">
+          <div className="flex flex-col items-start gap-4">
+            <div className="flex items-center gap-2">
+              <Logo className="rounded-md" size={26} />
+              <Typography type="body" weight="semibold">
+                Better Admin
+              </Typography>
             </div>
-
-            <nav
-              aria-label="相关链接"
-              className="flex items-center gap-2 md:justify-end md:pt-1"
+            <Typography
+              className="max-w-sm leading-relaxed"
+              color="muted"
+              type="body-xs"
             >
-              <ButtonLink href="/docs/" size="sm" variant="secondary">
-                阅读文档
-              </ButtonLink>
-              <ButtonLink
-                aria-label="Better Admin on GitHub"
-                href={SITE.github}
-                rel="noopener noreferrer"
-                size="icon"
-                target="_blank"
-                variant="secondary"
-              >
-                <GithubIcon className="size-4" />
-              </ButtonLink>
-            </nav>
+              同一套 Admin 产品的多技术栈全栈实现。React 是本项目的 UI Source of
+              Truth，Vue、Next.js、Nuxt 按基准复刻。
+            </Typography>
+            <a
+              className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs text-muted transition-colors hover:text-foreground"
+              href={SITE.github}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <GithubIcon className="size-3.5" />
+              {SITE.repoFullName}
+            </a>
           </div>
 
-          <div className="flex flex-col items-center justify-between gap-4 border-t border-dashed border-black/20 pt-8 text-xs text-muted-foreground sm:flex-row dark:border-white/10">
-            <div>
-              <span>
-                © {new Date().getFullYear()}{" "}
-                <Link
-                  className="text-foreground underline underline-offset-4 transition-colors hover:opacity-80"
-                  href="/"
-                >
-                  Better Admin
-                </Link>
-                . All rights reserved.
-              </span>
-            </div>
+          <nav aria-label="文档" className="flex flex-col gap-3">
+            <Typography className="eyebrow" type="body-xs" weight="semibold">
+              文档
+            </Typography>
+            {DOC_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                className="w-fit text-xs text-muted transition-colors hover:text-foreground"
+                href={link.href}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
 
-            <div className="flex items-center gap-1.5">
-              <span>Built by</span>
+          <nav aria-label="演示站" className="flex flex-col gap-3">
+            <Typography className="eyebrow" type="body-xs" weight="semibold">
+              演示站
+            </Typography>
+            {DEMO_LINKS.map((link) => (
               <a
-                aria-label={`${SITE.owner} 的 GitHub`}
-                className="flex items-center font-medium text-foreground underline underline-offset-4 transition-colors hover:opacity-80"
-                href={SITE.ownerUrl}
+                key={link.href}
+                className="w-fit text-xs text-muted transition-colors hover:text-foreground"
+                href={link.href}
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                <TextScramble
-                  className="inline-block w-[7ch] whitespace-nowrap"
-                  speed={0.02}
-                  trigger={isTrigger}
-                  onScrambleComplete={() => setIsTrigger(false)}
-                >
-                  {SITE.owner}
-                </TextScramble>
+                {link.label}
               </a>
-            </div>
-          </div>
+            ))}
+          </nav>
+        </div>
+
+        <div className="mt-12 flex flex-col gap-2 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <Typography color="muted" type="body-xs">
+            © {new Date().getFullYear()} Better Admin · MIT License
+          </Typography>
+          <Typography color="muted" type="body-xs">
+            Built by{" "}
+            <a
+              className="text-foreground underline underline-offset-4"
+              href={SITE.ownerUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {SITE.owner}
+            </a>
+          </Typography>
         </div>
       </div>
     </footer>

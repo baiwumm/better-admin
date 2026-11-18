@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* HeroUI v3：组件样式与 design tokens（--background / --surface / --accent…） */
+@import "@heroui/styles";
+/* fumadocs 文档区：neutral 基底 + preset，--color-fd-* 变量在下方映射到同一套 token */
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
 
@@ -23,43 +26,47 @@
 }
 
 /*
- * Design tokens：以 ogimg（ogimg.art）的 shadcn neutral + oklch 黑白体系为基准。
- * fumadocs 自身的 --color-fd-* 基底在 :root/.dark 中覆盖为同一套值，
- * 保证首页与文档区是同一套视觉，而不是两套并行变量。
+ * Tailwind 语义层（2026-11-18 HeroUI 接入）
+ *
+ * 组件一律用 HeroUI 的 token class（bg-background / bg-surface / bg-default /
+ * text-muted / text-accent / border-border…）。下面只补两类别名：
+ * 1) 本站既有代码与 fumadocs 仍在用的旧词汇（card / popover / primary / muted-foreground）；
+ * 2) 品牌色 brand 直接指向 HeroUI accent，避免出现第二套品牌变量。
  */
 @theme inline {
   --font-sans: var(--font-sans-stack);
   --font-mono: var(--font-mono-stack);
 
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--surface-foreground);
+  --color-popover: var(--overlay);
+  --color-popover-foreground: var(--overlay-foreground);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-foreground);
+  --color-secondary: var(--surface-secondary);
+  --color-secondary-foreground: var(--surface-secondary-foreground);
+  --color-muted-foreground: var(--muted);
+  --color-destructive: var(--danger);
+  --color-input: var(--border);
+  --color-ring: var(--focus);
+  --color-brand: var(--accent);
+  --color-brand-foreground: var(--accent-foreground);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 3px);
+  --radius-md: calc(var(--radius) - 1px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-xl: calc(var(--radius) + 3px);
+  --radius-2xl: calc(var(--radius) + 6px);
 }
 
 :root {
+  /*
+   * HeroUI 主题切换动画的必需项：theme-switch-animation 的 CIRCLE_BLUR 会以
+   * `::view-transition-new(root)` 做整页快照，根元素没命名的话浏览器不生成根快照，
+   * 圆形扩散看起来就像「没有动画」。名字必须与库的 viewTransitionName 默认值一致。
+   */
+  view-transition-name: root;
+
   /* 全局字体：Maple Mono CN（自托管子集，react/next 端同款），回退系统字体栈 */
   --font-sans-stack:
     "Maple Mono CN", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
@@ -68,44 +75,59 @@
     "Maple Mono CN", ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas,
     "Courier New", monospace;
 
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  /* ===== 亮色档（保留双主题；默认渲染暗色，见 app/layout.tsx） ===== */
+  --background: oklch(0.985 0 0);
   --foreground: oklch(0.145 0 0);
-  /* beUI 组件用实色 bg-card 作底，成立的前提是 card 与 background 有分离度（beui.dev 取 99%/97%） */
-  --card: oklch(0.97 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --surface: oklch(1 0 0);
+  --surface-secondary: oklch(0.96 0 0);
+  --surface-tertiary: oklch(0.94 0 0);
+  --overlay: oklch(1 0 0);
+  --muted: oklch(0.5 0 0);
+  --default: oklch(0.94 0 0);
+  --border: oklch(0.9 0 0);
+  --separator: oklch(0.92 0 0);
 
-  /* 对齐 fumadocs 基底：亮色纯白 */
-  --color-fd-background: oklch(1 0 0);
-  --color-fd-foreground: oklch(0.145 0 0);
-  --color-fd-card: oklch(1 0 0);
-  --color-fd-card-foreground: oklch(0.145 0 0);
-  --color-fd-popover: oklch(1 0 0);
-  --color-fd-popover-foreground: oklch(0.145 0 0);
-  --color-fd-muted: oklch(0.97 0 0);
-  --color-fd-muted-foreground: oklch(0.556 0 0);
-  --color-fd-secondary: oklch(0.97 0 0);
-  --color-fd-secondary-foreground: oklch(0.205 0 0);
-  --color-fd-accent: oklch(0.97 0 0);
-  --color-fd-accent-foreground: oklch(0.205 0 0);
-  --color-fd-primary: oklch(0.205 0 0);
-  --color-fd-primary-foreground: oklch(0.985 0 0);
-  --color-fd-border: oklch(0.922 0 0);
-  --color-fd-ring: oklch(0.708 0 0);
+  /*
+   * 品牌色：VERMILLION（与 token-usage 落地页同一枚朱红，
+   * oklch(55.43% 0.17 32.08) ≈ #b2331f）。HeroUI 的 --accent-hover /
+   * --accent-soft 等派生值都是 color-mix(--accent)，只改这一处即全站同色。
+   */
+  --accent: oklch(0.5543 0.17 32.08);
+  --accent-foreground: oklch(0.985 0 0);
+  --focus: var(--accent);
+  --link: var(--accent);
+
+  /* 文档区：--color-fd-* 全部映射到上面这套 token，首页与文档区同一视觉 */
+  --color-fd-background: var(--background);
+  --color-fd-foreground: var(--foreground);
+  --color-fd-card: var(--surface);
+  --color-fd-card-foreground: var(--surface-foreground);
+  --color-fd-popover: var(--overlay);
+  --color-fd-popover-foreground: var(--overlay-foreground);
+  --color-fd-muted: var(--surface-secondary);
+  --color-fd-muted-foreground: var(--muted);
+  --color-fd-secondary: var(--surface-secondary);
+  --color-fd-secondary-foreground: var(--surface-secondary-foreground);
+  --color-fd-accent: var(--default);
+  --color-fd-accent-foreground: var(--default-foreground);
+  --color-fd-primary: var(--accent);
+  --color-fd-primary-foreground: var(--accent-foreground);
+  --color-fd-border: var(--border);
+  --color-fd-ring: var(--focus);
+  --color-fd-link: var(--accent);
+  --color-fd-link-visited: var(--accent);
+
+  /*
+   * Callout 语义色：fumadocs 自带的是蓝 / 绿 / 橙 / 亮红（#3080ff / #00c758 /
+   * #f99c00 / #fb2c36），与本站朱红体系不同源。这里改指 HeroUI 的语义 token，
+   * 五色仍可区分，但不再引入外来色相。var() 是延迟求值，暗色档自动跟随
+   * HeroUI 在 .dark 里给出的另一套值，不需要在这里再写一遍。
+   */
+  --color-fd-info: var(--accent);
+  --color-fd-success: var(--success);
+  --color-fd-warning: var(--warning);
+  --color-fd-error: var(--danger);
+  --color-fd-idea: var(--warning);
 
   /*
    * 配色板取色（仅供文档站「Design Tokens」页的色板图使用）
@@ -124,43 +146,27 @@
   --swatch-muted: oklch(55.17% 0.003 253.83);
 }
 
+/*
+ * 暗色档：近黑终端底色。HeroUI 的 --surface-hover / --accent-soft 等
+ * 计算色都是 color-mix(… var(--surface) / var(--accent) …)，改源 token 即可联动。
+ */
 .dark {
-  --background: oklch(0.145 0 0);
+  --background: oklch(0.13 0.002 285.89);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --surface: oklch(0.19 0 0);
+  --surface-secondary: oklch(0.23 0 0);
+  --surface-tertiary: oklch(0.26 0 0);
+  --overlay: oklch(0.2 0 0);
+  --muted: oklch(0.708 0 0);
+  --default: oklch(0.26 0 0);
+  --border: oklch(1 0 0 / 12%);
+  --separator: oklch(1 0 0 / 10%);
 
-  /* 对齐 fumadocs 基底：暗色近黑 */
-  --color-fd-background: oklch(0.145 0 0);
-  --color-fd-foreground: oklch(0.985 0 0);
-  --color-fd-card: oklch(0.205 0 0);
-  --color-fd-card-foreground: oklch(0.985 0 0);
-  --color-fd-popover: oklch(0.205 0 0);
-  --color-fd-popover-foreground: oklch(0.985 0 0);
-  --color-fd-muted: oklch(0.269 0 0);
-  --color-fd-muted-foreground: oklch(0.708 0 0);
-  --color-fd-secondary: oklch(0.269 0 0);
-  --color-fd-secondary-foreground: oklch(0.985 0 0);
-  --color-fd-accent: oklch(0.269 0 0);
-  --color-fd-accent-foreground: oklch(0.985 0 0);
-  --color-fd-primary: oklch(0.985 0 0);
-  --color-fd-primary-foreground: oklch(0.205 0 0);
-  --color-fd-border: oklch(1 0 0 / 10%);
-  --color-fd-ring: oklch(0.556 0 0);
+  /* 朱红在暗底保持同一 hue，仅沿用参考站的亮度，不另调一套色 */
+  --accent: oklch(0.5543 0.17 32.08);
+  --accent-foreground: oklch(0.985 0 0);
+  --focus: var(--accent);
+  --link: var(--accent);
 
   /* 配色板取色（暗色档，镜像 theme.css 的 .dark 分支） */
   --swatch-background: oklch(12% 0.0015 253.83);
@@ -169,6 +175,15 @@
   --swatch-border: oklch(28% 0.0015 253.83);
   --swatch-foreground: oklch(99.11% 0.0015 253.83);
   --swatch-muted: oklch(70.5% 0.003 253.83);
+}
+
+/*
+ * 文档正文链接：fumadocs 的 typography 层把 `--tw-prose-links` 设成了前景色，
+ * 正文里的 `[文字](/path)` 会和普通文字同色（只有下划线）。这里改回品牌朱红，
+ * 与首页链接一致。写成无层规则，优先级高于 fumadocs 的 utilities 层。
+ */
+.prose {
+  --tw-prose-links: var(--accent);
 }
 
 @layer base {
@@ -180,12 +195,16 @@
     background-color: var(--background);
     color: var(--foreground);
   }
+
+  /* 键盘焦点统一走品牌色 */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 
 /*
  * 滚动条：10px 轨道内用「透明描边 + content-box 裁切」各留 2px 呼吸，实际滑块 6px 圆角。
- * 颜色跟随 --muted-foreground，亮/暗两态自动适配；hover 加深一档。
- *
  * 刻意放在 @layer base 之外（无层规则优先级高于任何层）：fumadocs 在
  * `@layer utilities` 里给 `.fd-scroll-container` 自带了 5px 滚动条，若写进 base 层会被它盖掉。
  */
@@ -204,7 +223,7 @@
   /* 旧引擎不吃 color-mix 时回落到上一行 oklch，属刻意兜底 */
   background-color: color-mix(
     in oklab,
-    var(--muted-foreground) 40%,
+    var(--muted) 40%,
     transparent
   );
   background-clip: content-box;
@@ -214,11 +233,7 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: oklch(0.556 0 0 / 0.7);
-  background-color: color-mix(
-    in oklab,
-    var(--muted-foreground) 70%,
-    transparent
-  );
+  background-color: color-mix(in oklab, var(--muted) 70%, transparent);
 }
 
 /* Chrome 121+ 一旦设了非 auto 的 scrollbar-color，就会忽略上面整套 ::-webkit-scrollbar 自绘；
@@ -226,231 +241,82 @@
 @supports not selector(::-webkit-scrollbar) {
   html {
     scrollbar-width: thin;
-    scrollbar-color: var(--muted-foreground) transparent;
+    scrollbar-color: var(--muted) transparent;
   }
 }
 
-/* 首页入场动效（克制的 fade-up，替代 motion 库） */
-@keyframes fade-up {
+/* ==========================================================================
+ * 编辑器式排版工具层
+ *
+ * 层级只靠字号 / 字距 / hairline 建立；质感来自终端窗口与朱红标记，
+ * 不使用卡片阴影与 hover 倾斜。
+ * ========================================================================== */
+@layer components {
+  /* 小节眉标：等宽 + 大字距 + 朱红，对应参考站的 `01 / 接入` 式编号 */
+  .eyebrow {
+    font-family: var(--font-mono-stack);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  /* 终端 / 规格表外框：单层 hairline + 表面色，不带阴影 */
+  .frame {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background-color: var(--surface);
+  }
+
+  /* 键值行：左侧等宽标签、右侧说明，行间 hairline */
+  .spec-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 1rem;
+    border-top: 1px solid
+      color-mix(in oklab, var(--foreground) 8%, transparent);
+  }
+
+  .spec-row:first-child {
+    border-top: 0;
+  }
+}
+
+/* 首页入场：blur → clear，一次性的克制动效（延迟由各元素内联指定） */
+@keyframes reveal {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    filter: blur(10px);
+    transform: translateY(10px);
   }
 
   to {
     opacity: 1;
+    filter: blur(0);
     transform: none;
   }
 }
 
-.animate-fade-up {
-  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+.reveal {
+  animation: reveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.animate-fade-up-delay-1 {
-  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
-}
-
-.animate-fade-up-delay-2 {
-  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
-}
-
-.animate-fade-up-delay-3 {
-  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.24s both;
-}
-
-.animate-fade-up-delay-4 {
-  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.32s both;
-}
-
-/* ==========================================================================
- * 首页「高级感」容器层（卡片 / 面板 / 图标底 / 导航 / 主视觉窗口）
- *
- * 设计约束：本层保持 ogimg 式纯黑白极简基调，**自身不引入任何彩色**。
- * 质感全部来自光影层次——多层阴影、顶部内高光、渐变描边；
- * hover 反馈统一由外层 TiltCard 提供（倾斜 + 光斑），本层不再自带 hover 样式。
- * 全部用 var(--foreground / --card / --muted / --border) 推导，
- * 因此亮暗两档自动适配，不维护第二套变量。
- *
- * 彩色唯一的例外来自 beUI 组件（`components/motion/**`）的原生状态色——
- * 例如 `AnimatedBadge` 的 success emerald / warning amber。按「用库就沿用库的
- * 默认风格、不做贴合覆写」的既定口径保留，需要新组件时优先走 beUI 而不是回到自绘。
- * ========================================================================== */
-@layer components {
-  /* 高级感卡片：细描边 + 纵向渐变面 + 顶高光（圆角对齐 beUI 卡片 1.5rem 档），
-     hover 反馈由外层 TiltCard 提供 */
-  .card-premium {
-    position: relative;
-    border-radius: 1.5rem;
-    border: 1px solid var(--border);
-    background-image: linear-gradient(
-      180deg,
-      var(--card),
-      color-mix(in oklab, var(--muted) 55%, var(--card))
-    );
-    box-shadow:
-      0 1px 2px color-mix(in oklab, black 4%, transparent),
-      0 10px 26px -16px color-mix(in oklab, black 20%, transparent);
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
   }
 
-  .card-premium::before {
-    content: "";
-    position: absolute;
-    inset-inline: 0;
-    top: 0;
-    height: 1px;
-    border-start-start-radius: 1.5rem;
-    border-start-end-radius: 1.5rem;
-    background-image: linear-gradient(
-      90deg,
-      transparent,
-      color-mix(in oklab, white 75%, transparent),
-      transparent
-    );
-    pointer-events: none;
+  /* 全局兜底：一条规则覆盖全站，不依赖每个文件自带 motion-reduce 变体 */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-
-  .dark .card-premium::before {
-    background-image: linear-gradient(
-      90deg,
-      transparent,
-      color-mix(in oklab, white 22%, transparent),
-      transparent
-    );
-  }
-
-  .dark .card-premium {
-    box-shadow:
-      0 1px 2px color-mix(in oklab, black 35%, transparent),
-      0 10px 26px -16px color-mix(in oklab, black 65%, transparent);
-  }
-
-  /* 图标容器：让图标有「嵌进去」的立体感
-     -sm 为卡片头部的小号变体（技术栈图标用），质感与 .icon-tile 完全一致 */
-  .icon-tile,
-  .icon-tile-sm {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--border);
-    background-image: linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--card), white 10%),
-      var(--muted)
-    );
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 70%, transparent),
-      0 1px 2px color-mix(in oklab, black 7%, transparent);
-  }
-
-  .icon-tile {
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: 0.875rem;
-  }
-
-  .icon-tile-sm {
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 0.75rem;
-  }
-
-  .dark .icon-tile,
-  .dark .icon-tile-sm {
-    background-image: linear-gradient(
-      180deg,
-      color-mix(in oklab, white 9%, transparent),
-      color-mix(in oklab, white 3%, transparent)
-    );
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 12%, transparent),
-      0 1px 2px color-mix(in oklab, black 40%, transparent);
-  }
-
-  /* 大面板（CTA / 页脚品牌区）：带内发光与渐变描边的容器 */
-  .panel-premium {
-    position: relative;
-    overflow: hidden;
-    border-radius: 1.5rem;
-    border: 1px solid var(--border);
-    background-image:
-      radial-gradient(
-        120% 90% at 50% -20%,
-        color-mix(in oklab, var(--foreground) 7%, transparent),
-        transparent 60%
-      ),
-      linear-gradient(
-        180deg,
-        var(--card),
-        color-mix(in oklab, var(--muted) 65%, var(--card))
-      );
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 65%, transparent),
-      0 1px 2px color-mix(in oklab, black 4%, transparent),
-      0 30px 60px -34px color-mix(in oklab, black 26%, transparent);
-  }
-
-  .dark .panel-premium {
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 10%, transparent),
-      0 1px 2px color-mix(in oklab, black 40%, transparent),
-      0 30px 60px -34px color-mix(in oklab, black 85%, transparent);
-  }
-
-  /* 主视觉窗口外框：多层阴影营造「悬浮玻璃」层感 */
-  .window-premium {
-    border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
-    background-color: var(--card);
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 70%, transparent),
-      0 1px 2px color-mix(in oklab, black 6%, transparent),
-      0 24px 48px -24px color-mix(in oklab, black 26%, transparent),
-      0 60px 120px -60px color-mix(in oklab, black 34%, transparent);
-  }
-
-  .dark .window-premium {
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 10%, transparent),
-      0 1px 2px color-mix(in oklab, black 45%, transparent),
-      0 24px 48px -24px color-mix(in oklab, black 70%, transparent),
-      0 60px 120px -60px color-mix(in oklab, black 90%, transparent);
-  }
-
-  /* 顶部导航：更通透的玻璃 + 渐变描边 */
-  .navbar-premium {
-    border: 1px solid color-mix(in oklab, var(--foreground) 11%, transparent);
-    background-image: linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--card) 86%, transparent),
-      color-mix(in oklab, var(--card) 68%, transparent)
-    );
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 65%, transparent),
-      0 1px 2px color-mix(in oklab, black 6%, transparent),
-      0 16px 40px -22px color-mix(in oklab, black 30%, transparent);
-    backdrop-filter: blur(18px) saturate(150%);
-  }
-
-  .dark .navbar-premium {
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 9%, transparent),
-      0 1px 2px color-mix(in oklab, black 45%, transparent),
-      0 16px 40px -22px color-mix(in oklab, black 75%, transparent);
-  }
-}
-
-/* 主视觉背后的极淡点阵，给大面积留白一点材质 */
-.dot-grid {
-  background-image: radial-gradient(
-    color-mix(in oklab, var(--foreground) 14%, transparent) 1px,
-    transparent 1px
-  );
-  background-size: 22px 22px;
-  -webkit-mask-image: radial-gradient(
-    60% 55% at 50% 45%,
-    black,
-    transparent 78%
-  );
-  mask-image: radial-gradient(60% 55% at 50% 45%, black, transparent 78%);
 }

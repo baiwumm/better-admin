@@ -1,13 +1,14 @@
-import LightRays from "@/components/background/light-ray";
-import { JsonLd } from "@/components/seo/json-ld";
-import { FAQ_ITEMS } from "@/lib/faq";
-import { Footer } from "@/components/landing/footer";
 import { Cta } from "@/components/landing/cta";
+import { Demo } from "@/components/landing/demo";
 import { Faq } from "@/components/landing/faq";
 import { Features } from "@/components/landing/features";
+import { Footer } from "@/components/landing/footer";
 import { Hero } from "@/components/landing/hero";
 import { Navbar } from "@/components/landing/navbar";
+import { QuickStart } from "@/components/landing/quick-start";
 import { Stacks } from "@/components/landing/stacks";
+import { JsonLd } from "@/components/seo/json-ld";
+import { FAQ_ITEMS } from "@/lib/faq";
 
 const FAQ_JSON_LD = {
   "@context": "https://schema.org",
@@ -22,31 +23,21 @@ const FAQ_JSON_LD = {
   })),
 };
 
+/**
+ * 首页（2026-11-18 重构）：编辑器式单页叙事，全部段落以 hairline 分隔。
+ * 导航 → Hero（规格表 + 数据行）→ 快速开始 → 演示 → 五端 → 约定 → CTA → FAQ → 页脚。
+ */
 export default function HomePage() {
   return (
-    <div className="relative isolate overflow-hidden">
+    <div className="flex min-h-screen flex-col">
       <JsonLd data={FAQ_JSON_LD} />
-      {/*
-        背景光效：固定视口、z-0，压在 main(z-10) 之下。
-        调参说明：这片光在白色底上会同时带来"光束"和"灰纱"两种观感，
-        片元着色器还会把 alpha 与 rgb 独立缩放，铺满后整页像蒙了层纱。
-        因此这里刻意收着用——`opacity` 降低整体强度、`rayLength` 收窄影响范围，
-        只留首屏顶部那束光，别再往页面下半部渗。
-      */}
-      <LightRays
-        followMouse
-        className="fixed inset-0 z-0 opacity-65"
-        rayLength={1.5}
-        raysOrigin="top-center"
-      />
       <Navbar />
-      <main className="relative z-10">
+      <main className="flex-1">
         <Hero />
-        <div className="mx-auto max-w-5xl border-b border-dashed" />
-        <Features />
-        <div className="mx-auto max-w-5xl border-b border-dashed" />
+        <QuickStart />
+        <Demo />
         <Stacks />
-        <div className="mx-auto max-w-5xl border-b border-dashed" />
+        <Features />
         <Cta />
         <Faq />
       </main>

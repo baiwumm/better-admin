@@ -8,6 +8,7 @@
  * 那是整站手感的改动，也和 fumadocs 的 sticky 导航/侧边栏有冲突面，需要单独评估。
  */
 
+import { cn } from "@heroui/react";
 import { ArrowUp } from "lucide-react";
 import {
   AnimatePresence,
@@ -18,8 +19,6 @@ import {
   useTransform,
 } from "motion/react";
 import { useState } from "react";
-
-import { cn } from "@/lib/utils";
 
 const RADIUS = 20;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;

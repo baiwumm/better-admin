@@ -38,9 +38,9 @@ export function PromoVideo() {
   }, []);
 
   return (
-    <div ref={wrapRef} className="mx-auto mt-20 max-w-4xl">
-      <div className="animate-fade-up-delay-4">
-        <div className="window-premium overflow-hidden rounded-2xl text-left">
+    <div ref={wrapRef} className="mx-auto mt-10 max-w-5xl">
+      <div>
+        <div className="frame text-left">
           <div className="relative aspect-video bg-black">
             {armed ? (
               // 宣传片没有对白，只有画面与文字演示；原生 controls 已提供播控

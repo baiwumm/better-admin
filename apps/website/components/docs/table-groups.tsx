@@ -34,7 +34,7 @@ const TABLE_GROUPS: { title: string; tables: string[] }[] = [
  * 表名以 chip 流式排列（短名并排、长名单行），各域卡片高度随表数自适应，
  * `items-start` 不做同行等高拉伸——等高会让短域卡内重新出现大片空白。
  *
- * 样式全部走 globals.css `@theme inline` 的语义 token（bg-card / bg-muted /
+ * 样式全部走 globals.css `@theme inline` 的语义 token（bg-card / bg-default /
  * border / text-muted-foreground），亮暗主题自动适配。表名刻意用 `<span class="font-mono">`
  * 而非 `<code>`——prose 对行内代码有默认底色与边框，会叠在 chip 样式上；
  * 根节点加 `not-prose` 并全部用 div/span，彻底绕开 prose 的元素级样式。
@@ -53,7 +53,7 @@ export function TableGroupsDiagram() {
             key={group.title}
             className="overflow-hidden rounded-xl border bg-card"
           >
-            <div className="flex items-center justify-between gap-2 border-b bg-muted/50 px-3 py-2">
+            <div className="flex items-center justify-between gap-2 border-b bg-surface-secondary px-3 py-2">
               <span className="text-[13px] font-semibold text-foreground">
                 {group.title}
               </span>
@@ -65,7 +65,7 @@ export function TableGroupsDiagram() {
               {group.tables.map((table) => (
                 <span
                   key={table}
-                  className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] leading-4 text-muted-foreground"
+                  className="rounded-md bg-default px-1.5 py-0.5 font-mono text-[11px] leading-4 text-muted-foreground"
                 >
                   {table}
                 </span>

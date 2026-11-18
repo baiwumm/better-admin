@@ -82,15 +82,18 @@ const SITE_JSON_LD = {
 } as const;
 
 export const viewport: Viewport = {
+  // 双主题保留，但默认渲染暗色（暗黑终端底 + 朱红），亮色仍可手动切换
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#252525" },
+    { media: "(prefers-color-scheme: light)", color: "#fbfbfb" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0b" },
   ],
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html suppressHydrationWarning lang="zh-CN">
+    // className="dark" 写进 SSR 产物：首帧即暗色，避免主题脚本接管前闪白。
+    // next-themes 仍是唯一主题真源，用户点切换后改成 light 并写入 localStorage。
+    <html suppressHydrationWarning className="dark" lang="zh-CN">
       <body className="flex min-h-screen flex-col font-sans antialiased">
         <JsonLd data={SITE_JSON_LD} />
         <RootProvider
@@ -100,8 +103,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           search={{ options: { type: "static", api: "/api/search" } }}
           theme={{
             attribute: "class",
-            defaultTheme: "system",
-            enableSystem: true,
+            defaultTheme: "dark",
+            enableSystem: false,
             disableTransitionOnChange: true,
           }}
         >
