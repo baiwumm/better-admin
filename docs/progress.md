@@ -2,6 +2,13 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### README 语言结构与仓库设置收口（2026-11-18）
+
+- **根 README**：`README.md` 改为英文默认页，中文迁至 `README.zh-CN.md`，两页顶部双向切换；删除 `README.en.md`。
+- **应用 README**：`apps/react`、`apps/vue`、`apps/next`、`apps/nuxt`、`apps/nest` 五个技术栈项目改为英文单语；`apps/website` 作为文档站保持中文。
+- **GitHub 仓库设置**：About 描述改为英文；Topics 由 8 个扩到 20 个（补 admin、admin-template、full-stack、postgresql、rbac、openapi、typescript、monorepo、react、vue、nextjs、nuxt）；Homepage 仍指向文档站。
+- **验证**：中英文 README 切换链接、五个应用 README 的相对链接均检查通过；英文 README 已无中文残留（仅切换入口的“简体中文”文案保留）。
+
 ### GitHub README SEO 同步（2026-11-18）
 
 - **背景**：把根 README（中英文）纳入同一轮 SEO 审计，补齐仓库页面对搜索引擎与 AI 的可读信息。
