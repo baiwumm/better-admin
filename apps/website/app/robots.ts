@@ -10,6 +10,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      // 搜索索引是构建期静态 JSON，不是页面，避免爬虫把 /api/search 当正文抓取
+      disallow: "/api/",
     },
     sitemap: new URL("/sitemap.xml", SITE.url).toString(),
   };

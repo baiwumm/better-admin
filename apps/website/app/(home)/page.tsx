@@ -1,4 +1,6 @@
 import LightRays from "@/components/background/light-ray";
+import { JsonLd } from "@/components/seo/json-ld";
+import { FAQ_ITEMS } from "@/lib/faq";
 import { Footer } from "@/components/landing/footer";
 import { Cta } from "@/components/landing/cta";
 import { Faq } from "@/components/landing/faq";
@@ -7,9 +9,23 @@ import { Hero } from "@/components/landing/hero";
 import { Navbar } from "@/components/landing/navbar";
 import { Stacks } from "@/components/landing/stacks";
 
+const FAQ_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ_ITEMS.map((item) => ({
+    "@type": "Question",
+    name: item.title,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.content,
+    },
+  })),
+};
+
 export default function HomePage() {
   return (
     <div className="relative isolate overflow-hidden">
+      <JsonLd data={FAQ_JSON_LD} />
       {/*
         背景光效：固定视口、z-0，压在 main(z-10) 之下。
         调参说明：这片光在白色底上会同时带来"光束"和"灰纱"两种观感，

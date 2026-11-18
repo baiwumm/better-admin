@@ -13,10 +13,14 @@ describe("robots", () => {
     expect(dynamic).toBe("force-static");
   });
 
-  it("允许全部 UA 抓取，sitemap 指向本站绝对地址", () => {
+  it("允许全部 UA 抓取页面，但排除 /api/ 索引", () => {
     const result = robots();
 
-    expect(result.rules).toEqual({ userAgent: "*", allow: "/" });
+    expect(result.rules).toEqual({
+      userAgent: "*",
+      allow: "/",
+      disallow: "/api/",
+    });
     expect(result.sitemap).toBe("https://better-admin.baiwumm.com/sitemap.xml");
     // sitemap 地址必须与 SITE.url 同源派生（换域名只改一处）
     expect(result.sitemap).toBe(new URL("/sitemap.xml", SITE.url).toString());

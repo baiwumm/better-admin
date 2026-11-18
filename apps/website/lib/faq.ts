@@ -1,0 +1,61 @@
+import { SITE } from "@/lib/site";
+
+/**
+ * 首页 FAQ 真源：页面手风琴与 FAQPage JSON-LD 共用同一份数据，
+ * 保证结构化标记与可见内容一致。
+ */
+export const FAQ_ITEMS = [
+  {
+    value: "what-is",
+    title: "Better Admin 是什么？",
+    content:
+      "一套使用 React、Vue、Next.js、Nuxt 与 NestJS 分别实现的全栈 Admin 系统——同一套产品、同一套 UI、同一套业务逻辑、同一套数据库，各技术栈独立实现、独立部署。",
+  },
+  {
+    value: "why-multi-stack",
+    title: "为什么要用多种技术栈重复实现同一套系统？",
+    content:
+      "目的是验证同一套产品在不同技术栈下的完整落地路径，沉淀可对照参考的实现范例。各应用独立运行、独立构建、独立部署，不因多实现而产生技术栈耦合。",
+  },
+  {
+    value: "shared-database",
+    title: "五个版本共用数据库吗？",
+    content:
+      "是。全部版本共用同一个 Supabase 托管的 PostgreSQL 数据库，ORM 统一为 Drizzle，Schema、数据模型、业务规则、数据类型与 API Contract 五项跨栈保持一致。迁移只在 NestJS 端发起。",
+  },
+  {
+    value: "ui-consistency",
+    title: "不同技术栈的 UI 如何保持一致？",
+    content:
+      "React 版本是项目的 UI Source of Truth：页面结构、组件行为、交互与 Design Tokens 均以它为基准，其余技术栈按基准复刻。React 与 Next.js 用 Hero UI，Vue 与 Nuxt 用 Nuxt UI v4，组件库不同但视觉与交互对齐；功能对齐优先于像素级对齐。",
+  },
+  {
+    value: "api-contract",
+    title: "API 契约在哪里定义？",
+    content:
+      "OpenAPI 是 API Contract 的唯一事实来源（apps/nest/openapi/openapi.yaml），先定义 Contract 再实现。React / Vue 走 NestJS REST API，Next.js / Nuxt 各自实现同等契约的 Server API。改契约前必须逐端评估影响面。",
+  },
+  {
+    value: "auth-rbac",
+    title: "认证与权限是怎么实现的？",
+    content:
+      "认证由应用自身实现（JWT 双 Token 会话），不依赖 Supabase Auth；权限模型为 RBAC（用户 ↔ 角色 ↔ 权限位掩码），10 个权限点各占一个二进制位。服务端通过权限守卫强制校验 API 权限，前端路由守卫只是体验层。",
+  },
+  {
+    value: "function-parity",
+    title: "四个前端的功能对齐到什么程度了？",
+    content:
+      "共 29 项功能，四个前端均为 29 / 29，功能已全部对齐。差异只剩两处有意保留的架构选择：Next.js 无页面保活原语、认证载体用 httpOnly Cookie 而非 Bearer——契约与功能完全一致。",
+  },
+  {
+    value: "open-source",
+    title: "免费开源吗？代码在哪里？",
+    content: `是，代码开源于 GitHub（${SITE.repoFullName}），可以自由学习、参考与贡献，欢迎提交 Issue 与 Pull Request。`,
+  },
+  {
+    value: "docs-source",
+    title: "这个文档站的内容来自哪里？",
+    content:
+      "本站的文档是为读者单独整理、精编的，不是仓库文档的整篇搬运——每页只留重点、配图与核心代码。仓库里的 docs/ 面向开发者与 AI Agent，规则更细、篇幅更长；两处各自维护，不互相同步。",
+  },
+] as const;

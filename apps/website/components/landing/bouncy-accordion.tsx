@@ -203,7 +203,11 @@ function BouncyAccordionRow({
           initial={false}
           layout="size"
           role="region"
-          style={{ height: open && item.description ? contentHeight : 0 }}
+          // SSR 首帧尚未测量高度：展开项先用 auto，保证无 JS 也能读到答案；
+          // 客户端测量完成后切换为具体像素值，关闭动画仍然可用
+          style={{
+            height: open && item.description ? contentHeight || "auto" : 0,
+          }}
           transition={
             reduce
               ? { duration: 0 }

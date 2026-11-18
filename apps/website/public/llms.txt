@@ -1,0 +1,36 @@
+# Better Admin
+
+> Better Admin 是一套同一产品、同一套 UI、同一套业务逻辑、同一套数据库，分别用 React、Vue、Next.js、Nuxt 与 NestJS 实现的全栈 Admin 系统。本文件为 AI 系统提供站点概览与关键页面入口。
+
+## 文档
+
+- [项目概览](https://better-admin.baiwumm.com/docs/)
+- [快速开始](https://better-admin.baiwumm.com/docs/start/quick-start/)
+- [仓库结构](https://better-admin.baiwumm.com/docs/start/repo/)
+- [API 契约与错误码规范](https://better-admin.baiwumm.com/docs/architecture/api/)
+- [JWT 认证与 RBAC 权限](https://better-admin.baiwumm.com/docs/architecture/auth/)
+- [PostgreSQL 数据库设计](https://better-admin.baiwumm.com/docs/architecture/database/)
+- [UI 规范与 Design Tokens](https://better-admin.baiwumm.com/docs/design/ui/)
+- [React Admin 实现](https://better-admin.baiwumm.com/docs/frontends/react/)
+- [Vue Admin 实现](https://better-admin.baiwumm.com/docs/frontends/vue/)
+- [Next.js Admin 实现](https://better-admin.baiwumm.com/docs/frontends/next/)
+- [Nuxt Admin 实现](https://better-admin.baiwumm.com/docs/frontends/nuxt/)
+- [四端功能对齐矩阵](https://better-admin.baiwumm.com/docs/progress/feature-matrix/)
+- [项目路线图与上线记录](https://better-admin.baiwumm.com/docs/progress/roadmap/)
+
+## 演示站
+
+- [React 演示](https://react.baiwumm.com)
+- [Vue 演示](https://vue.baiwumm.com)
+- [Next.js 演示](https://next.baiwumm.com)
+- [Nuxt 演示](https://nuxt.baiwumm.com)
+- [NestJS 接口文档](https://nest.baiwumm.com/docs)
+
+## 源码
+
+- [GitHub 仓库](https://github.com/baiwumm/better-admin)
+
+## 说明
+
+- 文档站内容为面向读者的精编版；仓库 `docs/` 面向开发者与 AI Agent，规则更细、篇幅更长，两处独立维护。
+- 所有版本共用同一个 PostgreSQL 数据库，ORM 统一为 Drizzle，API Contract 以 OpenAPI 为唯一事实来源。
