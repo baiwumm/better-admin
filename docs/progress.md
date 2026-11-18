@@ -2,6 +2,12 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 安全依赖批次四：Nest 与数据层依赖（2026-11-18）
+
+- **Nest**：`@nestjs/schedule` `12.0.4`、`@nestjs/throttler` `6.8.0`、`@scalar/nestjs-api-reference` `1.2.38`、`drizzle-orm` `0.45.4`、`@supabase/supabase-js` `2.119.0`、`pg` `8.23.1`、`nanoid` `6.0.2`、`express` `5.3.0`、`@types/multer` `2.3.0`、`pinyin-pro` `3.29.5`、`typescript-eslint` `8.73.0`。
+- **数据层对齐**：Next / Nuxt 同步 `@supabase/supabase-js` `2.119.0`、`drizzle-orm` `0.45.4`、`nanoid` `6.0.2`；Next 的 `pg` 同步 `8.23.1`。
+- **验证**：Nest lint / build 通过；Nest e2e 本机仍因 `DATABASE_TEST_URL` 未设置无法运行（既有环境限制，CI 容器方案覆盖）；Next lint / build / test（43）全绿；Nuxt lint / build / test 全绿；Nest / Next `pnpm peers check` 通过，Nuxt 仍有既有 `@emnapi` 传递 peer 告警。
+
 ### 安全依赖批次三：Vue / Nuxt 框架与 UI 生态（2026-11-18）
 
 - **Vue**：`@nuxt/ui` → `4.12.2`、`vue` → `3.5.45`、`vue-router` → `5.5.1`、`@unovis/ts` / `@unovis/vue` → `1.8.1`、`pinia` → `4.1.0`、`reka-ui` → `2.11.0`。
