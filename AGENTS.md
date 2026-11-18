@@ -73,12 +73,7 @@ better-admin/
 
 - **Conventional Commits**：`feat / fix / docs / style / refactor / perf / test / chore / build / ci`；描述用中文，格式 `<type>: <简短描述>`（如 `feat: 用户管理新增分页功能`）。
 - 提交前保持代码可构建、测试通过；**单次提交单一目的**。
-- **AI 参与提交必须带 trailer**：正文后空一行，追加连续的 trailer 块；`Co-authored-by` 只写产品名与 registry 邮箱（模型名不得写进姓名），模型名只进 `Assisted-by` 的 `host:model`；人工独立完成的提交不加 AI trailer：
-
-  ```text
-  Co-authored-by: Trae <trae-agent@users.noreply.github.com>
-  Assisted-by: Trae Agent:<当前模型名>
-  ```
+- **AI 参与提交必须带 trailer**：正文后空一行，追加连续的 trailer 块；具体写法（`Co-authored-by` 只写产品名与 registry 邮箱，模型名不得写进姓名；模型名只进 `Assisted-by` 的 `host:model`）、身份表与校验流程一律以 `ai-commit-trailer` skill 为唯一规范，本文不重复其定义；`Co-authored-by` 的身份按**实际运行本次会话的产品**从 `references/agents.json` 匹配（Codebuff / Trae 等各有自己的 registry 邮箱），不得照抄其它产品的身份；人工独立完成的提交不加 AI trailer。
 
 - **提交前自检**：用 `ai-commit-trailer` Skill 的 `normalize.mjs check --message <文件>` 校验，exit 0 才算通过（`fix --write` 可自动归位 trailer）。
 - **历史不可随意重写**：已推送的提交不回改；重写未推送历史必须由用户明确要求，并先建备份分支。
