@@ -45,7 +45,7 @@
 ## 🎬 Promo video
 
 <p align="center">
-  <video src="https://github.com/user-attachments/assets/0b435f29-608a-406f-b586-b0a21b941825" width="90%" controls muted playsinline></video>
+  <video src="https://github.com/user-attachments/assets/79289879-3fe4-468a-893b-e39427e63c27" width="90%" controls muted playsinline></video>
 </p>
 
 ## ✨ Highlights
