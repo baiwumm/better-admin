@@ -42,8 +42,6 @@
   📈 <a href="docs/progress.md">Progress log</a>
 </p>
 
-> This is a condensed English README. See [README.zh-CN.md](./README.zh-CN.md) for the full version.
-
 ## 🎬 Promo video
 
 <p align="center">
