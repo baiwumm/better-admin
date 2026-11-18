@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { RootProvider } from "fumadocs-ui/provider/next";
 
 import { ScrollTop } from "@/components/motion/scroll-top";
+import { JsonLd } from "@/components/seo/json-ld";
 import { UI_TRANSLATIONS } from "@/lib/i18n";
 import { SITE } from "@/lib/site";
 import "./globals.css";
@@ -49,6 +50,35 @@ export const metadata: Metadata = {
   },
 };
 
+const SITE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE.url}/#organization`,
+      name: SITE.name,
+      url: SITE.url,
+      description: SITE.description,
+      logo: {
+        "@type": "ImageObject",
+        url: new URL("/logo.svg", SITE.url).toString(),
+      },
+      sameAs: [SITE.github, SITE.ownerUrl],
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE.url}/#website`,
+      name: SITE.name,
+      url: SITE.url,
+      description: SITE.description,
+      inLanguage: "zh-CN",
+      publisher: {
+        "@id": `${SITE.url}/#organization`,
+      },
+    },
+  ],
+} as const;
+
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
@@ -60,6 +90,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html suppressHydrationWarning lang="zh-CN">
       <body className="flex min-h-screen flex-col font-sans antialiased">
+        <JsonLd data={SITE_JSON_LD} />
         <RootProvider
           i18n={{ locale: "zh-CN", translations: UI_TRANSLATIONS }}
           // type:'static' → fumadocs 用 staticClient 拉取 app/api/search 构建期导出的静态

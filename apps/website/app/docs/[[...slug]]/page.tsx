@@ -7,7 +7,14 @@ import {
 import { notFound } from "next/navigation";
 
 import { getMDXComponents } from "@/mdx-components";
+import { JsonLd } from "@/components/seo/json-ld";
+import { SITE } from "@/lib/site";
 import { source } from "@/lib/source";
+
+/** next.config 开启了 trailingSlash，canonical 必须与线上实际地址同形 */
+function getCanonical(url: string) {
+  return url.endsWith("/") ? url : `${url}/`;
+}
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -18,11 +25,37 @@ export default async function Page(props: {
   if (!page) notFound();
 
   const MDX = page.data.body;
+  const canonical = getCanonical(page.url);
+  const updated = page.data.lastModified;
+  const updatedLabel = updated
+    ? new Intl.DateTimeFormat("zh-CN", { dateStyle: "long" }).format(updated)
+    : null;
+
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    headline: page.data.title,
+    description: page.data.description,
+    url: new URL(canonical, SITE.url).toString(),
+    mainEntityOfPage: new URL(canonical, SITE.url).toString(),
+    inLanguage: "zh-CN",
+    image: new URL("/opengraph-image", SITE.url).toString(),
+    author: { "@id": `${SITE.url}/#organization` },
+    publisher: { "@id": `${SITE.url}/#organization` },
+    isPartOf: { "@id": `${SITE.url}/#website` },
+    ...(updated ? { dateModified: updated.toISOString() } : {}),
+  };
 
   return (
     <DocsPage toc={page.data.toc}>
+      <JsonLd data={articleJsonLd} />
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
+      {updatedLabel ? (
+        <p className="text-sm text-muted-foreground">
+          最后更新：{updatedLabel}
+        </p>
+      ) : null}
       <DocsBody>
         <MDX components={getMDXComponents()} />
       </DocsBody>
@@ -42,14 +75,11 @@ export async function generateMetadata(props: {
 
   if (!page) return {};
 
-  // next.config 开启了 trailingSlash，canonical 必须与线上实际地址同形
-  const canonical = page.url.endsWith("/") ? page.url : `${page.url}/`;
-
   return {
     title: page.data.title,
     description: page.data.description,
     alternates: {
-      canonical,
+      canonical: getCanonical(page.url),
     },
   };
 }
