@@ -44,8 +44,12 @@ export function Navbar() {
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-4 px-6">
         <Link className="flex min-w-0 items-center gap-2.5" href="/">
-          <Logo className="rounded-md" size={24} />
-          <Typography className="truncate" type="body-sm" weight="semibold">
+          <Logo className="shrink-0 rounded-lg" size={28} />
+          <Typography
+            className="truncate leading-tight"
+            type="h6"
+            weight="semibold"
+          >
             Better Admin
           </Typography>
         </Link>
