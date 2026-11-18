@@ -50,7 +50,7 @@ const STACKS: {
     actionLabel: "在线演示",
   },
   {
-    name: "Nuxt",
+    name: "Nuxt 4",
     icon: "nuxt",
     role: "独立全栈实现，不依赖 NestJS",
     status: "已上线",

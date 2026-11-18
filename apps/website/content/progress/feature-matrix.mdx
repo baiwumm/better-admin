@@ -17,8 +17,7 @@ description: 逐项查看 React、Vue、Next.js、Nuxt 四端的功能对齐状�
 
 四个前端（React / Vue / Next.js / Nuxt）当前均为 **29 / 29**，功能已全部对齐。
 
-> 分母按 `docs/feature-matrix.md` 的表格行数计。这一口径曾三次失真（23 → 27 → 29），
-> 每次新增功能行都要同步改分母，不能只改表格。
+> 分母按 `docs/feature-matrix.md` 的表格行数计。新增功能行时同步更新分母，不能只改表格。
 
 ## 两处有意保留的架构差异
 
@@ -39,22 +38,9 @@ description: 逐项查看 React、Vue、Next.js、Nuxt 四端的功能对齐状�
 
 后端独立对照 API 契约：**48 条路径全部实现**（对应 77 个 path+method 操作），每条路径的权限位声明（`x-permission`）与契约一致。Next.js 与 Nuxt 端作为独立全栈各实现 76 个操作——唯一例外是 `GET /health`，契约明示它是 NestJS 在 Render 免费层保活专用，两端平台不休眠、不做对等实现。
 
-## 已完成的关键里程碑
-
-| 时间 | 内容 |
-| --- | --- |
-| 09-14 | 菜单可见性修正：**只要有 `role_menus` 记录即视为可见**，三端同步 |
-| 09-15 | NestJS API 文档 UI 由 Swagger 换为 **Scalar**（保留 `/docs-json`） |
-| 09-16 | **Playground 演示场四端全对齐**（Phase A 骨架 + Phase B 内容） |
-| 09-18 | **Phase 0 演示上线准备完成**：只读守卫 `DEMO_READONLY` + 快捷登录，契约 v1.10.0 |
-| 09-19 | **Dashboard 概览四端对齐**（Phase C）：KPI + 登录趋势 + 角色占比，契约升到 v1.12.0 |
-| 09-21 | 演示场第 9 页「加载动画」、第 10 页「组织架构树」四端对齐；**功能矩阵 29 项全部对齐** |
-| 09-22 | 契约升 v1.14.0：新增 `GET /health` 存活探针（Render 保活前置） |
-| 09-23 | **六端统一上线**：全部域名生效，线上即演示环境；线上 contract-diff 31 步一致 |
-
 ## 部署状态
 
-**六个应用已于 2026-09-23 全部上线**，域名全部生效，线上即演示环境（只读演示模式，登录页可快捷登录）：
+**六个应用全部上线**，域名全部生效，线上即演示环境（只读演示模式，登录页可快捷登录）：
 
 | 应用 | 线上地址 | 平台 |
 | --- | --- | --- |
@@ -65,4 +51,4 @@ description: 逐项查看 React、Vue、Next.js、Nuxt 四端的功能对齐状�
 | NestJS | [nest.baiwumm.com](https://nest.baiwumm.com) | Render |
 | website（本站） | [better-admin.baiwumm.com](https://better-admin.baiwumm.com) | 腾讯云 EdgeOne Makers（静态导出） |
 
-部署与冒烟全记录见[路线图](/docs/progress/roadmap/)的「上线收官」一节。
+部署与冒烟细节见[项目现状](/docs/progress/roadmap/)与仓库 `docs/launch-runbook.md`。

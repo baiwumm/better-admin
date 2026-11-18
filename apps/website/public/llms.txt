@@ -16,7 +16,7 @@
 - [Next.js Admin 实现](https://better-admin.baiwumm.com/docs/frontends/next/)
 - [Nuxt Admin 实现](https://better-admin.baiwumm.com/docs/frontends/nuxt/)
 - [四端功能对齐矩阵](https://better-admin.baiwumm.com/docs/progress/feature-matrix/)
-- [项目路线图与上线记录](https://better-admin.baiwumm.com/docs/progress/roadmap/)
+- [项目现状与部署](https://better-admin.baiwumm.com/docs/progress/roadmap/)
 
 ## 演示站
 

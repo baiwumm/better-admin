@@ -13,7 +13,7 @@ description: React 作为 UI 真源，四端共用同一套 Design Tokens、组�
 
 | 技术栈 | 主组件库 | 补充 |
 | --- | --- | --- |
-| React / Next.js | **Hero UI** | Shadcn UI |
+| React / Next.js | **Hero UI** | 项目级自定义组件（两级策略，无 Shadcn UI） |
 | Vue / Nuxt | **Nuxt UI v4** | 无（唯一组件库） |
 
 ## 组件优先级
@@ -57,7 +57,7 @@ const state = useOverlayState();
 
 ## Design Tokens
 
-以 **HeroUI 设计体系为主要参考**，形成**一套项目级 Token**，Hero UI、Shadcn UI 与自定义组件共用。真源是 `apps/react/src/styles/theme.css`。
+以 **HeroUI 设计体系为主要参考**，形成**一套项目级 Token**，由 Hero UI 与项目级自定义组件共用。真源是 `apps/react/src/styles/theme.css`。
 
 <TokenSwatchDiagram />
 
@@ -112,19 +112,22 @@ HeroUI v3 的整条圆角刻度（`--radius-xs` … `--radius-4xl`、`--field-ra
 
 ### 间距与阴影
 
-- 间距以 `0.25rem` 为基准单位；主内容区 `px-4 py-6`，Header `h-16 p-4`，卡片 `px-6 py-6`，表单纵向 `space-y-6`。
+- 间距以 `0.25rem` 为基准单位；主内容区 `p-4 md:p-6`，Header `h-16 p-4`，卡片 `px-6 py-6`，表单纵向 `space-y-6`。
 - 阴影**克制使用**：只有 Dialog / Drawer 这类真正浮起的层用 `shadow-lg`，常规卡片不加阴影。
 
 ## 布局骨架
 
 ```text
-SidebarProvider
-└── SidebarInset（@container/content）
-    ├── Header
-    └── Main
+admin-layout.tsx
+├── aside（桌面 256px / 折叠 64px；移动端改 Drawer）
+│   └── AppSidebar
+└── 右侧列
+    ├── AppHeader
+    ├── TagsBar（多标签页，偏好可关）
+    └── main（滚动容器，p-4 md:p-6）
 ```
 
-- Header 右侧操作区顺序固定：**Search → ThemeSwitch → ThemeSettingsDrawer → ProfileDropdown**。
+- Header 右侧操作区顺序固定：**搜索 → 站内信 → 全屏 → 语言切换 → 主题设置**。
 - 列表页 Header 用 `fixed`；**页面内禁止自写 `sticky` / `fixed`** —— 滚动行为由布局统一管理，页面各自为政必然打架。
 
 三种页面模板：

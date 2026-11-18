@@ -1,59 +1,47 @@
 ---
-title: 项目路线图与上线记录
-description: 从演示场、演示准备到概览页的完整阶段记录，六端已于 2026-09-23 统一上线。
+title: 项目现状与部署
+description: 项目当前阶段、契约版本、六端部署与线上防护的现状说明。
 ---
 
 <RoadmapDiagram />
 
-## 已经走完的路
+## 当前阶段
 
-Playground 演示场分两个阶段推进，之后的 Phase 0 / Phase C 也都已收口：
+项目已完成规划阶段，进入持续迭代。核心业务、组织中心、基础设施与 Playground 演示场（10 页）在四端全部对齐，六个应用全部上线，线上即演示环境。
 
-| 阶段 | 做了什么 | 结果 | 时间 |
-| --- | --- | --- | --- |
-| **Phase A** | 定义菜单树、脚本化录入菜单、四端先落占位页 | 骨架打通 | 09-14 |
-| **Phase B** | 先做 React 基准，再依次跟进 Next → Vue → Nuxt | 四端全对齐（现为 10 页） | 09-16 |
-| **Phase 0** | 演示环境加固：只读守卫、快捷登录、数据重置、日志降噪 | 陌生人可安全访问 | 09-18 |
-| **Phase C** | Dashboard 概览：KPI + 登录趋势 + 角色占比 + 最新动态，四端对齐 | 功能矩阵补齐最后一块 | 09-19 |
+## 契约现状
 
-分阶段的关键在于：先把**菜单与路由骨架**在四端都立起来，再填内容。这样内容阶段只需要复制已经验证过的结构，不会出现"某一端做到一半发现路由结构不对，四端一起返工"。
+真源是 `apps/nest/openapi/openapi.yaml`，当前版本 **v1.14.1**，共 **48 条路径 / 77 个操作**。契约版本独立于产品版本编号（后者见根 `package.json`）。
 
-中间那道 **Gate** 的通过条件是「Nuxt 端功能全对齐 + 通过冒烟测试」，已于 09-16 通过——把闸口放在演示环境稳定之前，是为了避免新功能的问题和环境噪音混在一起。
+## 部署现状
 
-## 契约版本走到哪了
+六个应用全部上线，域名生效，线上即演示环境（只读演示模式，登录页可快捷登录）：
 
-| 版本 | 内容 |
-| --- | --- |
-| v1.10.0 | Phase 0：`DEMO_READONLY` 只读守卫语义 + `POST /auth/demo-login` |
-| v1.11.0 → v1.12.0 | Phase C：`GET /stats/overview` 只读聚合；v1.12.0 移除 `days` 参数、趋势固定近 30 日，区间由前端本地截取 |
-| v1.13.0 | 角色「关联用户」列 + `GET /roles/{id}/users` 名单穿透 |
-| v1.14.0 | `GET /health` 存活探针（下面的保活项就是它的前提） |
-| v1.14.1 | auth 三口（login / demo-login / refresh）补 429 限流响应说明（配合下面的防刷演进），请求 / 响应结构零变化 |
+| 应用 | 线上地址 | 平台 |
+| --- | --- | --- |
+| React | [react.baiwumm.com](https://react.baiwumm.com) | Vercel（静态 SPA） |
+| Vue | [vue.baiwumm.com](https://vue.baiwumm.com) | Vercel（静态 SPA） |
+| Next.js | [next.baiwumm.com](https://next.baiwumm.com) | Vercel |
+| Nuxt | [nuxt.baiwumm.com](https://nuxt.baiwumm.com) | Vercel |
+| NestJS | [nest.baiwumm.com](https://nest.baiwumm.com) | Render |
+| website（本站） | [better-admin.baiwumm.com](https://better-admin.baiwumm.com) | 腾讯云 EdgeOne Makers（静态导出） |
 
-真源始终是 `apps/nest/openapi/openapi.yaml`，共 **48 条路径 / 77 个操作**。
+- React / Vue 是纯静态 SPA，深链回退由各端 `vercel.json` 的 `rewrites: /(.*) → /index.html` 提供。
+- Next / Nuxt 依赖 postgres.js 的 TCP 直连，必须运行在支持长连接的平台（Vercel），不能部署到 Workers 运行时。
+- 演示模式开关只在 Nest / Next / Nuxt 三端配置 `DEMO_MODE=true`；React / Vue 通过 NestJS 继承该行为。
 
-## 上线收官（2026-09-23）
-
-六个应用功能全部就绪后统一上线，全部域名已生效，线上即演示环境：
-
-| 事项 | 落地结果 |
-| --- | --- |
-| NestJS 外部保活 | `GET /health` 已实现（契约相对路径，实际带全局前缀为 `/api/health`）；UptimeRobot 以 **HTTP(S) 类型**每 5 分钟探活——⚠️ 上线当日曾误配为 PING（ICMP）类型，它对 Render 入口永远 Down、保活实际未生效 6 小时，已改判并复验（`uptimeSeconds` 跨采样连续）；冷启动自此消除 |
-| CORS 白名单收敛 | 已收敛为线上域名；Nest 只服务 React / Vue 两端，Next / Nuxt 是独立全栈不走它 |
-| SPA 直链回退 | React / Vue 由 `wrangler.jsonc` 的 `not_found_handling=single-page-application` 提供 |
-| 演示模式开关 | 三端（Nest / Next / Nuxt）线上配 `DEMO_MODE=true`，只读守卫 + 快捷登录生效 |
-| 环境变量与迁移 | 各平台变量配齐（密钥不进仓库）；迁移真源在 Nest 端，线上库一次到位 |
-| 构建验证 | CI 已挂接六端 17 步矩阵（lint / typecheck / test / build）；上线当日线上 contract-diff 31 步一致 |
-
-平台分工（现状）：React / Vue / Next / Nuxt → Vercel（React / Vue 于 2026-11-02 自 Cloudflare Workers 迁入，SPA 深链回退改由各端 `vercel.json` 的 `rewrites: /(.*) → /index.html` 提供），本站 → 腾讯云 EdgeOne Makers（静态导出），NestJS → Render。上表记录的是 2026-09-23 收官当时的落地方式（含已删除的 `wrangler.jsonc`），按「现状与历史分离」保留不改。部署与冒烟全记录见仓库 [`docs/launch-runbook.md`](https://github.com/baiwumm/better-admin/blob/main/docs/launch-runbook.md)。
-
-## 上线后演进（2026-10-14）：auth 接口防刷
-
-线上即演示环境，六个应用共用同一个数据库，公开的 auth 入口被刷会先拖垮数据库连接。为此补了两道限流：
+## 线上保活与防刷
 
 | 层 | 覆盖 | 规则 |
 | --- | --- | --- |
-| Vercel WAF（平台层） | Next / Nuxt 的 `/api/auth/*` 三口 | Fixed Window 60 秒 / 20 次 per IP，超限 429，零代码改动 |
-| NestJS throttler（应用层） | React / Vue 的 API 入口（Nest） | `login` / `demo-login` 20 次/60s，`refresh` 放宽到 60 次/60s，超限统一 429 信封 |
+| Render 保活 | `GET /api/health`（无鉴权、不访问数据库） | UptimeRobot 以 HTTP(S) 类型每 5 分钟探活；不要用 PING 类型 |
+| Vercel WAF | Next / Nuxt 的 `/api/auth/*` | Fixed Window 60 秒 / 20 次 per IP，超限 429 |
+| NestJS throttler | React / Vue 的认证入口 | `login` / `demo-login` 20 次/60s，`refresh` 60 次/60s，超限统一 429 信封 |
 
-契约随此升到 **v1.14.1**（三个端点补 429 响应文档，请求 / 响应结构零变化）。Nest 侧另有一条实测取证：Render 入口实际是 **3 跳代理**（CF for SaaS 边缘 + 私网代理），`trust proxy` 必须定值 3，限流计数才不会抖散。
+Render 入口实际是 3 跳代理（CF for SaaS 边缘 + 私网代理），Nest 的 `trust proxy` 必须定值 3，限流计数才不会抖散。
+
+## CI
+
+六端矩阵覆盖 `lint` / `typecheck` / `test` / `build`，另有 Nest e2e 使用 CI 内的自托管 Postgres 容器（不连 Supabase）。线上 API 一致性由 `contract-diff` 脚本按契约逐项比对。
+
+部署顺序、环境变量与回滚步骤见仓库 `docs/launch-runbook.md`。

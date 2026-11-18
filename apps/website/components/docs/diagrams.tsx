@@ -640,9 +640,8 @@ const PRIORITY_COLUMNS = [
     x: 10,
     header: "React / Next.js",
     rows: [
-      ["1", "Hero UI", "@heroui/react"],
-      ["2", "Shadcn UI", "仅作补充"],
-      ["3", "项目级自定义", "最后兜底"],
+      ["1", "Hero UI", "内置组件优先"],
+      ["2", "项目级自定义", "基于 Hero UI 拼装"],
     ],
   },
   {
@@ -943,47 +942,43 @@ export function FeatureMatrixDiagram() {
   );
 }
 
-/* =================== 12. 路线图时间线 =================== */
+/* =================== 12. 交付现状时间线 =================== */
 
 const ROADMAP = [
   {
     x: 110,
-    phase: "Phase A",
-    status: "✅ 已完成",
-    note: "09-14",
+    phase: "四端对齐",
+    status: "29 / 29",
     done: true,
-    desc: ["菜单树录入", "+ 四端占位"],
+    desc: ["功能矩阵全绿", "Playground 10 页"],
   },
   {
     x: 280,
-    phase: "Phase B",
-    status: "✅ 已完成",
-    note: "09-16",
+    phase: "契约统一",
+    status: "v1.14.1",
     done: true,
-    desc: ["React 基准", "→ 四端对齐（10 页）"],
+    desc: ["48 条路径", "77 个操作"],
   },
   {
     x: 450,
-    phase: "Phase 0",
-    status: "✅ 已完成",
-    note: "09-18",
+    phase: "演示环境",
+    status: "已启用",
     done: true,
-    desc: ["只读守卫 / 快捷登录", "契约 v1.10.0"],
+    desc: ["只读守卫", "快捷登录"],
   },
   {
     x: 620,
-    phase: "Phase C",
-    status: "✅ 已完成",
-    note: "09-19",
+    phase: "六端上线",
+    status: "已上线",
     done: true,
-    desc: ["KPI + 趋势图", "契约 v1.12.0"],
+    desc: ["域名全部生效", "线上即演示环境"],
   },
 ];
 
 export function RoadmapDiagram() {
   return (
     <Frame
-      title="路线图：演示场两阶段 + Phase 0 演示准备 + Phase C 概览均已完成，六端已于 2026-09-23 统一上线"
+      title="交付现状：四端功能对齐 29 / 29、契约 48 条路径 / 77 个操作、六端已全部上线"
       viewBox="0 0 720 214"
     >
       <line
@@ -1044,24 +1039,6 @@ export function RoadmapDiagram() {
           ))}
         </g>
       ))}
-
-      <line
-        className="stroke-border"
-        strokeDasharray="4 4"
-        strokeWidth={1}
-        x1={365}
-        x2={365}
-        y1={84}
-        y2={116}
-      />
-      <T
-        anchor="middle"
-        className="fill-muted-foreground text-[9.5px]"
-        x={365}
-        y={76}
-      >
-        Gate（已过）
-      </T>
     </Frame>
   );
 }
