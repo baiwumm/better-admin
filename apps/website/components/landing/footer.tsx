@@ -28,7 +28,7 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-[1.6fr_1fr_1fr]">
           <div className="flex flex-col items-start gap-4">
             <div className="flex items-center gap-2">
-              <Logo className="rounded-md" size={26} />
+              <Logo className="rounded-lg" size={28} />
               <Typography type="body" weight="semibold">
                 Better Admin
               </Typography>
