@@ -40,7 +40,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       nav={{
         title: (
           <>
-            <Logo className="rounded-md" size={24} />
+            <Logo className="rounded-lg" size={28} />
             <span className="font-semibold">{SITE.name}</span>
           </>
         ),
