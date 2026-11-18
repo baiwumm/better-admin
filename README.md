@@ -37,13 +37,18 @@
 
 <p align="center">
   📚 <a href="https://better-admin.baiwumm.com">Documentation</a> ·
-  🎬 <a href="https://v.douyin.com/rv2bIcmeLww/">Promo video</a> (Chinese narration) ·
   🧩 <a href="docs/feature-matrix.md">Feature matrix</a> ·
   🤖 <a href="AGENTS.md">Dev conventions</a> ·
   📈 <a href="docs/progress.md">Progress log</a>
 </p>
 
-> This is a condensed English summary. The [Chinese README](./README.zh-CN.md) is the source of truth; the in-repo docs are written in Chinese.
+> This is a condensed English README. See [README.zh-CN.md](./README.zh-CN.md) for the full version.
+
+## 🎬 Promo video
+
+<p align="center">
+  <video src="https://github.com/user-attachments/assets/0b435f29-608a-406f-b586-b0a21b941825" width="90%" controls muted playsinline></video>
+</p>
 
 ## ✨ Highlights
 
@@ -104,7 +109,7 @@ React is the **UI source of truth**: the four frontends share page structure, in
 ```text
 better-admin/
 ├── apps/          # Independently runnable / buildable / deployable apps
-├── docs/          # Requirements, UI spec, progress, mechanisms (Chinese)
+├── docs/          # Requirements, UI spec, progress, mechanisms
 ├── assets/logo/   # Shared brand assets
 ├── scripts/       # Repo-level scripts (version sync)
 ├── package.json   # Single source of truth for the product version
@@ -136,7 +141,7 @@ This repository is indexed by [XERJ Corpus Hub](https://hub.xerj.org/contributor
 
 ## 📚 Repository Docs
 
-The docs are written in Chinese (the project's primary language):
+Repository documentation:
 
 | Document | Contents |
 | --- | --- |

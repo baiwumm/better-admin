@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### README 内嵌宣传片与英文文案收口（2026-11-18）
+
+- **背景**：根 README 原为「封面图 + 抖音外链」，用户要求改为 README 内嵌播放器，且英文文档不要刻意标注中文说明。
+- **实现**：用 `gh issue create --attach` 走 GitHub 官方 user-attachments 上传 8.25MB 压缩视频（`better-admin-promo-16x9.mp4`），得到 `https://github.com/user-attachments/assets/0b435f29-608a-406f-b586-b0a21b941825`；临时 issue 已删除，附件 URL 实测仍 302 可访问。中英文根 README 均用 `<video ... controls muted playsinline>` 内嵌，移除抖音链接与封面图。
+- **英文文案**：删除 `(Chinese narration)`、`written in Chinese` 与目录注释里的 `(Chinese)`；语言切换入口保留。
+- **验证**：GitHub Markdown API 实测该 URL 渲染为 video 播放器；中英文 README 无抖音残留；临时 issue 已清理。
+- **未做**：8.25MB 压缩视频未进仓库，文档站仍使用原 17MB 成片；如需同步替换可另起一项。
+
 ### README 语言结构与仓库设置收口（2026-11-18）
 
 - **根 README**：`README.md` 改为英文默认页，中文迁至 `README.zh-CN.md`，两页顶部双向切换；删除 `README.en.md`。

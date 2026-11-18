@@ -40,17 +40,15 @@
 
 <p align="center">
   📚 <a href="https://better-admin.baiwumm.com">在线文档站</a> ·
-  🎬 <a href="https://v.douyin.com/rv2bIcmeLww/">产品宣传片</a> ·
   🧩 <a href="docs/feature-matrix.md">功能矩阵</a> ·
   🤖 <a href="AGENTS.md">开发规范</a> ·
   📈 <a href="docs/progress.md">进度记录</a>
 </p>
 
+## 🎬 产品宣传片
+
 <p align="center">
-  <a href="https://v.douyin.com/rv2bIcmeLww/">
-    <img src="assets/video/better-admin-promo-cover-16x9.png" width="880"
-         alt="Better Admin 产品宣传片（54 秒，含中文口播）" />
-  </a>
+  <video src="https://github.com/user-attachments/assets/0b435f29-608a-406f-b586-b0a21b941825" width="90%" controls muted playsinline></video>
 </p>
 
 ## ✨ 核心特性
