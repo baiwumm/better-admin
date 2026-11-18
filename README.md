@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="./README.md">简体中文</a> · <strong>English</strong>
+  <strong>English</strong> · <a href="./README.zh-CN.md">简体中文</a>
 </p>
 
 <p align="center">
@@ -43,7 +43,7 @@
   📈 <a href="docs/progress.md">Progress log</a>
 </p>
 
-> This is a condensed English summary. The [Chinese README](./README.md) is the source of truth; the in-repo docs are written in Chinese.
+> This is a condensed English summary. The [Chinese README](./README.zh-CN.md) is the source of truth; the in-repo docs are written in Chinese.
 
 ## ✨ Highlights
 
