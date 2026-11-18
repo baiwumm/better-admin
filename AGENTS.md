@@ -91,6 +91,8 @@ better-admin/
 | 文档 | 职责 |
 | --- | --- |
 | `AGENTS.md` | 硬性规则 + 当前阶段指针；不存放进度细节 |
+| `GLOSSARY.md` | 领域术语表（现状导向）：只定义本项目专有概念与统一叫法，不写实现细节与历史 |
+| `docs/adr/` | 架构决策记录：只收「难逆转 + 反直觉 + 真实取舍」的决策，一页一段 |
 | `docs/progress.md` | 阶段进度（新条目**置顶**倒序）；查「某模块何时 / 为何做成现在这样」进这里；只记「做了什么 / 关键决策 / 已知限制」 |
 | `docs/mechanisms.md` | 机制沉淀（代码行为的技术结论，代码为准）；遇反直觉框架 / 库行为、排查「为何这样实现」先查这里 |
 | `docs/requirements.md` | 业务需求真源 |
@@ -103,7 +105,7 @@ better-admin/
 | `docs/launch-audit.md` / `docs/code-review-backlog.md` | 上线审计台账（已归档只读）/ 代码审查未修项追踪 |
 | `apps/nest/docs/*` | 数据库设计、OpenAPI Contract 设计说明 |
 
-- **更新触发**：完成阶段 → progress.md 置顶条目 + §19 同步；契约 / Schema 变更 → openapi.yaml / database-design.md 先行；机制结论 → mechanisms.md（进度条目只留一行引用）；新增功能 → feature-matrix.md（§18 第 5 条）。
+- **更新触发**：完成阶段 → progress.md 置顶条目 + §19 同步；契约 / Schema 变更 → openapi.yaml / database-design.md 先行；机制结论 → mechanisms.md（进度条目只留一行引用）；新增功能 → feature-matrix.md（§18 第 5 条）；新增或改写领域术语 → GLOSSARY.md；出现「难逆转 + 反直觉 + 真实取舍」的决策 → `docs/adr/`（按序编号）。
 - **现状与历史分离**：「当前是什么」的表述过时必须更新；「当时做了什么」的记录（progress 条目、变更记录表、README 阶段历史）**永不回改**，事实修正写新条目。
 
 ## 14. 命名规范
