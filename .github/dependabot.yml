@@ -1,0 +1,73 @@
+# Dependabot 仅承担**安全更新**（2026-11-19 引入）：
+#   · open-pull-requests-limit: 0 —— 关闭常规版本更新 PR，依赖升级仍按批次手动做
+#     （AGENTS §15 锁版本约定），避免与既定升级节奏冲突；
+#   · groups.applies-to: security-updates —— 同一应用的多个安全更新合并为一个 PR，
+#     而不是一个依赖一个 PR；
+#   · 六端 lockfile 相互独立、不引入 workspace（AGENTS §3），故按目录分别配置。
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /apps/react
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /apps/vue
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /apps/next
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /apps/nuxt
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /apps/nest
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: npm
+    directory: /apps/website
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
