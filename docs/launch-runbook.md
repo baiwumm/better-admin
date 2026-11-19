@@ -49,6 +49,15 @@ Nest 必须最先：React / Vue 的 API 直接指向它；保活必须紧随其�
 - IP 维度在共享 NAT（办公室 / 运营商 CGNAT）下可能误伤，20 次/分对真人足够宽松，勿盲目调低。
 - Nest（Render）不在 Vercel 规则覆盖内；React / Vue 的 API 走 Nest，如需同等防刷需另行评估（暂未做）。
 
+### 0.4 Vercel 构建按目录过滤（2026-11-19 新增，四端通用）
+
+四端 Vercel 项目均配置了 `ignoreCommand`：`git diff --quiet HEAD^ HEAD -- .`（React / Vue 写在既有 `vercel.json`，Next / Nuxt 新建同名文件）。提交未触及该应用目录时跳过构建，避免文档、后端或其它端的改动也触发四端全量构建（免费额度约 100 次构建/天，一次推送会消耗 preview + production 两份额度）。
+
+- **前提**：Vercel 项目 Settings → General 的 **Root Directory** 必须分别指向 `apps/react`、`apps/vue`、`apps/next`、`apps/nuxt`；Root Directory 调整后需重核本条。
+- **语义**：命令在项目根目录执行，退出码 0 = 跳过构建，非 0 = 继续构建。
+- **限制**：比较的是本次提交与其父提交；PR 最后一个提交未触及该目录时预览会跳过（此前提交已生成对应预览，内容一致）。
+- **回滚**：删除 `ignoreCommand` 即恢复「每次提交全量构建」。
+
 ---
 
 ## 1 · Nest（Render）— 第一个部署

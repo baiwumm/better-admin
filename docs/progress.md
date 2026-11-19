@@ -2,6 +2,12 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### Vercel 构建按目录过滤（2026-11-19）
+
+- **问题**：四端 Vercel 项目此前「任何提交都全量构建」——纯文档提交（如 PR #7、`31ced24`）也会触发四个项目的 preview + production，免费额度（约 100 次构建/天）被快速耗尽，当天出现 `Deployment rate limited — retry in 24 hours`。
+- **改动**：React / Vue 在既有 `vercel.json` 增加 `ignoreCommand`，Next / Nuxt 新建 `vercel.json`，统一为 `git diff --quiet HEAD^ HEAD -- .`——本次提交未触及该应用目录即跳过构建。操作前提与限制见 [`docs/launch-runbook.md`](launch-runbook.md) §0.4。
+- **影响**：纯文档 / 后端 / 其它端的提交不再消耗前端构建额度；本地开发与 CI 均不受影响。
+
 ### 暂缓项告警 dismiss 与 Dependabot 后续策略（2026-11-19）
 
 - **决定**：`minimatch` ×3、`esbuild` ×4、`@tiptap/core` ×2 共 9 条告警按 `no_bandwidth` dismiss，评论写明「待父包同批升级，父包升级后重新打开」；js-yaml 5.x 已修（PR #17），等待重扫自动置为 fixed。
