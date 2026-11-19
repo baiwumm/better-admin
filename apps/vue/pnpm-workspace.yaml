@@ -4,6 +4,12 @@ allowBuilds:
   esbuild: true
   vue-demi: true
 
+# 2026-11-19 Dependabot 告警收敛：只把受影响区间内的传递依赖抬到已修复版本
+overrides:
+  'source-map-js@<1.2.2': 1.2.2
+  'brace-expansion@<1.1.21': 1.1.21
+  'brace-expansion@>=4.0.0 <5.0.12': 5.0.12
+
 # @vercel/analytics 2.0.1 的 peer 仍声明 vue-router ^4，而本项目实装 ^5.3.1
 # （apps/vue/src/__tests__/analytics-pageview.test.ts 已在 v5 下守卫挂载与
 # pageview 上报）。npm 上仅 canary 版本把 peer 放宽到 ^4 || ^5，稳定版未跟进，

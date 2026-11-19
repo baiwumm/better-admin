@@ -1,6 +1,11 @@
 allowBuilds:
   esbuild: true
 
+# 2026-11-19 Dependabot 告警收敛：只把受影响区间内的传递依赖抬到已修复版本
+overrides:
+  'js-yaml@>=4.0.0 <4.3.2': 4.3.2
+  'brace-expansion@<1.1.21': 1.1.21
+
 # 供应链策略兼容：全局 trustPolicy: no-downgrade 会对"早期版本带 provenance、
 # 后发布版本不带"的老包批量误报（均为多年稳定使用的已知安全版本）。
 # 发布超过 1 年（525600 分钟）的包跳过信任检查，保留对新增发布版本的降级防护。

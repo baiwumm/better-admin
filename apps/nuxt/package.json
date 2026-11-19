@@ -79,7 +79,7 @@
     "eslint": "^10.10.0",
     "jsdom": "^30.0.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.11",
+    "vitest": "^4.1.12",
     "vue-tsc": "^3.3.14"
   },
   "packageManager": "pnpm@12.3.4"

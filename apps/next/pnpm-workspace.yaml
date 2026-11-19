@@ -9,6 +9,8 @@ overrides:
   # tsc 报 never）：统一锁 3.12.4——同时满足 react-aria 3.52.x 声明的 ^3.12.4
   # 范围，并与 react 端（HeroUI 3.2.5 升级后自然收敛）保持一致。
   '@internationalized/date': 3.12.4
+  # 2026-11-19 Dependabot 告警收敛：花括号展开二次复杂度（medium）
+  'brace-expansion@<1.1.21': 1.1.21
 
 # 供应链策略兼容：全局 trustPolicy: no-downgrade 会对"早期版本带 provenance、
 # 后发布版本不带"的老包批量误报（均为多年稳定使用的已知安全版本）。
