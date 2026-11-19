@@ -54,6 +54,7 @@ Nest 必须最先：React / Vue 的 API 直接指向它；保活必须紧随其�
 四端 Vercel 项目均配置了 `ignoreCommand`：`git diff --quiet HEAD^ HEAD -- .`（React / Vue 写在既有 `vercel.json`，Next / Nuxt 新建同名文件）。提交未触及该应用目录时跳过构建，避免文档、后端或其它端的改动也触发四端全量构建（免费额度约 100 次构建/天，一次推送会消耗 preview + production 两份额度）。
 
 - **前提**：Vercel 项目 Settings → General 的 **Root Directory** 必须分别指向 `apps/react`、`apps/vue`、`apps/next`、`apps/nuxt`；Root Directory 调整后需重核本条。
+- **为什么不用面板开关**：Vercel 自带的「Skip deployments when there are no changes to the root directory or its dependencies」要求仓库使用 npm / yarn / pnpm / Bun **workspaces**，未被 workspace 定义覆盖的改动一律视为全局改动并部署所有应用。本仓刻意不引入 pnpm workspace（AGENTS §3，各端独立 lockfile），该开关因此不生效（2026-11-19 实测：纯文档提交 `31ced24` 仍触发四端构建），故改用 `ignoreCommand`。
 - **语义**：命令在项目根目录执行，退出码 0 = 跳过构建，非 0 = 继续构建。
 - **限制**：比较的是本次提交与其父提交；PR 最后一个提交未触及该目录时预览会跳过（此前提交已生成对应预览，内容一致）。
 - **回滚**：删除 `ignoreCommand` 即恢复「每次提交全量构建」。
