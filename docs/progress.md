@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### GitHub 仓库治理与 CodeQL 首轮处置（2026-11-19）
+
+- **安全能力**：开启 Discussions、Dependabot 告警与安全更新、私密漏洞报告、CodeQL 默认扫描（JS/TS，每周 + PR）；Actions 收紧为「GitHub 官方 + 已验证创建者」并强制 action 引用固定 SHA（四个 workflow 全部钉到 commit SHA）；`.github/dependabot.yml` 只保留安全更新（`open-pull-requests-limit: 0` 关闭版本更新，避免与分批手动升级冲突），并按应用目录把安全更新归组为一个 PR。
+- **社区文件**：新增 `SECURITY.md`、`CONTRIBUTING.md`（只指路不复制规则）、`CODE_OF_CONDUCT.md`（Contributor Covenant 2.1 精简版）、Issue 表单（bug / feature / config）、PR 模板、`CODEOWNERS`、Discussion 模板（Q&A / Ideas）；GitHub 社区健康度 71% → 100%。
+- **main 规则集**：禁删除、禁 force push、必须经 PR、必需检查 `gate`；CI 新增聚合 job `gate`（`needs: [app, nest-e2e]`），把 21 个矩阵 job 与 e2e 收成单一固定检查名，避免增删组合时漏配；合并策略收敛为 squash only，开启合并后自动删分支，关闭 Wiki。管理员保留 bypass（CI 自身故障时不至于锁死）。
+- **CodeQL 首轮 17 条 high**：`summarizeNoticeContent`（Nest / Next / Nuxt 三处同构）实体解码顺序调整为 `&amp;` 最后、标签剥离正则由 `<[^>]*>` 改为 `<[^<>]*>`，修复 double-escaping ×3 与 polynomial-redos ×1；其余 13 条（演示登录 `Math.random` 选号、`sync-pulled-schema.mjs` 的文本替换正则）判定误报并 dismiss 并附理由。
+- **验证**：三端改动经 PR #9 的 CI（含 `gate`）全绿后 squash 合并；Dependabot 安全更新 PR #6（undici）亦已通过 gate 合并；PR #8（brace-expansion）与后续安全更新在 `dependabot.yml` 合入默认分支后按分组规则归并。
+
 ### theme-switch-animation 0.6.0 升级与 pnpm 供应链配置清理（2026-11-18）
 
 - **包升级**：React / Next / Vue / Nuxt / Website 五端 `theme-switch-animation` `0.4.0 → 0.6.0`。0.6.0 为 `QR_GRID` 新增 `cellSize`（16–200）与 `cellShape`（square / dot），`reverse` 从 5 种扩展到 9 种（新增 `CIRCLE_BLUR` / `SQUARE` / `RECTANGLE` / `DIAMOND`），`CURTAIN` 的 `direction` 改为控制开合轴（ltr / rtl 水平、ttb / btt 垂直）；主入口移除 `BuildAnimationCSSParams` / `QrGridMaskSpec` 导出（项目未使用）。现有 API 与四端用法兼容，无业务代码改动。
