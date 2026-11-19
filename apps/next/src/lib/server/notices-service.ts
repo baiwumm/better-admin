@@ -492,12 +492,14 @@ async function loadNoticeRow(id: string) {
 /** 公告 HTML → 通知摘要纯文本（剥标签 + 解常见实体 + 折叠空白 + 截断） */
 function summarizeNoticeContent(html: string, max = 140): string {
   const text = html
-    .replace(/<[^>]*>/g, " ")
+    // [^<>]* 而非 [^>]*：后者在仅含大量 '<' 的输入上会退化为二次复杂度
+    .replace(/<[^<>]*>/g, " ")
     .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
+    // &amp; 必须最后解码：先解会让 &amp;lt; 被二次解码成 '<'
+    .replace(/&amp;/gi, "&")
     .replace(/\s+/g, " ")
     .trim();
 
