@@ -204,7 +204,7 @@ jobs:
 
   # 分支保护的必需检查只认固定名字：矩阵 job 名带 app/step 变量（21 个组合），
   # 逐个登记会在每次增删组合时漏配。用聚合 job 把「矩阵全绿 + e2e 全绿」收成
-  # 单个必需状态（ruleset 只要求 CI / gate 与 check-locales / check-locales）。
+  # 单个必需状态（ruleset 只要求名为 gate 的这一项检查）。
   gate:
     name: gate
     needs: [app, nest-e2e]
