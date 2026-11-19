@@ -1,0 +1,37 @@
+title: "[Idea] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 关于 Ideas
+        先聊清楚「为什么需要」，再谈「怎么实现」。本项目任何功能都要在 **React / Vue / Next.js / Nuxt / NestJS** 五端落地，
+        讨论时请顺带说明预期的一致性范围。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 痛点 / 场景
+      description: 你实际遇到的使用场景，以及现在的做法哪里不舒服
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 大致方案
+      description: 界面、交互或接口层面的想法，画个草图也可以
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: 预期影响范围
+      options:
+        - 只影响某一个端
+        - 四端前端都需要对齐
+        - 涉及 API / 数据库变更
+        - 不确定，想先听听意见
+    validations:
+      required: true

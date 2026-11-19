@@ -1,0 +1,101 @@
+name: 🐞 Bug 报告
+description: 报告一个可复现的缺陷（使用疑问请走 Discussions 的 Q&A）
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！提交前请先搜索 [Issues](https://github.com/baiwumm/better-admin/issues) 与 [Discussions](https://github.com/baiwumm/better-admin/discussions)，避免重复。
+        若问题出在线上演示站，请一并说明是否处于 `DEMO_MODE` 只读模式。
+
+  - type: checkboxes
+    id: precheck
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已搜索过现有 Issues 与 Discussions
+          required: true
+        - label: 这不是安全漏洞（安全问题请看 SECURITY.md 的私密报告入口）
+          required: true
+
+  - type: dropdown
+    id: apps
+    attributes:
+      label: 受影响的端
+      description: 同一问题影响多个端时请多选（四端一致性问题往往需要一次修多个实现）
+      multiple: true
+      options:
+        - React (apps/react)
+        - Vue (apps/vue)
+        - Next.js (apps/next)
+        - Nuxt (apps/nuxt)
+        - NestJS API (apps/nest)
+        - 文档站 / 官网 (apps/website)
+        - 跨端通用（OpenAPI / 数据库 / 脚本）
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: Release tag、commit SHA 或部署时间，三选一即可
+      placeholder: 如 v1.2.1 / 1a2b3c4
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 运行环境
+      options:
+        - 官方演示站（baiwumm.com）
+        - 本地开发（pnpm dev）
+        - 自建部署
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 从干净状态开始，按顺序写可复制的操作路径；涉及权限时说明账号角色
+      placeholder: |
+        1. 以 admin 登录
+        2. 进入「用户管理」
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 截图或录屏可直接拖入本输入框
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 报错日志 / 网络响应
+      description: 浏览器控制台、Network 面板响应体，或服务端日志（注意先移除密钥与个人信息）
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充信息
+      description: 浏览器 / 系统 / Node 版本、是否必现、最近一次可用的版本等
+    validations:
+      required: false

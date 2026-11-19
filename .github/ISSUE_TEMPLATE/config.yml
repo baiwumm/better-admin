@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 使用与实现问题
+    url: https://github.com/baiwumm/better-admin/discussions/categories/q-a
+    about: 提问、排查思路、最佳实践请走 Discussions 的 Q&A，解决后记得采纳答案
+  - name: 📚 文档站
+    url: https://better-admin.baiwumm.com
+    about: 快速开始、架构说明、API 契约与 UI 规范都在这里
+  - name: 🔒 报告安全漏洞
+    url: https://github.com/baiwumm/better-admin/security/advisories/new
+    about: 安全问题请走私密报告渠道，不要开公开 Issue（详见 SECURITY.md）

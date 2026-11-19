@@ -124,13 +124,13 @@ jobs:
             step: build
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: ${{ matrix.pnpm }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           # 与各端 lockfile（9.0）及本地 Volta 环境同大版本线
           node-version: 22
@@ -158,7 +158,7 @@ jobs:
     env:
       DATABASE_TEST_URL: postgresql://postgres:postgres@localhost:5432/postgres
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       # 应用内 db/client.ts 统一配置 ssl: { rejectUnauthorized: false }（对齐 Supabase），
       # 容器必须启用 TLS；证书读写挂载以让 entrypoint 修复 key 属主权限
@@ -184,11 +184,11 @@ jobs:
           docker logs --tail 50 e2e-pg
           exit 1
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
           version: 11
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: pnpm
@@ -201,3 +201,21 @@ jobs:
       - name: test (nest e2e)
         working-directory: apps/nest
         run: pnpm test
+
+  # 分支保护的必需检查只认固定名字：矩阵 job 名带 app/step 变量（21 个组合），
+  # 逐个登记会在每次增删组合时漏配。用聚合 job 把「矩阵全绿 + e2e 全绿」收成
+  # 单个必需状态（ruleset 只要求 CI / gate 与 check-locales / check-locales）。
+  gate:
+    name: gate
+    needs: [app, nest-e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 校验上游 job 全部成功
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        run: |
+          echo "::error::上游 job 未全部通过：${{ join(needs.*.result, ', ') }}"
+          exit 1
+      - name: 全部通过
+        run: echo "所有 CI job 通过"

@@ -1,0 +1,50 @@
+title: "[Q&A] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 提问前
+        - 先搜一下已有讨论与 [文档站](https://better-admin.baiwumm.com)，很多问题在「快速开始」与架构章节里有答案。
+        - 可复现的缺陷请开 Issue，不要发在这里。
+        - 有人给出正确答案后，请把它**标记为已采纳**，方便后来的人。
+
+  - type: dropdown
+    id: app
+    attributes:
+      label: 相关端
+      multiple: true
+      options:
+        - React (apps/react)
+        - Vue (apps/vue)
+        - Next.js (apps/next)
+        - Nuxt (apps/nuxt)
+        - NestJS API (apps/nest)
+        - 文档站 / 官网 (apps/website)
+        - 本地环境 / 依赖安装
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      placeholder: 如 v1.2.1 / 主分支某 commit
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: 你想做什么
+      description: 描述目标而不是操作步骤，便于给出更合适的方案
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: 已经尝试过什么
+      description: 看过的文档、试过的代码、报错原文（注意移除密钥与个人信息）
+    validations:
+      required: false
