@@ -2,6 +2,14 @@
 
 > **新条目追加在最上方（按时间倒序）**；条目中引用的 § 章节号（如 §7.2）指 `AGENTS.md` 对应章节，`§x.y` 指对应设计文档自身章节。
 
+### 依赖安全告警处置第一批（2026-11-19）
+
+- **背景**：Dependabot 告警开启后首次扫描得 129 条（3 critical / 47 high / 57 medium / 22 low），去重后为 28 个包；多数是传递依赖，同一漏洞在六端各自 lockfile 各算一条。
+- **修复方式**：不改直接依赖的版本线，只在各端 `pnpm-workspace.yaml` 用**区间选择器 override**（如 `'proxy-addr@<2.0.8': 2.0.8`）把受影响区间内的传递依赖抬到已修复版本，避免影响其它版本实例；`vitest` 六端 `4.1.11 → 4.1.12`（连同其内部 `@vitest/mocker`）。
+- **已处置**：nest 的 `proxy-addr`（critical）、`multer` / `body-parser` / `source-map-js`（high）、`qs` / `fast-uri` / `picomatch` / `brace-expansion` / `vite`（patch 线）；nuxt 的 `shell-quote`（critical）、`tar` / `source-map-js` / `js-yaml` / `devalue` / `prosemirror-view` / `nanoid` / `vue-i18n` 全家桶 / `undici`、`serialize-javascript` / `postcss-selector-parser` / `node-forge` / `@babel/core` / `vite`；react 的 `js-yaml`；vue 与 website 的 `source-map-js`；六端 `brace-expansion`。
+- **暂未处置（保留告警并写明原因）**：`minimatch 10.2.x → 11.0.1` 属 major、`esbuild 0.18/0.27 → 0.28` 与 `@tiptap/core 3.24 → 3.30` 需随上游父包同批升级，均按 §15 锁版本约定留到下次例行升级处理，不单独发 PR。
+- **验证**：nest `lint` / `build` 通过（`pnpm test` 因本机无 `DATABASE_TEST_URL` 无法起步，与既有环境限制一致，交由 CI 的 nest-e2e 覆盖）；nuxt `test`（99）/ `build` 通过；其余四端由 PR 的 CI 矩阵与 `gate` 覆盖。
+
 ### GitHub 仓库治理与 CodeQL 首轮处置（2026-11-19）
 
 - **安全能力**：开启 Discussions、Dependabot 告警与安全更新、私密漏洞报告、CodeQL 默认扫描（JS/TS，每周 + PR）；Actions 收紧为「GitHub 官方 + 已验证创建者」并强制 action 引用固定 SHA（四个 workflow 全部钉到 commit SHA）；`.github/dependabot.yml` 只保留安全更新（`open-pull-requests-limit: 0` 关闭版本更新，避免与分批手动升级冲突），并按应用目录把安全更新归组为一个 PR。
