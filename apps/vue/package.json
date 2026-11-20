@@ -1,7 +1,7 @@
 {
   "name": "better-admin-vue",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.2.3",
   "type": "module",
   "description": "Better Admin — Vue 3 + Nuxt UI v4 frontend reproducing the React reference, consuming the NestJS API.",
   "author": {

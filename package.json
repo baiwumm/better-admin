@@ -1,7 +1,7 @@
 {
   "name": "better-admin",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "One admin product, one database, five stacks: React, Vue, Next.js, Nuxt and NestJS.",
   "license": "MIT",
   "author": {

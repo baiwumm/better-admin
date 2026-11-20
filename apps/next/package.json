@@ -1,6 +1,6 @@
 {
   "name": "better-admin-next",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "type": "module",
   "private": true,
   "description": "Better Admin — standalone Next.js full-stack implementation with its own Server API, no NestJS dependency.",

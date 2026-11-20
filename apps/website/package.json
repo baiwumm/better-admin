@@ -1,6 +1,6 @@
 {
   "name": "better-admin-website",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "private": true,
   "description": "Better Admin — official documentation site, statically exported and deployed on Tencent EdgeOne Makers.",
   "author": {

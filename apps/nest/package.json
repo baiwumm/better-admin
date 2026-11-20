@@ -1,6 +1,6 @@
 {
   "name": "better-admin-nest",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Better Admin — NestJS REST API on PostgreSQL with Drizzle ORM, serving the React and Vue clients.",
   "private": true,
   "type": "commonjs",

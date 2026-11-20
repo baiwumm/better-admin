@@ -1,7 +1,7 @@
 {
   "name": "better-admin-react",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.2.3",
   "type": "module",
   "description": "Better Admin — React 19 + HeroUI frontend, the UI reference implementation consuming the NestJS API.",
   "author": {
