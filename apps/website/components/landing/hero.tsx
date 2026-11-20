@@ -1,19 +1,43 @@
 "use client";
 
 import { Button, Typography } from "@heroui/react";
+import NumberFlow from "@number-flow/react";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { SpecSheet } from "@/components/landing/spec-sheet";
 import { GithubIcon } from "@/components/ui/brand-icons";
 import { SITE } from "@/lib/site";
 
-const STATS = [
-  { label: "应用", value: "5" },
-  { label: "功能对齐", value: "29/29" },
-  { label: "权限位", value: "10" },
-  { label: "数据库", value: "1" },
+const STATS: { label: string; total?: number; value: number }[] = [
+  { label: "应用", value: 5 },
+  { label: "功能对齐", value: 29, total: 29 },
+  { label: "权限位", value: 10 },
+  { label: "数据库", value: 1 },
 ];
+
+/**
+ * 首屏数值：挂载后从 0 计数到目标值。
+ * NumberFlow 只在数值变化时动画，所以先渲染 0 再推进；
+ * 「29/29」这类分数只给左边的分子做动画，分母保持静态文本。
+ */
+function StatValue({ total, value }: { total?: number; value: number }) {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setDisplay(value));
+
+    return () => cancelAnimationFrame(frame);
+  }, [value]);
+
+  return (
+    <>
+      <NumberFlow value={display} />
+      {total === undefined ? null : <span>/{total}</span>}
+    </>
+  );
+}
 
 /** 首个演示入口固定为 React 版（UI Source of Truth） */
 const DEMO_URL = "https://react.baiwumm.com";
@@ -124,7 +148,7 @@ export function Hero() {
                 </Typography>
               </dt>
               <dd className="font-mono text-3xl tabular-nums sm:text-4xl">
-                {stat.value}
+                <StatValue total={stat.total} value={stat.value} />
               </dd>
             </div>
           ))}
