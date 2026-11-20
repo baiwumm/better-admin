@@ -57,6 +57,7 @@ Nest 必须最先：React / Vue 的 API 直接指向它；保活必须紧随其�
 - **为什么不用面板开关**：Vercel 自带的「Skip deployments when there are no changes to the root directory or its dependencies」要求仓库使用 npm / yarn / pnpm / Bun **workspaces**，未被 workspace 定义覆盖的改动一律视为全局改动并部署所有应用。本仓刻意不引入 pnpm workspace（AGENTS §3，各端独立 lockfile），该开关因此不生效（2026-11-19 实测：纯文档提交 `31ced24` 仍触发四端构建），故改用 `ignoreCommand`。
 - **语义**：命令在项目根目录执行，退出码 0 = 跳过构建，非 0 = 继续构建。
 - **限制**：比较的是本次提交与其父提交；PR 最后一个提交未触及该目录时预览会跳过（此前提交已生成对应预览，内容一致）。
+- **验证方式**：提交一次只改 `docs/` 的改动，四个项目的 Vercel 检查应为 skipped 且不产生新部署；反之只改某一个 `apps/*` 时，仅该项目构建。
 - **回滚**：删除 `ignoreCommand` 即恢复「每次提交全量构建」。
 
 ---
