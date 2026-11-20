@@ -2,9 +2,21 @@
   "name": "better-admin-website",
   "version": "1.2.2",
   "private": true,
-  "description": "Better Admin 文档站（独立应用，静态导出部署于腾讯云 EdgeOne Makers better-admin.baiwumm.com）",
-  "author": "baiwumm",
+  "description": "Better Admin — official documentation site, statically exported and deployed on Tencent EdgeOne Makers.",
+  "author": {
+    "name": "baiwumm",
+    "url": "https://github.com/baiwumm"
+  },
+  "license": "MIT",
   "homepage": "https://better-admin.baiwumm.com",
+  "keywords": [
+    "admin",
+    "documentation",
+    "nextjs",
+    "fumadocs",
+    "static-site",
+    "typescript"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/baiwumm/better-admin.git",

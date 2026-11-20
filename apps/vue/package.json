@@ -3,13 +3,25 @@
   "private": true,
   "version": "1.2.2",
   "type": "module",
-  "description": "Better Admin — Vue + Nuxt UI v4 前端（NestJS API 消费方）",
-  "author": "baiwumm",
+  "description": "Better Admin — Vue 3 + Nuxt UI v4 frontend reproducing the React reference, consuming the NestJS API.",
+  "author": {
+    "name": "baiwumm",
+    "url": "https://github.com/baiwumm"
+  },
+  "license": "MIT",
   "homepage": "https://vue.baiwumm.com",
+  "keywords": [
+    "admin",
+    "vue",
+    "nuxt-ui",
+    "vite",
+    "pinia",
+    "typescript"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/baiwumm/better-admin.git",
-    "directory": "vue"
+    "directory": "apps/vue"
   },
   "bugs": {
     "url": "https://github.com/baiwumm/better-admin/issues"

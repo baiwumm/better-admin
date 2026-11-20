@@ -3,9 +3,21 @@
   "private": true,
   "version": "1.2.2",
   "type": "module",
-  "description": "Better Admin — Nuxt 全栈实现（Nitro server routes 自带后端，不依赖 NestJS）",
-  "author": "baiwumm",
+  "description": "Better Admin — standalone Nuxt full-stack implementation with Nitro server routes, no NestJS dependency.",
+  "author": {
+    "name": "baiwumm",
+    "url": "https://github.com/baiwumm"
+  },
+  "license": "MIT",
   "homepage": "https://nuxt.baiwumm.com",
+  "keywords": [
+    "admin",
+    "nuxt",
+    "nitro",
+    "drizzle",
+    "postgresql",
+    "typescript"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/baiwumm/better-admin.git",

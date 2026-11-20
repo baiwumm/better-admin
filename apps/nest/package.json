@@ -1,15 +1,27 @@
 {
   "name": "better-admin-nest",
   "version": "1.2.2",
-  "description": "Better Admin Phase 2 — NestJS + PostgreSQL (Drizzle ORM) API",
+  "description": "Better Admin — NestJS REST API on PostgreSQL with Drizzle ORM, serving the React and Vue clients.",
   "private": true,
   "type": "commonjs",
-  "author": "baiwumm",
+  "author": {
+    "name": "baiwumm",
+    "url": "https://github.com/baiwumm"
+  },
+  "license": "MIT",
   "homepage": "https://nest.baiwumm.com",
+  "keywords": [
+    "admin",
+    "nestjs",
+    "rest-api",
+    "drizzle",
+    "postgresql",
+    "typescript"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/baiwumm/better-admin.git",
-    "directory": "nest"
+    "directory": "apps/nest"
   },
   "bugs": {
     "url": "https://github.com/baiwumm/better-admin/issues"

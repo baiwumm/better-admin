@@ -3,13 +3,25 @@
   "private": true,
   "version": "1.2.2",
   "type": "module",
-  "description": "Better Admin — React + HeroUI 前端（UI 基准版本，NestJS API 消费方）",
-  "author": "baiwumm",
+  "description": "Better Admin — React 19 + HeroUI frontend, the UI reference implementation consuming the NestJS API.",
+  "author": {
+    "name": "baiwumm",
+    "url": "https://github.com/baiwumm"
+  },
+  "license": "MIT",
   "homepage": "https://react.baiwumm.com",
+  "keywords": [
+    "admin",
+    "react",
+    "heroui",
+    "vite",
+    "tanstack",
+    "typescript"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/baiwumm/better-admin.git",
-    "directory": "react"
+    "directory": "apps/react"
   },
   "bugs": {
     "url": "https://github.com/baiwumm/better-admin/issues"

@@ -2,9 +2,27 @@
   "name": "better-admin",
   "private": true,
   "version": "1.2.2",
-  "description": "Better Admin — 同一套产品、同一套数据库，用 React / Vue / Next.js / Nuxt / NestJS 分别实现的全栈 Admin 系统（仓库级版本真源，不放依赖）",
+  "description": "One admin product, one database, five stacks: React, Vue, Next.js, Nuxt and NestJS.",
   "license": "MIT",
-  "author": "baiwumm",
+  "author": {
+    "name": "baiwumm",
+    "url": "https://github.com/baiwumm"
+  },
+  "homepage": "https://better-admin.baiwumm.com",
+  "keywords": [
+    "admin",
+    "admin-dashboard",
+    "react",
+    "vue",
+    "nextjs",
+    "nuxt",
+    "nestjs",
+    "typescript",
+    "postgresql",
+    "rbac",
+    "openapi",
+    "full-stack"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/baiwumm/better-admin.git"
