@@ -127,12 +127,12 @@ export function Stacks() {
 
         <div className="mt-6 rounded-lg border border-border px-5 py-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-2">
               <span className="font-mono text-lg tabular-nums">29 / 29</span>
               <Typography color="muted" type="body-xs">
                 四端功能已全部对齐
               </Typography>
-            </p>
+            </div>
             <Link
               className="inline-flex items-center gap-1 text-xs text-accent"
               href="/docs/progress/feature-matrix/"
