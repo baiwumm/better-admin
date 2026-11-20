@@ -18,12 +18,17 @@ function parseGitHubRepo(url: string): { owner: string; name: string } {
 
 const repo = parseGitHubRepo(repository.url);
 
+/** 站点根地址：换域名时用 NEXT_PUBLIC_SITE_URL 覆盖，末尾斜杠会被去掉 */
+const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://better-admin.baiwumm.com"
+).replace(/\/+$/, "");
+
 export const SITE = {
   name: "Better Admin",
   title: "Better Admin — 五种技术栈的 Admin 系统",
   description:
     "同一套产品、同一套 UI、业务逻辑与数据库，分别用 React、Vue、Next.js、Nuxt 与 NestJS 实现；Better Admin 官方文档。",
-  url: "https://better-admin.baiwumm.com",
+  url: SITE_URL,
   github: `https://github.com/${repo.owner}/${repo.name}`,
   /** 作者 GitHub 主页（页脚「Built by」指向个人主页，不是仓库） */
   ownerUrl: `https://github.com/${repo.owner}`,
@@ -39,6 +44,15 @@ export const OG_IMAGE = {
   width: 1200,
   height: 630,
   alt: "Better Admin — 一套 Admin 系统，五种技术栈实现",
+} as const;
+
+/**
+ * 备案信息：未设置环境变量时用作者默认值；显式设为空字符串（如 NEXT_PUBLIC_ICP=""）
+ * 则隐藏对应条目。静态导出为构建期注入，改值后需重新构建。
+ */
+export const BEIAN = {
+  icp: process.env.NEXT_PUBLIC_ICP ?? "粤ICP备2023007649号-2",
+  police: process.env.NEXT_PUBLIC_POLICE ?? "粤公网安备44030402006402号",
 } as const;
 
 /** 四个前端演示站（线上即演示环境，DEMO_MODE=true 只读演示模式），文档站侧栏图标用 */

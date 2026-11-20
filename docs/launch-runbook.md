@@ -291,7 +291,7 @@ Vercel Instant Rollback。
 | Root Directory | `apps/website` |
 | 构建 | `pnpm run build`（`next.config.mjs` 已配 `output:'export'` 静态导出到 `./out`） |
 | 部署 | 以 EdgeOne Makers 控制台项目配置为准（Git 集成为构建触发方式），构建产物目录 `out/`；Cloudflare Workers 时期的 `apps/website/wrangler.jsonc` 已于 2026-11-04 删除（可从 git 历史找回） |
-| 环境变量 | **无服务端密钥变量**；域名等站点静态配置在控制台项目内设置 |
+| 环境变量 | **无服务端密钥变量**。构建期可选：`NEXT_PUBLIC_SITE_URL`（站点根地址，缺省 `https://better-admin.baiwumm.com`）、`NEXT_PUBLIC_ICP` / `NEXT_PUBLIC_POLICE`（备案号，缺省用代码内默认值；显式设为空字符串则页脚隐藏对应条目）。改值后需重新构建 |
 
 > **URL 规范（2026-11-18）**：仓库内已补全站 canonical、统一内链尾斜杠、sitemap 尾斜杠；**HTTP → HTTPS 301 与 HSTS 属于 EdgeOne Makers 控制台能力，不在仓库内**，需在项目域名/规则配置中开启（当前线上 `http://` 仍返回 200）。
 
