@@ -4,6 +4,11 @@ allowBuilds:
   esbuild: false
   unrs-resolver: false
   vue-demi: false
+
+# theme-switch-animation 0.6.1 发布不足 24h（2026-11-19），临时放行；到期后可删除
+minimumReleaseAgeExclude:
+  - theme-switch-animation@0.6.1
+
 overrides:
   vue: 3.5.45
   '@internationalized/date': 3.12.4

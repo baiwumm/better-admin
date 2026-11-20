@@ -4,6 +4,10 @@ allowBuilds:
   esbuild: true
   vue-demi: true
 
+# theme-switch-animation 0.6.1 发布不足 24h（2026-11-19），临时放行；到期后可删除
+minimumReleaseAgeExclude:
+  - theme-switch-animation@0.6.1
+
 # 2026-11-19 Dependabot 告警收敛：只把受影响区间内的传递依赖抬到已修复版本
 overrides:
   'source-map-js@<1.2.2': 1.2.2

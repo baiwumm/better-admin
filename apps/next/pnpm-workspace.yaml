@@ -3,6 +3,10 @@ allowBuilds:
   esbuild: true
   sharp: true
 
+# theme-switch-animation 0.6.1 发布不足 24h（2026-11-19），临时放行；到期后可删除
+minimumReleaseAgeExclude:
+  - theme-switch-animation@0.6.1
+
 overrides:
   # 收敛传递依赖与顶层声明的双版本（两份类型声明的 #private 品牌字段使
   # CalendarDate/CalendarDateTime 与 HeroUI DatePicker 的 DateValue 类型不兼容，
