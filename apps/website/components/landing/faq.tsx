@@ -16,16 +16,16 @@ export function Faq() {
           title="常见问题"
         />
 
-        {/* Accordion（react-aria DisclosureGroup）：高度 + 淡入过渡，同一时间只展开一项 */}
-        <Accordion className="mt-10 border-t border-border">
+        {/* Accordion（react-aria DisclosureGroup）：使用官方默认解剖与间距 */}
+        <Accordion className="mt-10">
           {FAQ_ITEMS.map((item, index) => (
             <Accordion.Item key={item.value} id={item.value}>
               <Accordion.Heading>
-                <Accordion.Trigger className="items-center gap-4 px-0 py-4">
-                  <span className="font-mono text-[11px] text-muted">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <span className="flex-1">
+                <Accordion.Trigger>
+                  <span className="flex flex-1 items-center gap-4">
+                    <span className="font-mono text-[11px] text-muted">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
                     <Typography type="body-sm" weight="medium">
                       {item.title}
                     </Typography>
@@ -36,15 +36,7 @@ export function Faq() {
                 </Accordion.Trigger>
               </Accordion.Heading>
               <Accordion.Panel>
-                <div className="pb-4 pl-9">
-                  <Typography
-                    className="leading-relaxed"
-                    color="muted"
-                    type="body-sm"
-                  >
-                    {item.content}
-                  </Typography>
-                </div>
+                <Accordion.Body>{item.content}</Accordion.Body>
               </Accordion.Panel>
             </Accordion.Item>
           ))}
